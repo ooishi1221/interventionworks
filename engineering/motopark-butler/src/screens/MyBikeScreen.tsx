@@ -107,13 +107,6 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
           })()}
         </View>
 
-        <View style={styles.legendCard}>
-          <Text style={styles.legendTitle}>ピンの色の意味</Text>
-          <LegendRow color={Colors.accent}  label="制限なし"  detail="400cc以上もOK" />
-          <LegendRow color="#4CAF50"        label="〜250cc可" detail="250cc以下の車両が停められます" />
-          <LegendRow color="#2196F3"        label="〜125cc可" detail="125cc以下の車両が停められます" />
-          <LegendRow color="#9E9E9E"        label="原付のみ"  detail="50cc以下の原付専用" />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

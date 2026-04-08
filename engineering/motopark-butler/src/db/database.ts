@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import type { UserSpot, Favorite, MaxCC } from '../types';
 
 const DB_NAME = 'motopark_butler.db';
 
@@ -11,13 +12,9 @@ export function getDatabase(): SQLite.SQLiteDatabase {
   return _db;
 }
 
-/**
- * アプリ起動時に呼ぶ。全テーブルを初期化する。
- */
 export async function initDatabase(): Promise<void> {
   const db = getDatabase();
 
-  // WALモードで書き込みパフォーマンス向上
   await db.execAsync('PRAGMA journal_mode = WAL;');
   await db.execAsync('PRAGMA foreign_keys = ON;');
 
@@ -55,24 +52,53 @@ export async function initDatabase(): Promise<void> {
       notes      TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS user_spots (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      name         TEXT    NOT NULL,
+      latitude     REAL    NOT NULL,
+      longitude    REAL    NOT NULL,
+      address      TEXT,
+      maxCC        INTEGER,
+      isFree       INTEGER NOT NULL DEFAULT 1,
+      capacity     INTEGER,
+      pricePerHour REAL,
+      openHours    TEXT,
+      notes        TEXT,
+      createdAt    TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      spotId    TEXT    NOT NULL,
+      source    TEXT    NOT NULL CHECK(source IN ('seed', 'user')),
+      createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(spotId, source)
+    );
+
+    CREATE TABLE IF NOT EXISTS ratings (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      spotId    TEXT    NOT NULL,
+      source    TEXT    NOT NULL CHECK(source IN ('seed', 'user')),
+      score     INTEGER NOT NULL CHECK(score >= 1 AND score <= 5),
+      createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(spotId, source)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_sessions_vehicle ON parking_sessions(vehicleId);
     CREATE INDEX IF NOT EXISTS idx_sessions_spot    ON parking_sessions(spotId);
     CREATE INDEX IF NOT EXISTS idx_spots_location   ON parking_spots(latitude, longitude);
+    CREATE INDEX IF NOT EXISTS idx_user_spots_loc   ON user_spots(latitude, longitude);
   `);
 
   await seedInitialData(db);
 }
 
-/**
- * 初回起動時のみサンプルデータを投入する
- */
 async function seedInitialData(db: SQLite.SQLiteDatabase): Promise<void> {
   const result = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM parking_spots;'
   );
   if (result && result.count > 0) return;
 
-  // 東京都内のサンプル駐輪場
   await db.execAsync(`
     INSERT INTO parking_spots (name, latitude, longitude, address, isFree, capacity)
     VALUES
@@ -83,7 +109,7 @@ async function seedInitialData(db: SQLite.SQLiteDatabase): Promise<void> {
   `);
 }
 
-// --- CRUD helpers ---
+// --- Vehicles ---
 
 export async function getAllVehicles() {
   const db = getDatabase();
@@ -106,6 +132,8 @@ export async function deleteVehicle(id: number) {
   return db.runAsync('DELETE FROM vehicles WHERE id = ?;', [id]);
 }
 
+// --- Parking Spots ---
+
 export async function getAllParkingSpots() {
   const db = getDatabase();
   return db.getAllAsync<import('../types').ParkingSpot>(
@@ -113,9 +141,6 @@ export async function getAllParkingSpots() {
   );
 }
 
-/**
- * 現在地から radius メートル以内の駐輪場を返す (Haversine近似)
- */
 export async function getNearbySpots(
   lat: number,
   lon: number,
@@ -147,13 +172,130 @@ export async function endParkingSession(sessionId: number) {
   );
 }
 
+// --- User Spots ---
+
+export async function getAllUserSpots(): Promise<UserSpot[]> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<any>('SELECT * FROM user_spots ORDER BY createdAt DESC;');
+  return rows.map((row) => ({
+    ...row,
+    isFree: row.isFree === 1,
+    maxCC: (row.maxCC ?? null) as MaxCC,
+  }));
+}
+
+export async function insertUserSpot(
+  spot: Omit<UserSpot, 'id' | 'createdAt'>
+): Promise<number> {
+  const db = getDatabase();
+  const result = await db.runAsync(
+    `INSERT INTO user_spots (name, latitude, longitude, address, maxCC, isFree, capacity, pricePerHour, openHours, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [
+      spot.name,
+      spot.latitude,
+      spot.longitude,
+      spot.address ?? null,
+      spot.maxCC ?? null,
+      spot.isFree ? 1 : 0,
+      spot.capacity ?? null,
+      spot.pricePerHour ?? null,
+      spot.openHours ?? null,
+      spot.notes ?? null,
+    ]
+  );
+  return result.lastInsertRowId;
+}
+
+export async function deleteUserSpot(id: number) {
+  const db = getDatabase();
+  return db.runAsync('DELETE FROM user_spots WHERE id = ?;', [id]);
+}
+
+// --- Update User Spot ---
+
+export async function updateUserSpot(
+  id: number,
+  spot: Omit<UserSpot, 'id' | 'createdAt'>
+): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `UPDATE user_spots SET name=?, latitude=?, longitude=?, address=?, maxCC=?, isFree=?, capacity=?, pricePerHour=?, openHours=?, notes=? WHERE id=?;`,
+    [
+      spot.name,
+      spot.latitude,
+      spot.longitude,
+      spot.address ?? null,
+      spot.maxCC ?? null,
+      spot.isFree ? 1 : 0,
+      spot.capacity ?? null,
+      spot.pricePerHour ?? null,
+      spot.openHours ?? null,
+      spot.notes ?? null,
+      id,
+    ]
+  );
+}
+
+// --- Favorites ---
+
+export async function getAllFavorites(): Promise<Favorite[]> {
+  const db = getDatabase();
+  return db.getAllAsync<Favorite>('SELECT * FROM favorites ORDER BY createdAt DESC;');
+}
+
+export async function addFavorite(spotId: string, source: 'seed' | 'user'): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `INSERT OR IGNORE INTO favorites (spotId, source) VALUES (?, ?);`,
+    [spotId, source]
+  );
+}
+
+export async function removeFavorite(spotId: string, source: 'seed' | 'user'): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `DELETE FROM favorites WHERE spotId = ? AND source = ?;`,
+    [spotId, source]
+  );
+}
+
+export async function isFavorite(spotId: string, source: 'seed' | 'user'): Promise<boolean> {
+  const db = getDatabase();
+  const result = await db.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM favorites WHERE spotId = ? AND source = ?;`,
+    [spotId, source]
+  );
+  return (result?.count ?? 0) > 0;
+}
+
+// --- Ratings ---
+
+export async function getRating(spotId: string, source: 'seed' | 'user'): Promise<number | null> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ score: number }>(
+    `SELECT score FROM ratings WHERE spotId = ? AND source = ?;`,
+    [spotId, source]
+  );
+  return row?.score ?? null;
+}
+
+export async function setRating(spotId: string, source: 'seed' | 'user', score: number): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `INSERT INTO ratings (spotId, source, score) VALUES (?, ?, ?)
+     ON CONFLICT(spotId, source) DO UPDATE SET score=excluded.score, createdAt=datetime('now','localtime');`,
+    [spotId, source, score]
+  );
+}
+
 // --- Utility ---
 
 function haversineDistance(
   lat1: number, lon1: number,
   lat2: number, lon2: number
 ): number {
-  const R = 6371000; // 地球半径 (m)
+  const R = 6371000;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);

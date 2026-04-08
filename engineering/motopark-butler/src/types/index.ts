@@ -1,9 +1,6 @@
 export type VehicleType = 'motorcycle' | 'bicycle' | 'scooter';
 
-// ユーザーのバイク排気量
 export type UserCC = 50 | 125 | 250 | 400;
-
-// 駐輪場の最大許容排気量（null = 制限なし / 400cc以上OK）
 export type MaxCC = 50 | 125 | 250 | null;
 
 export interface ParkingPin {
@@ -11,19 +8,43 @@ export interface ParkingPin {
   name: string;
   latitude: number;
   longitude: number;
-  maxCC: MaxCC;           // null = 制限なし
-  isFree: boolean | null; // null = 不明
+  maxCC: MaxCC;
+  isFree: boolean | null;
   capacity: number | null;
-  source: 'seed' | 'osm';
+  source: 'seed' | 'osm' | 'user';
+  address?: string;
+}
+
+export interface UserSpot {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  maxCC: MaxCC;
+  isFree: boolean;
+  capacity?: number;
+  pricePerHour?: number;
+  openHours?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Favorite {
+  id: number;
+  spotId: string;
+  source: 'seed' | 'user';
+  createdAt: string;
 }
 
 export interface Vehicle {
   id: number;
   name: string;
   type: VehicleType;
-  cc: UserCC;
+  cc?: UserCC;
   licensePlate?: string;
   color?: string;
+  notes?: string;
   createdAt: string;
 }
 
@@ -47,42 +68,9 @@ export interface ParkingSession {
   spotId: number;
   startedAt: string;
   endedAt?: string;
-}
-
-export interface Vehicle {
-  id: number;
-  name: string;           // 愛称 (例: 「赤いやつ」)
-  type: VehicleType;
-  licensePlate?: string;
-  color?: string;
-  notes?: string;
-  createdAt: string;
-}
-
-export interface ParkingSpot {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  address?: string;
-  capacity?: number;
-  isFree: boolean;
-  pricePerHour?: number;
-  openHours?: string;      // 例: "00:00-24:00"
-  notes?: string;
-  createdAt: string;
-}
-
-export interface ParkingSession {
-  id: number;
-  vehicleId: number;
-  spotId: number;
-  startedAt: string;
-  endedAt?: string;
   notes?: string;
 }
 
-// GPS近接検知用
 export interface ProximityAlert {
   spotId: number;
   spotName: string;

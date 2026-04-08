@@ -1,25 +1,35 @@
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
 import { useState } from 'react';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen } from './src/screens/MapScreen';
 import { MyBikeScreen } from './src/screens/MyBikeScreen';
 import { ParkedScreen } from './src/screens/ParkedScreen';
+import { FavoritesScreen } from './src/screens/FavoritesScreen';
 import { Colors, FontSize, Spacing } from './src/constants/theme';
-import { UserCC } from './src/types';
+import { ParkingPin, UserCC } from './src/types';
 
-type Tab = 'map' | 'myBike' | 'parked';
+type Tab = 'map' | 'favorites' | 'register' | 'myBike';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'map',    label: '駐輪場を探す', icon: '🅿️' },
-  { id: 'parked', label: '駐めた場所',   icon: '📍' },
-  { id: 'myBike', label: 'マイバイク',   icon: '🏍️' },
+  { id: 'map',       label: '駐輪場を探す', icon: '🅿️' },
+  { id: 'favorites', label: 'お気に入り',   icon: '♥'  },
+  { id: 'register',  label: '登録',         icon: '＋' },
+  { id: 'myBike',    label: 'マイバイク',   icon: '🏍️' },
 ];
 
 export default function App() {
   const { status, error } = useDatabase();
   const [tab, setTab] = useState<Tab>('map');
   const [userCC, setUserCC] = useState<UserCC>(400);
+  const [focusSpot, setFocusSpot] = useState<ParkingPin | null>(null);
 
   if (status === 'loading') {
     return (
@@ -39,6 +49,11 @@ export default function App() {
     );
   }
 
+  const handleGoToSpot = (spot: ParkingPin) => {
+    setFocusSpot(spot);
+    setTab('map');
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -48,9 +63,17 @@ export default function App() {
           <MapScreen
             userCC={userCC}
             onOpenMyBike={() => setTab('myBike')}
+            focusSpot={focusSpot}
+            onFocusConsumed={() => setFocusSpot(null)}
           />
         )}
-        {tab === 'parked' && <ParkedScreen onBack={() => setTab('map')} />}
+        {tab === 'favorites' && (
+          <FavoritesScreen
+            onGoToMap={() => setTab('map')}
+            onGoToSpot={handleGoToSpot}
+          />
+        )}
+        {tab === 'register' && <ParkedScreen />}
         {tab === 'myBike' && (
           <MyBikeScreen
             userCC={userCC}
@@ -64,20 +87,32 @@ export default function App() {
 
       <SafeAreaView style={styles.tabBarWrapper}>
         <View style={styles.tabBar}>
-          {TABS.map((t) => (
-            <TouchableOpacity
-              key={t.id}
-              style={styles.tabItem}
-              onPress={() => setTab(t.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.tabIcon}>{t.icon}</Text>
-              <Text style={[styles.tabLabel, tab === t.id && styles.tabLabelActive]}>
-                {t.label}
-              </Text>
-              {tab === t.id && <View style={styles.tabIndicator} />}
-            </TouchableOpacity>
-          ))}
+          {TABS.map((t) => {
+            const isActive = tab === t.id;
+            const isFav = t.id === 'favorites';
+            return (
+              <TouchableOpacity
+                key={t.id}
+                style={styles.tabItem}
+                onPress={() => setTab(t.id)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.tabIcon,
+                    isFav && isActive  && styles.tabIconFavActive,
+                    isFav && !isActive && styles.tabIconFavInactive,
+                  ]}
+                >
+                  {t.icon}
+                </Text>
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                  {t.label}
+                </Text>
+                {isActive && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </SafeAreaView>
     </View>
@@ -85,13 +120,8 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: Colors.background },
+  content: { flex: 1 },
   center: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -99,15 +129,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.md,
   },
-  loadingText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
-  },
-  errorText: {
-    color: Colors.danger,
-    fontSize: FontSize.lg,
-    fontWeight: 'bold',
-  },
+  loadingText: { color: Colors.textSecondary, fontSize: FontSize.md },
+  errorText: { color: Colors.danger, fontSize: FontSize.lg, fontWeight: 'bold' },
   errorDetail: {
     color: Colors.textSecondary,
     fontSize: FontSize.sm,
@@ -119,10 +142,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
-  tabBar: {
-    flexDirection: 'row',
-    height: 64,
-  },
+  tabBar: { flexDirection: 'row', height: 64 },
   tabItem: {
     flex: 1,
     alignItems: 'center',
@@ -130,23 +150,16 @@ const styles = StyleSheet.create({
     gap: 2,
     position: 'relative',
   },
-  tabIcon: {
-    fontSize: 22,
-  },
-  tabLabel: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabLabelActive: {
-    color: Colors.accent,
-    fontWeight: '700',
-  },
+  tabIcon: { fontSize: 22 },
+  tabIconFavActive:   { fontSize: 22, color: '#E91E63' },
+  tabIconFavInactive: { fontSize: 22, color: Colors.textSecondary },
+  tabLabel: { fontSize: 9, color: Colors.textSecondary, fontWeight: '500' },
+  tabLabelActive: { color: Colors.accent, fontWeight: '700' },
   tabIndicator: {
     position: 'absolute',
     top: 0,
-    left: '25%',
-    right: '25%',
+    left: '20%',
+    right: '20%',
     height: 2,
     backgroundColor: Colors.accent,
     borderRadius: 1,

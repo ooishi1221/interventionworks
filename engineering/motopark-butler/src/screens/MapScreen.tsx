@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,23 @@ import {
   Linking,
   Platform,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { ParkingPin, UserCC } from '../types';
+import * as Clipboard from 'expo-clipboard';
+import { ParkingPin, UserCC, UserSpot } from '../types';
 import { ADACHI_PARKING, filterByCC } from '../data/adachi-parking';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
+import {
+  getAllUserSpots,
+  addFavorite,
+  removeFavorite,
+  getAllFavorites,
+  getRating,
+  setRating,
+} from '../db/database';
 
-// 足立区中心
 const ADACHI_CENTER: Region = {
   latitude: 35.7750,
   longitude: 139.8046,
@@ -24,17 +33,18 @@ const ADACHI_CENTER: Region = {
 };
 
 const CC_OPTIONS: { value: UserCC; label: string; sub: string }[] = [
-  { value: 50,  label: '原付',      sub: '50cc以下' },
-  { value: 125, label: '125cc',     sub: '小型二輪' },
-  { value: 250, label: '250cc',     sub: '軽二輪' },
-  { value: 400, label: '400cc〜',   sub: '普通二輪+' },
+  { value: 50,  label: '原付',    sub: '50cc以下' },
+  { value: 125, label: '125cc',   sub: '小型二輪' },
+  { value: 250, label: '250cc',   sub: '軽二輪' },
+  { value: 400, label: '400cc〜', sub: '普通二輪+' },
 ];
 
 function markerColor(spot: ParkingPin): string {
-  if (spot.maxCC === null) return Colors.accent;   // オレンジ = 制限なし（全CC可）
-  if (spot.maxCC >= 250)  return '#4CAF50';        // 緑 = 250cc以下OK
-  if (spot.maxCC >= 125)  return '#2196F3';        // 青 = 125cc以下OK
-  return '#9E9E9E';                                // グレー = 原付のみ
+  if (spot.source === 'user') return '#9C27B0';
+  if (spot.maxCC === null) return Colors.accent;
+  if (spot.maxCC >= 250)   return '#4CAF50';
+  if (spot.maxCC >= 125)   return '#2196F3';
+  return '#9E9E9E';
 }
 
 function ccLabel(maxCC: number | null): string {
@@ -45,30 +55,72 @@ function ccLabel(maxCC: number | null): string {
   return `〜${maxCC}cc`;
 }
 
+function userSpotToPin(spot: UserSpot): ParkingPin {
+  return {
+    id: `user_${spot.id}`,
+    name: spot.name,
+    latitude: spot.latitude,
+    longitude: spot.longitude,
+    maxCC: spot.maxCC,
+    isFree: spot.isFree,
+    capacity: spot.capacity ?? null,
+    source: 'user',
+    address: spot.address,
+  };
+}
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 interface Props {
   userCC: UserCC;
   onOpenMyBike: () => void;
+  focusSpot?: ParkingPin | null;
+  onFocusConsumed?: () => void;
 }
 
-export function MapScreen({ userCC, onOpenMyBike }: Props) {
+export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: Props) {
   const mapRef = useRef<MapView>(null);
-  const [spots, setSpots] = useState<ParkingPin[]>([]);
+  const [seedSpots, setSeedSpots] = useState<ParkingPin[]>([]);
+  const [userSpots, setUserSpots] = useState<ParkingPin[]>([]);
   const [selected, setSelected] = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favLoading, setFavLoading] = useState(false);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+
+  const loadFavorites = useCallback(async () => {
+    const favs = await getAllFavorites();
+    setFavoriteIds(new Set(favs.map((f) => `${f.source}_${f.spotId}`)));
+  }, []);
+
+  const loadUserSpots = useCallback(async () => {
+    const spots = await getAllUserSpots();
+    setUserSpots(spots.map(userSpotToPin));
+  }, []);
 
   useEffect(() => {
-    const filtered = filterByCC(ADACHI_PARKING, userCC);
-    setSpots(filtered);
+    setSeedSpots(filterByCC(ADACHI_PARKING, userCC));
   }, [userCC]);
+
+  useEffect(() => {
+    loadUserSpots();
+    loadFavorites();
+  }, []);
 
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         setLocationGranted(true);
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         mapRef.current?.animateToRegion({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
@@ -79,11 +131,31 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
     })();
   }, []);
 
+  // お気に入りからのジャンプ
+  useEffect(() => {
+    if (!focusSpot) return;
+    const timer = setTimeout(() => {
+      mapRef.current?.animateToRegion({
+        latitude: focusSpot.latitude,
+        longitude: focusSpot.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 800);
+      setTimeout(() => setSelected(focusSpot), 900);
+    }, 400);
+    onFocusConsumed?.();
+    return () => clearTimeout(timer);
+  }, [focusSpot]);
+
+  // 選択スポット変更時にレーティング読み込み
+  useEffect(() => {
+    if (!selected) { setMyRating(null); return; }
+    getRating(selected.id, selected.source as 'seed' | 'user').then(setMyRating);
+  }, [selected]);
+
   const goToCurrentLocation = async () => {
     if (!locationGranted) return;
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     mapRef.current?.animateToRegion({
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
@@ -92,17 +164,102 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
     }, 600);
   };
 
-  const openMaps = (spot: ParkingPin) => {
+  const goToNearestSpot = async () => {
+    if (!locationGranted) {
+      Alert.alert('位置情報が必要です', '設定から位置情報を許可してください。');
+      return;
+    }
+    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const { latitude, longitude } = loc.coords;
+    const all = [...seedSpots, ...userSpots];
+    if (all.length === 0) return;
+
+    let nearest = all[0];
+    let minDist = haversineMeters(latitude, longitude, nearest.latitude, nearest.longitude);
+    for (const spot of all.slice(1)) {
+      const d = haversineMeters(latitude, longitude, spot.latitude, spot.longitude);
+      if (d < minDist) { minDist = d; nearest = spot; }
+    }
+
+    mapRef.current?.animateToRegion({
+      latitude: nearest.latitude,
+      longitude: nearest.longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    }, 800);
+    setTimeout(() => setSelected(nearest), 900);
+  };
+
+  const openGoogleMaps = (spot: ParkingPin) => {
     const url = Platform.select({
-      ios: `maps://app?daddr=${spot.latitude},${spot.longitude}`,
+      ios: `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
       android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
-    }) ?? `https://www.google.com/maps/dir/?api=1&destination=${spot.latitude},${spot.longitude}&travelmode=driving`;
+    }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`;
     Linking.openURL(url).catch(() => {
-      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${spot.latitude},${spot.longitude}&travelmode=driving`);
+      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`);
     });
   };
 
-  const currentOption = CC_OPTIONS.find(o => o.value === userCC)!;
+  const openYahooNavi = (spot: ParkingPin) => {
+    const name = encodeURIComponent(spot.name);
+    const lat = spot.latitude;
+    const lon = spot.longitude;
+    // Yahoo!カーナビ app deep link
+    const deepLink = `yjnavicar://v1/map?lat=${lat}&lon=${lon}&name=${name}`;
+    // Web fallback: Yahoo!カーナビ web (car navigation)
+    const webFallback = `https://map.yahoo.co.jp/app/navi?lat=${lat}&lon=${lon}&name=${name}`;
+    Linking.canOpenURL(deepLink)
+      .then((supported) => {
+        Linking.openURL(supported ? deepLink : webFallback).catch(() =>
+          Linking.openURL(webFallback)
+        );
+      })
+      .catch(() => Linking.openURL(webFallback));
+  };
+
+  const copyAddress = async (spot: ParkingPin) => {
+    const text = spot.address
+      ? `${spot.name}\n${spot.address}`
+      : `${spot.name}\n${spot.latitude}, ${spot.longitude}`;
+    await Clipboard.setStringAsync(text);
+    Alert.alert('コピーしました', spot.address ?? `${spot.latitude}, ${spot.longitude}`);
+  };
+
+  const handleNavigation = (spot: ParkingPin) => {
+    Alert.alert('案内開始', spot.name, [
+      { text: 'Googleマップ',   onPress: () => openGoogleMaps(spot) },
+      { text: 'Yahoo!カーナビ', onPress: () => openYahooNavi(spot) },
+      { text: '住所をコピー',   onPress: () => copyAddress(spot) },
+      { text: 'キャンセル',     style: 'cancel' },
+    ]);
+  };
+
+  const toggleFavorite = async (spot: ParkingPin) => {
+    setFavLoading(true);
+    const key = `${spot.source}_${spot.id}`;
+    try {
+      if (favoriteIds.has(key)) {
+        await removeFavorite(spot.id, spot.source as 'seed' | 'user');
+        setFavoriteIds((prev) => { const n = new Set(prev); n.delete(key); return n; });
+      } else {
+        await addFavorite(spot.id, spot.source as 'seed' | 'user');
+        setFavoriteIds((prev) => new Set(prev).add(key));
+      }
+    } catch {}
+    setFavLoading(false);
+  };
+
+  const handleRate = async (spot: ParkingPin, score: number) => {
+    setRatingLoading(true);
+    try {
+      await setRating(spot.id, spot.source as 'seed' | 'user', score);
+      setMyRating(score);
+    } catch {}
+    setRatingLoading(false);
+  };
+
+  const currentOption = CC_OPTIONS.find((o) => o.value === userCC)!;
+  const allSpots = [...seedSpots, ...userSpots];
 
   return (
     <View style={styles.container}>
@@ -114,21 +271,20 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
         showsMyLocationButton={false}
         showsCompass={false}
       >
-        {spots.map((spot) => (
+        {allSpots.map((spot) => (
           <Marker
             key={spot.id}
             coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
             onPress={() => setSelected(spot)}
-            pinColor={markerColor(spot)}
           >
             <View style={[styles.pin, { backgroundColor: markerColor(spot) }]}>
-              <Text style={styles.pinText}>🅿</Text>
+              <Text style={styles.pinText}>{spot.source === 'user' ? '★' : '🅿'}</Text>
             </View>
           </Marker>
         ))}
       </MapView>
 
-      {/* 現在のフィルター表示 + マイバイク設定ボタン */}
+      {/* フィルター */}
       <SafeAreaView pointerEvents="box-none" style={styles.topOverlay}>
         <View style={styles.filterBar}>
           <View style={styles.filterInfo}>
@@ -136,24 +292,26 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
               {currentOption.label}
               <Text style={styles.filterSub}> ({currentOption.sub})</Text>
             </Text>
-            <Text style={styles.filterCount}>{spots.length}件表示中</Text>
+            <Text style={styles.filterCount}>{allSpots.length}件表示中</Text>
           </View>
           <TouchableOpacity style={styles.filterChangeBtn} onPress={onOpenMyBike}>
             <Text style={styles.filterChangeBtnText}>変更</Text>
           </TouchableOpacity>
         </View>
-
-        {/* 凡例 */}
         <View style={styles.legend}>
-          <LegendDot color={Colors.accent}  label="制限なし" />
-          <LegendDot color="#4CAF50"        label="〜250cc" />
-          <LegendDot color="#2196F3"        label="〜125cc" />
-          <LegendDot color="#9E9E9E"        label="原付のみ" />
+          <LegendDot color={Colors.accent} label="制限なし" />
+          <LegendDot color="#4CAF50"       label="〜250cc" />
+          <LegendDot color="#2196F3"       label="〜125cc" />
+          <LegendDot color="#9E9E9E"       label="原付のみ" />
+          <LegendDot color="#9C27B0"       label="登録" />
         </View>
       </SafeAreaView>
 
-      {/* 現在地ボタン */}
+      {/* FABs */}
       <View style={styles.fabContainer}>
+        <TouchableOpacity style={styles.fab} onPress={goToNearestSpot}>
+          <Text style={styles.fabIcon}>🎯</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.fab} onPress={goToCurrentLocation}>
           <Text style={styles.fabIcon}>◎</Text>
         </TouchableOpacity>
@@ -175,9 +333,25 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
             <View style={styles.sheet} onStartShouldSetResponder={() => true}>
               <View style={styles.sheetHandle} />
 
-              <Text style={styles.sheetName}>{selected.name}</Text>
+              <View style={styles.sheetTitleRow}>
+                <Text style={styles.sheetName}>{selected.name}</Text>
+                <TouchableOpacity
+                  style={styles.favBtn}
+                  onPress={() => toggleFavorite(selected)}
+                  disabled={favLoading}
+                >
+                  <Text style={styles.favBtnIcon}>
+                    {favoriteIds.has(`${selected.source}_${selected.id}`) ? '♥' : '♡'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={styles.sheetBadgeRow}>
+                {selected.source === 'user' && (
+                  <View style={[styles.sheetBadge, { backgroundColor: '#9C27B0' }]}>
+                    <Text style={styles.sheetBadgeText}>ユーザー登録</Text>
+                  </View>
+                )}
                 <View style={[styles.sheetBadge, { backgroundColor: markerColor(selected) }]}>
                   <Text style={styles.sheetBadgeText}>{ccLabel(selected.maxCC)}</Text>
                 </View>
@@ -196,13 +370,28 @@ export function MapScreen({ userCC, onOpenMyBike }: Props) {
               {selected.capacity != null && (
                 <Text style={styles.sheetMeta}>収容台数: {selected.capacity}台</Text>
               )}
+              {selected.address && (
+                <Text style={styles.sheetMeta}>{selected.address}</Text>
+              )}
+
+              {/* 星評価 */}
+              <View style={styles.ratingSection}>
+                <Text style={styles.ratingLabel}>
+                  {myRating ? `あなたの評価: ${myRating}.0` : '評価する'}
+                </Text>
+                <StarRating
+                  value={myRating}
+                  onRate={(score) => handleRate(selected, score)}
+                  disabled={ratingLoading}
+                />
+              </View>
 
               <TouchableOpacity
                 style={styles.navBtn}
-                onPress={() => openMaps(selected)}
+                onPress={() => handleNavigation(selected)}
                 activeOpacity={0.85}
               >
-                <Text style={styles.navBtnText}>Googleマップで案内を開始 →</Text>
+                <Text style={styles.navBtnText}>案内開始 →</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.closeBtn} onPress={() => setSelected(null)}>
@@ -225,10 +414,52 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+function StarRating({
+  value,
+  onRate,
+  disabled,
+}: {
+  value: number | null;
+  onRate: (score: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View style={starStyles.row}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <TouchableOpacity
+          key={star}
+          onPress={() => !disabled && onRate(star)}
+          activeOpacity={0.7}
+          style={starStyles.starBtn}
+        >
+          <Text style={[starStyles.star, value !== null && star <= value && starStyles.starFilled]}>
+            {value !== null && star <= value ? '★' : '☆'}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+const starStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 4,
   },
+  starBtn: {
+    padding: 4,
+  },
+  star: {
+    fontSize: 28,
+    color: Colors.border,
+  },
+  starFilled: {
+    color: '#FFB300',
+  },
+});
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
   topOverlay: {
     position: 'absolute',
     top: 0,
@@ -253,36 +484,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  filterInfo: {
-    flex: 1,
-  },
-  filterLabel: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '700',
-  },
-  filterSub: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '400',
-  },
-  filterCount: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-  },
+  filterInfo: { flex: 1 },
+  filterLabel: { color: Colors.accent, fontSize: FontSize.md, fontWeight: '700' },
+  filterSub: { color: Colors.textSecondary, fontSize: FontSize.sm, fontWeight: '400' },
+  filterCount: { color: Colors.textSecondary, fontSize: FontSize.xs },
   filterChangeBtn: {
     backgroundColor: Colors.accent,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
-  filterChangeBtnText: {
-    color: Colors.white,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-  },
+  filterChangeBtnText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: '700' },
   legend: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     backgroundColor: 'rgba(13,13,13,0.85)',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.sm,
@@ -290,20 +505,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     alignSelf: 'flex-start',
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    color: Colors.textSecondary,
-    fontSize: 10,
-  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendLabel: { color: Colors.textSecondary, fontSize: 10 },
   fabContainer: {
     position: 'absolute',
     right: Spacing.lg,
@@ -325,10 +529,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  fabIcon: {
-    color: Colors.accent,
-    fontSize: 22,
-  },
+  fabIcon: { color: Colors.accent, fontSize: 22 },
   pin: {
     width: 36,
     height: 36,
@@ -343,9 +544,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  pinText: {
-    fontSize: 16,
-  },
+  pinText: { fontSize: 16 },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -367,38 +566,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: Spacing.sm,
   },
-  sheetName: {
-    color: Colors.text,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
-  sheetBadgeRow: {
+  sheetTitleRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  sheetBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-  },
-  sheetBadgeMuted: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sheetBadgeText: {
-    color: Colors.white,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-  },
-  sheetBadgeTextMuted: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-  },
-  sheetMeta: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-  },
+  sheetName: { color: Colors.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1 },
+  favBtn: { padding: Spacing.sm },
+  favBtnIcon: { fontSize: 28, color: '#E91E63' },
+  sheetBadgeRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
+  sheetBadge: { paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: BorderRadius.full },
+  sheetBadgeMuted: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  sheetBadgeText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: '700' },
+  sheetBadgeTextMuted: { color: Colors.textSecondary, fontSize: FontSize.sm },
+  sheetMeta: { color: Colors.textSecondary, fontSize: FontSize.sm },
+  ratingSection: { gap: Spacing.xs },
+  ratingLabel: { color: Colors.textSecondary, fontSize: FontSize.sm },
   navBtn: {
     backgroundColor: Colors.accent,
     borderRadius: BorderRadius.lg,
@@ -406,17 +589,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.sm,
   },
-  navBtnText: {
-    color: Colors.white,
-    fontSize: FontSize.md,
-    fontWeight: '700',
-  },
-  closeBtn: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  closeBtnText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-  },
+  navBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: '700' },
+  closeBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
+  closeBtnText: { color: Colors.textSecondary, fontSize: FontSize.sm },
 });
