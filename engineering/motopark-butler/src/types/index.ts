@@ -1,6 +1,7 @@
 export type VehicleType = 'motorcycle' | 'bicycle' | 'scooter';
 
-export type UserCC = 50 | 125 | 250 | 400;
+/** 50=原付一種, 125=原付二種, 400=普通二輪, null=大型二輪 */
+export type UserCC = 50 | 125 | 400 | null;
 export type MaxCC = 50 | 125 | 250 | null;
 
 export interface ParkingPin {
@@ -13,6 +14,8 @@ export interface ParkingPin {
   capacity: number | null;
   source: 'seed' | 'osm' | 'user';
   address?: string;
+  pricePerHour?: number;
+  openHours?: string;
 }
 
 export interface UserSpot {
@@ -35,6 +38,22 @@ export interface Favorite {
   spotId: string;
   source: 'seed' | 'user';
   createdAt: string;
+}
+
+/** ユーザー投稿レビュー（コメント・写真対応） */
+export interface Review {
+  id: number;
+  spotId: string;
+  source: 'seed' | 'user';
+  score: number;
+  comment: string | null;
+  photoUri: string | null;
+  createdAt: string;
+}
+
+export interface ReviewSummary {
+  avg: number;
+  count: number;
 }
 
 export interface Vehicle {

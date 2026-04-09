@@ -1,0 +1,827 @@
+/**
+ * SpotDetailSheet
+ * 駐輪場詳細シート — Apple Maps 風モダンデザイン
+ * - レビューサマリー（平均★ + 件数）→ タップでアンカースクロール
+ * - 横スクロール写真ギャラリー（フルスクリーン拡大対応）
+ * - 精算方法アイコン＋料金表
+ * - 口コミ投稿（星のみ / コメント+写真付き）
+ * - レビュー一覧（最新順 / 評価高い順）
+ */
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Linking,
+  Platform,
+  Alert,
+  ScrollView,
+  TextInput,
+  Image,
+  FlatList,
+  Dimensions,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { ParkingPin, Review, ReviewSummary } from '../types';
+import {
+  addFavorite,
+  removeFavorite,
+  getAllFavorites,
+  insertReview,
+  getReviews,
+  getReviewSummary,
+  deleteReview,
+} from '../db/database';
+import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+
+const { height: SCREEN_H } = Dimensions.get('window');
+
+// ─── カラー定数 ────────────────────────────────────────
+const C = {
+  bg:       '#000000',
+  sheet:    '#1C1C1E',
+  card:     '#2C2C2E',
+  border:   'rgba(255,255,255,0.10)',
+  text:     '#F2F2F7',
+  sub:      '#8E8E93',
+  blue:     '#0A84FF',
+  green:    '#30D158',
+  red:      '#FF453A',
+  orange:   '#FF9F0A',
+  purple:   '#BF5AF2',
+  pink:     '#FF375F',
+  hairline: 'rgba(255,255,255,0.08)',
+};
+
+// ─── CC ラベル ─────────────────────────────────────────
+function ccLabel(maxCC: number | null): string {
+  if (maxCC === null) return '制限なし';
+  if (maxCC === 50)   return '原付のみ';
+  if (maxCC === 125)  return '〜125cc';
+  if (maxCC === 250)  return '〜250cc';
+  return `〜${maxCC}cc`;
+}
+
+function markerColor(spot: ParkingPin): string {
+  if (spot.source === 'user') return C.purple;
+  if (spot.maxCC === null)    return C.blue;
+  if (spot.maxCC >= 250)     return C.green;
+  if (spot.maxCC >= 125)     return C.blue;
+  return C.sub;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ─── Props ────────────────────────────────────────────
+interface Props {
+  spot: ParkingPin;
+  onClose: () => void;
+}
+
+// ─── メインコンポーネント ──────────────────────────────
+export function SpotDetailSheet({ spot, onClose }: Props) {
+  const scrollRef      = useRef<ScrollView>(null);
+  const [reviewsTop, setReviewsTop] = useState(0);
+
+  // Favorites
+  const [isFav, setIsFav]             = useState(false);
+  const [favLoading, setFavLoading]   = useState(false);
+
+  // Reviews
+  const [summary, setSummary]           = useState<ReviewSummary | null>(null);
+  const [reviews, setReviews]           = useState<Review[]>([]);
+  const [sortOrder, setSortOrder]       = useState<'date' | 'score'>('date');
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Add-review form
+  const [formVisible, setFormVisible]   = useState(false);
+  const [newScore, setNewScore]         = useState(0);
+  const [newComment, setNewComment]     = useState('');
+  const [newPhoto, setNewPhoto]         = useState<string | null>(null);
+  const [submitting, setSubmitting]     = useState(false);
+
+  // Fullscreen photo
+  const [fullPhoto, setFullPhoto]       = useState<string | null>(null);
+
+  // ── 初期ロード ───────────────────────────────────────
+  const loadAll = useCallback(async () => {
+    const src = spot.source as 'seed' | 'user';
+    setReviewsLoading(true);
+    const [favs, s, r] = await Promise.all([
+      getAllFavorites(),
+      getReviewSummary(spot.id, src),
+      getReviews(spot.id, src, sortOrder),
+    ]);
+    setIsFav(favs.some((f) => f.spotId === spot.id && f.source === src));
+    setSummary(s);
+    setReviews(r);
+    setReviewsLoading(false);
+  }, [spot, sortOrder]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // ── お気に入りトグル ──────────────────────────────────
+  const toggleFav = async () => {
+    setFavLoading(true);
+    const src = spot.source as 'seed' | 'user';
+    try {
+      if (isFav) { await removeFavorite(spot.id, src); setIsFav(false); }
+      else       { await addFavorite(spot.id, src);    setIsFav(true);  }
+    } catch {}
+    setFavLoading(false);
+  };
+
+  // ── ナビゲーション ────────────────────────────────────
+  const openGoogleMaps = () => {
+    const url = Platform.select({
+      ios:     `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
+      android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
+    }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`;
+    Linking.openURL(url).catch(() =>
+      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`)
+    );
+  };
+
+  const openYahooNavi = async () => {
+    const name = encodeURIComponent(spot.name);
+    const newLink = `ynavigation://v1/route?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}&type=drive`;
+    const oldLink = `yjnavicar://v1/map?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
+    const web     = `https://map.yahoo.co.jp/app/navi?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
+    try {
+      if (await Linking.canOpenURL(newLink)) { await Linking.openURL(newLink); return; }
+      if (await Linking.canOpenURL(oldLink)) { await Linking.openURL(oldLink); return; }
+    } catch {}
+    Linking.openURL(web).catch(() => {});
+  };
+
+  const handleNav = () => {
+    Alert.alert('案内開始', spot.name, [
+      { text: 'Googleマップ',   onPress: openGoogleMaps },
+      { text: 'Yahoo!カーナビ', onPress: openYahooNavi },
+      { text: '住所をコピー',   onPress: async () => {
+          const t = spot.address ? `${spot.name}\n${spot.address}` : `${spot.name}\n${spot.latitude}, ${spot.longitude}`;
+          await Clipboard.setStringAsync(t);
+          Alert.alert('コピーしました', spot.address ?? `${spot.latitude}, ${spot.longitude}`);
+        }},
+      { text: 'キャンセル', style: 'cancel' },
+    ]);
+  };
+
+  // ── 写真ピッカー ──────────────────────────────────────
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('写真へのアクセスが必要です', '設定から許可してください。');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+    if (!result.canceled) setNewPhoto(result.assets[0].uri);
+  };
+
+  // ── レビュー投稿 ──────────────────────────────────────
+  const submitReview = async () => {
+    if (newScore === 0) { Alert.alert('星評価を選んでください'); return; }
+    setSubmitting(true);
+    try {
+      await insertReview(
+        spot.id,
+        spot.source as 'seed' | 'user',
+        newScore,
+        newComment.trim() || undefined,
+        newPhoto ?? undefined
+      );
+      setNewScore(0); setNewComment(''); setNewPhoto(null);
+      setFormVisible(false);
+      await loadAll();
+    } catch (e) {
+      Alert.alert('保存に失敗しました');
+    }
+    setSubmitting(false);
+  };
+
+  // ── レビュー削除 ──────────────────────────────────────
+  const confirmDelete = (review: Review) => {
+    Alert.alert('レビューを削除', 'このレビューを削除しますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      { text: '削除', style: 'destructive', onPress: async () => {
+          await deleteReview(review.id);
+          await loadAll();
+        }},
+    ]);
+  };
+
+  // ── アンカースクロール ─────────────────────────────────
+  const scrollToReviews = () => {
+    scrollRef.current?.scrollTo({ y: reviewsTop - 8, animated: true });
+  };
+
+  // ─────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────
+  const photos = reviews.filter((r) => r.photoUri);
+
+  return (
+    <>
+      {/* フルスクリーン写真 */}
+      {fullPhoto && (
+        <Modal transparent animationType="fade" visible onRequestClose={() => setFullPhoto(null)}>
+          <TouchableOpacity
+            style={styles.fullscreenBg}
+            activeOpacity={1}
+            onPress={() => setFullPhoto(null)}
+          >
+            <Image source={{ uri: fullPhoto }} style={styles.fullscreenImage} resizeMode="contain" />
+            <TouchableOpacity style={styles.fullscreenClose} onPress={() => setFullPhoto(null)}>
+              <Ionicons name="close-circle" size={36} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      )}
+
+      {/* バックドロップ */}
+      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+
+      {/* シート */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.sheetWrapper}
+      >
+        <View style={styles.sheet}>
+          <ScrollView
+            ref={scrollRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* ハンドル */}
+            <View style={styles.handle} />
+
+            {/* ── ヘッダー ─────────────────────────── */}
+            <View style={styles.titleRow}>
+              <Text style={styles.spotName} numberOfLines={2}>{spot.name}</Text>
+              <TouchableOpacity style={styles.favBtn} onPress={toggleFav} disabled={favLoading}>
+                <Ionicons
+                  name={isFav ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={C.pink}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* ── レビューサマリー（アンカーリンク） ── */}
+            <TouchableOpacity style={styles.summaryRow} onPress={scrollToReviews} activeOpacity={0.7}>
+              {summary ? (
+                <>
+                  <View style={styles.summaryStars}>
+                    {[1,2,3,4,5].map((s) => (
+                      <Ionicons
+                        key={s}
+                        name={s <= Math.round(summary.avg) ? 'star' : 'star-outline'}
+                        size={14}
+                        color="#FFD60A"
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.summaryAvg}>{summary.avg.toFixed(1)}</Text>
+                  <Text style={styles.summaryCount}>（{summary.count}件）</Text>
+                  <Ionicons name="chevron-forward" size={13} color={C.sub} />
+                </>
+              ) : (
+                <Text style={styles.summaryEmpty}>レビューを書く →</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* ── バッジ ────────────────────────────── */}
+            <View style={styles.badgeRow}>
+              {spot.source === 'user' && (
+                <View style={[styles.badge, { backgroundColor: C.purple }]}>
+                  <Text style={styles.badgeText}>ユーザー登録</Text>
+                </View>
+              )}
+              <View style={[styles.badge, { backgroundColor: markerColor(spot) }]}>
+                <Text style={styles.badgeText}>{ccLabel(spot.maxCC)}</Text>
+              </View>
+              {spot.isFree === true  && (
+                <View style={[styles.badge, { backgroundColor: C.green }]}>
+                  <Text style={styles.badgeText}>無料</Text>
+                </View>
+              )}
+              {spot.isFree === false && (
+                <View style={[styles.badge, styles.badgeMuted]}>
+                  <Text style={styles.badgeTextMuted}>有料</Text>
+                </View>
+              )}
+              {spot.capacity != null && (
+                <View style={[styles.badge, styles.badgeMuted]}>
+                  <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
+                </View>
+              )}
+            </View>
+
+            {/* ── 住所 ─────────────────────────────── */}
+            {spot.address && (
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={15} color={C.sub} />
+                <Text style={styles.metaText}>{spot.address}</Text>
+              </View>
+            )}
+
+            {/* ── 精算・料金情報 ────────────────────── */}
+            <PaymentSection spot={spot} />
+
+            {/* ── 写真ギャラリー ────────────────────── */}
+            {photos.length > 0 && (
+              <View style={styles.gallerySection}>
+                <Text style={styles.sectionLabel}>フォトギャラリー</Text>
+                <FlatList
+                  horizontal
+                  data={photos}
+                  keyExtractor={(r) => `photo_${r.id}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => setFullPhoto(item.photoUri!)} activeOpacity={0.85}>
+                      <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
+
+            {/* ── 案内開始ボタン ────────────────────── */}
+            <TouchableOpacity style={styles.navBtn} onPress={handleNav} activeOpacity={0.85}>
+              <Ionicons name="navigate" size={17} color="#fff" />
+              <Text style={styles.navBtnText}>案内開始</Text>
+            </TouchableOpacity>
+
+            {/* ── レビューセクション ────────────────── */}
+            <View
+              onLayout={(e) => setReviewsTop(e.nativeEvent.layout.y)}
+              style={styles.reviewsSection}
+            >
+              {/* ヘッダー + ソート */}
+              <View style={styles.reviewsHeader}>
+                <Text style={styles.sectionLabel}>
+                  口コミ{summary ? `  ★${summary.avg.toFixed(1)}` : ''}
+                </Text>
+                <View style={styles.sortRow}>
+                  {(['date', 'score'] as const).map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={[styles.sortBtn, sortOrder === s && styles.sortBtnActive]}
+                      onPress={() => setSortOrder(s)}
+                    >
+                      <Text style={[styles.sortBtnText, sortOrder === s && styles.sortBtnTextActive]}>
+                        {s === 'date' ? '最新順' : '評価順'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* レビュー一覧 */}
+              {reviewsLoading ? (
+                <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} />
+              ) : reviews.length === 0 ? (
+                <View style={styles.emptyReviews}>
+                  <Ionicons name="chatbubble-outline" size={32} color={C.sub} />
+                  <Text style={styles.emptyText}>まだ口コミがありません</Text>
+                </View>
+              ) : (
+                reviews.map((r) => (
+                  <ReviewCard key={r.id} review={r} onDelete={() => confirmDelete(r)} onPhotoTap={setFullPhoto} />
+                ))
+              )}
+
+              {/* レビュー投稿ボタン / フォーム */}
+              {!formVisible ? (
+                <TouchableOpacity style={styles.addReviewBtn} onPress={() => setFormVisible(true)}>
+                  <Ionicons name="add-circle-outline" size={18} color={C.blue} />
+                  <Text style={styles.addReviewBtnText}>口コミを投稿する</Text>
+                </TouchableOpacity>
+              ) : (
+                <ReviewForm
+                  score={newScore}
+                  comment={newComment}
+                  photo={newPhoto}
+                  submitting={submitting}
+                  onScoreChange={setNewScore}
+                  onCommentChange={setNewComment}
+                  onPickPhoto={pickPhoto}
+                  onRemovePhoto={() => setNewPhoto(null)}
+                  onSubmit={submitReview}
+                  onCancel={() => { setFormVisible(false); setNewScore(0); setNewComment(''); setNewPhoto(null); }}
+                />
+              )}
+            </View>
+
+            <View style={{ height: 32 }} />
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </>
+  );
+}
+
+// ─── 精算・料金セクション ──────────────────────────────
+function PaymentSection({ spot }: { spot: ParkingPin }) {
+  const hasPrice = spot.isFree === false;
+  const hasPriceInfo = spot.pricePerHour != null;
+  const hasHours = !!spot.openHours;
+
+  if (!hasPrice && !hasPriceInfo && !hasHours) {
+    // 無料 or 情報なし
+    if (spot.isFree === true) {
+      return (
+        <View style={styles.paymentRow}>
+          <Ionicons name="checkmark-circle" size={16} color={C.green} />
+          <Text style={[styles.paymentText, { color: C.green }]}>無料で駐輪できます</Text>
+        </View>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <View style={styles.paymentCard}>
+      {/* 料金 */}
+      {hasPriceInfo && (
+        <View style={styles.paymentRow}>
+          <Ionicons name="time-outline" size={15} color={C.sub} />
+          <View style={styles.paymentContent}>
+            <Text style={styles.paymentLabel}>料金</Text>
+            <Text style={styles.paymentValue}>
+              ¥{spot.pricePerHour?.toLocaleString()} / 時間
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {hasPrice && !hasPriceInfo && (
+        <View style={styles.paymentRow}>
+          <Ionicons name="cash-outline" size={15} color={C.sub} />
+          <View style={styles.paymentContent}>
+            <Text style={styles.paymentLabel}>精算方法</Text>
+            <View style={styles.paymentMethodIcons}>
+              <PayMethodBadge icon="cash-outline"          label="現金" />
+              <PayMethodBadge icon="card-outline"          label="IC/Card" />
+              <PayMethodBadge icon="phone-portrait-outline" label="QRコード" />
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* 営業時間 */}
+      {hasHours && (
+        <View style={[styles.paymentRow, { marginTop: 8 }]}>
+          <Ionicons name="sunny-outline" size={15} color={C.sub} />
+          <View style={styles.paymentContent}>
+            <Text style={styles.paymentLabel}>営業時間</Text>
+            <Text style={styles.paymentValue}>{spot.openHours}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PayMethodBadge({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  return (
+    <View style={styles.methodBadge}>
+      <Ionicons name={icon} size={14} color={C.blue} />
+      <Text style={styles.methodLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── レビューカード ────────────────────────────────────
+function ReviewCard({
+  review,
+  onDelete,
+  onPhotoTap,
+}: {
+  review: Review;
+  onDelete: () => void;
+  onPhotoTap: (uri: string) => void;
+}) {
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewCardTop}>
+        <View style={styles.reviewStarRow}>
+          {[1,2,3,4,5].map((s) => (
+            <Ionicons
+              key={s}
+              name={s <= review.score ? 'star' : 'star-outline'}
+              size={13}
+              color={s <= review.score ? '#FFD60A' : 'rgba(255,255,255,0.2)'}
+            />
+          ))}
+          <Text style={styles.reviewScore}>{review.score}.0</Text>
+        </View>
+        <View style={styles.reviewMeta}>
+          <Text style={styles.reviewDate}>{formatDate(review.createdAt)}</Text>
+          <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="trash-outline" size={14} color="rgba(255,255,255,0.25)" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {review.comment && (
+        <Text style={styles.reviewComment}>{review.comment}</Text>
+      )}
+
+      {review.photoUri && (
+        <TouchableOpacity onPress={() => onPhotoTap(review.photoUri!)} activeOpacity={0.85} style={{ marginTop: 8 }}>
+          <Image source={{ uri: review.photoUri }} style={styles.reviewPhoto} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+// ─── レビュー投稿フォーム ──────────────────────────────
+function ReviewForm({
+  score,
+  comment,
+  photo,
+  submitting,
+  onScoreChange,
+  onCommentChange,
+  onPickPhoto,
+  onRemovePhoto,
+  onSubmit,
+  onCancel,
+}: {
+  score: number;
+  comment: string;
+  photo: string | null;
+  submitting: boolean;
+  onScoreChange: (n: number) => void;
+  onCommentChange: (s: string) => void;
+  onPickPhoto: () => void;
+  onRemovePhoto: () => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <View style={styles.reviewForm}>
+      <Text style={styles.formTitle}>口コミを投稿</Text>
+
+      {/* 星評価 */}
+      <View style={styles.formStarRow}>
+        {[1,2,3,4,5].map((s) => (
+          <TouchableOpacity key={s} onPress={() => onScoreChange(s)} activeOpacity={0.7}>
+            <Ionicons
+              name={s <= score ? 'star' : 'star-outline'}
+              size={34}
+              color={s <= score ? '#FFD60A' : 'rgba(255,255,255,0.2)'}
+              style={{ marginHorizontal: 4 }}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* コメント（任意） */}
+      <TextInput
+        style={styles.formInput}
+        placeholder="コメントを追加（任意）"
+        placeholderTextColor="rgba(255,255,255,0.25)"
+        value={comment}
+        onChangeText={onCommentChange}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+      />
+
+      {/* 写真（任意） */}
+      {photo ? (
+        <View style={styles.formPhotoPreview}>
+          <Image source={{ uri: photo }} style={styles.formPhotoThumb} />
+          <TouchableOpacity style={styles.formPhotoRemove} onPress={onRemovePhoto}>
+            <Ionicons name="close-circle" size={22} color={C.red} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.formPhotoBtn} onPress={onPickPhoto}>
+          <Ionicons name="camera-outline" size={18} color={C.blue} />
+          <Text style={styles.formPhotoBtnText}>写真を追加（任意）</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* ボタン群 */}
+      <View style={styles.formActions}>
+        <TouchableOpacity style={styles.formCancelBtn} onPress={onCancel}>
+          <Text style={styles.formCancelText}>キャンセル</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.formSubmitBtn, score === 0 && { opacity: 0.4 }]}
+          onPress={onSubmit}
+          disabled={submitting || score === 0}
+        >
+          {submitting
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.formSubmitText}>投稿する</Text>
+          }
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─── スタイル ──────────────────────────────────────────
+const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  sheetWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  sheet: {
+    backgroundColor: C.sheet,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: SCREEN_H * 0.88,
+    overflow: 'hidden',
+  },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingTop: 12,
+  },
+  handle: {
+    width: 36, height: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: Spacing.md,
+  },
+
+  // Header
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  spotName: { color: C.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1, lineHeight: 26 },
+  favBtn:   { padding: 6, marginTop: -2 },
+
+  // Summary
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    paddingVertical: 4,
+  },
+  summaryStars:  { flexDirection: 'row', gap: 1 },
+  summaryAvg:    { color: C.text,  fontSize: 14, fontWeight: '700', marginLeft: 2 },
+  summaryCount:  { color: C.sub,   fontSize: 13 },
+  summaryEmpty:  { color: C.blue,  fontSize: 13 },
+
+  // Badges
+  badgeRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  badge:        { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
+  badgeMuted:   { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
+  badgeText:    { color: '#fff', fontSize: 12, fontWeight: '600' },
+  badgeTextMuted: { color: C.sub, fontSize: 12 },
+
+  // Meta
+  metaRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10 },
+  metaText: { color: C.sub, fontSize: 13, flex: 1 },
+
+  // Payment
+  paymentCard: {
+    backgroundColor: C.card,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginTop: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    gap: 4,
+  },
+  paymentRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  paymentContent:{ flex: 1 },
+  paymentLabel:  { color: C.sub,  fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  paymentValue:  { color: C.text, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  paymentText:   { color: C.text, fontSize: 13, marginLeft: 6 },
+  paymentMethodIcons: { flexDirection: 'row', gap: 6, marginTop: 4 },
+  methodBadge:   { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,132,255,0.1)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  methodLabel:   { color: C.blue, fontSize: 11, fontWeight: '500' },
+
+  // Gallery
+  gallerySection: { marginTop: 16 },
+  galleryList:   { gap: 8, paddingRight: 4 },
+  galleryThumb:  { width: 110, height: 82, borderRadius: 10, backgroundColor: C.card },
+
+  // Nav button
+  navBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.blue,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 16,
+  },
+  navBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+
+  // Reviews section
+  reviewsSection: { marginTop: 24 },
+  reviewsHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  sectionLabel:   { color: C.text, fontSize: 15, fontWeight: '700' },
+  sortRow:        { flexDirection: 'row', gap: 4 },
+  sortBtn:        { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)' },
+  sortBtnActive:  { backgroundColor: 'rgba(10,132,255,0.18)' },
+  sortBtnText:    { color: C.sub,  fontSize: 12, fontWeight: '500' },
+  sortBtnTextActive: { color: C.blue, fontWeight: '600' },
+
+  emptyReviews: { alignItems: 'center', gap: 8, paddingVertical: 24 },
+  emptyText:    { color: C.sub, fontSize: 14 },
+
+  // Review card
+  reviewCard: {
+    backgroundColor: C.card,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  reviewCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewStarRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  reviewScore:   { color: C.text, fontSize: 12, fontWeight: '700', marginLeft: 4 },
+  reviewMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reviewDate:    { color: C.sub, fontSize: 11 },
+  reviewComment: { color: C.text, fontSize: 14, marginTop: 8, lineHeight: 20 },
+  reviewPhoto:   { width: '100%', height: 160, borderRadius: 8 },
+
+  // Add review button
+  addReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(10,132,255,0.4)',
+    marginTop: 8,
+  },
+  addReviewBtnText: { color: C.blue, fontSize: 14, fontWeight: '600' },
+
+  // Review form
+  reviewForm: {
+    backgroundColor: C.card,
+    borderRadius: 14,
+    padding: Spacing.md,
+    marginTop: 8,
+    gap: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  formTitle:    { color: C.text, fontSize: 14, fontWeight: '700' },
+  formStarRow:  { flexDirection: 'row', justifyContent: 'center', marginVertical: 4 },
+  formInput: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 10,
+    padding: 12,
+    color: C.text,
+    fontSize: 14,
+    minHeight: 80,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  formPhotoBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 11,
+    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(10,132,255,0.35)',
+  },
+  formPhotoBtnText: { color: C.blue, fontSize: 13, fontWeight: '500' },
+  formPhotoPreview: { position: 'relative' },
+  formPhotoThumb:  { width: '100%', height: 140, borderRadius: 10 },
+  formPhotoRemove: { position: 'absolute', top: 6, right: 6 },
+  formActions: { flexDirection: 'row', gap: 8 },
+  formCancelBtn:  { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)' },
+  formCancelText: { color: C.sub, fontSize: 14, fontWeight: '500' },
+  formSubmitBtn:  { flex: 2, alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: C.blue },
+  formSubmitText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  // Fullscreen
+  fullscreenBg:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
+  fullscreenImage: { width: '100%', height: '80%' },
+  fullscreenClose: { position: 'absolute', top: 56, right: 20 },
+});

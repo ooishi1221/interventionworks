@@ -43,7 +43,7 @@ const TABS: TabDef[] = [
 export default function App() {
   const { status, error } = useDatabase();
   const [tab, setTab]       = useState<Tab>('map');
-  const [userCC, setUserCC] = useState<UserCC>(400);
+  const [userCC, setUserCC] = useState<UserCC>(125); // デフォルト: 原付二種
   const [focusSpot, setFocusSpot] = useState<ParkingPin | null>(null);
 
   if (status === 'loading') {

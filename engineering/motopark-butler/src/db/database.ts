@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import type { UserSpot, Favorite, MaxCC } from '../types';
+import type { UserSpot, Favorite, MaxCC, Review, ReviewSummary } from '../types';
 
 const DB_NAME = 'motopark_butler.db';
 
@@ -88,6 +88,17 @@ export async function initDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_sessions_spot    ON parking_sessions(spotId);
     CREATE INDEX IF NOT EXISTS idx_spots_location   ON parking_spots(latitude, longitude);
     CREATE INDEX IF NOT EXISTS idx_user_spots_loc   ON user_spots(latitude, longitude);
+
+    CREATE TABLE IF NOT EXISTS reviews (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      spotId    TEXT    NOT NULL,
+      source    TEXT    NOT NULL CHECK(source IN ('seed', 'user')),
+      score     INTEGER NOT NULL CHECK(score >= 1 AND score <= 5),
+      comment   TEXT,
+      photoUri  TEXT,
+      createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_reviews_spot ON reviews(spotId, source);
   `);
 
   await seedInitialData(db);
@@ -287,6 +298,53 @@ export async function setRating(spotId: string, source: 'seed' | 'user', score: 
      ON CONFLICT(spotId, source) DO UPDATE SET score=excluded.score, createdAt=datetime('now','localtime');`,
     [spotId, source, score]
   );
+}
+
+// --- Reviews (コメント・写真付き口コミ) ---
+
+export async function insertReview(
+  spotId: string,
+  source: 'seed' | 'user',
+  score: number,
+  comment?: string,
+  photoUri?: string
+): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `INSERT INTO reviews (spotId, source, score, comment, photoUri) VALUES (?, ?, ?, ?, ?);`,
+    [spotId, source, score, comment ?? null, photoUri ?? null]
+  );
+}
+
+export async function getReviews(
+  spotId: string,
+  source: 'seed' | 'user',
+  sortBy: 'date' | 'score' = 'date'
+): Promise<Review[]> {
+  const db = getDatabase();
+  const order = sortBy === 'score' ? 'score DESC, createdAt DESC' : 'createdAt DESC';
+  return db.getAllAsync<Review>(
+    `SELECT * FROM reviews WHERE spotId = ? AND source = ? ORDER BY ${order};`,
+    [spotId, source]
+  );
+}
+
+export async function getReviewSummary(
+  spotId: string,
+  source: 'seed' | 'user'
+): Promise<ReviewSummary | null> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ avg: number; count: number }>(
+    `SELECT AVG(score) as avg, COUNT(*) as count FROM reviews WHERE spotId = ? AND source = ?;`,
+    [spotId, source]
+  );
+  if (!row || row.count === 0) return null;
+  return { avg: Math.round(row.avg * 10) / 10, count: row.count };
+}
+
+export async function deleteReview(id: number): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync('DELETE FROM reviews WHERE id = ?;', [id]);
 }
 
 // --- Utility ---

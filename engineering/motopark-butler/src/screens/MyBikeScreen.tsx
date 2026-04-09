@@ -9,58 +9,60 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserCC } from '../types';
-import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { Spacing, FontSize } from '../constants/theme';
 
-const SYS_BLUE    = '#0A84FF';
-const SYS_GRAY    = '#636366';
-const CARD_BG     = '#1C1C1E';
-const CARD_BG_ACTIVE = 'rgba(10,132,255,0.08)';
-const BORDER_DEFAULT = 'rgba(255,255,255,0.10)';
-const BORDER_ACTIVE  = SYS_BLUE;
+const SYS_BLUE   = '#0A84FF';
+const SYS_GRAY   = '#636366';
+const CARD_BG    = '#1C1C1E';
+const BORDER_DEF = 'rgba(255,255,255,0.08)';
+const BORDER_ACT = SYS_BLUE;
 
 const CC_OPTIONS: {
   value: UserCC;
   label: string;
   sub: string;
   detail: string;
+  ccText: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
 }[] = [
   {
     value: 50,
-    label: '原付',
+    label: '原付一種',
     sub: '50cc以下',
-    detail: '原付のみ可を含む全施設が表示されます',
+    detail: '全ての駐輪場（原付専用を含む）が表示されます',
+    ccText: '50',
+    iconName: 'bicycle-outline',   // スクーター（最小）
+    iconColor: SYS_GRAY,
   },
   {
     value: 125,
-    label: '125cc',
-    sub: '小型二輪',
-    detail: '125cc以下可の施設が表示されます',
-  },
-  {
-    value: 250,
-    label: '250cc',
-    sub: '軽二輪',
-    detail: '250cc以下可の施設が表示されます',
+    label: '原付二種',
+    sub: '51〜125cc',
+    detail: '原付専用を除いた125cc対応以上の駐輪場が表示されます',
+    ccText: '125',
+    iconName: 'bicycle',           // スクーター（塗りつぶし）
+    iconColor: '#30D158',
   },
   {
     value: 400,
-    label: '400cc以上',
-    sub: '普通二輪・大型',
-    detail: '制限なしの施設のみ表示されます',
+    label: '普通二輪',
+    sub: '126〜400cc',
+    detail: '250cc以上対応または制限なしの駐輪場が表示されます',
+    ccText: '400',
+    iconName: 'car-sport-outline', // ネイキッド風（大きめ）
+    iconColor: SYS_BLUE,
+  },
+  {
+    value: null,
+    label: '大型二輪',
+    sub: '401cc以上',
+    detail: '制限なし（大型車OK）の駐輪場のみ表示されます',
+    ccText: '∞',
+    iconName: 'car-sport',         // フルカウル風（塗りつぶし）
+    iconColor: '#FF9F0A',
   },
 ];
-
-/** 排気量を示すアイコンボックス（線画風・統一感） */
-function CCIcon({ value, active }: { value: UserCC; active: boolean }) {
-  return (
-    <View style={[iconStyles.box, active && iconStyles.boxActive]}>
-      <Text style={[iconStyles.label, active && iconStyles.labelActive]}>
-        {value === 400 ? '400\n+' : String(value)}
-      </Text>
-      <Text style={[iconStyles.unit, active && iconStyles.unitActive]}>cc</Text>
-    </View>
-  );
-}
 
 interface Props {
   userCC: UserCC;
@@ -68,134 +70,103 @@ interface Props {
 }
 
 export function MyBikeScreen({ userCC, onChangeCC }: Props) {
+  const current = CC_OPTIONS.find((o) => o.value === userCC) ?? CC_OPTIONS[1];
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
+        {/* ヘッダー */}
         <View style={styles.header}>
-          <Ionicons name="bicycle-outline" size={32} color={SYS_BLUE} />
+          <View style={styles.headerIcon}>
+            <Ionicons name="bicycle" size={28} color={SYS_BLUE} />
+          </View>
           <View>
             <Text style={styles.title}>マイバイク設定</Text>
-            <Text style={styles.subtitle}>排気量を選ぶと、地図の駐輪場が絞り込まれます</Text>
+            <Text style={styles.subtitle}>排気量を選ぶと地図の駐輪場が絞り込まれます</Text>
           </View>
         </View>
 
         <Text style={styles.sectionLabel}>あなたのバイクの排気量</Text>
 
+        {/* 選択カード一覧 */}
         <View style={styles.optionList}>
           {CC_OPTIONS.map((opt) => {
             const isActive = userCC === opt.value;
             return (
               <TouchableOpacity
-                key={opt.value}
+                key={String(opt.value)}
                 style={[styles.optionBtn, isActive && styles.optionBtnActive]}
                 onPress={() => onChangeCC(opt.value)}
                 activeOpacity={0.75}
               >
-                <CCIcon value={opt.value} active={isActive} />
+                {/* バイクアイコン（段階的） */}
+                <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
+                  <Ionicons
+                    name={opt.iconName}
+                    size={isActive ? 26 : 22}
+                    color={isActive ? opt.iconColor : SYS_GRAY}
+                  />
+                  <Text style={[styles.iconCC, isActive && { color: opt.iconColor }]}>
+                    {opt.ccText}
+                  </Text>
+                </View>
+
+                {/* テキスト */}
                 <View style={styles.optionText}>
-                  <Text style={[styles.optionLabel, isActive && styles.optionLabelActive]}>
+                  <Text style={[styles.optionLabel, isActive && { color: opt.iconColor }]}>
                     {opt.label}
                   </Text>
                   <Text style={styles.optionSub}>{opt.sub}</Text>
                 </View>
-                <View style={[styles.radio, isActive && styles.radioActive]}>
-                  {isActive && <View style={styles.radioDot} />}
+
+                {/* ラジオボタン */}
+                <View style={[styles.radio, isActive && { borderColor: opt.iconColor, borderWidth: 1.5 }]}>
+                  {isActive && <View style={[styles.radioDot, { backgroundColor: opt.iconColor }]} />}
                 </View>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <View style={styles.infoCard}>
+        {/* 現在の設定カード */}
+        <View style={[styles.infoCard, { borderColor: `${current.iconColor}55` }]}>
           <Text style={styles.infoTitle}>現在の設定</Text>
-          {(() => {
-            const opt = CC_OPTIONS.find((o) => o.value === userCC)!;
-            return (
-              <>
-                <Text style={styles.infoCC}>{opt.label}（{opt.sub}）</Text>
-                <Text style={styles.infoDetail}>{opt.detail}</Text>
-              </>
-            );
-          })()}
+          <View style={styles.infoBody}>
+            <Ionicons name={current.iconName} size={22} color={current.iconColor} />
+            <View>
+              <Text style={[styles.infoCC, { color: current.iconColor }]}>
+                {current.label}（{current.sub}）
+              </Text>
+              <Text style={styles.infoDetail}>{current.detail}</Text>
+            </View>
+          </View>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const iconStyles = StyleSheet.create({
-  box: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER_DEFAULT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    flexShrink: 0,
-  },
-  boxActive: {
-    borderColor: SYS_BLUE,
-    backgroundColor: 'rgba(10,132,255,0.15)',
-  },
-  label: {
-    color: SYS_GRAY,
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 15,
-    letterSpacing: -0.5,
-  },
-  labelActive: {
-    color: SYS_BLUE,
-  },
-  unit: {
-    color: SYS_GRAY,
-    fontSize: 9,
-    fontWeight: '500',
-  },
-  unitActive: {
-    color: SYS_BLUE,
-  },
-});
-
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#000',
+  safe:      { flex: 1, backgroundColor: '#000' },
+  container: { padding: Spacing.lg, gap: Spacing.lg, paddingBottom: Spacing.xxl },
+
+  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.md },
+  headerIcon: {
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: 'rgba(10,132,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  container: {
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  title: {
-    color: '#F5F5F5',
-    fontSize: FontSize.xl,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: SYS_GRAY,
-    fontSize: FontSize.sm,
-    marginTop: 2,
-  },
+  title:    { color: '#F2F2F7', fontSize: FontSize.xl, fontWeight: '700' },
+  subtitle: { color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2 },
+
   sectionLabel: {
-    color: SYS_GRAY,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    color: SYS_GRAY, fontSize: 11, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 1,
   },
-  optionList: {
-    gap: Spacing.sm,
-  },
+
+  optionList:  { gap: Spacing.sm },
   optionBtn: {
     minHeight: 72,
     backgroundColor: CARD_BG,
@@ -205,71 +176,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     gap: Spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER_DEFAULT,
+    borderColor: BORDER_DEF,
   },
   optionBtnActive: {
-    backgroundColor: CARD_BG_ACTIVE,
-    borderColor: BORDER_ACTIVE,
+    backgroundColor: 'rgba(10,132,255,0.06)',
+    borderColor: BORDER_ACT,
     borderWidth: 1,
   },
-  optionText: {
-    flex: 1,
-    gap: 2,
-  },
-  optionLabel: {
-    color: '#F5F5F5',
-    fontSize: FontSize.md,
-    fontWeight: '600',
-  },
-  optionLabelActive: {
-    color: SYS_BLUE,
-  },
-  optionSub: {
-    color: SYS_GRAY,
-    fontSize: FontSize.sm,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+
+  iconBox: {
+    width: 52, height: 52, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: BORDER_DEF,
+    gap: 0,
     flexShrink: 0,
   },
-  radioActive: {
-    borderColor: SYS_BLUE,
-    borderWidth: 1.5,
+  iconBoxActive: {
+    backgroundColor: 'rgba(10,132,255,0.10)',
+    borderColor: 'rgba(10,132,255,0.3)',
   },
-  radioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: SYS_BLUE,
+  iconCC: { color: SYS_GRAY, fontSize: 9, fontWeight: '700', marginTop: 1 },
+
+  optionText:  { flex: 1, gap: 2 },
+  optionLabel: { color: '#F2F2F7', fontSize: FontSize.md, fontWeight: '600' },
+  optionSub:   { color: SYS_GRAY, fontSize: FontSize.sm },
+
+  radio: {
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
+  radioDot: { width: 12, height: 12, borderRadius: 6 },
+
   infoCard: {
     backgroundColor: CARD_BG,
     borderRadius: 14,
     padding: Spacing.lg,
     gap: Spacing.xs,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(10,132,255,0.35)',
   },
   infoTitle: {
-    color: SYS_GRAY,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    color: SYS_GRAY, fontSize: 11, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 1,
   },
-  infoCC: {
-    color: SYS_BLUE,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
-  infoDetail: {
-    color: SYS_GRAY,
-    fontSize: FontSize.sm,
-  },
+  infoBody:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
+  infoCC:    { fontSize: FontSize.md, fontWeight: '700' },
+  infoDetail:{ color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
 });

@@ -951,10 +951,17 @@ export const ADACHI_PARKING: ParkingPin[] = [
   },
 ];
 
-/** ユーザーのCCで駐輪場をフィルタリング */
-export function filterByCC(spots: ParkingPin[], userCC: number): ParkingPin[] {
-  return spots.filter((spot) => {
-    if (spot.maxCC === null) return true; // 制限なし
-    return userCC <= spot.maxCC;
-  });
+/**
+ * ユーザーのCCで駐輪場をフィルタリング
+ *   50     (原付一種)  → 全駐輪場を表示
+ *   125    (原付二種)  → 50cc専用を除外
+ *   400    (普通二輪)  → 250cc以上または制限なしのみ
+ *   null   (大型二輪)  → 制限なし（maxCC=null）のみ
+ */
+export function filterByCC(spots: ParkingPin[], userCC: number | null): ParkingPin[] {
+  if (userCC === 50)   return spots;
+  if (userCC === 125)  return spots.filter((s) => s.maxCC !== 50);
+  if (userCC === 400)  return spots.filter((s) => s.maxCC === null || (s.maxCC !== null && s.maxCC >= 250));
+  if (userCC === null) return spots.filter((s) => s.maxCC === null);
+  return spots;
 }
