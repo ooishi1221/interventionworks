@@ -43,6 +43,8 @@ export interface Favorite {
 /** ユーザー投稿レビュー（コメント・写真対応） */
 export interface Review {
   id: number;
+  /** Firestore ドキュメント ID（Firestore 由来のレビューのみ） */
+  firestoreId?: string;
   spotId: string;
   source: 'seed' | 'user';
   score: number;

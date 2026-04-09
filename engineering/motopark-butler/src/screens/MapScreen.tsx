@@ -6,21 +6,22 @@ import {
   TouchableOpacity,
   Alert,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { ParkingPin, UserCC, UserSpot } from '../types';
-import { ADACHI_PARKING, filterByCC } from '../data/adachi-parking';
+import { ParkingPin, UserCC } from '../types';
+import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
-import { getAllUserSpots } from '../db/database';
+import { fetchAllSpots } from '../firebase/firestoreService';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 
-const ADACHI_CENTER: Region = {
-  latitude: 35.7750,
-  longitude: 139.8046,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+const TOKYO_CENTER: Region = {
+  latitude: 35.6895,
+  longitude: 139.6917,
+  latitudeDelta: 0.18,
+  longitudeDelta: 0.18,
 };
 
 const CC_SEGMENTS: { value: UserCC; label: string }[] = [
@@ -44,22 +45,6 @@ function markerColor(spot: ParkingPin): string {
   return '#8E8E93';
 }
 
-function userSpotToPin(spot: UserSpot): ParkingPin {
-  return {
-    id: `user_${spot.id}`,
-    name: spot.name,
-    latitude: spot.latitude,
-    longitude: spot.longitude,
-    maxCC: spot.maxCC,
-    isFree: spot.isFree,
-    capacity: spot.capacity ?? null,
-    source: 'user',
-    address: spot.address,
-    pricePerHour: spot.pricePerHour,
-    openHours: spot.openHours,
-  };
-}
-
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -81,21 +66,18 @@ interface Props {
 
 export function MapScreen({ userCC, onOpenMyBike, onChangeCC, focusSpot, onFocusConsumed }: Props) {
   const mapRef = useRef<MapView>(null);
-  const [seedSpots, setSeedSpots]         = useState<ParkingPin[]>([]);
-  const [userSpots, setUserSpots]         = useState<ParkingPin[]>([]);
+  const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
+  const [loading, setLoading]             = useState(true);
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
 
-  const loadUserSpots = useCallback(async () => {
-    const spots = await getAllUserSpots();
-    setUserSpots(spots.map(userSpotToPin));
-  }, []);
-
+  // Firestore から全スポット取得（初回のみ）
   useEffect(() => {
-    setSeedSpots(filterByCC(ADACHI_PARKING, userCC));
-  }, [userCC]);
-
-  useEffect(() => { loadUserSpots(); }, []);
+    fetchAllSpots()
+      .then((spots) => setAllSpotsRaw(spots))
+      .catch((e) => console.warn('[MapScreen] fetchAllSpots error:', e))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -148,7 +130,7 @@ export function MapScreen({ userCC, onOpenMyBike, onChangeCC, focusSpot, onFocus
     }
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     const { latitude, longitude } = loc.coords;
-    const all = [...seedSpots, ...userSpots];
+    const all = filterByCC(allSpotsRaw, userCC);
     if (all.length === 0) return;
     let nearest = all[0];
     let minDist = haversineMeters(latitude, longitude, nearest.latitude, nearest.longitude);
@@ -170,14 +152,22 @@ export function MapScreen({ userCC, onOpenMyBike, onChangeCC, focusSpot, onFocus
     else onOpenMyBike();
   };
 
-  const allSpots = [...seedSpots, ...userSpots];
+  const allSpots = filterByCC(allSpotsRaw, userCC);
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay} pointerEvents="none">
+          <View style={styles.loadingBadge}>
+            <ActivityIndicator size="small" color={SYS_BLUE} />
+            <Text style={styles.loadingText}>スポット読み込み中...</Text>
+          </View>
+        </View>
+      )}
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        initialRegion={ADACHI_CENTER}
+        initialRegion={TOKYO_CENTER}
         showsUserLocation={locationGranted}
         showsMyLocationButton={false}
         showsCompass={false}
@@ -286,4 +276,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
+  loadingOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'flex-end',
+    paddingBottom: 120, zIndex: 10,
+  },
+  loadingBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(28,28,30,0.92)',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20,
+  },
+  loadingText: { color: '#AEAEB2', fontSize: 12 },
 });

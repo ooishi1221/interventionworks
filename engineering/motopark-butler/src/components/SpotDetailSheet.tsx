@@ -33,11 +33,13 @@ import {
   addFavorite,
   removeFavorite,
   getAllFavorites,
-  insertReview,
-  getReviews,
-  getReviewSummary,
-  deleteReview,
 } from '../db/database';
+import {
+  addReview,
+  fetchReviews,
+  fetchReviewSummary,
+  deleteReviewFromFirestore,
+} from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 
 const { height: SCREEN_H } = Dimensions.get('window');
@@ -118,8 +120,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     setReviewsLoading(true);
     const [favs, s, r] = await Promise.all([
       getAllFavorites(),
-      getReviewSummary(spot.id, src),
-      getReviews(spot.id, src, sortOrder),
+      fetchReviewSummary(spot.id),
+      fetchReviews(spot.id, sortOrder),
     ]);
     setIsFav(favs.some((f) => f.spotId === spot.id && f.source === src));
     setSummary(s);
@@ -197,9 +199,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     if (newScore === 0) { Alert.alert('星評価を選んでください'); return; }
     setSubmitting(true);
     try {
-      await insertReview(
+      await addReview(
         spot.id,
-        spot.source as 'seed' | 'user',
         newScore,
         newComment.trim() || undefined,
         newPhoto ?? undefined
@@ -218,7 +219,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     Alert.alert('レビューを削除', 'このレビューを削除しますか？', [
       { text: 'キャンセル', style: 'cancel' },
       { text: '削除', style: 'destructive', onPress: async () => {
-          await deleteReview(review.id);
+          if (review.firestoreId) {
+            await deleteReviewFromFirestore(review.firestoreId);
+          }
           await loadAll();
         }},
     ]);

@@ -17,6 +17,7 @@ import * as Location from 'expo-location';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { MaxCC, UserSpot } from '../types';
 import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot } from '../db/database';
+import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
 
 const MAX_CC_OPTIONS: { value: MaxCC; label: string }[] = [
   { value: null, label: '制限なし' },
@@ -123,9 +124,17 @@ export function ParkedScreen() {
     try {
       if (editingId !== null) {
         await updateUserSpot(editingId, spotData);
+        // Firestore にも同期（ベストエフォート）
+        addUserSpotToFirestore(editingId, spotData).catch((e) =>
+          console.warn('[ParkedScreen] Firestore update failed:', e)
+        );
         Alert.alert('更新完了', '駐輪場情報を更新しました。');
       } else {
-        await insertUserSpot(spotData);
+        const localId = await insertUserSpot(spotData);
+        // Firestore にも同期（ベストエフォート）
+        addUserSpotToFirestore(localId, spotData).catch((e) =>
+          console.warn('[ParkedScreen] Firestore insert failed:', e)
+        );
         Alert.alert('登録完了', '駐輪場を登録しました。地図に表示されます。');
       }
       await loadUserSpots();
@@ -144,6 +153,10 @@ export function ParkedScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteUserSpot(spot.id);
+          // Firestore からも削除（ベストエフォート）
+          deleteUserSpotFromFirestore(spot.id).catch((e) =>
+            console.warn('[ParkedScreen] Firestore delete failed:', e)
+          );
           await loadUserSpots();
         },
       },
