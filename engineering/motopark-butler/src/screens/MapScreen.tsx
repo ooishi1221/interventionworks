@@ -13,6 +13,7 @@ import {
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, UserSpot } from '../types';
 import { ADACHI_PARKING, filterByCC } from '../data/adachi-parking';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
@@ -32,19 +33,26 @@ const ADACHI_CENTER: Region = {
   longitudeDelta: 0.08,
 };
 
-const CC_OPTIONS: { value: UserCC; label: string; sub: string }[] = [
-  { value: 50,  label: '原付',    sub: '50cc以下' },
-  { value: 125, label: '125cc',   sub: '小型二輪' },
-  { value: 250, label: '250cc',   sub: '軽二輪' },
-  { value: 400, label: '400cc〜', sub: '普通二輪+' },
+const CC_SEGMENTS: { value: UserCC; label: string }[] = [
+  { value: 50,  label: '原付'   },
+  { value: 125, label: '125cc' },
+  { value: 250, label: '250cc' },
+  { value: 400, label: '400cc+' },
 ];
 
+// iOS dark mode system colors
+const SYS_BLUE   = '#0A84FF';
+const SYS_GRAY   = '#636366';
+const FAB_BG     = 'rgba(44,44,46,0.92)';
+const SEG_BG     = 'rgba(44,44,46,0.90)';
+const SEG_ACTIVE = 'rgba(255,255,255,0.16)';
+
 function markerColor(spot: ParkingPin): string {
-  if (spot.source === 'user') return '#9C27B0';
-  if (spot.maxCC === null) return Colors.accent;
-  if (spot.maxCC >= 250)   return '#4CAF50';
-  if (spot.maxCC >= 125)   return '#2196F3';
-  return '#9E9E9E';
+  if (spot.source === 'user') return '#BF5AF2';
+  if (spot.maxCC === null)    return SYS_BLUE;
+  if (spot.maxCC >= 250)     return '#30D158';
+  if (spot.maxCC >= 125)     return '#0A84FF';
+  return '#8E8E93';
 }
 
 function ccLabel(maxCC: number | null): string {
@@ -74,26 +82,29 @@ function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number)
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 interface Props {
   userCC: UserCC;
   onOpenMyBike: () => void;
+  onChangeCC?: (cc: UserCC) => void;
   focusSpot?: ParkingPin | null;
   onFocusConsumed?: () => void;
 }
 
-export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: Props) {
+export function MapScreen({ userCC, onOpenMyBike, onChangeCC, focusSpot, onFocusConsumed }: Props) {
   const mapRef = useRef<MapView>(null);
-  const [seedSpots, setSeedSpots] = useState<ParkingPin[]>([]);
-  const [userSpots, setUserSpots] = useState<ParkingPin[]>([]);
-  const [selected, setSelected] = useState<ParkingPin | null>(null);
+  const [seedSpots, setSeedSpots]         = useState<ParkingPin[]>([]);
+  const [userSpots, setUserSpots]         = useState<ParkingPin[]>([]);
+  const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [favLoading, setFavLoading] = useState(false);
-  const [myRating, setMyRating] = useState<number | null>(null);
+  const [favoriteIds, setFavoriteIds]     = useState<Set<string>>(new Set());
+  const [favLoading, setFavLoading]       = useState(false);
+  const [myRating, setMyRating]           = useState<number | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
 
   const loadFavorites = useCallback(async () => {
@@ -131,19 +142,21 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
     })();
   }, []);
 
-  // お気に入りからのジャンプ
+  // お気に入りからのジャンプ（修正済み：タイマーキャンセルバグを解消）
   useEffect(() => {
     if (!focusSpot) return;
+    const spot = focusSpot; // クロージャでキャプチャしてから親のstateをリセット可能にする
     const timer = setTimeout(() => {
       mapRef.current?.animateToRegion({
-        latitude: focusSpot.latitude,
-        longitude: focusSpot.longitude,
+        latitude: spot.latitude,
+        longitude: spot.longitude,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       }, 800);
-      setTimeout(() => setSelected(focusSpot), 900);
+      setTimeout(() => setSelected(spot), 900);
+      // タイマー起動後に呼ぶことで、クリーンアップによるタイマーキャンセルを防ぐ
+      onFocusConsumed?.();
     }, 400);
-    onFocusConsumed?.();
     return () => clearTimeout(timer);
   }, [focusSpot]);
 
@@ -191,30 +204,37 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
   };
 
   const openGoogleMaps = (spot: ParkingPin) => {
-    const url = Platform.select({
-      ios: `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
-      android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
-    }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`;
-    Linking.openURL(url).catch(() => {
-      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`);
-    });
+    const url =
+      Platform.select({
+        ios:     `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
+        android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
+      }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`;
+    Linking.openURL(url).catch(() =>
+      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}&travelmode=driving`)
+    );
   };
 
-  const openYahooNavi = (spot: ParkingPin) => {
+  const openYahooNavi = async (spot: ParkingPin) => {
     const name = encodeURIComponent(spot.name);
-    const lat = spot.latitude;
-    const lon = spot.longitude;
-    // Yahoo!カーナビ app deep link
-    const deepLink = `yjnavicar://v1/map?lat=${lat}&lon=${lon}&name=${name}`;
-    // Web fallback: Yahoo!カーナビ web (car navigation)
+    const lat  = spot.latitude;
+    const lon  = spot.longitude;
+
+    // 新スキーム（Yahoo!カーナビ最新版）→ 旧スキーム → Webフォールバックの順で試行
+    const newDeepLink = `ynavigation://v1/route?lat=${lat}&lon=${lon}&name=${name}&type=drive`;
+    const oldDeepLink = `yjnavicar://v1/map?lat=${lat}&lon=${lon}&name=${name}`;
     const webFallback = `https://map.yahoo.co.jp/app/navi?lat=${lat}&lon=${lon}&name=${name}`;
-    Linking.canOpenURL(deepLink)
-      .then((supported) => {
-        Linking.openURL(supported ? deepLink : webFallback).catch(() =>
-          Linking.openURL(webFallback)
-        );
-      })
-      .catch(() => Linking.openURL(webFallback));
+
+    try {
+      if (await Linking.canOpenURL(newDeepLink)) {
+        await Linking.openURL(newDeepLink);
+        return;
+      }
+      if (await Linking.canOpenURL(oldDeepLink)) {
+        await Linking.openURL(oldDeepLink);
+        return;
+      }
+    } catch {}
+    Linking.openURL(webFallback).catch(() => {});
   };
 
   const copyAddress = async (spot: ParkingPin) => {
@@ -258,7 +278,14 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
     setRatingLoading(false);
   };
 
-  const currentOption = CC_OPTIONS.find((o) => o.value === userCC)!;
+  const handleSegmentPress = (value: UserCC) => {
+    if (onChangeCC) {
+      onChangeCC(value);
+    } else {
+      onOpenMyBike();
+    }
+  };
+
   const allSpots = [...seedSpots, ...userSpots];
 
   return (
@@ -278,42 +305,43 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
             onPress={() => setSelected(spot)}
           >
             <View style={[styles.pin, { backgroundColor: markerColor(spot) }]}>
-              <Text style={styles.pinText}>{spot.source === 'user' ? '★' : '🅿'}</Text>
+              <Text style={styles.pinText}>{spot.source === 'user' ? '★' : 'P'}</Text>
             </View>
           </Marker>
         ))}
       </MapView>
 
-      {/* フィルター */}
+      {/* セグメントコントロール（CC フィルター） */}
       <SafeAreaView pointerEvents="box-none" style={styles.topOverlay}>
-        <View style={styles.filterBar}>
-          <View style={styles.filterInfo}>
-            <Text style={styles.filterLabel}>
-              {currentOption.label}
-              <Text style={styles.filterSub}> ({currentOption.sub})</Text>
-            </Text>
-            <Text style={styles.filterCount}>{allSpots.length}件表示中</Text>
+        <View style={styles.segmentedWrapper}>
+          <View style={styles.segmentedControl}>
+            {CC_SEGMENTS.map((seg) => {
+              const isActive = userCC === seg.value;
+              return (
+                <TouchableOpacity
+                  key={seg.value}
+                  style={[styles.segment, isActive && styles.segmentActive]}
+                  onPress={() => handleSegmentPress(seg.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                    {seg.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-          <TouchableOpacity style={styles.filterChangeBtn} onPress={onOpenMyBike}>
-            <Text style={styles.filterChangeBtnText}>変更</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.legend}>
-          <LegendDot color={Colors.accent} label="制限なし" />
-          <LegendDot color="#4CAF50"       label="〜250cc" />
-          <LegendDot color="#2196F3"       label="〜125cc" />
-          <LegendDot color="#9E9E9E"       label="原付のみ" />
-          <LegendDot color="#9C27B0"       label="登録" />
+          <Text style={styles.spotCount}>{allSpots.length}件</Text>
         </View>
       </SafeAreaView>
 
-      {/* FABs */}
+      {/* FABs — Apple Maps 風 */}
       <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.fab} onPress={goToNearestSpot}>
-          <Text style={styles.fabIcon}>🎯</Text>
+        <TouchableOpacity style={styles.fab} onPress={goToNearestSpot} activeOpacity={0.8}>
+          <Ionicons name="locate" size={22} color={SYS_BLUE} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={goToCurrentLocation}>
-          <Text style={styles.fabIcon}>◎</Text>
+        <TouchableOpacity style={styles.fab} onPress={goToCurrentLocation} activeOpacity={0.8}>
+          <Ionicons name="navigate" size={20} color={SYS_BLUE} />
         </TouchableOpacity>
       </View>
 
@@ -340,15 +368,17 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
                   onPress={() => toggleFavorite(selected)}
                   disabled={favLoading}
                 >
-                  <Text style={styles.favBtnIcon}>
-                    {favoriteIds.has(`${selected.source}_${selected.id}`) ? '♥' : '♡'}
-                  </Text>
+                  <Ionicons
+                    name={favoriteIds.has(`${selected.source}_${selected.id}`) ? 'heart' : 'heart-outline'}
+                    size={26}
+                    color="#FF375F"
+                  />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.sheetBadgeRow}>
                 {selected.source === 'user' && (
-                  <View style={[styles.sheetBadge, { backgroundColor: '#9C27B0' }]}>
+                  <View style={[styles.sheetBadge, { backgroundColor: '#BF5AF2' }]}>
                     <Text style={styles.sheetBadgeText}>ユーザー登録</Text>
                   </View>
                 )}
@@ -356,7 +386,7 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
                   <Text style={styles.sheetBadgeText}>{ccLabel(selected.maxCC)}</Text>
                 </View>
                 {selected.isFree === true && (
-                  <View style={[styles.sheetBadge, { backgroundColor: Colors.success }]}>
+                  <View style={[styles.sheetBadge, { backgroundColor: '#30D158' }]}>
                     <Text style={styles.sheetBadgeText}>無料</Text>
                   </View>
                 )}
@@ -391,7 +421,8 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
                 onPress={() => handleNavigation(selected)}
                 activeOpacity={0.85}
               >
-                <Text style={styles.navBtnText}>案内開始 →</Text>
+                <Ionicons name="navigate" size={18} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.navBtnText}>案内開始</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.closeBtn} onPress={() => setSelected(null)}>
@@ -401,15 +432,6 @@ export function MapScreen({ userCC, onOpenMyBike, focusSpot, onFocusConsumed }: 
           </TouchableOpacity>
         </Modal>
       )}
-    </View>
-  );
-}
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
 }
@@ -432,9 +454,11 @@ function StarRating({
           activeOpacity={0.7}
           style={starStyles.starBtn}
         >
-          <Text style={[starStyles.star, value !== null && star <= value && starStyles.starFilled]}>
-            {value !== null && star <= value ? '★' : '☆'}
-          </Text>
+          <Ionicons
+            name={value !== null && star <= value ? 'star' : 'star-outline'}
+            size={28}
+            color={value !== null && star <= value ? '#FFD60A' : Colors.border}
+          />
         </TouchableOpacity>
       ))}
     </View>
@@ -442,154 +466,153 @@ function StarRating({
 }
 
 const starStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  starBtn: {
-    padding: 4,
-  },
-  star: {
-    fontSize: 28,
-    color: Colors.border,
-  },
-  starFilled: {
-    color: '#FFB300',
-  },
+  row:     { flexDirection: 'row', gap: 4 },
+  starBtn: { padding: 4 },
 });
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  // セグメントコントロール
   topOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    gap: Spacing.xs,
-    padding: Spacing.md,
-  },
-  filterBar: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
+    paddingTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  segmentedWrapper: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: SEG_BG,
+    borderRadius: 10,
+    padding: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  filterInfo: { flex: 1 },
-  filterLabel: { color: Colors.accent, fontSize: FontSize.md, fontWeight: '700' },
-  filterSub: { color: Colors.textSecondary, fontSize: FontSize.sm, fontWeight: '400' },
-  filterCount: { color: Colors.textSecondary, fontSize: FontSize.xs },
-  filterChangeBtn: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+  segment: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  filterChangeBtnText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: '700' },
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    backgroundColor: 'rgba(13,13,13,0.85)',
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    gap: Spacing.sm,
-    alignSelf: 'flex-start',
+  segmentActive: {
+    backgroundColor: SEG_ACTIVE,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { color: Colors.textSecondary, fontSize: 10 },
+  segmentText: {
+    color: SYS_GRAY,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  segmentTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  spotCount: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+  },
+
+  // FAB
   fabContainer: {
     position: 'absolute',
-    right: Spacing.lg,
+    right: Spacing.md,
     bottom: 100,
     gap: Spacing.sm,
   },
   fab: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.background,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: FAB_BG,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  fabIcon: { color: Colors.accent, fontSize: 22 },
+
+  // マーカー
   pin: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.8)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowRadius: 3,
+    elevation: 4,
   },
-  pinText: { fontSize: 16 },
+  pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
+
+  // モーダルシート
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
-    backgroundColor: Colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: Spacing.lg,
     paddingBottom: Spacing.xxl,
     gap: Spacing.md,
   },
   sheetHandle: {
-    width: 40,
+    width: 36,
     height: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   sheetTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sheetName: { color: Colors.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1 },
-  favBtn: { padding: Spacing.sm },
-  favBtnIcon: { fontSize: 28, color: '#E91E63' },
+  sheetName: { color: '#F5F5F5', fontSize: FontSize.lg, fontWeight: '700', flex: 1 },
+  favBtn:    { padding: Spacing.sm },
   sheetBadgeRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-  sheetBadge: { paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: BorderRadius.full },
-  sheetBadgeMuted: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  sheetBadgeText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: '700' },
-  sheetBadgeTextMuted: { color: Colors.textSecondary, fontSize: FontSize.sm },
-  sheetMeta: { color: Colors.textSecondary, fontSize: FontSize.sm },
-  ratingSection: { gap: Spacing.xs },
-  ratingLabel: { color: Colors.textSecondary, fontSize: FontSize.sm },
+  sheetBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  sheetBadgeMuted: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  sheetBadgeText:     { color: '#fff', fontSize: FontSize.sm, fontWeight: '600' },
+  sheetBadgeTextMuted:{ color: '#8E8E93', fontSize: FontSize.sm },
+  sheetMeta:          { color: '#8E8E93', fontSize: FontSize.sm },
+  ratingSection:      { gap: Spacing.xs },
+  ratingLabel:        { color: '#8E8E93', fontSize: FontSize.sm },
   navBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: SYS_BLUE,
+    borderRadius: 14,
     paddingVertical: Spacing.md,
     alignItems: 'center',
-    marginTop: Spacing.sm,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: Spacing.xs,
   },
-  navBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: '700' },
-  closeBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
-  closeBtnText: { color: Colors.textSecondary, fontSize: FontSize.sm },
+  navBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+  closeBtn:   { alignItems: 'center', paddingVertical: Spacing.sm },
+  closeBtnText: { color: '#8E8E93', fontSize: FontSize.sm },
 });

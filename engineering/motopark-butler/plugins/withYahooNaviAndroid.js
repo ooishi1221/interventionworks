@@ -12,19 +12,21 @@ module.exports = function withYahooNaviAndroid(config) {
       manifest.queries = [];
     }
 
-    const alreadyAdded = manifest.queries.some(
-      (q) => q?.intent?.[0]?.data?.[0]?.['$']?.['android:scheme'] === 'yjnavicar'
-    );
-
-    if (!alreadyAdded) {
-      manifest.queries.push({
-        intent: [
-          {
-            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
-            data: [{ $: { 'android:scheme': 'yjnavicar' } }],
-          },
-        ],
-      });
+    const schemes = ['yjnavicar', 'ynavigation'];
+    for (const scheme of schemes) {
+      const alreadyAdded = manifest.queries.some(
+        (q) => q?.intent?.[0]?.data?.[0]?.['$']?.['android:scheme'] === scheme
+      );
+      if (!alreadyAdded) {
+        manifest.queries.push({
+          intent: [
+            {
+              action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+              data: [{ $: { 'android:scheme': scheme } }],
+            },
+          ],
+        });
+      }
     }
 
     return config;

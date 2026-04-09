@@ -6,35 +6,50 @@ import {
   View,
   TouchableOpacity,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen } from './src/screens/MapScreen';
 import { MyBikeScreen } from './src/screens/MyBikeScreen';
 import { ParkedScreen } from './src/screens/ParkedScreen';
 import { FavoritesScreen } from './src/screens/FavoritesScreen';
-import { Colors, FontSize, Spacing } from './src/constants/theme';
+import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
+
+// iOS dark mode system colors
+const SYS_BLUE    = '#0A84FF';
+const SYS_GRAY    = '#636366';
+const TAB_BG      = '#1C1C1E';
+const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
 type Tab = 'map' | 'favorites' | 'register' | 'myBike';
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'map',       label: '駐輪場を探す', icon: '🅿️' },
-  { id: 'favorites', label: 'お気に入り',   icon: '♥'  },
-  { id: 'register',  label: '登録',         icon: '＋' },
-  { id: 'myBike',    label: 'マイバイク',   icon: '🏍️' },
+interface TabDef {
+  id: Tab;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconActive: keyof typeof Ionicons.glyphMap;
+}
+
+const TABS: TabDef[] = [
+  { id: 'map',       label: '探す',      icon: 'map-outline',          iconActive: 'map'          },
+  { id: 'favorites', label: 'お気に入り', icon: 'heart-outline',        iconActive: 'heart'        },
+  { id: 'register',  label: '新規登録',  icon: 'add-circle-outline',   iconActive: 'add-circle'   },
+  { id: 'myBike',    label: 'マイバイク', icon: 'bicycle-outline',      iconActive: 'bicycle'      },
 ];
 
 export default function App() {
   const { status, error } = useDatabase();
-  const [tab, setTab] = useState<Tab>('map');
+  const [tab, setTab]       = useState<Tab>('map');
   const [userCC, setUserCC] = useState<UserCC>(400);
   const [focusSpot, setFocusSpot] = useState<ParkingPin | null>(null);
 
   if (status === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.accent} />
+        <ActivityIndicator size="large" color={SYS_BLUE} />
         <Text style={styles.loadingText}>起動中...</Text>
       </View>
     );
@@ -43,7 +58,7 @@ export default function App() {
   if (status === 'error') {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>⚠️ 起動エラー</Text>
+        <Text style={styles.errorText}>起動エラー</Text>
         <Text style={styles.errorDetail}>{error?.message}</Text>
       </View>
     );
@@ -63,6 +78,7 @@ export default function App() {
           <MapScreen
             userCC={userCC}
             onOpenMyBike={() => setTab('myBike')}
+            onChangeCC={(cc) => setUserCC(cc)}
             focusSpot={focusSpot}
             onFocusConsumed={() => setFocusSpot(null)}
           />
@@ -89,27 +105,21 @@ export default function App() {
         <View style={styles.tabBar}>
           {TABS.map((t) => {
             const isActive = tab === t.id;
-            const isFav = t.id === 'favorites';
             return (
               <TouchableOpacity
                 key={t.id}
                 style={styles.tabItem}
                 onPress={() => setTab(t.id)}
-                activeOpacity={0.7}
+                activeOpacity={0.6}
               >
-                <Text
-                  style={[
-                    styles.tabIcon,
-                    isFav && isActive  && styles.tabIconFavActive,
-                    isFav && !isActive && styles.tabIconFavInactive,
-                  ]}
-                >
-                  {t.icon}
-                </Text>
+                <Ionicons
+                  name={isActive ? t.iconActive : t.icon}
+                  size={24}
+                  color={isActive ? SYS_BLUE : SYS_GRAY}
+                />
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                   {t.label}
                 </Text>
-                {isActive && <View style={styles.tabIndicator} />}
               </TouchableOpacity>
             );
           })}
@@ -120,48 +130,38 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
+  root: { flex: 1, backgroundColor: '#000' },
   content: { flex: 1 },
   center: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.md,
   },
-  loadingText: { color: Colors.textSecondary, fontSize: FontSize.md },
-  errorText: { color: Colors.danger, fontSize: FontSize.lg, fontWeight: 'bold' },
-  errorDetail: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    paddingHorizontal: Spacing.lg,
-    textAlign: 'center',
-  },
+  loadingText:  { color: SYS_GRAY,   fontSize: FontSize.md },
+  errorText:    { color: '#FF453A',  fontSize: FontSize.lg, fontWeight: '700' },
+  errorDetail:  { color: SYS_GRAY,   fontSize: FontSize.sm, paddingHorizontal: Spacing.lg, textAlign: 'center' },
   tabBarWrapper: {
-    backgroundColor: Colors.card,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    backgroundColor: TAB_BG,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: TAB_BORDER,
   },
-  tabBar: { flexDirection: 'row', height: 64 },
+  tabBar: { flexDirection: 'row', height: Platform.OS === 'android' ? 56 : 52 },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    position: 'relative',
+    gap: 3,
   },
-  tabIcon: { fontSize: 22 },
-  tabIconFavActive:   { fontSize: 22, color: '#E91E63' },
-  tabIconFavInactive: { fontSize: 22, color: Colors.textSecondary },
-  tabLabel: { fontSize: 9, color: Colors.textSecondary, fontWeight: '500' },
-  tabLabelActive: { color: Colors.accent, fontWeight: '700' },
-  tabIndicator: {
-    position: 'absolute',
-    top: 0,
-    left: '20%',
-    right: '20%',
-    height: 2,
-    backgroundColor: Colors.accent,
-    borderRadius: 1,
+  tabLabel: {
+    fontSize: 10,
+    color: SYS_GRAY,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
+  tabLabelActive: {
+    color: SYS_BLUE,
+    fontWeight: '600',
   },
 });

@@ -7,45 +7,60 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { UserCC } from '../types';
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+
+const SYS_BLUE    = '#0A84FF';
+const SYS_GRAY    = '#636366';
+const CARD_BG     = '#1C1C1E';
+const CARD_BG_ACTIVE = 'rgba(10,132,255,0.08)';
+const BORDER_DEFAULT = 'rgba(255,255,255,0.10)';
+const BORDER_ACTIVE  = SYS_BLUE;
 
 const CC_OPTIONS: {
   value: UserCC;
   label: string;
   sub: string;
   detail: string;
-  icon: string;
 }[] = [
   {
     value: 50,
     label: '原付',
     sub: '50cc以下',
     detail: '原付のみ可を含む全施設が表示されます',
-    icon: '🛵',
   },
   {
     value: 125,
     label: '125cc',
     sub: '小型二輪',
     detail: '125cc以下可の施設が表示されます',
-    icon: '🏍️',
   },
   {
     value: 250,
     label: '250cc',
     sub: '軽二輪',
     detail: '250cc以下可の施設が表示されます',
-    icon: '🏍️',
   },
   {
     value: 400,
     label: '400cc以上',
     sub: '普通二輪・大型',
     detail: '制限なしの施設のみ表示されます',
-    icon: '🏍️',
   },
 ];
+
+/** 排気量を示すアイコンボックス（線画風・統一感） */
+function CCIcon({ value, active }: { value: UserCC; active: boolean }) {
+  return (
+    <View style={[iconStyles.box, active && iconStyles.boxActive]}>
+      <Text style={[iconStyles.label, active && iconStyles.labelActive]}>
+        {value === 400 ? '400\n+' : String(value)}
+      </Text>
+      <Text style={[iconStyles.unit, active && iconStyles.unitActive]}>cc</Text>
+    </View>
+  );
+}
 
 interface Props {
   userCC: UserCC;
@@ -55,12 +70,13 @@ interface Props {
 export function MyBikeScreen({ userCC, onChangeCC }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>マイバイク設定</Text>
-          <Text style={styles.subtitle}>
-            排気量を選ぶと、地図に表示される駐輪場が絞り込まれます
-          </Text>
+          <Ionicons name="bicycle-outline" size={32} color={SYS_BLUE} />
+          <View>
+            <Text style={styles.title}>マイバイク設定</Text>
+            <Text style={styles.subtitle}>排気量を選ぶと、地図の駐輪場が絞り込まれます</Text>
+          </View>
         </View>
 
         <Text style={styles.sectionLabel}>あなたのバイクの排気量</Text>
@@ -75,14 +91,12 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
                 onPress={() => onChangeCC(opt.value)}
                 activeOpacity={0.75}
               >
-                <Text style={styles.optionIcon}>{opt.icon}</Text>
+                <CCIcon value={opt.value} active={isActive} />
                 <View style={styles.optionText}>
                   <Text style={[styles.optionLabel, isActive && styles.optionLabelActive]}>
                     {opt.label}
                   </Text>
-                  <Text style={[styles.optionSub, isActive && styles.optionSubActive]}>
-                    {opt.sub}
-                  </Text>
+                  <Text style={styles.optionSub}>{opt.sub}</Text>
                 </View>
                 <View style={[styles.radio, isActive && styles.radioActive]}>
                   {isActive && <View style={styles.radioDot} />}
@@ -98,68 +112,58 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
             const opt = CC_OPTIONS.find((o) => o.value === userCC)!;
             return (
               <>
-                <Text style={styles.infoCC}>
-                  {opt.icon} {opt.label}（{opt.sub}）
-                </Text>
+                <Text style={styles.infoCC}>{opt.label}（{opt.sub}）</Text>
                 <Text style={styles.infoDetail}>{opt.detail}</Text>
               </>
             );
           })()}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function LegendRow({
-  color,
-  label,
-  detail,
-}: {
-  color: string;
-  label: string;
-  detail: string;
-}) {
-  return (
-    <View style={legendStyles.row}>
-      <View style={[legendStyles.dot, { backgroundColor: color }]} />
-      <View>
-        <Text style={legendStyles.label}>{label}</Text>
-        <Text style={legendStyles.detail}>{detail}</Text>
-      </View>
-    </View>
-  );
-}
-
-const legendStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
+const iconStyles = StyleSheet.create({
+  box: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: BORDER_DEFAULT,
     alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  dot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     flexShrink: 0,
   },
-  label: {
-    color: Colors.text,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+  boxActive: {
+    borderColor: SYS_BLUE,
+    backgroundColor: 'rgba(10,132,255,0.15)',
   },
-  detail: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
+  label: {
+    color: SYS_GRAY,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 15,
+    letterSpacing: -0.5,
+  },
+  labelActive: {
+    color: SYS_BLUE,
+  },
+  unit: {
+    color: SYS_GRAY,
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  unitActive: {
+    color: SYS_BLUE,
   },
 });
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#000',
   },
   container: {
     padding: Spacing.lg,
@@ -167,22 +171,24 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   header: {
-    gap: Spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     paddingTop: Spacing.md,
   },
   title: {
-    color: Colors.text,
+    color: '#F5F5F5',
     fontSize: FontSize.xl,
     fontWeight: '700',
   },
   subtitle: {
-    color: Colors.textSecondary,
+    color: SYS_GRAY,
     fontSize: FontSize.sm,
-    lineHeight: 20,
+    marginTop: 2,
   },
   sectionLabel: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
+    color: SYS_GRAY,
+    fontSize: FontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -190,101 +196,80 @@ const styles = StyleSheet.create({
   optionList: {
     gap: Spacing.sm,
   },
-  // グローブ対応：最小タップ高 80px
   optionBtn: {
-    minHeight: 80,
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
+    minHeight: 72,
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     gap: Spacing.md,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: BORDER_DEFAULT,
   },
   optionBtnActive: {
-    backgroundColor: 'rgba(255,107,0,0.12)',
-    borderColor: Colors.accent,
-  },
-  optionIcon: {
-    fontSize: 28,
-    width: 36,
-    textAlign: 'center',
+    backgroundColor: CARD_BG_ACTIVE,
+    borderColor: BORDER_ACTIVE,
+    borderWidth: 1,
   },
   optionText: {
     flex: 1,
     gap: 2,
   },
   optionLabel: {
-    color: Colors.text,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    color: '#F5F5F5',
+    fontSize: FontSize.md,
+    fontWeight: '600',
   },
   optionLabelActive: {
-    color: Colors.accent,
+    color: SYS_BLUE,
   },
   optionSub: {
-    color: Colors.textSecondary,
+    color: SYS_GRAY,
     fontSize: FontSize.sm,
   },
-  optionSubActive: {
-    color: Colors.accentLight,
-  },
   radio: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: Colors.border,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   radioActive: {
-    borderColor: Colors.accent,
+    borderColor: SYS_BLUE,
+    borderWidth: 1.5,
   },
   radioDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.accent,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: SYS_BLUE,
   },
   infoCard: {
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
     padding: Spacing.lg,
     gap: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.accent,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(10,132,255,0.35)',
   },
   infoTitle: {
-    color: Colors.textSecondary,
+    color: SYS_GRAY,
     fontSize: FontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   infoCC: {
-    color: Colors.accent,
+    color: SYS_BLUE,
     fontSize: FontSize.lg,
     fontWeight: '700',
   },
   infoDetail: {
-    color: Colors.textSecondary,
+    color: SYS_GRAY,
     fontSize: FontSize.sm,
-  },
-  legendCard: {
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  legendTitle: {
-    color: Colors.text,
-    fontSize: FontSize.md,
-    fontWeight: '700',
-    marginBottom: Spacing.xs,
   },
 });
