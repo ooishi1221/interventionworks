@@ -11,6 +11,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Alert,
   Modal,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -57,13 +58,81 @@ function calcRank(total: number) {
   return { name: 'ルーキー', color: C.green, icon: 'person' as const, next: 'ライダー (5件)', progress: total / 5 };
 }
 
+// ─── 次の目標カード ──────────────────────────────────
+function NextGoalCard({ contribution, rank }: { contribution: number; rank: { name: string; color: string; next: string; progress: number } }) {
+  if (!rank.next) {
+    return (
+      <View style={[styles.goalCard, { borderColor: `${rank.color}44` }]}>
+        <Ionicons name="trophy" size={24} color={rank.color} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.goalTitle, { color: rank.color }]}>最高ランク達成!</Text>
+          <Text style={styles.goalSub}>あなたは地図の守護者です。これからも仲間を支えよう。</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const GOALS = [
+    { rank: 'ライダー', threshold: 5, icon: 'bicycle' as const },
+    { rank: 'パトロール', threshold: 20, icon: 'shield-checkmark' as const },
+  ];
+  const nextGoal = GOALS.find((g) => g.rank === rank.next.split(' ')[0]) ?? GOALS[0];
+  const remaining = nextGoal.threshold - contribution;
+
+  return (
+    <View style={[styles.goalCard, { borderColor: `${rank.color}44` }]}>
+      <Ionicons name={nextGoal.icon} size={22} color={rank.color} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.goalTitle}>
+          あと <Text style={{ color: rank.color, fontWeight: '800' }}>{remaining}件</Text> の貢献で
+          <Text style={{ color: rank.color }}> {nextGoal.rank}</Text> に昇格!
+        </Text>
+        <View style={styles.goalBar}>
+          <View style={[styles.goalFill, { width: `${Math.min(rank.progress * 100, 100)}%`, backgroundColor: rank.color }]} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── 最近の活動タイムライン ───────────────────────────
+function RecentActivity({ spots, reviews, reports }: { spots: number; reviews: number; reports: number }) {
+  // 実際のタイムラインデータがないので、スタッツから簡易的に生成
+  const items: { icon: keyof typeof Ionicons.glyphMap; color: string; text: string }[] = [];
+
+  if (spots > 0) items.push({ icon: 'location', color: C.purple, text: `${spots}件のスポットを共有しました` });
+  if (reviews > 0) items.push({ icon: 'chatbubble', color: C.blue, text: `${reviews}件の口コミを投稿しました` });
+  if (reports > 0) items.push({ icon: 'checkmark-circle', color: C.green, text: `${reports}回の確認報告をしました` });
+
+  if (items.length === 0) {
+    items.push({ icon: 'flag', color: C.orange, text: 'マップでスポットを共有して\nあなたの活動を始めよう' });
+  }
+
+  return (
+    <View style={styles.activitySection}>
+      <Text style={styles.sectionTitle}>あなたの活動</Text>
+      {items.map((item, i) => (
+        <View key={i} style={styles.activityItem}>
+          <View style={[styles.activityDot, { backgroundColor: item.color }]}>
+            <Ionicons name={item.icon} size={14} color="#fff" />
+          </View>
+          {i < items.length - 1 && <View style={styles.activityLine} />}
+          <Text style={styles.activityText}>{item.text}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 interface Props {
   onGoToSpot?: (spot: ParkingPin) => void;
   onDataChanged?: () => void;
   onStartTutorial?: () => void;
+  nickname?: string;
+  onChangeNickname?: (name: string) => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial }: Props) {
+export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickname, onChangeNickname }: Props) {
   const [stats, setStats] = useState<RiderStats>({ spotsShared: 0, reviews: 0, reports: 0, favorites: 0, areas: 0, helpedRiders: 0 });
   const [favModalOpen, setFavModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,13 +198,26 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial }: Prop
         }
       >
 
-        {/* ── ヘッダー ─────────────────────────────── */}
+        {/* ── ヘッダー（ニックネーム + ランクアイコン） ── */}
         <View style={styles.header}>
           <View style={[styles.avatarCircle, { borderColor: `${rank.color}55` }]}>
             <MaterialCommunityIcons name="motorbike" size={36} color={rank.color} />
           </View>
-          <Text style={styles.title}>Moto-Logos</Text>
-          <Text style={styles.subtitle}>Riders' Collective Map</Text>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.prompt?.(
+                'ニックネーム変更',
+                '新しいニックネームを入力',
+                (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
+                'plain-text',
+                nickname ?? '',
+              ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.title}>{nickname || 'ライダー'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.subtitle}>{rank.name} — Moto-Logos</Text>
         </View>
 
         {/* ── ランクカード ──────────────────────────── */}
@@ -180,32 +262,11 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial }: Prop
           ))}
         </View>
 
-        {/* ── コンセプト ───────────────────────────── */}
-        <View style={styles.conceptCard}>
-          <Text style={styles.conceptTitle}>一人の発見を、全ライダーの安心に。</Text>
-          <Text style={styles.conceptBody}>
-            あなたが共有したスポットは、次にここを訪れる仲間のライダーを救います。{'\n'}
-            走れば走るほど、地図は育つ。みんなで創る集合知地図。
-          </Text>
-        </View>
+        {/* ── 次の目標 ──────────────────────────────── */}
+        <NextGoalCard contribution={contribution} rank={rank} />
 
-        {/* ── ランクシステム ────────────────────────── */}
-        <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>ランクシステム</Text>
-          {[
-            { name: 'ルーキー',     desc: 'はじめの一歩',       req: '0件〜', color: C.green,  icon: 'person' as const },
-            { name: 'ライダー',     desc: '信頼されるレポーター', req: '5件〜', color: C.blue,   icon: 'bicycle' as const },
-            { name: 'パトロール',   desc: '地図の守護者',         req: '20件〜', color: C.orange, icon: 'shield-checkmark' as const },
-          ].map((r) => (
-            <View key={r.name} style={styles.rankItem}>
-              <Ionicons name={r.icon} size={18} color={r.color} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rankItemName, { color: r.color }]}>{r.name}</Text>
-                <Text style={styles.rankItemDesc}>{r.desc} — {r.req}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+        {/* ── 最近の活動 ─────────────────────────────── */}
+        <RecentActivity spots={stats.spotsShared} reviews={stats.reviews} reports={stats.reports} />
 
         {/* ── 使い方を見る ──────────────────────────── */}
         {onStartTutorial && (
@@ -294,30 +355,47 @@ const styles = StyleSheet.create({
   statLabel: { color: C.sub, fontSize: 10, fontWeight: '600' },
   statArrow: { position: 'absolute', top: 8, right: 8 },
 
-  conceptCard: {
+  // 次の目標
+  goalCard: {
     marginTop: 20,
-    backgroundColor: 'rgba(10,132,255,0.08)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: Spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(10,132,255,0.2)',
-    gap: 8,
+    borderWidth: 1,
   },
-  conceptTitle: { color: C.text, fontSize: 15, fontWeight: '700' },
-  conceptBody: { color: C.sub, fontSize: 13, lineHeight: 20 },
+  goalTitle: { color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 22 },
+  goalSub: { color: C.sub, fontSize: 12, marginTop: 4 },
+  goalBar: {
+    height: 5, borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  goalFill: { height: 5, borderRadius: 3 },
 
-  ranksSection: { marginTop: 24, gap: 10 },
-  sectionTitle: { color: C.sub, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  rankItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: C.card,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
+  // 最近の活動
+  activitySection: { marginTop: 24 },
+  sectionTitle: { color: C.sub, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
   },
-  rankItemName: { fontSize: 14, fontWeight: '700' },
-  rankItemDesc: { color: C.sub, fontSize: 11 },
+  activityDot: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  activityLine: {
+    position: 'absolute',
+    left: 13, top: 30,
+    width: 2, height: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  activityText: { color: C.text, fontSize: 14, flex: 1 },
 
   tutorialBtn: {
     flexDirection: 'row',

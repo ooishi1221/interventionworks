@@ -48,6 +48,16 @@ export default function App() {
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const mapScreenRef = useRef<MapScreenHandle>(null);
 
+  // ── ニックネーム ────────────────────────────────────
+  const [nickname, setNickname] = useState<string>('');
+  useEffect(() => {
+    AsyncStorage.getItem('moto_logos_nickname').then((v) => { if (v) setNickname(v); });
+  }, []);
+  const saveNickname = useCallback((name: string) => {
+    setNickname(name);
+    AsyncStorage.setItem('moto_logos_nickname', name);
+  }, []);
+
   // ── チュートリアル ─────────────────────────────────
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialTargets, setTutorialTargets] = useState<Record<string, SpotlightRect>>({});
@@ -128,6 +138,8 @@ export default function App() {
             onGoToSpot={handleGoToSpot}
             onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
             onStartTutorial={startTutorial}
+            nickname={nickname}
+            onChangeNickname={saveNickname}
           />
         )}
       </View>
@@ -169,6 +181,7 @@ export default function App() {
         targets={tutorialTargets}
         userCC={userCC}
         onChangeCC={(cc) => setUserCC(cc)}
+        onSetNickname={saveNickname}
       />
     </GestureHandlerRootView>
   );

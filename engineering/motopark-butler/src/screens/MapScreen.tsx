@@ -257,7 +257,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── 現在地へ移動 ──────────────────────────────────────
   const goToCurrentLocation = async () => {
-    if (!locationGranted) return;
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('位置情報が必要です', '設定から位置情報を許可してください。');
+      return;
+    }
+    setLocationGranted(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
@@ -271,10 +276,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── 最寄りスポット ────────────────────────────────────
   const goToNearestSpot = async () => {
-    if (!locationGranted) {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
       Alert.alert('位置情報が必要です', '設定から位置情報を許可してください。');
       return;
     }
+    setLocationGranted(true);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     const { latitude, longitude } = loc.coords;
     const all = filterByCC(allSpotsRaw, userCC);

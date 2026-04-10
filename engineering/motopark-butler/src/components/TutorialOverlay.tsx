@@ -10,6 +10,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Dimensions,
   Animated,
   Platform,
@@ -38,10 +39,12 @@ interface Props {
   targets: Record<string, SpotlightRect>;
   userCC: UserCC;
   onChangeCC: (cc: UserCC) => void;
+  onSetNickname: (name: string) => void;
 }
 
-export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC }: Props) {
+export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC, onSetNickname }: Props) {
   const [step, setStep] = useState(0);
+  const [nickname, setNickname] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
 
@@ -61,7 +64,7 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
 
   // Step 2: 指アニメーション
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 3) return;
     const runAnim = () => {
       // リセット
       fingerX.setValue(0);
@@ -90,7 +93,7 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
         ]),
         Animated.delay(500),
       ]).start(() => {
-        if (step === 2) runAnim(); // ループ
+        if (step === 3) runAnim(); // ループ
       });
     };
     runAnim();
@@ -98,12 +101,15 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
 
   if (!visible) return null;
 
-  const LAST_STEP = 3;
+  const LAST_STEP = 4;
   const isLast = step === LAST_STEP;
 
   const goNext = () => {
     if (step === 1) {
-      // CC未選択でも進める（デフォルト125）
+      // ニックネーム保存
+      if (nickname.trim()) onSetNickname(nickname.trim());
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else if (step === 2) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,8 +150,33 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
         </Animated.View>
       )}
 
-      {/* ── Step 1: CC 実選択 ─────────────────────── */}
+      {/* ── Step 1: ニックネーム ────────────────────── */}
       {step === 1 && (
+        <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
+          <Ionicons name="person-circle-outline" size={48} color="#0A84FF" />
+          <View style={{ height: 16 }} />
+          <Text style={styles.stepQuestion}>あなたのニックネームは？</Text>
+          <Text style={[styles.stepHint, { marginTop: 6 }]}>口コミやレポートに表示されます</Text>
+          <View style={{ height: 24 }} />
+          <TextInput
+            style={styles.nicknameInput}
+            placeholder="例: ツーリングライダー"
+            placeholderTextColor="#636366"
+            value={nickname}
+            onChangeText={setNickname}
+            maxLength={20}
+            autoFocus
+          />
+          <View style={{ height: 32 }} />
+          <TouchableOpacity style={styles.primaryBtn} onPress={goNext} activeOpacity={0.8}>
+            <Text style={styles.primaryBtnText}>{nickname.trim() ? '次へ' : 'スキップ'}</Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* ── Step 2: CC 実選択 ─────────────────────── */}
+      {step === 2 && (
         <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
           <Text style={styles.stepQuestion}>あなたのバイクは？</Text>
           <View style={{ height: 24 }} />
@@ -180,8 +211,8 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
         </Animated.View>
       )}
 
-      {/* ── Step 2: ラジアル指アニメ ──────────────── */}
-      {step === 2 && (
+      {/* ── Step 3: ラジアル指アニメ ──────────────── */}
+      {step === 3 && (
         <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
           <Text style={styles.stepQuestion}>右下のボタンを長押し</Text>
           <Text style={styles.stepHint}>メニューが展開します</Text>
@@ -229,8 +260,8 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
         </Animated.View>
       )}
 
-      {/* ── Step 3: 完了 ─────────────────────────── */}
-      {step === 3 && (
+      {/* ── Step 4: 完了 ─────────────────────────── */}
+      {step === 4 && (
         <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
           <MaterialCommunityIcons name="motorbike" size={40} color="#30D158" />
           <View style={{ height: 16 }} />
@@ -245,7 +276,7 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
 
       {/* ── ドットインジケーター ──────────────────── */}
       <View style={styles.dots}>
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
         ))}
       </View>
@@ -276,6 +307,19 @@ const styles = StyleSheet.create({
   // ステップ
   stepQuestion: { color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center' },
   stepHint: { color: '#8E8E93', fontSize: 14, marginTop: 6, textAlign: 'center' },
+  nicknameInput: {
+    width: '80%',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    color: '#F2F2F7',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(10,132,255,0.3)',
+  },
 
   // CC グリッド
   ccGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
