@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { UserCC } from '../types';
 import { Spacing, FontSize } from '../constants/theme';
 
@@ -17,22 +17,29 @@ const CARD_BG    = '#1C1C1E';
 const BORDER_DEF = 'rgba(255,255,255,0.08)';
 const BORDER_ACT = SYS_BLUE;
 
-const CC_OPTIONS: {
+// ─── アイコン定義 ───────────────────────────────────────
+type IconDef =
+  | { set: 'ion'; name: keyof typeof Ionicons.glyphMap }
+  | { set: 'mci'; name: string };
+
+interface CCOption {
   value: UserCC;
   label: string;
   sub: string;
   detail: string;
   ccText: string;
-  iconName: keyof typeof Ionicons.glyphMap;
+  icon: IconDef;
   iconColor: string;
-}[] = [
+}
+
+const CC_OPTIONS: CCOption[] = [
   {
     value: 50,
     label: '原付一種',
     sub: '50cc以下',
     detail: '全ての駐輪場（原付専用を含む）が表示されます',
     ccText: '50',
-    iconName: 'bicycle-outline',   // スクーター（最小）
+    icon: { set: 'mci', name: 'moped' },   // 小型モペッド
     iconColor: SYS_GRAY,
   },
   {
@@ -41,7 +48,7 @@ const CC_OPTIONS: {
     sub: '51〜125cc',
     detail: '原付専用を除いた125cc対応以上の駐輪場が表示されます',
     ccText: '125',
-    iconName: 'bicycle',           // スクーター（塗りつぶし）
+    icon: { set: 'mci', name: 'scooter' }, // スクーター
     iconColor: '#30D158',
   },
   {
@@ -50,7 +57,7 @@ const CC_OPTIONS: {
     sub: '126〜400cc',
     detail: '250cc以上対応または制限なしの駐輪場が表示されます',
     ccText: '400',
-    iconName: 'car-sport-outline', // ネイキッド風（大きめ）
+    icon: { set: 'mci', name: 'motorbike' }, // ネイキッドバイク
     iconColor: SYS_BLUE,
   },
   {
@@ -59,11 +66,20 @@ const CC_OPTIONS: {
     sub: '401cc以上',
     detail: '制限なし（大型車OK）の駐輪場のみ表示されます',
     ccText: '∞',
-    iconName: 'car-sport',         // フルカウル風（塗りつぶし）
+    icon: { set: 'mci', name: 'motorbike' }, // 大型バイク（サイズ・グローで差別化）
     iconColor: '#FF9F0A',
   },
 ];
 
+// ─── アイコン描画ヘルパー ────────────────────────────────
+function BikeIcon({ icon, size, color }: { icon: IconDef; size: number; color: string }) {
+  if (icon.set === 'mci') {
+    return <MaterialCommunityIcons name={icon.name as any} size={size} color={color} />;
+  }
+  return <Ionicons name={icon.name} size={size} color={color} />;
+}
+
+// ─── Props ──────────────────────────────────────────────
 interface Props {
   userCC: UserCC;
   onChangeCC: (cc: UserCC) => void;
@@ -79,7 +95,7 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
         {/* ヘッダー */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <Ionicons name="bicycle" size={28} color={SYS_BLUE} />
+            <MaterialCommunityIcons name="scooter" size={28} color={SYS_BLUE} />
           </View>
           <View>
             <Text style={styles.title}>マイバイク設定</Text>
@@ -100,10 +116,10 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
                 onPress={() => onChangeCC(opt.value)}
                 activeOpacity={0.75}
               >
-                {/* バイクアイコン（段階的） */}
+                {/* アイコンボックス */}
                 <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
-                  <Ionicons
-                    name={opt.iconName}
+                  <BikeIcon
+                    icon={opt.icon}
                     size={isActive ? 26 : 22}
                     color={isActive ? opt.iconColor : SYS_GRAY}
                   />
@@ -133,7 +149,7 @@ export function MyBikeScreen({ userCC, onChangeCC }: Props) {
         <View style={[styles.infoCard, { borderColor: `${current.iconColor}55` }]}>
           <Text style={styles.infoTitle}>現在の設定</Text>
           <View style={styles.infoBody}>
-            <Ionicons name={current.iconName} size={22} color={current.iconColor} />
+            <BikeIcon icon={current.icon} size={22} color={current.iconColor} />
             <View>
               <Text style={[styles.infoCC, { color: current.iconColor }]}>
                 {current.label}（{current.sub}）
@@ -166,7 +182,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 1,
   },
 
-  optionList:  { gap: Spacing.sm },
+  optionList: { gap: Spacing.sm },
   optionBtn: {
     minHeight: 72,
     backgroundColor: CARD_BG,
@@ -190,7 +206,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: BORDER_DEF,
-    gap: 0,
     flexShrink: 0,
   },
   iconBoxActive: {
@@ -223,7 +238,7 @@ const styles = StyleSheet.create({
     color: SYS_GRAY, fontSize: 11, fontWeight: '600',
     textTransform: 'uppercase', letterSpacing: 1,
   },
-  infoBody:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
-  infoCC:    { fontSize: FontSize.md, fontWeight: '700' },
-  infoDetail:{ color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
+  infoBody:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
+  infoCC:     { fontSize: FontSize.md, fontWeight: '700' },
+  infoDetail: { color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
 });

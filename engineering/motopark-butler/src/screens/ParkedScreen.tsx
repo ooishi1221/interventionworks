@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,31 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  FlatList,
+  Animated as RNAnimated,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
-import { MaxCC, UserSpot } from '../types';
+import * as Haptics from 'expo-haptics';
+import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { MaxCC, UserSpot, ParkingPin } from '../types';
 import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
+
+// ─── 色定数（Apple Maps 風ダーク） ─────────────────────
+const C = {
+  bg:     '#000000',
+  card:   '#1C1C1E',
+  border: 'rgba(255,255,255,0.10)',
+  text:   '#F2F2F7',
+  sub:    '#8E8E93',
+  blue:   '#0A84FF',
+  red:    '#FF453A',
+  green:  '#30D158',
+  purple: '#BF5AF2',
+  orange: '#FF9F0A',
+};
 
 const MAX_CC_OPTIONS: { value: MaxCC; label: string }[] = [
   { value: null, label: '制限なし' },
@@ -50,16 +69,21 @@ const emptyForm = (): SpotFormState => ({
   address: '',
 });
 
-export function ParkedScreen() {
+interface ParkedScreenProps {
+  onSpotSaved?: () => void;
+  onGoToSpot?: (spot: ParkingPin) => void;
+}
+
+export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
   const [userSpots, setUserSpots] = useState<UserSpot[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [form, setForm] = useState<SpotFormState>(emptyForm());
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const swipeableRefs = useRef<Map<number, Swipeable>>(new Map());
 
-  useEffect(() => {
-    loadUserSpots();
-  }, []);
+  useEffect(() => { loadUserSpots(); }, []);
 
   const loadUserSpots = async () => {
     setUserSpots(await getAllUserSpots());
@@ -124,14 +148,12 @@ export function ParkedScreen() {
     try {
       if (editingId !== null) {
         await updateUserSpot(editingId, spotData);
-        // Firestore にも同期（ベストエフォート）
         addUserSpotToFirestore(editingId, spotData).catch((e) =>
           console.warn('[ParkedScreen] Firestore update failed:', e)
         );
         Alert.alert('更新完了', '駐輪場情報を更新しました。');
       } else {
         const localId = await insertUserSpot(spotData);
-        // Firestore にも同期（ベストエフォート）
         addUserSpotToFirestore(localId, spotData).catch((e) =>
           console.warn('[ParkedScreen] Firestore insert failed:', e)
         );
@@ -139,73 +161,186 @@ export function ParkedScreen() {
       }
       await loadUserSpots();
       setShowForm(false);
+      onSpotSaved?.();
     } catch {
       Alert.alert('エラー', '保存に失敗しました。');
     }
     setFormLoading(false);
   };
 
-  const handleDelete = (spot: UserSpot) => {
+  const handleDelete = async (spot: UserSpot) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert('削除確認', `「${spot.name}」を削除しますか？`, [
-      { text: 'キャンセル', style: 'cancel' },
+      { text: 'キャンセル', style: 'cancel', onPress: () => swipeableRefs.current.get(spot.id)?.close() },
       {
         text: '削除',
         style: 'destructive',
         onPress: async () => {
           await deleteUserSpot(spot.id);
-          // Firestore からも削除（ベストエフォート）
           deleteUserSpotFromFirestore(spot.id).catch((e) =>
             console.warn('[ParkedScreen] Firestore delete failed:', e)
           );
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           await loadUserSpots();
         },
       },
     ]);
   };
 
+  const handleCardPress = (spot: UserSpot) => {
+    if (editMode) {
+      openEditForm(spot);
+      return;
+    }
+    if (!onGoToSpot) return;
+    const pin: ParkingPin = {
+      id: `user_${spot.id}`,
+      name: spot.name,
+      latitude: spot.latitude,
+      longitude: spot.longitude,
+      maxCC: spot.maxCC,
+      isFree: spot.isFree,
+      capacity: spot.capacity ?? null,
+      source: 'user',
+      address: spot.address,
+    };
+    onGoToSpot(pin);
+  };
+
   const setF = (key: keyof SpotFormState, value: any) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.title}>＋ 登録</Text>
-      </View>
+  // ── 左スワイプ（赤・ゴミ箱） ─────────────────────────
+  const renderRightActions = (
+    _progress: RNAnimated.AnimatedInterpolation<number>,
+    dragX: RNAnimated.AnimatedInterpolation<number>,
+    spot: UserSpot,
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-100, -50, 0],
+      outputRange: [1.1, 1, 0.8],
+      extrapolate: 'clamp',
+    });
+    return (
+      <TouchableOpacity
+        style={styles.swipeRight}
+        onPress={() => handleDelete(spot)}
+      >
+        <RNAnimated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+          <Ionicons name="trash" size={24} color="#fff" />
+          <Text style={styles.swipeLabel}>削除</Text>
+        </RNAnimated.View>
+      </TouchableOpacity>
+    );
+  };
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content}>
-
-          {userSpots.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🅿️</Text>
-              <Text style={styles.emptyText}>登録済みの駐輪場はありません</Text>
-              <Text style={styles.emptyHint}>
-                現在地の駐輪場を登録すると地図に表示されます
+  // ── リストアイテム ────────────────────────────────────
+  const renderItem = ({ item: spot }: { item: UserSpot }) => (
+    <Swipeable
+      ref={(ref) => {
+        if (ref) swipeableRefs.current.set(spot.id, ref);
+        else swipeableRefs.current.delete(spot.id);
+      }}
+      renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, spot)}
+      overshootRight={false}
+      friction={2}
+      onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+    >
+      <TouchableOpacity
+        style={[styles.spotCard, editMode && styles.spotCardEdit]}
+        onPress={() => handleCardPress(spot)}
+        activeOpacity={0.75}
+      >
+        <View style={styles.spotMain}>
+          <Text style={styles.spotName} numberOfLines={2}>{spot.name}</Text>
+          <View style={styles.spotBadges}>
+            <View style={[styles.badge, { backgroundColor: C.purple }]}>
+              <Text style={styles.badgeText}>{spot.maxCC ? `〜${spot.maxCC}cc` : '制限なし'}</Text>
+            </View>
+            <View style={[styles.badge, {
+              backgroundColor: spot.isFree ? C.green : 'rgba(255,255,255,0.06)',
+              borderWidth: spot.isFree ? 0 : StyleSheet.hairlineWidth,
+              borderColor: C.border,
+            }]}>
+              <Text style={[styles.badgeText, !spot.isFree && { color: C.sub }]}>
+                {spot.isFree ? '無料' : '有料'}
               </Text>
             </View>
-          ) : (
-            <>
-              <Text style={styles.sectionLabel}>登録済みスポット（{userSpots.length}件）</Text>
-              {userSpots.map((spot) => (
-                <SpotCard
-                  key={spot.id}
-                  spot={spot}
-                  onEdit={() => openEditForm(spot)}
-                  onDelete={() => handleDelete(spot)}
-                />
-              ))}
-            </>
-          )}
+            {spot.capacity != null && (
+              <View style={[styles.badge, { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: C.border }]}>
+                <Text style={[styles.badgeText, { color: C.sub }]}>{spot.capacity}台</Text>
+              </View>
+            )}
+          </View>
+          {spot.address ? <Text style={styles.spotMeta} numberOfLines={1}>{spot.address}</Text> : null}
+          {spot.notes ? <Text style={styles.spotMeta} numberOfLines={1}>{spot.notes}</Text> : null}
+        </View>
+        {editMode ? (
+          <Ionicons name="create-outline" size={18} color={C.blue} style={{ marginLeft: 8 }} />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={C.sub} style={{ marginLeft: 8 }} />
+        )}
+      </TouchableOpacity>
+    </Swipeable>
+  );
 
-          <TouchableOpacity style={styles.addBtn} onPress={openNewForm}>
-            <Text style={styles.addBtnText}>＋ 現在地で駐輪場を登録</Text>
+  return (
+    <SafeAreaView style={styles.safe}>
+      {/* ── ヘッダー ─────────────────────────────────── */}
+      <View style={styles.header}>
+        <Ionicons name="add-circle" size={20} color={C.blue} />
+        <Text style={styles.title}>登録</Text>
+        {userSpots.length > 0 && (
+          <TouchableOpacity
+            style={[styles.editToggle, editMode && styles.editToggleActive]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setEditMode((v) => !v);
+            }}
+          >
+            <Text style={[styles.editToggleText, editMode && styles.editToggleTextActive]}>
+              {editMode ? '完了' : '編集'}
+            </Text>
           </TouchableOpacity>
+        )}
+      </View>
 
-          <View style={{ height: Spacing.xxl }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {userSpots.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="location-outline" size={64} color={C.sub} />
+          <Text style={styles.emptyText}>あなたが見つけたスポットはまだありません</Text>
+          <Text style={styles.emptyHint}>走りながら見つけた「停められる場所」を{'\n'}仲間のために共有しよう</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.hintBar}>
+            <Ionicons name="information-circle-outline" size={14} color={C.sub} />
+            <Text style={styles.hintText}>
+              {editMode ? 'タップして編集 / 左スワイプで削除' : 'タップで地図に移動 / 左スワイプで削除'}
+            </Text>
+          </View>
+          <FlatList
+            data={userSpots}
+            keyExtractor={(s) => String(s.id)}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            style={styles.list}
+            ListHeaderComponent={
+              <Text style={styles.sectionLabel}>登録済みスポット（{userSpots.length}件）</Text>
+            }
+          />
+        </>
+      )}
 
-      {/* 登録/編集フォームモーダル */}
+      {/* ── 追加ボタン ────────────────────────────────── */}
+      <View style={styles.addBtnWrapper}>
+        <TouchableOpacity style={styles.addBtn} onPress={openNewForm} activeOpacity={0.8}>
+          <Ionicons name="add" size={22} color="#fff" />
+          <Text style={styles.addBtnText}>スポットを共有する</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── 登録/編集フォームモーダル ──────────────────── */}
       <Modal
         visible={showForm}
         animationType="slide"
@@ -225,20 +360,25 @@ export function ParkedScreen() {
 
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={styles.formContent}>
-
               <Text style={styles.formLabel}>名称 *</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="例: 北千住駅東口バイク置き場"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={C.sub}
                 value={form.name}
                 onChangeText={(v) => setF('name', v)}
               />
 
               {form.address ? (
-                <Text style={styles.formMeta}>📍 {form.address}</Text>
+                <View style={styles.formMetaRow}>
+                  <Ionicons name="location" size={13} color={C.sub} />
+                  <Text style={styles.formMeta}>{form.address}</Text>
+                </View>
               ) : form.lat !== null ? (
-                <Text style={styles.formMeta}>📍 {form.lat?.toFixed(5)}, {form.lon?.toFixed(5)}</Text>
+                <View style={styles.formMetaRow}>
+                  <Ionicons name="location" size={13} color={C.sub} />
+                  <Text style={styles.formMeta}>{form.lat?.toFixed(5)}, {form.lon?.toFixed(5)}</Text>
+                </View>
               ) : null}
 
               <Text style={styles.formLabel}>最大排気量</Text>
@@ -277,7 +417,7 @@ export function ParkedScreen() {
                   <TextInput
                     style={styles.textInput}
                     placeholder="例: 200"
-                    placeholderTextColor={Colors.textSecondary}
+                    placeholderTextColor={C.sub}
                     keyboardType="numeric"
                     value={form.price}
                     onChangeText={(v) => setF('price', v)}
@@ -289,7 +429,7 @@ export function ParkedScreen() {
               <TextInput
                 style={styles.textInput}
                 placeholder="例: 10"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={C.sub}
                 keyboardType="numeric"
                 value={form.capacity}
                 onChangeText={(v) => setF('capacity', v)}
@@ -299,7 +439,7 @@ export function ParkedScreen() {
               <TextInput
                 style={[styles.textInput, styles.textInputMulti]}
                 placeholder="例: 屋根あり、夜間施錠あり"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={C.sub}
                 multiline
                 numberOfLines={3}
                 value={form.notes}
@@ -312,7 +452,7 @@ export function ParkedScreen() {
                 disabled={formLoading}
               >
                 {formLoading ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.submitBtnText}>
                     {editingId !== null ? '更新する' : '登録する'}
@@ -329,147 +469,172 @@ export function ParkedScreen() {
   );
 }
 
-function SpotCard({
-  spot,
-  onEdit,
-  onDelete,
-}: {
-  spot: UserSpot;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <View style={styles.spotCard}>
-      <View style={styles.spotMain}>
-        <Text style={styles.spotName}>{spot.name}</Text>
-        <View style={styles.spotBadges}>
-          <View style={[styles.badge, { backgroundColor: '#9C27B0' }]}>
-            <Text style={styles.badgeText}>{spot.maxCC ? `〜${spot.maxCC}cc` : '制限なし'}</Text>
-          </View>
-          <View style={[styles.badge, { backgroundColor: spot.isFree ? Colors.success : Colors.surface, borderWidth: spot.isFree ? 0 : 1, borderColor: Colors.border }]}>
-            <Text style={[styles.badgeText, !spot.isFree && { color: Colors.textSecondary }]}>
-              {spot.isFree ? '無料' : '有料'}
-            </Text>
-          </View>
-          {spot.capacity && (
-            <View style={[styles.badge, { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }]}>
-              <Text style={[styles.badgeText, { color: Colors.textSecondary }]}>{spot.capacity}台</Text>
-            </View>
-          )}
-        </View>
-        {spot.address ? <Text style={styles.spotMeta}>{spot.address}</Text> : null}
-        {spot.notes ? <Text style={styles.spotMeta}>{spot.notes}</Text> : null}
-      </View>
-      <View style={styles.spotActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={onEdit}>
-          <Text style={styles.editIcon}>✏️</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>
-          <Text style={styles.deleteIcon}>🗑️</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
+// ─── スタイル ──────────────────────────────────────────
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+  safe: { flex: 1, backgroundColor: C.bg },
+
+  // ── ヘッダー ────────────────────────────────────
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
   },
-  title: { color: Colors.text, fontSize: FontSize.lg, fontWeight: 'bold' },
-  content: { padding: Spacing.lg, gap: Spacing.sm },
-  sectionLabel: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.sm,
+  title: { color: C.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1 },
+  editToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xxl, gap: Spacing.sm },
-  emptyIcon: { fontSize: 64 },
-  emptyText: { color: Colors.text, fontSize: FontSize.md, fontWeight: '600' },
-  emptyHint: { color: Colors.textSecondary, fontSize: FontSize.sm, textAlign: 'center' },
-  addBtn: {
-    marginTop: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
+  editToggleActive: {
+    backgroundColor: C.blue,
+  },
+  editToggleText: { color: C.sub, fontSize: 13, fontWeight: '600' },
+  editToggleTextActive: { color: '#fff' },
+
+  // ── ヒント ──────────────────────────────────────
+  hintBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
+    gap: 4,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  addBtnText: { color: Colors.accent, fontSize: FontSize.md, fontWeight: '700' },
+  hintText: { color: C.sub, fontSize: 11 },
+
+  // ── リスト ──────────────────────────────────────
+  list: { flex: 1 },
+  sectionLabel: {
+    color: C.sub,
+    fontSize: 12,
+    fontWeight: '600',
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // ── 空状態 ──────────────────────────────────────
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
+  emptyText: { color: C.text, fontSize: FontSize.md, fontWeight: '600' },
+  emptyHint: { color: C.sub, fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
+
+  // ── カード ──────────────────────────────────────
   spotCard: {
-    backgroundColor: Colors.card,
-    borderRadius: BorderRadius.md,
+    backgroundColor: C.card,
+    marginHorizontal: Spacing.md,
+    marginVertical: 4,
+    borderRadius: 14,
     padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  spotCardEdit: {
+    borderColor: 'rgba(10,132,255,0.3)',
   },
   spotMain: { flex: 1, gap: 4 },
-  spotName: { color: Colors.text, fontSize: FontSize.md, fontWeight: '600' },
-  spotBadges: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap' },
-  badge: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
-  badgeText: { color: Colors.white, fontSize: FontSize.xs, fontWeight: '700' },
-  spotMeta: { color: Colors.textSecondary, fontSize: FontSize.xs },
-  spotActions: { flexDirection: 'row', gap: Spacing.xs, marginLeft: Spacing.sm },
-  actionBtn: { padding: Spacing.sm },
-  editIcon: { fontSize: 18 },
-  deleteIcon: { fontSize: 18 },
-  // モーダル
-  modalSafe: { flex: 1, backgroundColor: Colors.background },
+  spotName: { color: C.text, fontSize: FontSize.md, fontWeight: '600' },
+  spotBadges: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  spotMeta: { color: C.sub, fontSize: 12 },
+
+  // ── スワイプ背景 ───────────────────────────────
+  swipeRight: {
+    backgroundColor: C.red,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginVertical: 4,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+    marginRight: Spacing.md,
+  },
+  swipeLabel: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+
+  // ── 追加ボタン ─────────────────────────────────
+  addBtnWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.border,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.blue,
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  addBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+
+  // ── モーダル ───────────────────────────────────
+  modalSafe: { flex: 1, backgroundColor: C.bg },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
   },
-  modalCancelText: { color: Colors.accent, fontSize: FontSize.md },
-  modalTitle: { color: Colors.text, fontSize: FontSize.md, fontWeight: '700' },
+  modalCancelText: { color: C.blue, fontSize: FontSize.md },
+  modalTitle: { color: C.text, fontSize: FontSize.md, fontWeight: '700' },
   formContent: { padding: Spacing.lg, gap: Spacing.xs },
-  formLabel: { color: Colors.textSecondary, fontSize: FontSize.sm, marginTop: Spacing.sm },
-  formMeta: { color: Colors.textSecondary, fontSize: FontSize.xs, marginBottom: Spacing.xs },
+  formLabel: { color: C.sub, fontSize: FontSize.sm, marginTop: Spacing.sm },
+  formMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  formMeta: { color: C.sub, fontSize: 12 },
   textInput: {
-    backgroundColor: Colors.surface,
+    backgroundColor: '#1C1C1E',
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    color: Colors.text,
+    color: C.text,
     fontSize: FontSize.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   textInputMulti: { minHeight: 80, textAlignVertical: 'top' },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   optionBtn: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  optionBtnActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  optionBtnText: { color: Colors.textSecondary, fontSize: FontSize.sm },
-  optionBtnTextActive: { color: Colors.white, fontWeight: '700' },
+  optionBtnActive: { backgroundColor: C.blue, borderColor: C.blue },
+  optionBtnText: { color: C.sub, fontSize: FontSize.sm },
+  optionBtnTextActive: { color: '#fff', fontWeight: '700' },
   submitBtn: {
     marginTop: Spacing.lg,
-    backgroundColor: Colors.accent,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
+    backgroundColor: C.blue,
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   btnDisabled: { opacity: 0.6 },
-  submitBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: '700' },
+  submitBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '700' },
 });

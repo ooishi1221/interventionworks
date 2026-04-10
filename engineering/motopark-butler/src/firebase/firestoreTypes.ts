@@ -61,6 +61,8 @@ export interface FirestoreSpot {
   name:              string;
   /** 座標（GeoPoint） */
   coordinate:        GeoPoint;
+  /** Geohash（範囲検索用、精度9） */
+  geohash:           string;
   /** 住所（任意） */
   address?:          string;
   /** 排気量区分フラグ */

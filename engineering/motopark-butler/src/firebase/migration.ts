@@ -16,6 +16,7 @@ import { ADACHI_PARKING } from '../data/adachi-parking';
 import { getAllUserSpots, getReviews } from '../db/database';
 import type { FirestoreSpot, SpotCapacity } from './firestoreTypes';
 import type { MaxCC, ParkingPin } from '../types';
+import { encodeGeohash } from '../utils/geohash';
 
 // ─────────────────────────────────────────────────────
 // ヘルパー: MaxCC → SpotCapacity
@@ -46,6 +47,7 @@ function pinToFirestoreSpot(pin: ParkingPin): FirestoreSpot {
   return stripUndefined<FirestoreSpot>({
     name:             pin.name,
     coordinate:       new GeoPoint(pin.latitude, pin.longitude),
+    geohash:          encodeGeohash(pin.latitude, pin.longitude, 9),
     ...(pin.address        != null && { address:         pin.address }),
     capacity:         maxCCToCapacity(pin.maxCC),
     ...(pin.capacity       != null && { parkingCapacity: pin.capacity }),
@@ -124,6 +126,7 @@ export async function migrateUserSpots(
     const firestoreSpot: FirestoreSpot = stripUndefined<FirestoreSpot>({
       name:             spot.name,
       coordinate:       new GeoPoint(spot.latitude, spot.longitude),
+      geohash:          encodeGeohash(spot.latitude, spot.longitude, 9),
       ...(spot.address       != null && { address:         spot.address }),
       capacity:         maxCCToCapacity(spot.maxCC),
       ...(spot.capacity      != null && { parkingCapacity: spot.capacity }),

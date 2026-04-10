@@ -1,0 +1,56 @@
+[
+  {
+    "id": "kanto_shibuya_001",
+    "name": "渋谷駅前バイク駐輪場",
+    "latitude": 35.6580,
+    "longitude": 139.7016,
+    "address": "東京都渋谷区道玄坂1-1",
+    "maxCC": null,
+    "isFree": false,
+    "capacity": 200,
+    "pricePerHour": 200,
+    "openHours": "24時間"
+  },
+  {
+    "id": "kanto_yokohama_001",
+    "name": "横浜駅西口二輪駐輪場",
+    "latitude": 35.4657,
+    "longitude": 139.6201,
+    "address": "神奈川県横浜市西区南幸1",
+    "maxCC": 250,
+    "isFree": false,
+    "capacity": 80,
+    "pricePerHour": 150
+  },
+  {
+    "id": "shizuoka_numazu_001",
+    "name": "沼津駅南口バイク駐車場",
+    "latitude": 35.0964,
+    "longitude": 138.8631,
+    "address": "静岡県沼津市大手町1",
+    "maxCC": null,
+    "isFree": true,
+    "capacity": 30
+  },
+  {
+    "id": "yamanashi_kofu_001",
+    "name": "甲府駅南口二輪駐輪場",
+    "latitude": 35.6667,
+    "longitude": 138.5683,
+    "address": "山梨県甲府市丸の内1",
+    "maxCC": 125,
+    "isFree": false,
+    "capacity": 40,
+    "pricePerHour": 100
+  },
+  {
+    "id": "nagano_matsumoto_001",
+    "name": "松本駅前バイク置き場",
+    "latitude": 36.2309,
+    "longitude": 137.9683,
+    "address": "長野県松本市深志1",
+    "maxCC": null,
+    "isFree": true,
+    "capacity": 20
+  }
+]

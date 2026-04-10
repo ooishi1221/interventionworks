@@ -1,6 +1,9 @@
 /**
- * Firestore CRUD サービス — Moto-Spotter
- * アプリ内の全クラウドアクセスはこのファイル経由で行う。
+ * Firestore CRUD サービス — Moto-Spotter v2 (Geohash 対応)
+ *
+ * - 全件取得を廃止 → geohash プレフィクスによる範囲検索
+ * - 一度取得済みのエリアはオフラインキャッシュから即時返却
+ * - ユーザースポット登録時に geohash を自動付与
  */
 
 import {
@@ -12,6 +15,8 @@ import {
   doc,
   query,
   where,
+  orderBy,
+  limit,
   Timestamp,
   GeoPoint,
 } from 'firebase/firestore';
@@ -19,12 +24,12 @@ import { db } from './config';
 import { COLLECTIONS } from './firestoreTypes';
 import type { SpotCapacity } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
+import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 
 // ─────────────────────────────────────────────────────
 // 変換ヘルパー
 // ─────────────────────────────────────────────────────
 
-/** SpotCapacity フラグ → MaxCC */
 function capacityToMaxCC(c: SpotCapacity): MaxCC {
   if (c.isLargeOk) return null;
   if (c.upTo400)   return 250;
@@ -32,42 +37,108 @@ function capacityToMaxCC(c: SpotCapacity): MaxCC {
   return 50;
 }
 
-/** undefined フィールドを除去（Firestore は undefined 不可） */
 function stripUndef<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
   ) as T;
 }
 
+function docToPin(d: { id: string; data: () => any }): ParkingPin {
+  const data = d.data();
+  return {
+    id:           d.id,
+    name:         data.name,
+    latitude:     (data.coordinate as GeoPoint).latitude,
+    longitude:    (data.coordinate as GeoPoint).longitude,
+    maxCC:        capacityToMaxCC(data.capacity as SpotCapacity),
+    isFree:       data.isFree,
+    capacity:     data.parkingCapacity ?? null,
+    source:       data.source as 'seed' | 'user',
+    address:      data.address,
+    pricePerHour: data.pricePerHour,
+    openHours:    data.openHours,
+    updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
+  };
+}
+
 // ─────────────────────────────────────────────────────
-// スポット
+// スポット — geohash 範囲検索
 // ─────────────────────────────────────────────────────
 
-/** Firestore の spots コレクション全件を ParkingPin[] として取得 */
-export async function fetchAllSpots(): Promise<ParkingPin[]> {
-  const snap = await getDocs(collection(db, COLLECTIONS.SPOTS));
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id:           d.id,
-      name:         data.name,
-      latitude:     (data.coordinate as GeoPoint).latitude,
-      longitude:    (data.coordinate as GeoPoint).longitude,
-      maxCC:        capacityToMaxCC(data.capacity as SpotCapacity),
-      isFree:       data.isFree,
-      capacity:     data.parkingCapacity ?? null,
-      source:       data.source as 'seed' | 'user',
-      address:      data.address,
-      pricePerHour: data.pricePerHour,
-      openHours:    data.openHours,
-    } as ParkingPin;
-  });
+/**
+ * MapView の可視範囲内のスポットだけを Firestore から取得する。
+ *
+ * geohash フィールドのプレフィクスクエリで対象を絞り、
+ * Firestore の Read 数を劇的に削減する。
+ * オフラインキャッシュ済みなら通信なしで即座に返る。
+ *
+ * @param region - MapView の表示領域 (lat, lon, delta)
+ * @param maxResults - 1 クエリあたりの上限（デフォルト 500）
+ */
+export async function fetchSpotsInRegion(
+  region: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  maxResults = 500
+): Promise<ParkingPin[]> {
+  const bounds = geohashQueryBounds(region);
+  const spotsCol = collection(db, COLLECTIONS.SPOTS);
+
+  try {
+    // 各 geohash 範囲を並列クエリ
+    const queries = bounds.map(([start, end]) =>
+      getDocs(
+        query(
+          spotsCol,
+          orderBy('geohash'),
+          where('geohash', '>=', start),
+          where('geohash', '<', end),
+          limit(maxResults)
+        )
+      )
+    );
+
+    const snapshots = await Promise.all(queries);
+
+    // 重複排除
+    const seen = new Set<string>();
+    const results: ParkingPin[] = [];
+    for (const snap of snapshots) {
+      for (const d of snap.docs) {
+        if (seen.has(d.id)) continue;
+        seen.add(d.id);
+        results.push(docToPin(d));
+      }
+    }
+
+    // geohash 移行済みならそのまま返す
+    if (results.length > 0) return results;
+  } catch (e) {
+    // geohash インデックス未作成の場合もフォールバック
+    console.warn('[firestoreService] geohash query failed, falling back:', e);
+  }
+
+  // ── フォールバック: geohash 未移行 → 全件取得（マイグレーション後は geohash クエリが使われる） ──
+  console.log('[firestoreService] geohash未検出 → 全件取得フォールバック');
+  return fetchAllSpots();
 }
 
 /**
- * ユーザースポットを Firestore に登録する。
- * SQLite の localId を使って "user_{localId}" ドキュメントIDを固定。
+ * 後方互換: 全件取得（マイグレーション期間中のみ使用）
+ * geohash フィールドがないスポットも取得できる。
  */
+export async function fetchAllSpots(): Promise<ParkingPin[]> {
+  const snap = await getDocs(collection(db, COLLECTIONS.SPOTS));
+  return snap.docs.map((d) => docToPin(d));
+}
+
+// ─────────────────────────────────────────────────────
+// ユーザースポット登録（geohash 自動付与）
+// ─────────────────────────────────────────────────────
+
 export async function addUserSpotToFirestore(
   localId: number,
   spot: {
@@ -77,9 +148,11 @@ export async function addUserSpotToFirestore(
   }
 ): Promise<void> {
   const now = Timestamp.now();
+  const geohash = encodeGeohash(spot.latitude, spot.longitude, 9);
   const data = stripUndef({
     name:       spot.name,
     coordinate: new GeoPoint(spot.latitude, spot.longitude),
+    geohash,
     ...(spot.address      != null && { address:         spot.address }),
     capacity: {
       is50only:  spot.maxCC === 50,
@@ -99,16 +172,38 @@ export async function addUserSpotToFirestore(
   await setDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`), data);
 }
 
-/** ユーザースポットを Firestore から削除する */
 export async function deleteUserSpotFromFirestore(localId: number): Promise<void> {
   await deleteDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`));
 }
 
 // ─────────────────────────────────────────────────────
-// レビュー
+// ステータス報告（👍停められた / 👎満車・閉鎖）
 // ─────────────────────────────────────────────────────
 
-/** 指定スポットのレビュー一覧を Firestore から取得 */
+export async function reportSpotGood(spotId: string): Promise<void> {
+  const ref = doc(db, COLLECTIONS.SPOTS, spotId);
+  const { updateDoc, increment } = await import('firebase/firestore');
+  await updateDoc(ref, {
+    goodCount: increment(1),
+    lastVerifiedAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function reportSpotBad(spotId: string): Promise<void> {
+  const ref = doc(db, COLLECTIONS.SPOTS, spotId);
+  const { updateDoc, increment } = await import('firebase/firestore');
+  await updateDoc(ref, {
+    badReportCount: increment(1),
+    lastVerifiedAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// レビュー（変更なし — spotId 単位クエリのため geohash 不要）
+// ─────────────────────────────────────────────────────
+
 export async function fetchReviews(
   spotId: string,
   sortBy: 'date' | 'score' = 'date'
@@ -142,7 +237,6 @@ export async function fetchReviews(
   return reviews;
 }
 
-/** 指定スポットのレビューサマリーをクライアント集計で返す */
 export async function fetchReviewSummary(spotId: string): Promise<ReviewSummary | null> {
   const reviews = await fetchReviews(spotId);
   if (reviews.length === 0) return null;
@@ -150,7 +244,6 @@ export async function fetchReviewSummary(spotId: string): Promise<ReviewSummary 
   return { avg: Math.round(avg * 10) / 10, count: reviews.length };
 }
 
-/** レビューを Firestore に投稿する */
 export async function addReview(
   spotId: string,
   score: number,
@@ -171,7 +264,6 @@ export async function addReview(
   }));
 }
 
-/** Firestore からレビューを削除する */
 export async function deleteReviewFromFirestore(firestoreId: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTIONS.REVIEWS, firestoreId));
 }

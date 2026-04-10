@@ -71,6 +71,8 @@ export async function initDatabase(): Promise<void> {
       id        INTEGER PRIMARY KEY AUTOINCREMENT,
       spotId    TEXT    NOT NULL,
       source    TEXT    NOT NULL CHECK(source IN ('seed', 'user')),
+      isPinned  INTEGER NOT NULL DEFAULT 0,
+      sortOrder INTEGER NOT NULL DEFAULT 0,
       createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
       UNIQUE(spotId, source)
     );
@@ -100,6 +102,14 @@ export async function initDatabase(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_reviews_spot ON reviews(spotId, source);
   `);
+
+  // マイグレーション: favorites に isPinned / sortOrder カラムを追加（既存DB対応）
+  try {
+    await db.execAsync(`ALTER TABLE favorites ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0;`);
+  } catch { /* already exists */ }
+  try {
+    await db.execAsync(`ALTER TABLE favorites ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;`);
+  } catch { /* already exists */ }
 
   await seedInitialData(db);
 }
@@ -252,7 +262,9 @@ export async function updateUserSpot(
 
 export async function getAllFavorites(): Promise<Favorite[]> {
   const db = getDatabase();
-  return db.getAllAsync<Favorite>('SELECT * FROM favorites ORDER BY createdAt DESC;');
+  return db.getAllAsync<Favorite>(
+    'SELECT * FROM favorites ORDER BY isPinned DESC, sortOrder ASC, createdAt DESC;'
+  );
 }
 
 export async function addFavorite(spotId: string, source: 'seed' | 'user'): Promise<void> {
@@ -269,6 +281,32 @@ export async function removeFavorite(spotId: string, source: 'seed' | 'user'): P
     `DELETE FROM favorites WHERE spotId = ? AND source = ?;`,
     [spotId, source]
   );
+}
+
+export async function toggleFavoritePinned(spotId: string, source: 'seed' | 'user'): Promise<boolean> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ isPinned: number }>(
+    'SELECT isPinned FROM favorites WHERE spotId = ? AND source = ?;',
+    [spotId, source]
+  );
+  const newVal = row?.isPinned === 1 ? 0 : 1;
+  await db.runAsync(
+    'UPDATE favorites SET isPinned = ? WHERE spotId = ? AND source = ?;',
+    [newVal, spotId, source]
+  );
+  return newVal === 1;
+}
+
+export async function updateFavoriteSortOrder(
+  items: { spotId: string; source: 'seed' | 'user'; sortOrder: number }[]
+): Promise<void> {
+  const db = getDatabase();
+  for (const item of items) {
+    await db.runAsync(
+      'UPDATE favorites SET sortOrder = ? WHERE spotId = ? AND source = ?;',
+      [item.sortOrder, item.spotId, item.source]
+    );
+  }
 }
 
 export async function isFavorite(spotId: string, source: 'seed' | 'user'): Promise<boolean> {

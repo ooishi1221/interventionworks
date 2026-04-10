@@ -16,6 +16,7 @@ export interface ParkingPin {
   address?: string;
   pricePerHour?: number;
   openHours?: string;
+  updatedAt?: string; // ISO8601
 }
 
 export interface UserSpot {
@@ -37,6 +38,8 @@ export interface Favorite {
   id: number;
   spotId: string;
   source: 'seed' | 'user';
+  isPinned: number;
+  sortOrder: number;
   createdAt: string;
 }
 

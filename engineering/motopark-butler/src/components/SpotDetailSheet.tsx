@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review, ReviewSummary } from '../types';
 import {
@@ -39,6 +40,8 @@ import {
   fetchReviews,
   fetchReviewSummary,
   deleteReviewFromFirestore,
+  reportSpotGood,
+  reportSpotBad,
 } from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 
@@ -138,6 +141,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     try {
       if (isFav) { await removeFavorite(spot.id, src); setIsFav(false); }
       else       { await addFavorite(spot.id, src);    setIsFav(true);  }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {}
     setFavLoading(false);
   };
@@ -205,6 +209,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         newComment.trim() || undefined,
         newPhoto ?? undefined
       );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNewScore(0); setNewComment(''); setNewPhoto(null);
       setFormVisible(false);
       await loadAll();
@@ -275,6 +280,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
             {/* ── ヘッダー ─────────────────────────── */}
             <View style={styles.titleRow}>
+              <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={28} color={C.sub} />
+              </TouchableOpacity>
               <Text style={styles.spotName} numberOfLines={2}>{spot.name}</Text>
               <TouchableOpacity style={styles.favBtn} onPress={toggleFav} disabled={favLoading}>
                 <Ionicons
@@ -286,9 +294,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             </View>
 
             {/* ── レビューサマリー（アンカーリンク） ── */}
+            {summary && (
             <TouchableOpacity style={styles.summaryRow} onPress={scrollToReviews} activeOpacity={0.7}>
-              {summary ? (
-                <>
                   <View style={styles.summaryStars}>
                     {[1,2,3,4,5].map((s) => (
                       <Ionicons
@@ -302,11 +309,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   <Text style={styles.summaryAvg}>{summary.avg.toFixed(1)}</Text>
                   <Text style={styles.summaryCount}>（{summary.count}件）</Text>
                   <Ionicons name="chevron-forward" size={13} color={C.sub} />
-                </>
-              ) : (
-                <Text style={styles.summaryEmpty}>レビューを書く →</Text>
-              )}
             </TouchableOpacity>
+            )}
 
             {/* ── バッジ ────────────────────────────── */}
             <View style={styles.badgeRow}>
@@ -333,6 +337,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
+              <FreshnessBadge updatedAt={spot.updatedAt} />
             </View>
 
             {/* ── 住所 ─────────────────────────────── */}
@@ -371,6 +376,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               <Text style={styles.navBtnText}>案内開始</Text>
             </TouchableOpacity>
 
+            {/* ── ステータス報告 ───────────────────── */}
+            <StatusReportButtons spotId={spot.id} />
+
             {/* ── レビューセクション ────────────────── */}
             <View
               onLayout={(e) => setReviewsTop(e.nativeEvent.layout.y)}
@@ -406,7 +414,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                 </View>
               ) : (
                 reviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} onDelete={() => confirmDelete(r)} onPhotoTap={setFullPhoto} />
+                  <ReviewCard
+                    key={r.firestoreId ?? String(r.id)}
+                    review={r}
+                    onDelete={() => confirmDelete(r)}
+                    onPhotoTap={setFullPhoto}
+                  />
                 ))
               )}
 
@@ -437,6 +450,87 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         </View>
       </KeyboardAvoidingView>
     </>
+  );
+}
+
+// ─── 鮮度バッジ ──────────────────────────────────────
+function FreshnessBadge({ updatedAt }: { updatedAt?: string }) {
+  if (!updatedAt) return null;
+  const diffMs = Date.now() - new Date(updatedAt).getTime();
+  const days = Math.floor(diffMs / 86400000);
+
+  let label: string;
+  let color: string;
+  let icon: 'checkmark-circle' | 'alert-circle' | 'warning' = 'checkmark-circle';
+
+  if (days <= 30) {
+    label = days <= 1 ? '最新' : `${days}日前`;
+    color = C.blue;
+    icon = 'checkmark-circle';
+  } else if (days <= 90) {
+    const months = Math.floor(days / 30);
+    label = `${months}ヶ月前`;
+    color = C.orange;
+    icon = 'alert-circle';
+  } else {
+    const months = Math.floor(days / 30);
+    label = months >= 12 ? `${Math.floor(months / 12)}年以上前` : `${months}ヶ月前`;
+    color = C.red;
+    icon = 'warning';
+  }
+
+  return (
+    <View style={[styles.badge, { backgroundColor: `${color}18`, borderWidth: StyleSheet.hairlineWidth, borderColor: `${color}44` }]}>
+      <Ionicons name={icon} size={10} color={color} style={{ marginRight: 2 }} />
+      <Text style={[styles.badgeText, { color, fontSize: 10, fontWeight: '600' }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── ステータス報告ボタン ─────────────────────────────
+function StatusReportButtons({ spotId }: { spotId: string }) {
+  const [reported, setReported] = useState<'good' | 'bad' | null>(null);
+
+  const handleGood = async () => {
+    if (reported) return;
+    setReported('good');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { await reportSpotGood(spotId); } catch {}
+  };
+
+  const handleBad = async () => {
+    if (reported) return;
+    setReported('bad');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    try { await reportSpotBad(spotId); } catch {}
+  };
+
+  if (reported) {
+    return (
+      <View style={styles.statusReported}>
+        <Ionicons
+          name={reported === 'good' ? 'checkmark-circle' : 'alert-circle'}
+          size={18}
+          color={reported === 'good' ? C.green : C.orange}
+        />
+        <Text style={[styles.statusReportedText, { color: reported === 'good' ? C.green : C.orange }]}>
+          {reported === 'good' ? '報告ありがとう! 仲間が助かります' : '報告ありがとう! 情報を更新しました'}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.statusRow}>
+      <TouchableOpacity style={styles.statusGood} onPress={handleGood} activeOpacity={0.75}>
+        <Ionicons name="thumbs-up" size={20} color="#fff" />
+        <Text style={styles.statusBtnText}>停められた</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.statusBad} onPress={handleBad} activeOpacity={0.75}>
+        <Ionicons name="thumbs-down" size={20} color="#fff" />
+        <Text style={styles.statusBtnText}>満車・閉鎖</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -678,6 +772,7 @@ const styles = StyleSheet.create({
 
   // Header
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  closeBtn: { padding: 2, marginTop: -1 },
   spotName: { color: C.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1, lineHeight: 26 },
   favBtn:   { padding: 6, marginTop: -2 },
 
@@ -741,6 +836,56 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   navBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+
+  // Status report
+  statusRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  statusGood: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(48,209,88,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(48,209,88,0.4)',
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  statusBad: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,159,10,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,159,10,0.4)',
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  statusBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  statusReported: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
+  },
+  statusReportedText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 
   // Reviews section
   reviewsSection: { marginTop: 24 },

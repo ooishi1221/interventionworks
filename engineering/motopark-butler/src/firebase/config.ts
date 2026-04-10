@@ -1,14 +1,16 @@
 /**
  * Firebase 初期化 — Moto-Spotter
  *
- * 使い方:
- *   1. .env.example を .env にコピーして Firebase Console のConfig値を入力
- *   2. このファイルから db をインポートして Firestore を使用
- *
- * 環境変数は Expo SDK 50+ の EXPO_PUBLIC_ プレフィックスで自動的にバンドルに埋め込まれる。
+ * - オフライン永続キャッシュ有効（Firestore Read 節約）
+ * - 一度表示したエリアは通信なしでスマホから読み出し
  */
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  Firestore,
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey:            process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -19,9 +21,37 @@ const firebaseConfig = {
   appId:             process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// シングルトン: React Native では Fast Refresh で複数回実行されるため再初期化を防ぐ
+// シングルトン: Fast Refresh で複数回実行されるため再初期化を防ぐ
 const app: FirebaseApp =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const db: Firestore = getFirestore(app);
+/**
+ * Firestore インスタンス（永続キャッシュ付き）
+ *
+ * persistentLocalCache:
+ *   - IndexedDB を使った永続オフラインキャッシュ
+ *   - 一度取得したドキュメントはオフラインでも読める
+ *   - Firestore Read カウントを大幅節約
+ */
+let _db: Firestore | null = null;
+
+export function getDb(): Firestore {
+  if (!_db) {
+    try {
+      _db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
+    } catch {
+      // 既に初期化済み (Hot Reload 時) の場合は既存インスタンスを取得
+      const { getFirestore } = require('firebase/firestore');
+      _db = getFirestore(app);
+    }
+  }
+  return _db;
+}
+
+// 後方互換: 既存コードの `import { db }` をそのまま動かす
+export const db: Firestore = getDb();
 export default app;

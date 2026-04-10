@@ -8,10 +8,11 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
-import { useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useRef, useState } from 'react';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDatabase } from './src/hooks/useDatabase';
-import { MapScreen } from './src/screens/MapScreen';
+import { MapScreen, MapScreenHandle } from './src/screens/MapScreen';
 import { MyBikeScreen } from './src/screens/MyBikeScreen';
 import { ParkedScreen } from './src/screens/ParkedScreen';
 import { FavoritesScreen } from './src/screens/FavoritesScreen';
@@ -26,25 +27,33 @@ const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
 type Tab = 'map' | 'favorites' | 'register' | 'myBike';
 
-interface TabDef {
-  id: Tab;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconActive: keyof typeof Ionicons.glyphMap;
-}
+type TabDef =
+  | { id: Tab; label: string; lib: 'ion'; icon: keyof typeof Ionicons.glyphMap; iconActive: keyof typeof Ionicons.glyphMap }
+  | { id: Tab; label: string; lib: 'mci'; icon: string; iconActive: string };
 
 const TABS: TabDef[] = [
-  { id: 'map',       label: '探す',      icon: 'map-outline',          iconActive: 'map'          },
-  { id: 'favorites', label: 'お気に入り', icon: 'heart-outline',        iconActive: 'heart'        },
-  { id: 'register',  label: '新規登録',  icon: 'add-circle-outline',   iconActive: 'add-circle'   },
-  { id: 'myBike',    label: 'マイバイク', icon: 'bicycle-outline',      iconActive: 'bicycle'      },
+  { id: 'map',       label: 'マップ',      lib: 'ion', icon: 'map-outline',        iconActive: 'map'        },
+  { id: 'favorites', label: 'お気に入り', lib: 'ion', icon: 'heart-outline',      iconActive: 'heart'      },
+  { id: 'register',  label: '共有',  lib: 'ion', icon: 'add-circle-outline', iconActive: 'add-circle' },
+  { id: 'myBike',    label: 'マイバイク', lib: 'mci', icon: 'motorbike',          iconActive: 'motorbike'  },
 ];
 
 export default function App() {
   const { status, error } = useDatabase();
-  const [tab, setTab]       = useState<Tab>('map');
-  const [userCC, setUserCC] = useState<UserCC>(125); // デフォルト: 原付二種
-  const [focusSpot, setFocusSpot] = useState<ParkingPin | null>(null);
+  const [tab, setTab]               = useState<Tab>('map');
+  const [userCC, setUserCC]         = useState<UserCC>(125); // デフォルト: 原付二種
+  const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
+  const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
+  const mapScreenRef = useRef<MapScreenHandle>(null);
+
+  /** タブ押下ハンドラ。探すタブを2度押しするとマップをリセット */
+  const handleTabPress = (id: Tab) => {
+    if (id === 'map' && tab === 'map') {
+      mapScreenRef.current?.resetView();
+    } else {
+      setTab(id);
+    }
+  };
 
   if (status === 'loading') {
     return (
@@ -70,32 +79,41 @@ export default function App() {
   };
 
   return (
-    <View style={styles.root}>
+    <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
 
       <View style={styles.content}>
-        {tab === 'map' && (
+        {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
+        <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { display: 'none' }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
           <MapScreen
+            ref={mapScreenRef}
             userCC={userCC}
             onOpenMyBike={() => setTab('myBike')}
             onChangeCC={(cc) => setUserCC(cc)}
             focusSpot={focusSpot}
             onFocusConsumed={() => setFocusSpot(null)}
+            refreshTrigger={mapRefreshTrigger}
           />
-        )}
+        </View>
         {tab === 'favorites' && (
           <FavoritesScreen
             onGoToMap={() => setTab('map')}
             onGoToSpot={handleGoToSpot}
           />
         )}
-        {tab === 'register' && <ParkedScreen />}
+        {tab === 'register' && (
+          <ParkedScreen
+            onSpotSaved={() => setMapRefreshTrigger((n) => n + 1)}
+            onGoToSpot={handleGoToSpot}
+          />
+        )}
         {tab === 'myBike' && (
           <MyBikeScreen
             userCC={userCC}
             onChangeCC={(cc) => {
               setUserCC(cc);
               setTab('map');
+              // 注: mapScreenRef.resetView() は呼ばない → 地図の位置はそのまま維持
             }}
           />
         )}
@@ -109,14 +127,22 @@ export default function App() {
               <TouchableOpacity
                 key={t.id}
                 style={styles.tabItem}
-                onPress={() => setTab(t.id)}
+                onPress={() => handleTabPress(t.id)}
                 activeOpacity={0.6}
               >
-                <Ionicons
-                  name={isActive ? t.iconActive : t.icon}
-                  size={24}
-                  color={isActive ? SYS_BLUE : SYS_GRAY}
-                />
+                {t.lib === 'mci' ? (
+                  <MaterialCommunityIcons
+                    name={(isActive ? t.iconActive : t.icon) as any}
+                    size={24}
+                    color={isActive ? SYS_BLUE : SYS_GRAY}
+                  />
+                ) : (
+                  <Ionicons
+                    name={(isActive ? t.iconActive : t.icon) as keyof typeof Ionicons.glyphMap}
+                    size={24}
+                    color={isActive ? SYS_BLUE : SYS_GRAY}
+                  />
+                )}
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                   {t.label}
                 </Text>
@@ -125,7 +151,7 @@ export default function App() {
           })}
         </View>
       </SafeAreaView>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
