@@ -539,15 +539,20 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
   const [showTimer, setShowTimer] = useState(false);
 
   const scheduleTimer = async (minutes: number) => {
-    await Notifications.requestPermissionsAsync();
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '駐車タイマー',
-        body: `${spotName} の駐車時間が ${minutes}分 経過しました。移動の準備を!`,
-        sound: true,
-      },
-      trigger: { seconds: minutes * 60 },
-    });
+    try {
+      await Notifications.requestPermissionsAsync();
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '駐車タイマー',
+          body: `${spotName} の駐車時間が ${minutes}分 経過しました。移動の準備を!`,
+          sound: true,
+        },
+        trigger: { seconds: minutes * 60 },
+      });
+    } catch {
+      // Expo Go (Android SDK53+) では通知非対応 → Alertで代替通知
+      Alert.alert('タイマーセット', `${minutes}分後にお知らせします\n(※開発ビルドで通知が届きます)`);
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowTimer(false);
   };
