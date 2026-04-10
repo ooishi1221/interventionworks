@@ -9,15 +9,17 @@ import {
   Platform,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useRef, useState } from 'react';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen, MapScreenHandle } from './src/screens/MapScreen';
-import { MyBikeScreen } from './src/screens/MyBikeScreen';
-import { ParkedScreen } from './src/screens/ParkedScreen';
-import { FavoritesScreen } from './src/screens/FavoritesScreen';
+import { RiderScreen } from './src/screens/RiderScreen';
+import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
+
+const TUTORIAL_KEY = 'moto_logos_tutorial_done';
 
 // iOS dark mode system colors
 const SYS_BLUE    = '#0A84FF';
@@ -25,17 +27,17 @@ const SYS_GRAY    = '#636366';
 const TAB_BG      = '#1C1C1E';
 const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
-type Tab = 'map' | 'favorites' | 'register' | 'myBike';
+type Tab = 'map' | 'rider';
 
-type TabDef =
-  | { id: Tab; label: string; lib: 'ion'; icon: keyof typeof Ionicons.glyphMap; iconActive: keyof typeof Ionicons.glyphMap }
-  | { id: Tab; label: string; lib: 'mci'; icon: string; iconActive: string };
+type TabDef = {
+  id: Tab; label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconActive: keyof typeof Ionicons.glyphMap;
+};
 
 const TABS: TabDef[] = [
-  { id: 'map',       label: 'マップ',      lib: 'ion', icon: 'map-outline',        iconActive: 'map'        },
-  { id: 'favorites', label: 'お気に入り', lib: 'ion', icon: 'heart-outline',      iconActive: 'heart'      },
-  { id: 'register',  label: '共有',  lib: 'ion', icon: 'add-circle-outline', iconActive: 'add-circle' },
-  { id: 'myBike',    label: 'マイバイク', lib: 'mci', icon: 'motorbike',          iconActive: 'motorbike'  },
+  { id: 'map',   label: 'マップ',    icon: 'map-outline',    iconActive: 'map'    },
+  { id: 'rider', label: 'ライダー',  icon: 'person-outline', iconActive: 'person' },
 ];
 
 export default function App() {
@@ -45,6 +47,32 @@ export default function App() {
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const mapScreenRef = useRef<MapScreenHandle>(null);
+
+  // ── チュートリアル ─────────────────────────────────
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialTargets, setTutorialTargets] = useState<Record<string, SpotlightRect>>({});
+
+  // DB初期化完了後にチュートリアルフラグをチェック
+  useEffect(() => {
+    if (status !== 'ready') return;
+    AsyncStorage.getItem(TUTORIAL_KEY).then((v) => {
+      if (v !== 'true') setTutorialVisible(true);
+    });
+  }, [status]);
+
+  const finishTutorial = useCallback(() => {
+    setTutorialVisible(false);
+    AsyncStorage.setItem(TUTORIAL_KEY, 'true');
+  }, []);
+
+  const startTutorial = useCallback(() => {
+    setTab('map');
+    setTutorialVisible(true);
+  }, []);
+
+  const registerTarget = useCallback((key: string, rect: SpotlightRect) => {
+    setTutorialTargets((prev) => ({ ...prev, [key]: rect }));
+  }, []);
 
   /** タブ押下ハンドラ。探すタブを2度押しするとマップをリセット */
   const handleTabPress = (id: Tab) => {
@@ -84,37 +112,22 @@ export default function App() {
 
       <View style={styles.content}>
         {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
-        <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { display: 'none' }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
+        <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
           <MapScreen
             ref={mapScreenRef}
             userCC={userCC}
-            onOpenMyBike={() => setTab('myBike')}
             onChangeCC={(cc) => setUserCC(cc)}
             focusSpot={focusSpot}
             onFocusConsumed={() => setFocusSpot(null)}
             refreshTrigger={mapRefreshTrigger}
+            onRegisterTutorialTarget={registerTarget}
           />
         </View>
-        {tab === 'favorites' && (
-          <FavoritesScreen
-            onGoToMap={() => setTab('map')}
+        {tab === 'rider' && (
+          <RiderScreen
             onGoToSpot={handleGoToSpot}
-          />
-        )}
-        {tab === 'register' && (
-          <ParkedScreen
-            onSpotSaved={() => setMapRefreshTrigger((n) => n + 1)}
-            onGoToSpot={handleGoToSpot}
-          />
-        )}
-        {tab === 'myBike' && (
-          <MyBikeScreen
-            userCC={userCC}
-            onChangeCC={(cc) => {
-              setUserCC(cc);
-              setTab('map');
-              // 注: mapScreenRef.resetView() は呼ばない → 地図の位置はそのまま維持
-            }}
+            onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
+            onStartTutorial={startTutorial}
           />
         )}
       </View>
@@ -129,20 +142,17 @@ export default function App() {
                 style={styles.tabItem}
                 onPress={() => handleTabPress(t.id)}
                 activeOpacity={0.6}
+                onLayout={t.id === 'rider' ? (e) => {
+                  (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
+                    registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
+                  });
+                } : undefined}
               >
-                {t.lib === 'mci' ? (
-                  <MaterialCommunityIcons
-                    name={(isActive ? t.iconActive : t.icon) as any}
-                    size={24}
-                    color={isActive ? SYS_BLUE : SYS_GRAY}
-                  />
-                ) : (
-                  <Ionicons
-                    name={(isActive ? t.iconActive : t.icon) as keyof typeof Ionicons.glyphMap}
-                    size={24}
-                    color={isActive ? SYS_BLUE : SYS_GRAY}
-                  />
-                )}
+                <Ionicons
+                  name={isActive ? t.iconActive : t.icon}
+                  size={24}
+                  color={isActive ? SYS_BLUE : SYS_GRAY}
+                />
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                   {t.label}
                 </Text>
@@ -151,6 +161,15 @@ export default function App() {
           })}
         </View>
       </SafeAreaView>
+
+      {/* チュートリアルオーバーレイ */}
+      <TutorialOverlay
+        visible={tutorialVisible}
+        onFinish={finishTutorial}
+        targets={tutorialTargets}
+        userCC={userCC}
+        onChangeCC={(cc) => setUserCC(cc)}
+      />
     </GestureHandlerRootView>
   );
 }

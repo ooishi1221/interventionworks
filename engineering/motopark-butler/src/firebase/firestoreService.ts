@@ -190,11 +190,22 @@ export async function reportSpotGood(spotId: string): Promise<void> {
   });
 }
 
-export async function reportSpotBad(spotId: string): Promise<void> {
+export async function reportSpotFull(spotId: string): Promise<void> {
   const ref = doc(db, COLLECTIONS.SPOTS, spotId);
   const { updateDoc, increment } = await import('firebase/firestore');
   await updateDoc(ref, {
     badReportCount: increment(1),
+    lastVerifiedAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function reportSpotClosed(spotId: string): Promise<void> {
+  const ref = doc(db, COLLECTIONS.SPOTS, spotId);
+  const { updateDoc, increment } = await import('firebase/firestore');
+  await updateDoc(ref, {
+    badReportCount: increment(3),
+    status: 'pending',
     lastVerifiedAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
   });
@@ -262,6 +273,38 @@ export async function addReview(
     createdAt: now,
     updatedAt: now,
   }));
+}
+
+/** 自分の口コミを全件取得（spotName 付き） */
+export async function fetchMyReviews(): Promise<(Review & { spotName: string })[]> {
+  const q = query(
+    collection(db, COLLECTIONS.REVIEWS),
+    where('userId', '==', 'local_user')
+  );
+  const snap = await getDocs(q);
+
+  // スポット名解決用: spots コレクションから名前だけ取得
+  const spotsSnap = await getDocs(collection(db, COLLECTIONS.SPOTS));
+  const nameMap = new Map<string, string>();
+  for (const d of spotsSnap.docs) nameMap.set(d.id, d.data().name ?? d.id);
+
+  const results = snap.docs.map((d) => {
+    const data = d.data();
+    const ts = data.createdAt as Timestamp | undefined;
+    return {
+      id:          0,
+      firestoreId: d.id,
+      spotId:      data.spotId as string,
+      source:      'seed' as const,
+      score:       data.score as number,
+      comment:     (data.comment as string) ?? null,
+      photoUri:    (data.photoUrls as string[])?.[0] ?? null,
+      createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
+      spotName:    nameMap.get(data.spotId as string) ?? (data.spotId as string),
+    };
+  });
+  results.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return results;
 }
 
 export async function deleteReviewFromFirestore(firestoreId: string): Promise<void> {

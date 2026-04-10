@@ -305,11 +305,11 @@ export function FavoritesScreen({ onGoToMap, onGoToSpot }: Props) {
       <View style={styles.header}>
         <Ionicons name="heart" size={20} color={C.pink} />
         <Text style={styles.title}>
-          お気に入り{items.length > 0 && (
-            <Text style={styles.countInline}>{` (${items.length})`}</Text>
+          お気に入り{items.filter((i) => i.spot).length > 0 && (
+            <Text style={styles.countInline}>{` (${items.filter((i) => i.spot).length})`}</Text>
           )}
         </Text>
-        {items.length > 1 && (
+        {items.filter((i) => i.spot).length > 1 && (
           <TouchableOpacity
             style={[styles.reorderToggle, reorderMode && styles.reorderToggleActive]}
             onPress={() => setReorderMode((v) => !v)}

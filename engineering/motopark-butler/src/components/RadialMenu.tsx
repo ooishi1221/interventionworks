@@ -36,12 +36,13 @@ interface MenuItem {
 }
 
 // 5 アイテム: 85°→ 205° の弧（30°間隔）
+// ラベルは3文字以内（アイコン下に表示、切れない）
 const ITEMS: MenuItem[] = [
   { id: 'location', angle: 85,  icon: 'navigate',        color: '#0A84FF', label: '現在地' },
   { id: 'nearest',  angle: 115, icon: 'locate',           color: '#30D158', label: '最寄り' },
-  { id: 'report',   angle: 145, icon: 'add-circle',       color: '#FF375F', label: 'ここに停めた!' },
-  { id: 'research', angle: 175, icon: 'refresh-circle',   color: '#FF9F0A', label: 'エリア検索' },
-  { id: 'search',   angle: 205, icon: 'search',           color: '#BF5AF2', label: '場所検索' },
+  { id: 'report',   angle: 145, icon: 'add-circle',       color: '#FF375F', label: '報告' },
+  { id: 'refresh',  angle: 175, icon: 'refresh-circle',   color: '#FF9F0A', label: '更新' },
+  { id: 'search',   angle: 205, icon: 'search',           color: '#BF5AF2', label: '検索' },
 ];
 
 const POSITIONS = ITEMS.map((m) => ({ ...m, ...toXY(m.angle, RADIUS) }));
@@ -88,7 +89,7 @@ export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchAre
       if (selectedId === 'location') onGoToCurrentLocation();
       else if (selectedId === 'nearest') onGoToNearest();
       else if (selectedId === 'report') onQuickReport();
-      else if (selectedId === 'research') onResearchArea();
+      else if (selectedId === 'refresh') onResearchArea();
       else if (selectedId === 'search') onOpenSearch();
     }
   }, [onGoToNearest, onGoToCurrentLocation, onResearchArea, onOpenSearch, onQuickReport]);
@@ -128,7 +129,7 @@ export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchAre
         } else {
           Animated.spring(trigScale, { toValue: 1, tension: 200, friction: 10, useNativeDriver: true }).start();
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onGoToNearest();
+          onResearchArea();
         }
       },
       onPanResponderTerminate: () => {
@@ -141,6 +142,7 @@ export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchAre
 
   return (
     <View style={styles.root} pointerEvents="box-none">
+      {/* アイテム群 */}
       {menuOpen && POSITIONS.map((pos) => {
         const isH = hoveredId === pos.id;
         const tx = progress.interpolate({ inputRange: [0, 1], outputRange: [0, pos.x] });
@@ -157,15 +159,22 @@ export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchAre
             <View style={[styles.itemInner, isH && { backgroundColor: `${pos.color}30`, borderColor: `${pos.color}88` }]}>
               <Ionicons name={pos.icon} size={isH ? 22 : 18} color={isH ? pos.color : '#E5E5EA'} />
             </View>
-            {isH && (
-              <View style={styles.label}>
-                <Text style={[styles.labelText, { color: pos.color }]} numberOfLines={1}>{pos.label}</Text>
-              </View>
-            )}
           </Animated.View>
         );
       })}
 
+      {/* ホバー中のラベル（トリガー上に固定表示） */}
+      {menuOpen && hoveredId && (() => {
+        const hItem = ITEMS.find((i) => i.id === hoveredId);
+        if (!hItem) return null;
+        return (
+          <View style={styles.hoverLabel}>
+            <Text style={[styles.hoverLabelText, { color: hItem.color }]}>{hItem.label}</Text>
+          </View>
+        );
+      })()}
+
+      {/* トリガー */}
       <Animated.View style={[styles.trigger, { transform: [{ scale: trigScale }] }]} {...pan.panHandlers}>
         {menuOpen && <View style={styles.triggerGlow} />}
         <Ionicons name="options-outline" size={23} color={menuOpen ? '#FF9F0A' : '#E5E5EA'} />
@@ -180,6 +189,7 @@ const styles = StyleSheet.create({
     height: RADIUS + TRIGGER_SIZE + 30,
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
+    overflow: 'visible',
   },
   trigger: {
     width: TRIGGER_SIZE, height: TRIGGER_SIZE, borderRadius: TRIGGER_SIZE / 2,
@@ -197,7 +207,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: TRIGGER_SIZE / 2 - ITEM_SIZE / 2,
     right: TRIGGER_SIZE / 2 - ITEM_SIZE / 2,
-    alignItems: 'center', zIndex: 10,
+    alignItems: 'center',
+    zIndex: 10,
+    overflow: 'visible',
   },
   itemInner: {
     width: ITEM_SIZE, height: ITEM_SIZE, borderRadius: ITEM_SIZE / 2,
@@ -206,13 +218,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.15)',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.45, shadowRadius: 6, elevation: 8,
   },
-  label: {
+  hoverLabel: {
     position: 'absolute',
-    right: ITEM_SIZE + 8,
-    backgroundColor: 'rgba(28,28,30,0.96)',
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.12)',
-    // 1行で収まるよう幅制約なし
+    top: 0,
+    left: 0,
+    backgroundColor: 'rgba(28,28,30,0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  labelText: { fontSize: 12, fontWeight: '700', whiteSpace: 'nowrap' },
+  hoverLabelText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
 });

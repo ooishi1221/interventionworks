@@ -24,16 +24,21 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   ActivityIndicator,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { Share } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review, ReviewSummary } from '../types';
 import {
   addFavorite,
   removeFavorite,
   getAllFavorites,
+  incrementStat,
 } from '../db/database';
 import {
   addReview,
@@ -41,7 +46,8 @@ import {
   fetchReviewSummary,
   deleteReviewFromFirestore,
   reportSpotGood,
-  reportSpotBad,
+  reportSpotFull,
+  reportSpotClosed,
 } from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 
@@ -96,6 +102,26 @@ interface Props {
 export function SpotDetailSheet({ spot, onClose }: Props) {
   const scrollRef      = useRef<ScrollView>(null);
   const [reviewsTop, setReviewsTop] = useState(0);
+
+  // 下スワイプで閉じるアニメーション
+  const sheetTranslateY = useRef(new Animated.Value(0)).current;
+  const swipePan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 10,
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) sheetTranslateY.setValue(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > 80) {
+          // 閾値超え → 閉じる
+          Animated.timing(sheetTranslateY, { toValue: 500, duration: 200, useNativeDriver: true }).start(onClose);
+        } else {
+          // 戻す
+          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   // Favorites
   const [isFav, setIsFav]             = useState(false);
@@ -268,15 +294,17 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.sheetWrapper}
       >
-        <View style={styles.sheet}>
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
+          {/* スワイプハンドル */}
+          <View {...swipePan.panHandlers} style={styles.handleArea}>
+            <View style={styles.handle} />
+          </View>
           <ScrollView
             ref={scrollRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* ハンドル */}
-            <View style={styles.handle} />
 
             {/* ── ヘッダー ─────────────────────────── */}
             <View style={styles.titleRow}>
@@ -340,6 +368,29 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               <FreshnessBadge updatedAt={spot.updatedAt} />
             </View>
 
+            {/* ── 写真ギャラリー（バッジ直下、目立つ位置） ── */}
+            {photos.length > 0 ? (
+              <View style={styles.gallerySection}>
+                <FlatList
+                  horizontal
+                  data={photos}
+                  keyExtractor={(r) => `photo_${r.firestoreId ?? r.id}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => setFullPhoto(item.photoUri!)} activeOpacity={0.85}>
+                      <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            ) : (
+              <View style={styles.noPhotoHint}>
+                <Ionicons name="camera-outline" size={16} color={C.sub} />
+                <Text style={styles.noPhotoText}>まだ写真がありません — 最初の1枚を投稿しよう</Text>
+              </View>
+            )}
+
             {/* ── 住所 ─────────────────────────────── */}
             {spot.address && (
               <View style={styles.metaRow}>
@@ -351,33 +402,28 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             {/* ── 精算・料金情報 ────────────────────── */}
             <PaymentSection spot={spot} />
 
-            {/* ── 写真ギャラリー ────────────────────── */}
-            {photos.length > 0 && (
-              <View style={styles.gallerySection}>
-                <Text style={styles.sectionLabel}>フォトギャラリー</Text>
-                <FlatList
-                  horizontal
-                  data={photos}
-                  keyExtractor={(r) => `photo_${r.id}`}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.galleryList}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => setFullPhoto(item.photoUri!)} activeOpacity={0.85}>
-                      <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            )}
-
-            {/* ── 案内開始ボタン ────────────────────── */}
-            <TouchableOpacity style={styles.navBtn} onPress={handleNav} activeOpacity={0.85}>
-              <Ionicons name="navigate" size={17} color="#fff" />
-              <Text style={styles.navBtnText}>案内開始</Text>
-            </TouchableOpacity>
+            {/* ── 案内 + シェア ──────────────────────── */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.navBtn} onPress={handleNav} activeOpacity={0.85}>
+                <Ionicons name="navigate" size={17} color="#fff" />
+                <Text style={styles.navBtnText}>案内開始</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.shareBtn}
+                activeOpacity={0.75}
+                onPress={() => {
+                  const url = `https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}`;
+                  Share.share({
+                    message: `${spot.name}\n${spot.address ?? ''}\n${url}\n\n— Moto-Logos で共有`,
+                  });
+                }}
+              >
+                <Ionicons name="share-outline" size={20} color={C.blue} />
+              </TouchableOpacity>
+            </View>
 
             {/* ── ステータス報告 ───────────────────── */}
-            <StatusReportButtons spotId={spot.id} />
+            <StatusReportButtons spotId={spot.id} spotName={spot.name} />
 
             {/* ── レビューセクション ────────────────── */}
             <View
@@ -447,7 +493,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
             <View style={{ height: 32 }} />
           </ScrollView>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </>
   );
@@ -487,49 +533,112 @@ function FreshnessBadge({ updatedAt }: { updatedAt?: string }) {
   );
 }
 
-// ─── ステータス報告ボタン ─────────────────────────────
-function StatusReportButtons({ spotId }: { spotId: string }) {
-  const [reported, setReported] = useState<'good' | 'bad' | null>(null);
+// ─── ステータス報告ボタン（3分割 + 駐車タイマー） ────────
+function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: string }) {
+  const [reported, setReported] = useState<'good' | 'full' | 'closed' | null>(null);
+  const [showTimer, setShowTimer] = useState(false);
 
-  const handleGood = async () => {
-    if (reported) return;
-    setReported('good');
+  const scheduleTimer = async (minutes: number) => {
+    await Notifications.requestPermissionsAsync();
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '駐車タイマー',
+        body: `${spotName} の駐車時間が ${minutes}分 経過しました。移動の準備を!`,
+        sound: true,
+      },
+      trigger: { seconds: minutes * 60 },
+    });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    try { await reportSpotGood(spotId); } catch {}
+    setShowTimer(false);
   };
 
-  const handleBad = async () => {
+  const handle = (type: 'good' | 'full' | 'closed') => {
     if (reported) return;
-    setReported('bad');
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    try { await reportSpotBad(spotId); } catch {}
+    if (type === 'closed') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        '閉鎖を報告',
+        'このスポットが閉鎖されたことを報告します。\n他のライダーに警告が表示されます。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: '報告する',
+            style: 'destructive',
+            onPress: () => {
+              setReported('closed');
+              reportSpotClosed(spotId).catch(() => {});
+              incrementStat('reports');
+            },
+          },
+        ]
+      );
+    } else if (type === 'full') {
+      setReported('full');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      reportSpotFull(spotId).catch(() => {});
+      incrementStat('reports');
+    } else {
+      setReported('good');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      reportSpotGood(spotId).catch(() => {});
+      incrementStat('reports');
+      // 👍の後にタイマー選択肢を表示
+      setShowTimer(true);
+    }
+  };
+
+  const MSGS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; text: string }> = {
+    good:   { icon: 'checkmark-circle', color: C.green,  text: '報告ありがとう!' },
+    full:   { icon: 'alert-circle',     color: C.orange, text: '満車情報を共有しました' },
+    closed: { icon: 'close-circle',     color: C.red,    text: '閉鎖報告を共有しました' },
   };
 
   if (reported) {
+    const msg = MSGS[reported];
     return (
-      <View style={styles.statusReported}>
-        <Ionicons
-          name={reported === 'good' ? 'checkmark-circle' : 'alert-circle'}
-          size={18}
-          color={reported === 'good' ? C.green : C.orange}
-        />
-        <Text style={[styles.statusReportedText, { color: reported === 'good' ? C.green : C.orange }]}>
-          {reported === 'good' ? '報告ありがとう! 仲間が助かります' : '報告ありがとう! 情報を更新しました'}
-        </Text>
+      <View style={styles.statusReportedSection}>
+        <View style={styles.statusReported}>
+          <Ionicons name={msg.icon} size={18} color={msg.color} />
+          <Text style={[styles.statusReportedText, { color: msg.color }]}>{msg.text}</Text>
+        </View>
+        {/* 駐車タイマー（👍後のみ） */}
+        {showTimer && (
+          <View style={styles.timerSection}>
+            <Text style={styles.timerLabel}>駐車タイマーをセット？</Text>
+            <View style={styles.timerRow}>
+              {[30, 60, 120].map((m) => (
+                <TouchableOpacity key={m} style={styles.timerBtn} onPress={() => scheduleTimer(m)} activeOpacity={0.7}>
+                  <Ionicons name="alarm-outline" size={16} color={C.blue} />
+                  <Text style={styles.timerBtnText}>{m >= 60 ? `${m / 60}時間` : `${m}分`}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.timerSkip} onPress={() => setShowTimer(false)}>
+                <Text style={styles.timerSkipText}>なし</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     );
   }
 
   return (
-    <View style={styles.statusRow}>
-      <TouchableOpacity style={styles.statusGood} onPress={handleGood} activeOpacity={0.75}>
-        <Ionicons name="thumbs-up" size={20} color="#fff" />
-        <Text style={styles.statusBtnText}>停められた</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.statusBad} onPress={handleBad} activeOpacity={0.75}>
-        <Ionicons name="thumbs-down" size={20} color="#fff" />
-        <Text style={styles.statusBtnText}>満車・閉鎖</Text>
-      </TouchableOpacity>
+    <View style={styles.statusSection}>
+      <Text style={styles.statusLabel}>いまの状況を仲間に共有</Text>
+      <View style={styles.statusRow}>
+        <TouchableOpacity style={styles.statusGood} onPress={() => handle('good')} activeOpacity={0.75}>
+          <Ionicons name="checkmark-circle" size={18} color="#fff" />
+          <Text style={styles.statusBtnText}>停められた</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.statusFull} onPress={() => handle('full')} activeOpacity={0.75}>
+          <Ionicons name="time" size={18} color="#fff" />
+          <Text style={styles.statusBtnText}>満車</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.statusClosed} onPress={() => handle('closed')} activeOpacity={0.75}>
+          <Ionicons name="close-circle" size={18} color="#fff" />
+          <Text style={styles.statusBtnText}>閉鎖</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -762,12 +871,14 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingTop: 12,
   },
+  handleArea: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   handle: {
     width: 36, height: 4,
     backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: Spacing.md,
   },
 
   // Header
@@ -820,12 +931,19 @@ const styles = StyleSheet.create({
   methodLabel:   { color: C.blue, fontSize: 11, fontWeight: '500' },
 
   // Gallery
-  gallerySection: { marginTop: 16 },
+  gallerySection: { marginTop: 12 },
   galleryList:   { gap: 8, paddingRight: 4 },
-  galleryThumb:  { width: 110, height: 82, borderRadius: 10, backgroundColor: C.card },
+  galleryThumb:  { width: 130, height: 96, borderRadius: 12, backgroundColor: C.card },
+  noPhotoHint: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginTop: 10, paddingVertical: 8,
+  },
+  noPhotoText: { color: C.sub, fontSize: 12 },
 
   // Nav button
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
   navBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -833,45 +951,81 @@ const styles = StyleSheet.create({
     backgroundColor: C.blue,
     borderRadius: 14,
     paddingVertical: 14,
-    marginTop: 16,
   },
   navBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+  shareBtn: {
+    width: 50,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(10,132,255,0.12)',
+    borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(10,132,255,0.3)',
+  },
 
   // Status report
+  statusSection: { marginTop: 14, gap: 8 },
+  statusLabel: { color: C.sub, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   statusRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
+    gap: 8,
   },
   statusGood: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'rgba(48,209,88,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(48,209,88,0.4)',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
-  statusBad: {
+  statusFull: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: 'rgba(255,159,10,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,159,10,0.4)',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  statusClosed: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,69,58,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,69,58,0.4)',
+    borderRadius: 12,
+    paddingVertical: 12,
   },
   statusBtnText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
+  statusReportedSection: { gap: 10, marginTop: 12 },
+  timerSection: {
+    backgroundColor: 'rgba(10,132,255,0.06)',
+    borderRadius: 12, padding: 12, gap: 8,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(10,132,255,0.2)',
+  },
+  timerLabel: { color: C.text, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  timerRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
+  timerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(10,132,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(10,132,255,0.3)',
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
+  },
+  timerBtnText: { color: C.blue, fontSize: 13, fontWeight: '700' },
+  timerSkip: { paddingHorizontal: 10, paddingVertical: 9 },
+  timerSkipText: { color: C.sub, fontSize: 13 },
   statusReported: {
     flexDirection: 'row',
     alignItems: 'center',

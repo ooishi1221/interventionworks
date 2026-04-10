@@ -103,6 +103,14 @@ export async function initDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_reviews_spot ON reviews(spotId, source);
   `);
 
+  // rider_stats テーブル（確認報告カウンター等）
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS rider_stats (
+      key   TEXT PRIMARY KEY,
+      value INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
   // マイグレーション: favorites に isPinned / sortOrder カラムを追加（既存DB対応）
   try {
     await db.execAsync(`ALTER TABLE favorites ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0;`);
@@ -383,6 +391,57 @@ export async function getReviewSummary(
 export async function deleteReview(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync('DELETE FROM reviews WHERE id = ?;', [id]);
+}
+
+// --- Rider Stats ---
+
+export async function incrementStat(key: string, delta = 1): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `INSERT INTO rider_stats (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = value + ?;`,
+    [key, delta, delta]
+  );
+}
+
+export async function getStat(key: string): Promise<number> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ value: number }>(
+    'SELECT value FROM rider_stats WHERE key = ?;', [key]
+  );
+  return row?.value ?? 0;
+}
+
+export async function getReviewCount(): Promise<number> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM reviews;'
+  );
+  return row?.count ?? 0;
+}
+
+export async function getFavoriteCount(): Promise<number> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM favorites;'
+  );
+  return row?.count ?? 0;
+}
+
+export async function getExploredPrefectures(): Promise<number> {
+  const db = getDatabase();
+  // address カラムから都道府県を抽出してユニーク数をカウント
+  const rows = await db.getAllAsync<{ address: string | null }>(
+    'SELECT DISTINCT address FROM user_spots WHERE address IS NOT NULL;'
+  );
+  const prefs = new Set<string>();
+  for (const r of rows) {
+    if (!r.address) continue;
+    // 「東京都...」「神奈川県...」のように先頭の都道府県を抽出
+    const m = r.address.match(/^(.+?[都道府県])/);
+    if (m) prefs.add(m[1]);
+  }
+  return prefs.size;
 }
 
 // --- Utility ---
