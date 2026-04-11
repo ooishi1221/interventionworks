@@ -1,0 +1,143 @@
+# Moto-Logos（モトロゴス）
+
+## アプリ概要
+
+**正式名称:** Moto-Logos（モトロゴス）  
+**略称:** モトロゴ  
+**由来:** Moto（バイク） + Logos（言葉・理性・集まり）  
+**コンセプト:** 「一人の発見を、全ライダーの安心に。」
+
+ライダーが走りながら見つけた「停められる場所」をリアルタイムで共有し合い、世界で最も信頼できるバイク専用の地図を自分たちの手で育てるプロジェクト。
+
+### コア・バリュー
+
+1. **親指一本の貢献** — グローブをしたまま、0.5秒で「停められた」「閉鎖されてた」を報告。ボタンサイズ最小 52pt、推奨 64pt 以上
+2. **情報の鮮度は仲間の絆** — 青バッジ=最近誰かが確認した証。鮮度で色分け（1ヶ月以内=青、3ヶ月=黄、6ヶ月以上=赤）
+3. **無限の地図** — データは「種」。走れば走るほどピンが増え、古い情報は更新される
+
+---
+
+## 技術スタック
+
+| レイヤー | 技術 |
+|---------|------|
+| フレームワーク | Expo SDK 54 / React Native 0.81 / React 19 |
+| 言語 | TypeScript 5.9（strict mode） |
+| クラウドDB | Firebase Firestore（オフライン永続キャッシュ有効） |
+| ローカルDB | expo-sqlite（WAL モード、ユーザーデータ・お気に入り・評価） |
+| 地図 | react-native-maps + react-native-map-clustering |
+| アニメーション | react-native-reanimated + react-native-gesture-handler |
+| 空間検索 | Geohash プレフィクスクエリ（自前実装、外部依存なし） |
+| ビルド/配信 | EAS Build（preview / production）、EAS Update（OTA） |
+| 状態管理 | React hooks のみ（外部ライブラリなし） |
+
+---
+
+## アーキテクチャ
+
+### データフロー
+
+```
+Firestore（共有）──→ geohash範囲検索 ──→ MapScreen表示
+                                          ↕ マージ
+SQLite（ローカル）──→ ユーザースポット ──→ Firestore同期
+AsyncStorage ──→ 設定値（ニックネーム、チュートリアル済フラグ等）
+```
+
+### オフラインファースト設計
+
+- Firestore の `persistentLocalCache` で一度表示したエリアは通信なしで表示
+- SQLite にユーザー操作（お気に入り、評価、マイバイク）を即時保存
+- ネットワーク復帰時に Firestore へ自動同期
+
+### フォルダ構成
+
+```
+src/
+├── screens/        # 画面コンポーネント（MapScreen, RiderScreen 等）
+├── components/     # 再利用UI（SpotDetailSheet, RadialMenu, TutorialOverlay）
+├── firebase/       # Firestore 初期化・CRUD・型定義
+├── db/             # SQLite スキーマ・CRUD
+├── hooks/          # カスタムフック（useDatabase）
+├── utils/          # ユーティリティ（geohash）
+├── constants/      # テーマ・地図スタイル
+├── types/          # TypeScript 型定義
+└── data/           # シードデータ
+scripts/            # Firestore データ投入・マイグレーション用スクリプト
+plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
+```
+
+---
+
+## デザインシステム
+
+### カラーパレット
+
+| 用途 | カラー |
+|------|--------|
+| 背景 | `#0D0D0D` |
+| サーフェス | `#1A1A1A` |
+| カード | `#242424` |
+| アクセント（オレンジ） | `#FF6B00` |
+| テキスト | `#F5F5F5` |
+| テキスト（セカンダリ） | `#A0A0A0` |
+| ボーダー | `#333333` |
+| 成功 | `#4CAF50` |
+| 危険 | `#F44336` |
+
+### UI原則
+
+- **ダークモード専用** — ヘルメット越し・夜間走行でも視認性を確保
+- **グローブ対応タップ領域** — ボタン最小 52pt、主要アクション 64pt 以上
+- **親指一本操作** — 片手持ちで全機能にアクセス可能な配置
+- **アイコンセット** — Ionicons + MaterialCommunityIcons
+
+---
+
+## 開発ルール
+
+### コード規約
+
+- TypeScript strict。`any` は原則禁止、やむを得ない場合はコメントで理由を明記
+- 関数コンポーネント + hooks のみ（クラスコンポーネント禁止）
+- 状態管理は React hooks で完結させる。外部ライブラリ（Redux, Zustand 等）は導入しない
+- ファイル名はケバブケース（`spot-detail-sheet.tsx`）、型名はパスカルケース
+
+### Firestore 運用
+
+- 新規スポットには必ず `geohash`（精度9）を付与する
+- Read 数を意識する。全件取得（`fetchAllSpots`）はマイグレーション期間のみ
+- Firestore ルールは Firebase Console で管理（リポジトリ外）
+
+### 環境変数
+
+- `.env` に Firebase 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
+- `.env` は `.gitignore` 済み。新規メンバーは Firebase Console から値を取得する
+
+### ビルド・配信
+
+- OTA 更新: `eas update --branch preview`
+- ネイティブ変更時: `eas build --profile preview`
+- 本番リリース: `eas build --profile production`
+
+---
+
+## 画面構成
+
+| 画面 | 概要 |
+|------|------|
+| **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート |
+| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 |
+| **ParkedScreen** | スポット登録・編集フォーム |
+| **MyBikeScreen** | マイバイク管理 |
+| **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
+| **ButlerScreen** | ヘルパー画面 |
+| **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告） |
+
+---
+
+## ブランドボイス（コミュニケーション指針）
+
+- ライダー同士の「仲間意識」で語る。上から教えるのではなく、一緒に地図を作る感覚
+- 機能説明より「体験」を描写する（例：「ボタンを押す」ではなく「親指一本で仲間を救う」）
+- 比較広告的な表現は避ける。自分たちの世界観で語る
