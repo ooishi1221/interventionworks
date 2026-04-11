@@ -1,0 +1,72 @@
+:root {
+  --bg: #0D0D0D;
+  --surface: #1A1A1A;
+  --card: #242424;
+  --accent: #FF6B00;
+  --accent-light: #FF8C33;
+  --text: #F5F5F5;
+  --text-secondary: #A0A0A0;
+  --border: #333333;
+  --fresh-blue: #0A84FF;
+  --fresh-yellow: #FF9F0A;
+  --fresh-red: #FF453A;
+  --success: #30D158;
+
+  --font-sans: 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'Inter', ui-monospace, monospace;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-3xl: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  --max-width: 1080px;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
