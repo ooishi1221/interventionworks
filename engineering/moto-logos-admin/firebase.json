@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "site": "moto-logos-admin",
+    "public": "out",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}
