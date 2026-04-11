@@ -1,5 +1,5 @@
 /**
- * Firestore データ型定義 — Moto-Spotter v1.1
+ * Firestore データ型定義 — Moto-Logos v1.1
  * 仕様書 §4 "データ構造 (Firebase Firestore)" に準拠
  */
 import { Timestamp, GeoPoint } from 'firebase/firestore';

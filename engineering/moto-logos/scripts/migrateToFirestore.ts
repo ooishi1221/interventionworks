@@ -201,7 +201,7 @@ export async function runFullMigration(
   anonymousUserId = 'local_user',
   onProgress?: (step: number, done: number, total: number) => void
 ): Promise<void> {
-  console.log('=== Moto-Spotter Firestore 移行開始 ===');
+  console.log('=== Moto-Logos Firestore 移行開始 ===');
 
   await migrateSeedSpotsToFirestore((done, total) => onProgress?.(1, done, total));
   await migrateUserSpotsToFirestore();

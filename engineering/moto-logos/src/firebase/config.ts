@@ -1,5 +1,5 @@
 /**
- * Firebase 初期化 — Moto-Spotter
+ * Firebase 初期化 — Moto-Logos
  *
  * - オフライン永続キャッシュ有効（Firestore Read 節約）
  * - 一度表示したエリアは通信なしでスマホから読み出し

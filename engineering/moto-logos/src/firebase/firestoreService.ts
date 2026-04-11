@@ -1,5 +1,5 @@
 /**
- * Firestore CRUD サービス — Moto-Spotter v2 (Geohash 対応)
+ * Firestore CRUD サービス — Moto-Logos v2 (Geohash 対応)
  *
  * - 全件取得を廃止 → geohash プレフィクスによる範囲検索
  * - 一度取得済みのエリアはオフラインキャッシュから即時返却
