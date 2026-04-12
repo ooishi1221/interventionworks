@@ -46,7 +46,7 @@ export async function PUT(
       targetType: 'announcement' as never,
       targetId: id,
       reason: (updates.title as string) || prev.title,
-      previousState: { title: prev.title, body: prev.body, sortOrder: prev.sortOrder },
+      previousState: { title: prev.title, body: prev.body, sortOrder: prev.sortOrder ?? null },
       newState: updates,
     });
 
