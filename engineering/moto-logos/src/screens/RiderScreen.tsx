@@ -19,10 +19,13 @@ import * as Haptics from 'expo-haptics';
 import {
   getAllUserSpots,
   getAllFavorites,
-  getReviewCount,
   getStat,
   getExploredPrefectures,
+  getRecentActivity,
+  type ActivityLogEntry,
 } from '../db/database';
+import { getMyReviewCount } from '../firebase/firestoreService';
+import { useUser } from '../contexts/UserContext';
 import { Spacing, FontSize } from '../constants/theme';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
@@ -96,30 +99,58 @@ function NextGoalCard({ contribution, rank }: { contribution: number; rank: { na
 }
 
 // ─── 最近の活動タイムライン ───────────────────────────
-function RecentActivity({ spots, reviews, reports }: { spots: number; reviews: number; reports: number }) {
-  // 実際のタイムラインデータがないので、スタッツから簡易的に生成
-  const items: { icon: keyof typeof Ionicons.glyphMap; color: string; text: string }[] = [];
 
-  if (spots > 0) items.push({ icon: 'location', color: C.purple, text: `${spots}件のスポットを共有しました` });
-  if (reviews > 0) items.push({ icon: 'chatbubble', color: C.blue, text: `${reviews}件の口コミを投稿しました` });
-  if (reports > 0) items.push({ icon: 'checkmark-circle', color: C.green, text: `${reports}回の確認報告をしました` });
+const ACTIVITY_ICON: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  spot:     { icon: 'location',        color: C.purple },
+  review:   { icon: 'chatbubble',      color: C.blue },
+  report:   { icon: 'checkmark-circle', color: C.green },
+  favorite: { icon: 'heart',           color: C.pink },
+};
 
-  if (items.length === 0) {
-    items.push({ icon: 'flag', color: C.orange, text: 'マップでスポットを共有して\nあなたの活動を始めよう' });
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'たった今';
+  if (min < 60) return `${min}分前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}時間前`;
+  const d = Math.floor(hr / 24);
+  return `${d}日前`;
+}
+
+function RecentActivity({ entries }: { entries: ActivityLogEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <View style={styles.activitySection}>
+        <Text style={styles.sectionTitle}>あなたの活動</Text>
+        <View style={styles.activityItem}>
+          <View style={[styles.activityDot, { backgroundColor: C.orange }]}>
+            <Ionicons name="flag" size={14} color="#fff" />
+          </View>
+          <Text style={styles.activityText}>マップでスポットを共有して{'\n'}あなたの活動を始めよう</Text>
+        </View>
+      </View>
+    );
   }
 
   return (
     <View style={styles.activitySection}>
       <Text style={styles.sectionTitle}>あなたの活動</Text>
-      {items.map((item, i) => (
-        <View key={i} style={styles.activityItem}>
-          <View style={[styles.activityDot, { backgroundColor: item.color }]}>
-            <Ionicons name={item.icon} size={14} color="#fff" />
+      {entries.map((entry, i) => {
+        const meta = ACTIVITY_ICON[entry.type] ?? ACTIVITY_ICON.report;
+        return (
+          <View key={entry.id} style={styles.activityItem}>
+            <View style={[styles.activityDot, { backgroundColor: meta.color }]}>
+              <Ionicons name={meta.icon} size={14} color="#fff" />
+            </View>
+            {i < entries.length - 1 && <View style={styles.activityLine} />}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activityText}>{entry.label}</Text>
+              <Text style={styles.activityTime}>{formatRelative(entry.createdAt)}</Text>
+            </View>
           </View>
-          {i < items.length - 1 && <View style={styles.activityLine} />}
-          <Text style={styles.activityText}>{item.text}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -133,20 +164,24 @@ interface Props {
 }
 
 export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickname, onChangeNickname }: Props) {
+  const user = useUser();
   const [stats, setStats] = useState<RiderStats>({ spotsShared: 0, reviews: 0, reports: 0, favorites: 0, areas: 0, helpedRiders: 0 });
   const [favModalOpen, setFavModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
+  const [activityEntries, setActivityEntries] = useState<ActivityLogEntry[]>([]);
 
   const loadStats = useCallback(async () => {
-    const [spots, reviews, reports, favs, areas] = await Promise.all([
+    const [spots, reviews, reports, favs, areas, recentActs] = await Promise.all([
       getAllUserSpots(),
-      getReviewCount(),
+      user ? getMyReviewCount(user.userId) : Promise.resolve(0),
       getStat('reports'),
       getAllFavorites(),
       getExploredPrefectures(),
+      getRecentActivity(10),
     ]);
+    setActivityEntries(recentActs);
     // お気に入りはスポットが存在するもののみカウント
     const userSpotIds = new Set(spots.map((s) => `user_${s.id}`));
     const favorites = favs.filter((f) => {
@@ -266,7 +301,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickna
         <NextGoalCard contribution={contribution} rank={rank} />
 
         {/* ── 最近の活動 ─────────────────────────────── */}
-        <RecentActivity spots={stats.spotsShared} reviews={stats.reviews} reports={stats.reports} />
+        <RecentActivity entries={activityEntries} />
 
         {/* ── 使い方を見る ──────────────────────────── */}
         {onStartTutorial && (
@@ -395,7 +430,8 @@ const styles = StyleSheet.create({
     width: 2, height: 14,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  activityText: { color: C.text, fontSize: 14, flex: 1 },
+  activityText: { color: C.text, fontSize: 14 },
+  activityTime: { color: C.sub, fontSize: 11, marginTop: 2 },
 
   tutorialBtn: {
     flexDirection: 'row',

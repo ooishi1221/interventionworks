@@ -103,7 +103,13 @@ export function FavoritesScreen({ onGoToMap, onGoToSpot }: Props) {
         return { key: `${fav.source}_${fav.spotId}`, favorite: fav, spot };
       });
 
-      setItems(resolved);
+      // ゴースト除去: 存在しないスポットのお気に入りを自動クリーンアップ
+      const ghosts = resolved.filter((r) => r.spot === null);
+      for (const g of ghosts) {
+        removeFavorite(g.favorite.spotId, g.favorite.source).catch(() => {});
+      }
+
+      setItems(resolved.filter((r) => r.spot !== null));
     } catch {}
     setLoading(false);
   }, []);

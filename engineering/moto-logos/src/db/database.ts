@@ -111,6 +111,17 @@ export async function initDatabase(): Promise<void> {
     );
   `);
 
+  // activity_log テーブル（アクティビティタイムライン用）
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      type      TEXT    NOT NULL,
+      label     TEXT    NOT NULL,
+      detail    TEXT,
+      createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+  `);
+
   // マイグレーション: favorites に isPinned / sortOrder カラムを追加（既存DB対応）
   try {
     await db.execAsync(`ALTER TABLE favorites ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0;`);
@@ -346,21 +357,8 @@ export async function setRating(spotId: string, source: 'seed' | 'user', score: 
   );
 }
 
-// --- Reviews (コメント・写真付き口コミ) ---
-
-export async function insertReview(
-  spotId: string,
-  source: 'seed' | 'user',
-  score: number,
-  comment?: string,
-  photoUri?: string
-): Promise<void> {
-  const db = getDatabase();
-  await db.runAsync(
-    `INSERT INTO reviews (spotId, source, score, comment, photoUri) VALUES (?, ?, ?, ?, ?);`,
-    [spotId, source, score, comment ?? null, photoUri ?? null]
-  );
-}
+// --- Reviews (レガシー: マイグレーション用に getReviews のみ残す) ---
+// 通常の読み書きは Firestore (firestoreService.ts) を使用
 
 export async function getReviews(
   spotId: string,
@@ -373,24 +371,6 @@ export async function getReviews(
     `SELECT * FROM reviews WHERE spotId = ? AND source = ? ORDER BY ${order};`,
     [spotId, source]
   );
-}
-
-export async function getReviewSummary(
-  spotId: string,
-  source: 'seed' | 'user'
-): Promise<ReviewSummary | null> {
-  const db = getDatabase();
-  const row = await db.getFirstAsync<{ avg: number; count: number }>(
-    `SELECT AVG(score) as avg, COUNT(*) as count FROM reviews WHERE spotId = ? AND source = ?;`,
-    [spotId, source]
-  );
-  if (!row || row.count === 0) return null;
-  return { avg: Math.round(row.avg * 10) / 10, count: row.count };
-}
-
-export async function deleteReview(id: number): Promise<void> {
-  const db = getDatabase();
-  await db.runAsync('DELETE FROM reviews WHERE id = ?;', [id]);
 }
 
 // --- Rider Stats ---
@@ -410,14 +390,6 @@ export async function getStat(key: string): Promise<number> {
     'SELECT value FROM rider_stats WHERE key = ?;', [key]
   );
   return row?.value ?? 0;
-}
-
-export async function getReviewCount(): Promise<number> {
-  const db = getDatabase();
-  const row = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM reviews;'
-  );
-  return row?.count ?? 0;
 }
 
 export async function getUserRank(): Promise<'novice' | 'rider' | 'patrol'> {
@@ -454,6 +426,34 @@ export async function getExploredPrefectures(): Promise<number> {
     if (m) prefs.add(m[1]);
   }
   return prefs.size;
+}
+
+// --- Activity Log ---
+
+export type ActivityType = 'spot' | 'review' | 'report' | 'favorite';
+
+export interface ActivityLogEntry {
+  id: number;
+  type: ActivityType;
+  label: string;
+  detail: string | null;
+  createdAt: string;
+}
+
+export async function logActivityLocal(type: ActivityType, label: string, detail?: string): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    'INSERT INTO activity_log (type, label, detail) VALUES (?, ?, ?);',
+    [type, label, detail ?? null]
+  );
+}
+
+export async function getRecentActivity(limit = 20): Promise<ActivityLogEntry[]> {
+  const db = getDatabase();
+  return db.getAllAsync<ActivityLogEntry>(
+    'SELECT * FROM activity_log ORDER BY createdAt DESC LIMIT ?;',
+    [limit]
+  );
 }
 
 // --- Utility ---

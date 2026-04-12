@@ -225,6 +225,21 @@ export async function deleteUserSpotFromFirestore(localId: number): Promise<void
 }
 
 // ─────────────────────────────────────────────────────
+// スポット詳細カウント取得
+// ─────────────────────────────────────────────────────
+
+export async function fetchSpotCounts(spotId: string): Promise<{ goodCount: number; badReportCount: number }> {
+  const { getDoc } = await import('firebase/firestore');
+  const snap = await getDoc(doc(db, COLLECTIONS.SPOTS, spotId));
+  if (!snap.exists()) return { goodCount: 0, badReportCount: 0 };
+  const data = snap.data();
+  return {
+    goodCount: (data.goodCount as number) ?? 0,
+    badReportCount: (data.badReportCount as number) ?? 0,
+  };
+}
+
+// ─────────────────────────────────────────────────────
 // ステータス報告（👍停められた / 👎満車・閉鎖）
 // ─────────────────────────────────────────────────────
 
@@ -371,6 +386,16 @@ export async function fetchMyReviews(userId: string): Promise<(Review & { spotNa
 
 export async function deleteReviewFromFirestore(firestoreId: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTIONS.REVIEWS, firestoreId));
+}
+
+/** 指定ユーザーの投稿レビュー件数を返す */
+export async function getMyReviewCount(userId: string): Promise<number> {
+  const q = query(
+    collection(db, COLLECTIONS.REVIEWS),
+    where('userId', '==', userId)
+  );
+  const snap = await getDocs(q);
+  return snap.size;
 }
 
 // ─────────────────────────────────────────────────────

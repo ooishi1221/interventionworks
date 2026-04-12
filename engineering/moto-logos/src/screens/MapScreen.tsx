@@ -47,8 +47,19 @@ const JAPAN_CENTER: Region = {
 const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#636366';
 
+/** 鮮度ベースのピンカラー（CLAUDE.md §鮮度可視化） */
 function markerColor(spot: ParkingPin): string {
-  if (spot.source === 'user') return '#BF5AF2';
+  if (spot.source === 'user') return '#BF5AF2'; // ユーザー投稿は常に紫
+
+  if (spot.updatedAt) {
+    const ageMs = Date.now() - new Date(spot.updatedAt).getTime();
+    const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
+    if (ageMs < ONE_MONTH)     return '#0A84FF'; // 青: 1ヶ月以内（信頼）
+    if (ageMs < ONE_MONTH * 3) return '#FFD60A'; // 黄: 3ヶ月以内（注意）
+    if (ageMs >= ONE_MONTH * 6) return '#FF453A'; // 赤: 6ヶ月以上（要確認）
+  }
+
+  // updatedAt なし or 3-6ヶ月: デフォルトカラー（排気量ベース）
   if (spot.maxCC === null)    return SYS_BLUE;
   if (spot.maxCC >= 250)     return '#30D158';
   if (spot.maxCC >= 125)     return SYS_BLUE;

@@ -27,9 +27,11 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,11 +41,13 @@ import {
   removeFavorite,
   getAllFavorites,
   incrementStat,
+  logActivityLocal,
 } from '../db/database';
 import {
   addReview,
   fetchReviews,
   fetchReviewSummary,
+  fetchSpotCounts,
   deleteReviewFromFirestore,
   reportSpotGood,
   reportSpotFull,
@@ -229,6 +233,14 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     if (!result.canceled) setNewPhoto(result.assets[0].uri);
   };
 
+  /** 一時写真ファイルを削除してステートをクリア */
+  const clearPhoto = useCallback(async () => {
+    if (newPhoto) {
+      FileSystem.deleteAsync(newPhoto, { idempotent: true }).catch(() => {});
+    }
+    setNewPhoto(null);
+  }, [newPhoto]);
+
   // ── レビュー投稿 ──────────────────────────────────────
   const submitReview = async () => {
     if (newScore === 0) { Alert.alert('星評価を選んでください'); return; }
@@ -245,7 +257,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         (p) => setUploadProgress(p),
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setNewScore(0); setNewComment(''); setNewPhoto(null);
+      logActivityLocal('review', `${spot.name}に口コミを投稿`, `${newScore}点`);
+      setNewScore(0); setNewComment(''); clearPhoto();
       setFormVisible(false);
       await loadAll();
     } catch (e) {
@@ -495,9 +508,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   onScoreChange={setNewScore}
                   onCommentChange={setNewComment}
                   onPickPhoto={pickPhoto}
-                  onRemovePhoto={() => setNewPhoto(null)}
+                  onRemovePhoto={clearPhoto}
                   onSubmit={submitReview}
-                  onCancel={() => { setFormVisible(false); setNewScore(0); setNewComment(''); setNewPhoto(null); }}
+                  onCancel={() => { setFormVisible(false); setNewScore(0); setNewComment(''); clearPhoto(); }}
                 />
               )}
             </View>
@@ -548,6 +561,21 @@ function FreshnessBadge({ updatedAt }: { updatedAt?: string }) {
 function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: string }) {
   const [reported, setReported] = useState<'good' | 'full' | 'closed' | null>(null);
   const [showTimer, setShowTimer] = useState(false);
+  const [goodCount, setGoodCount]     = useState(0);
+  const [badCount, setBadCount]       = useState(0);
+  const [alreadyVoted, setAlreadyVoted] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const [counts, prev] = await Promise.all([
+        fetchSpotCounts(spotId),
+        AsyncStorage.getItem(`vote_${spotId}`),
+      ]);
+      setGoodCount(counts.goodCount);
+      setBadCount(counts.badReportCount);
+      setAlreadyVoted(!!prev);
+    })();
+  }, [spotId]);
 
   const scheduleTimer = async (minutes: number) => {
     try {
@@ -569,7 +597,7 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
   };
 
   const handle = (type: 'good' | 'full' | 'closed') => {
-    if (reported) return;
+    if (reported || alreadyVoted) return;
     if (type === 'closed') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
@@ -582,6 +610,10 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
             style: 'destructive',
             onPress: () => {
               setReported('closed');
+              setAlreadyVoted(true);
+              setBadCount((c) => c + 3);
+              AsyncStorage.setItem(`vote_${spotId}`, 'closed');
+              logActivityLocal('report', `${spotName}を閉鎖報告`);
               reportSpotClosed(spotId).catch((e) => {
                 captureError(e, { context: 'report_closed' });
                 Alert.alert('送信エラー', '報告の送信に失敗しました。');
@@ -593,6 +625,10 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
       );
     } else if (type === 'full') {
       setReported('full');
+      setAlreadyVoted(true);
+      setBadCount((c) => c + 1);
+      AsyncStorage.setItem(`vote_${spotId}`, 'full');
+      logActivityLocal('report', `${spotName}を満車報告`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       reportSpotFull(spotId).catch((e) => {
         captureError(e, { context: 'report_full' });
@@ -601,6 +637,10 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
       incrementStat('reports');
     } else {
       setReported('good');
+      setAlreadyVoted(true);
+      setGoodCount((c) => c + 1);
+      AsyncStorage.setItem(`vote_${spotId}`, 'good');
+      logActivityLocal('report', `${spotName}を停められた報告`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       reportSpotGood(spotId).catch((e) => {
         captureError(e, { context: 'report_good' });
@@ -649,17 +689,21 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
 
   return (
     <View style={styles.statusSection}>
-      <Text style={styles.statusLabel}>いまの状況を仲間に共有</Text>
+      <Text style={styles.statusLabel}>
+        {alreadyVoted ? 'このスポットは報告済みです' : 'いまの状況を仲間に共有'}
+      </Text>
       <View style={styles.statusRow}>
-        <TouchableOpacity style={styles.statusGood} onPress={() => handle('good')} activeOpacity={0.75}>
+        <TouchableOpacity style={[styles.statusGood, alreadyVoted && { opacity: 0.4 }]} onPress={() => handle('good')} activeOpacity={0.75} disabled={alreadyVoted}>
           <Ionicons name="checkmark-circle" size={18} color="#fff" />
           <Text style={styles.statusBtnText}>停められた</Text>
+          {goodCount > 0 && <Text style={styles.statusCountBadge}>{goodCount}</Text>}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.statusFull} onPress={() => handle('full')} activeOpacity={0.75}>
+        <TouchableOpacity style={[styles.statusFull, alreadyVoted && { opacity: 0.4 }]} onPress={() => handle('full')} activeOpacity={0.75} disabled={alreadyVoted}>
           <Ionicons name="time" size={18} color="#fff" />
           <Text style={styles.statusBtnText}>満車</Text>
+          {badCount > 0 && <Text style={styles.statusCountBadge}>{badCount}</Text>}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.statusClosed} onPress={() => handle('closed')} activeOpacity={0.75}>
+        <TouchableOpacity style={[styles.statusClosed, alreadyVoted && { opacity: 0.4 }]} onPress={() => handle('closed')} activeOpacity={0.75} disabled={alreadyVoted}>
           <Ionicons name="close-circle" size={18} color="#fff" />
           <Text style={styles.statusBtnText}>閉鎖</Text>
         </TouchableOpacity>
@@ -1043,6 +1087,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+  },
+  statusCountBadge: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    fontWeight: '600',
   },
   statusReportedSection: { gap: 10, marginTop: 12 },
   timerSection: {
