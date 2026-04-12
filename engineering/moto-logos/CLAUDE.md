@@ -23,7 +23,7 @@
 |---------|------|
 | フレームワーク | Expo SDK 54 / React Native 0.81 / React 19 |
 | 言語 | TypeScript 5.9（strict mode） |
-| クラウドDB | Firebase Firestore（オフライン永続キャッシュ有効） |
+| クラウドDB | Firebase Firestore（オフライン永続キャッシュ有効）+ Firebase Storage（写真） |
 | ローカルDB | expo-sqlite（WAL モード、ユーザーデータ・お気に入り・評価） |
 | 地図 | react-native-maps + react-native-map-clustering |
 | アニメーション | react-native-reanimated + react-native-gesture-handler |
@@ -42,7 +42,9 @@
 Firestore（共有）──→ geohash範囲検索 ──→ MapScreen表示
                                           ↕ マージ
 SQLite（ローカル）──→ ユーザースポット ──→ Firestore同期
-AsyncStorage ──→ 設定値（ニックネーム、チュートリアル済フラグ等）
+Firebase Storage ──→ レビュー写真（圧縮アップロード → 公開URL）
+AsyncStorage ──→ 設定値（deviceId, ニックネーム、チュートリアル済フラグ等）
+UserContext ──→ deviceId ベースのユーザー識別 → Firestore users コレクション
 ```
 
 ### オフラインファースト設計
@@ -57,10 +59,11 @@ AsyncStorage ──→ 設定値（ニックネーム、チュートリアル済
 src/
 ├── screens/        # 画面コンポーネント（MapScreen, RiderScreen 等）
 ├── components/     # 再利用UI（SpotDetailSheet, RadialMenu, TutorialOverlay）
-├── firebase/       # Firestore 初期化・CRUD・型定義
+├── contexts/       # React Context（UserContext — ユーザー識別）
+├── firebase/       # Firestore/Storage 初期化・CRUD・型定義
 ├── db/             # SQLite スキーマ・CRUD
 ├── hooks/          # カスタムフック（useDatabase）
-├── utils/          # ユーティリティ（geohash）
+├── utils/          # ユーティリティ（geohash, image-upload, ng-filter, sentry）
 ├── constants/      # テーマ・地図スタイル
 ├── types/          # TypeScript 型定義
 └── data/           # シードデータ
@@ -104,11 +107,28 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 状態管理は React hooks で完結させる。外部ライブラリ（Redux, Zustand 等）は導入しない
 - ファイル名はケバブケース（`spot-detail-sheet.tsx`）、型名はパスカルケース
 
+### ユーザー識別システム
+
+- **デバイスIDベース**: AsyncStorage の `moto_logos_device_id`（UUID v4）を userId として使用
+- `UserContext` (`src/contexts/UserContext.tsx`) がアプリ全体に `userId`, `rank`, `trustScore` を供給
+- 初回起動時に Firestore `users` コレクションにドキュメントを自動作成（初期 trustScore: 100, rank: rider）
+- 将来の Firebase Auth 移行パス確保済み（userId の差し替えのみで移行可能）
+- レビュー・投票には必ず実 userId を紐付ける（`'local_user'` ハードコード禁止）
+
+### 写真アップロード（Firebase Storage）
+
+- レビュー写真は Firebase Storage にアップロードし、公開 URL を Firestore `reviews.photoUrls` に保存
+- アップロード前に `expo-image-manipulator` で圧縮（max 1024px, JPEG quality 0.7）
+- Storage パス: `reviews/{spotId}/{userId}_{timestamp}.jpg`
+- アップロード中はプログレスバーを表示
+- ローカル URI を直接 Firestore に保存しない
+
 ### Firestore 運用
 
 - 新規スポットには必ず `geohash`（精度9）を付与する
 - Read 数を意識する。全件取得（`fetchAllSpots`）はマイグレーション期間のみ
 - `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
+- `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, rank）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
 
 ### 環境変数

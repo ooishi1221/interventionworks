@@ -54,4 +54,19 @@ export function getDb(): Firestore {
 
 // 後方互換: 既存コードの `import { db }` をそのまま動かす
 export const db: Firestore = getDb();
+
+// ─────────────────────────────────────────────────────
+// Firebase Storage（レビュー写真のクラウド保存）
+// ─────────────────────────────────────────────────────
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
+
+let _storage: FirebaseStorage | null = null;
+
+export function getStorageInstance(): FirebaseStorage {
+  if (!_storage) {
+    _storage = getStorage(app);
+  }
+  return _storage;
+}
+
 export default app;

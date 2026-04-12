@@ -51,6 +51,7 @@ import {
 } from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
+import { useUser } from '../contexts/UserContext';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -140,6 +141,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
   const [newComment, setNewComment]     = useState('');
   const [newPhoto, setNewPhoto]         = useState<string | null>(null);
   const [submitting, setSubmitting]     = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const user = useUser();
 
   // Fullscreen photo
   const [fullPhoto, setFullPhoto]       = useState<string | null>(null);
@@ -228,19 +232,24 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
   // ── レビュー投稿 ──────────────────────────────────────
   const submitReview = async () => {
     if (newScore === 0) { Alert.alert('星評価を選んでください'); return; }
+    if (!user) { Alert.alert('ユーザー情報を読み込み中です'); return; }
     setSubmitting(true);
+    setUploadProgress(0);
     try {
       await addReview(
         spot.id,
+        user.userId,
         newScore,
         newComment.trim() || undefined,
-        newPhoto ?? undefined
+        newPhoto ?? undefined,
+        (p) => setUploadProgress(p),
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNewScore(0); setNewComment(''); setNewPhoto(null);
       setFormVisible(false);
       await loadAll();
     } catch (e) {
+      captureError(e, { context: 'submitReview' });
       Alert.alert('保存に失敗しました');
     }
     setSubmitting(false);
@@ -482,6 +491,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   comment={newComment}
                   photo={newPhoto}
                   submitting={submitting}
+                  uploadProgress={uploadProgress}
                   onScoreChange={setNewScore}
                   onCommentChange={setNewComment}
                   onPickPhoto={pickPhoto}
@@ -780,6 +790,7 @@ function ReviewForm({
   comment,
   photo,
   submitting,
+  uploadProgress,
   onScoreChange,
   onCommentChange,
   onPickPhoto,
@@ -791,6 +802,7 @@ function ReviewForm({
   comment: string;
   photo: string | null;
   submitting: boolean;
+  uploadProgress: number;
   onScoreChange: (n: number) => void;
   onCommentChange: (s: string) => void;
   onPickPhoto: () => void;
@@ -841,6 +853,14 @@ function ReviewForm({
           <Ionicons name="camera-outline" size={18} color={C.blue} />
           <Text style={styles.formPhotoBtnText}>写真を追加（任意）</Text>
         </TouchableOpacity>
+      )}
+
+      {/* アップロードプログレス */}
+      {submitting && photo && uploadProgress < 1 && (
+        <View style={styles.uploadProgressContainer}>
+          <View style={[styles.uploadProgressBar, { width: `${Math.round(uploadProgress * 100)}%` }]} />
+          <Text style={styles.uploadProgressText}>写真アップロード中… {Math.round(uploadProgress * 100)}%</Text>
+        </View>
       )}
 
       {/* ボタン群 */}
@@ -1136,6 +1156,9 @@ const styles = StyleSheet.create({
   formCancelText: { color: C.sub, fontSize: 14, fontWeight: '500' },
   formSubmitBtn:  { flex: 2, alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: C.blue },
   formSubmitText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  uploadProgressContainer: { width: '100%', height: 24, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 6, overflow: 'hidden', justifyContent: 'center' },
+  uploadProgressBar: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: C.blue, borderRadius: 6 },
+  uploadProgressText: { color: C.sub, fontSize: 11, textAlign: 'center', fontWeight: '500' },
 
   // Fullscreen
   fullscreenBg:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },

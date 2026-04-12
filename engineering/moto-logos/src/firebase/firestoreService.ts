@@ -28,6 +28,44 @@ import type { SpotCapacity, UserRank } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 import { isNgWord } from '../utils/ng-filter';
+import { uploadReviewPhoto } from '../utils/image-upload';
+
+// ─────────────────────────────────────────────────────
+// ユーザードキュメント管理
+// ─────────────────────────────────────────────────────
+
+/**
+ * Firestore `users` コレクションにプロフィールを作成 or 取得。
+ * 既存ドキュメントがあればそのまま返す。
+ */
+export async function ensureUserDocument(
+  userId: string,
+  displayName: string
+): Promise<{ rank: UserRank; trustScore: number }> {
+  const { getDoc } = await import('firebase/firestore');
+  const ref = doc(db, COLLECTIONS.USERS, userId);
+  const snap = await getDoc(ref);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    return {
+      rank: (data.rank as UserRank) ?? 'rider',
+      trustScore: (data.trustScore as number) ?? 100,
+    };
+  }
+
+  // 新規ユーザー作成
+  const now = Timestamp.now();
+  const profile = {
+    displayName,
+    trustScore: 100,
+    rank: 'rider' as UserRank,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await setDoc(ref, profile);
+  return { rank: profile.rank, trustScore: profile.trustScore };
+}
 
 // ─────────────────────────────────────────────────────
 // 変換ヘルパー
@@ -267,22 +305,31 @@ export async function fetchReviewSummary(spotId: string): Promise<ReviewSummary 
 
 export async function addReview(
   spotId: string,
+  userId: string,
   score: number,
   comment?: string,
-  photoUri?: string
+  photoUri?: string,
+  onUploadProgress?: (progress: number) => void,
 ): Promise<void> {
   // NG ワードチェック（クライアント側即時フィードバック）
   if (comment && isNgWord(comment)) {
     throw new Error('レビューに不適切な表現が含まれています');
   }
 
+  // 写真がある場合は Firebase Storage にアップロード
+  let photoUrls: string[] = [];
+  if (photoUri) {
+    const url = await uploadReviewPhoto(photoUri, userId, spotId, onUploadProgress);
+    photoUrls = [url];
+  }
+
   const now = Timestamp.now();
   await addDoc(collection(db, COLLECTIONS.REVIEWS), stripUndef({
     spotId,
-    userId:    'local_user',
+    userId,
     score,
     ...(comment  != null && comment !== '' && { comment }),
-    photoUrls: photoUri ? [photoUri] : [],
+    photoUrls,
     goodCount: 0,
     badCount:  0,
     createdAt: now,
@@ -291,10 +338,10 @@ export async function addReview(
 }
 
 /** 自分の口コミを全件取得（spotName 付き） */
-export async function fetchMyReviews(): Promise<(Review & { spotName: string })[]> {
+export async function fetchMyReviews(userId: string): Promise<(Review & { spotName: string })[]> {
   const q = query(
     collection(db, COLLECTIONS.REVIEWS),
-    where('userId', '==', 'local_user')
+    where('userId', '==', userId)
   );
   const snap = await getDocs(q);
 

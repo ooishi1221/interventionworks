@@ -18,6 +18,7 @@ import { RiderScreen } from './src/screens/RiderScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
 import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { UserProvider } from './src/contexts/UserContext';
 import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { FontSize, Spacing } from './src/constants/theme';
@@ -176,73 +177,75 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={styles.root}>
-        <StatusBar style="light" />
+      <UserProvider nickname={nickname}>
+        <GestureHandlerRootView style={styles.root}>
+          <StatusBar style="light" />
 
-        <View style={styles.content}>
-          {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
-          <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
-            <MapScreen
-              ref={mapScreenRef}
-              userCC={userCC}
-              onChangeCC={(cc) => setUserCC(cc)}
-              focusSpot={focusSpot}
-              onFocusConsumed={() => setFocusSpot(null)}
-              refreshTrigger={mapRefreshTrigger}
-              onRegisterTutorialTarget={registerTarget}
-            />
+          <View style={styles.content}>
+            {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
+            <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
+              <MapScreen
+                ref={mapScreenRef}
+                userCC={userCC}
+                onChangeCC={(cc) => setUserCC(cc)}
+                focusSpot={focusSpot}
+                onFocusConsumed={() => setFocusSpot(null)}
+                refreshTrigger={mapRefreshTrigger}
+                onRegisterTutorialTarget={registerTarget}
+              />
+            </View>
+            {tab === 'rider' && (
+              <RiderScreen
+                onGoToSpot={handleGoToSpot}
+                onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
+                onStartTutorial={startTutorial}
+                nickname={nickname}
+                onChangeNickname={saveNickname}
+              />
+            )}
           </View>
-          {tab === 'rider' && (
-            <RiderScreen
-              onGoToSpot={handleGoToSpot}
-              onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
-              onStartTutorial={startTutorial}
-              nickname={nickname}
-              onChangeNickname={saveNickname}
-            />
-          )}
-        </View>
 
-        <SafeAreaView style={styles.tabBarWrapper}>
-          <View style={styles.tabBar}>
-            {TABS.map((t) => {
-              const isActive = tab === t.id;
-              return (
-                <TouchableOpacity
-                  key={t.id}
-                  style={styles.tabItem}
-                  onPress={() => handleTabPress(t.id)}
-                  activeOpacity={0.6}
-                  onLayout={t.id === 'rider' ? (e) => {
-                    (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
-                      registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
-                    });
-                  } : undefined}
-                >
-                  <Ionicons
-                    name={isActive ? t.iconActive : t.icon}
-                    size={24}
-                    color={isActive ? SYS_BLUE : SYS_GRAY}
-                  />
-                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </SafeAreaView>
+          <SafeAreaView style={styles.tabBarWrapper}>
+            <View style={styles.tabBar}>
+              {TABS.map((t) => {
+                const isActive = tab === t.id;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={styles.tabItem}
+                    onPress={() => handleTabPress(t.id)}
+                    activeOpacity={0.6}
+                    onLayout={t.id === 'rider' ? (e) => {
+                      (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
+                        registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
+                      });
+                    } : undefined}
+                  >
+                    <Ionicons
+                      name={isActive ? t.iconActive : t.icon}
+                      size={24}
+                      color={isActive ? SYS_BLUE : SYS_GRAY}
+                    />
+                    <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </SafeAreaView>
 
-        {/* チュートリアルオーバーレイ */}
-        <TutorialOverlay
-          visible={tutorialVisible}
-          onFinish={finishTutorial}
-          targets={tutorialTargets}
-          userCC={userCC}
-          onChangeCC={(cc) => setUserCC(cc)}
-          onSetNickname={saveNickname}
-        />
-      </GestureHandlerRootView>
+          {/* チュートリアルオーバーレイ */}
+          <TutorialOverlay
+            visible={tutorialVisible}
+            onFinish={finishTutorial}
+            targets={tutorialTargets}
+            userCC={userCC}
+            onChangeCC={(cc) => setUserCC(cc)}
+            onSetNickname={saveNickname}
+          />
+        </GestureHandlerRootView>
+      </UserProvider>
     </ErrorBoundary>
   );
 }

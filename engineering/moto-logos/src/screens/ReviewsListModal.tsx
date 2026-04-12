@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { Spacing, FontSize } from '../constants/theme';
 import { Review } from '../types';
 import { fetchMyReviews, deleteReviewFromFirestore } from '../firebase/firestoreService';
+import { useUser } from '../contexts/UserContext';
 
 const C = {
   bg: '#000000', card: '#1C1C1E', border: 'rgba(255,255,255,0.10)',
@@ -36,17 +37,19 @@ interface Props {
 }
 
 export function ReviewsListModal({ visible, onClose }: Props) {
+  const user = useUser();
   const [reviews, setReviews] = useState<ReviewWithSpot[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const myReviews = await fetchMyReviews();
+      const myReviews = await fetchMyReviews(user.userId);
       setReviews(myReviews);
     } catch {}
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => { if (visible) load(); }, [visible]);
 

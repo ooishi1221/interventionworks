@@ -11,6 +11,7 @@ import {
   Timestamp,
   GeoPoint,
 } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './config';
 import { ADACHI_PARKING } from '../data/adachi-parking';
 import { getAllUserSpots, getReviews } from '../db/database';
@@ -218,9 +219,13 @@ export interface MigrationResult {
 export async function runFullMigration(
   onProgress?: (p: MigrationProgress) => void
 ): Promise<MigrationResult> {
+  // デバイスID を userId として使用（UserContext と同じキー）
+  let userId = await AsyncStorage.getItem('moto_logos_device_id');
+  if (!userId) userId = 'migrated_user';
+
   const seedCount   = await migrateSeedSpots(onProgress);
   const userCount   = await migrateUserSpots(onProgress);
-  const reviewCount = await migrateReviews('local_user', onProgress);
+  const reviewCount = await migrateReviews(userId, onProgress);
 
   return { seedCount, userCount, reviewCount };
 }

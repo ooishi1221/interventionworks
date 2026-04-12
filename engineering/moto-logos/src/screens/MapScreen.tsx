@@ -34,6 +34,7 @@ import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { RadialMenu } from '../components/RadialMenu';
 import { captureError } from '../utils/sentry';
+import { useUser } from '../contexts/UserContext';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -136,6 +137,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   { userCC, onChangeCC, focusSpot, onFocusConsumed, refreshTrigger, onRegisterTutorialTarget },
   ref
 ) {
+  const user = useUser();
   const mapRef = useRef<MapView>(null);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
@@ -453,8 +455,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         Alert.alert('同期エラー', 'クラウドへの保存に失敗しました。ネットワーク復帰後に再試行してください。');
       });
       // 写真があればレビューとして自動投稿
-      if (reportForm.photo) {
-        addReview(`user_${localId}`, 5, '写真を共有しました', reportForm.photo).catch((e) => {
+      if (reportForm.photo && user) {
+        addReview(`user_${localId}`, user.userId, 5, '写真を共有しました', reportForm.photo).catch((e) => {
           captureError(e, { context: 'quickReport_photo' });
         });
       }
