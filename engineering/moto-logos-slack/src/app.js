@@ -2,7 +2,7 @@ import bolt from "@slack/bolt";
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { spawn } from "child_process";
+import { spawn, execFile } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "..", ".env") });
@@ -61,6 +61,32 @@ function isQuestion(text) {
     /Do you want/i.test(line) ||
     /確認してください|選択してください/.test(line)
   );
+}
+
+// --- Terminal input injection (macOS) ---
+// Slackボタン押下 → クリップボードにコピー → VS Code をアクティブ化 → ペースト+Enter
+function typeIntoTerminal(text) {
+  // 1. クリップボードにコピー
+  const pb = spawn("pbcopy");
+  pb.stdin.write(text);
+  pb.stdin.end();
+
+  pb.on("close", () => {
+    // 2. VS Code をアクティブにして Cmd+V → Enter
+    execFile("osascript",
+      [
+        "-e", 'tell application "Code" to activate',
+        "-e", "delay 0.5",
+        "-e", 'tell application "System Events" to keystroke "v" using command down',
+        "-e", "delay 0.2",
+        "-e", 'tell application "System Events" to key code 36',
+      ],
+      (err) => {
+        if (err) console.error("[typeIntoTerminal] osascript failed:", err.message);
+        else console.log(`[typeIntoTerminal] pasted: "${text}"`);
+      }
+    );
+  });
 }
 
 // --- Active interactive session ---
@@ -231,10 +257,12 @@ app.action(/^claude_choice_/, async ({ action, ack, body, client }) => {
     session.proc.stdin.write(chosen + "\n");
     postToSlack(`📨 "${chosen}" をセッションに送信しました`, session.threadTs);
   } else {
-    // セッションなし → チャンネルに結果だけ投稿
+    // セッションなし → ターミナルに直接入力を試みる
+    console.log(`[button→terminal] ${chosen}`);
+    typeIntoTerminal(chosen);
     await client.chat.postMessage({
       channel: body.channel?.id || CHANNEL,
-      text: `📋 選択: *${chosen}*（アクティブなセッションなし — 次回の指示に使えます）`,
+      text: `📨 "${chosen}" をターミナルに送信しました`,
       ...BOT,
     });
   }
