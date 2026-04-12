@@ -220,6 +220,33 @@ export interface KpiStats {
   mau: number;
   /** 過去30日間の日別アクティブユーザー数 [{date, count}] */
   dailyTrend: { date: string; count: number }[];
+
+  /** DAU/MAU 比率 (0-100) */
+  stickiness: number;
+
+  /** リテンション率 (%) */
+  retention: { d1: number; d7: number; d30: number };
+
+  /** 日次新規スポット投稿率: 本日の新規スポット数 / DAU (%) */
+  postingRate: number;
+
+  /** 日次検証率: 本日の Good/Bad 投票数 / DAU (%) */
+  verificationRate: number;
+
+  /** スポット鮮度分布 */
+  freshness: { fresh: number; stale: number; critical: number };
+
+  /** ランク分布 */
+  rankDistribution: { novice: number; rider: number; patrol: number };
+
+  /** モデレーション平均処理日数 */
+  moderationAvgDays: number;
+
+  /** エリア別スポット数 Top 10 */
+  topAreas: { area: string; count: number }[];
+
+  /** セッション指標（未実装） */
+  sessionMetrics: null;
 }
 
 // ─────────────────────────────────────────────────────
