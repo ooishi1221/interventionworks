@@ -40,7 +40,7 @@ interface Announcement {
 }
 
 interface Props {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export function NotificationsScreen({ onBack }: Props) {
@@ -92,9 +92,13 @@ export function NotificationsScreen({ onBack }: Props) {
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={C.text} />
-        </TouchableOpacity>
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={C.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 32 }} />
+        )}
         <Text style={s.headerTitle}>お知らせ</Text>
         <View style={{ width: 32 }} />
       </View>

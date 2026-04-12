@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { ModerationLogResponse } from '@/lib/types';
 
@@ -11,6 +11,14 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export default function AuditLogPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-text-secondary">読み込み中...</div>}>
+      <AuditLogContent />
+    </Suspense>
+  );
+}
+
+function AuditLogContent() {
   const searchParams = useSearchParams();
   const initialTargetId = searchParams.get('targetId') || '';
   const initialTargetType = searchParams.get('targetType') || '';

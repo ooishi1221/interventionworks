@@ -30,6 +30,7 @@
 | 空間検索 | Geohash プレフィクスクエリ（自前実装、外部依存なし） |
 | クラッシュ監視 | Sentry `@sentry/react-native ~7.2.0`（org: `moto-logos-team`） |
 | ビルド/配信 | EAS Build（development / preview / production）、EAS Update（OTA） |
+| 認証 | Firebase Anonymous Auth（Firestore ルール認可用） |
 | 状態管理 | React hooks のみ（外部ライブラリなし） |
 
 ---
@@ -107,8 +108,10 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 状態管理は React hooks で完結させる。外部ライブラリ（Redux, Zustand 等）は導入しない
 - ファイル名はケバブケース（`spot-detail-sheet.tsx`）、型名はパスカルケース
 
-### ユーザー識別システム
+### 認証・ユーザー識別システム
 
+- **Firebase Anonymous Auth**: アプリ起動時に `ensureAnonymousAuth()` で匿名サインイン（`src/firebase/config.ts`）
+- Firestore セキュリティルールは `request.auth != null` で認可（匿名認証で通過）
 - **デバイスIDベース**: AsyncStorage の `moto_logos_device_id`（UUID v4）を userId として使用
 - `UserContext` (`src/contexts/UserContext.tsx`) がアプリ全体に `userId`, `rank`, `trustScore` を供給
 - 初回起動時に Firestore `users` コレクションにドキュメントを自動作成（初期 trustScore: 100, rank: rider）
@@ -227,15 +230,24 @@ eas update --branch preview
 | 画面 | 概要 |
 |------|------|
 | **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート |
-| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 + お知らせ/設定への導線 |
+| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 |
 | **ParkedScreen** | スポット登録・編集フォーム |
 | **MyBikeScreen** | マイバイク管理 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
 | **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告・投票カウンター） |
 | **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理） |
 | **InquiryScreen** | お問い合わせフォーム（バグ報告・機能リクエスト・不正報告） |
-| **SettingsScreen** | 設定（通知ON/OFF・第三者同意・法的文書・アカウント削除） |
+| **SettingsScreen** | 設定（通知ON/OFF・第三者同意・法的文書・アカウント削除・シードデータ投入） |
 | **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー + 第三者提供同意 |
+
+### ナビゲーション（ボトムタブ 4タブ構成）
+
+| タブ | 画面 | アイコン |
+|------|------|----------|
+| マップ | MapScreen | `map` |
+| ライダー | RiderScreen | `person` |
+| お知らせ | NotificationsScreen | `notifications` |
+| 設定 | SettingsScreen（→ お問い合わせ・利用規約サブ画面） | `settings` |
 
 ---
 

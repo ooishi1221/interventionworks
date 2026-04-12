@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { migrateSeedSpots } from '../firebase/migration';
 
 const C = {
   bg: '#000000', surface: '#1C1C1E', card: '#2C2C2E',
@@ -24,7 +25,7 @@ const C = {
 };
 
 interface Props {
-  onBack: () => void;
+  onBack?: () => void;
   onOpenLegal: () => void;
   onOpenInquiry: () => void;
 }
@@ -32,6 +33,7 @@ interface Props {
 export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('moto_logos_push_enabled').then((v) => setPushEnabled(v !== 'false'));
@@ -66,14 +68,41 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
     );
   };
 
+  const handleSeedData = () => {
+    Alert.alert(
+      'シードデータ投入',
+      '公共駐輪場データ（127件）をFirestoreにアップロードします。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '実行する',
+          onPress: async () => {
+            setSeeding(true);
+            try {
+              const count = await migrateSeedSpots();
+              Alert.alert('完了', `${count}件のスポットをアップロードしました。マップに戻って確認してください。`);
+            } catch (e) {
+              Alert.alert('エラー', `アップロードに失敗しました: ${e}`);
+            }
+            setSeeding(false);
+          },
+        },
+      ],
+    );
+  };
+
   const version = Constants.expoConfig?.version || '1.0.0';
 
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={C.text} />
-        </TouchableOpacity>
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={C.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 32 }} />
+        )}
         <Text style={s.headerTitle}>設定</Text>
         <View style={{ width: 32 }} />
       </View>
@@ -130,6 +159,19 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
             <View style={s.rowLeft}>
               <Ionicons name="trash-outline" size={20} color={C.red} />
               <Text style={[s.rowLabel, { color: C.red }]}>アカウント削除</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 開発者ツール */}
+        <Text style={s.sectionTitle}>開発者ツール</Text>
+        <View style={s.card}>
+          <TouchableOpacity style={s.row} onPress={handleSeedData} disabled={seeding}>
+            <View style={s.rowLeft}>
+              <Ionicons name="cloud-upload-outline" size={20} color={seeding ? C.sub : C.accent} />
+              <Text style={[s.rowLabel, seeding && { color: C.sub }]}>
+                {seeding ? 'アップロード中...' : 'シードデータ投入（127件）'}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>

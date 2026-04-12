@@ -152,6 +152,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const mapRef = useRef<MapView>(null);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
+  const [emptyDismissed, setEmptyDismissed] = useState(false);
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
   const [locationDenied, setLocationDenied]   = useState(false);
@@ -615,14 +616,19 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── スポット0件メッセージ ──────────────────────── */}
-      {!loading && allSpots.length === 0 && (
-        <View style={styles.emptyOverlay} pointerEvents="none">
+      {!loading && allSpots.length === 0 && !emptyDismissed && (
+        <TouchableOpacity
+          style={styles.emptyOverlay}
+          activeOpacity={1}
+          onPress={() => setEmptyDismissed(true)}
+        >
           <View style={styles.emptyBadge}>
             <Ionicons name="map-outline" size={32} color={SYS_GRAY} />
             <Text style={styles.emptyTitle}>このエリアにはまだスポットがありません</Text>
             <Text style={styles.emptySubtitle}>最初の発見者になろう！{'\n'}長押しメニューからスポットを登録できます</Text>
+            <Text style={styles.emptyDismissHint}>タップで閉じる</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       <ClusteredMapView
         ref={mapRef}
@@ -1331,4 +1337,5 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: '#F2F2F7', fontSize: 15, fontWeight: '700', textAlign: 'center' },
   emptySubtitle: { color: '#8E8E93', fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  emptyDismissHint: { color: '#636366', fontSize: 11, marginTop: 4 },
 });

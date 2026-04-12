@@ -33,6 +33,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // announcements: 認証済みユーザーは読み取り可。作成も許可（将来的にAdmin限定に変更）
+    match /announcements/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     // moderation_logs: Admin SDK のみ（クライアントからはアクセス不可）
     match /moderation_logs/{docId} {
       allow read, write: if false;

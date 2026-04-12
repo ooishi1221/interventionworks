@@ -15,11 +15,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen, MapScreenHandle } from './src/screens/MapScreen';
 import { RiderScreen } from './src/screens/RiderScreen';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+import { InquiryScreen } from './src/screens/InquiryScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
 import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { UserProvider } from './src/contexts/UserContext';
 import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
+import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
@@ -45,7 +49,7 @@ const SYS_GRAY    = '#636366';
 const TAB_BG      = '#1C1C1E';
 const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
-type Tab = 'map' | 'rider';
+type Tab = 'map' | 'rider' | 'notifications' | 'settings';
 
 type TabDef = {
   id: Tab; label: string;
@@ -54,8 +58,10 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { id: 'map',   label: 'マップ',    icon: 'map-outline',    iconActive: 'map'    },
-  { id: 'rider', label: 'ライダー',  icon: 'person-outline', iconActive: 'person' },
+  { id: 'map',           label: 'マップ',    icon: 'map-outline',           iconActive: 'map'           },
+  { id: 'rider',         label: 'ライダー',  icon: 'person-outline',        iconActive: 'person'        },
+  { id: 'notifications', label: 'お知らせ',  icon: 'notifications-outline', iconActive: 'notifications' },
+  { id: 'settings',      label: '設定',      icon: 'settings-outline',      iconActive: 'settings'      },
 ];
 
 function App() {
@@ -64,7 +70,16 @@ function App() {
   const [userCC, setUserCC]         = useState<UserCC>(125); // デフォルト: 原付二種
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
+  const [settingsSub, setSettingsSub] = useState<'main' | 'inquiry' | 'legal'>('main');
   const mapScreenRef = useRef<MapScreenHandle>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  // ── 匿名認証（Firestoreアクセスに必須）─────────────
+  useEffect(() => {
+    ensureAnonymousAuth()
+      .then(() => setAuthReady(true))
+      .catch(() => setAuthReady(true)); // 失敗してもアプリは起動させる
+  }, []);
 
   // ── ニックネーム ────────────────────────────────────
   const [nickname, setNickname] = useState<string>('');
@@ -126,16 +141,17 @@ function App() {
     setTutorialTargets((prev) => ({ ...prev, [key]: rect }));
   }, []);
 
-  /** タブ押下ハンドラ。探すタブを2度押しするとマップをリセット */
+  /** タブ押下ハンドラ。マップタブ2度押しでリセット */
   const handleTabPress = (id: Tab) => {
     if (id === 'map' && tab === 'map') {
       mapScreenRef.current?.resetView();
     } else {
+      if (id !== 'settings') setSettingsSub('main');
       setTab(id);
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || !authReady) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={SYS_BLUE} />
@@ -202,6 +218,21 @@ function App() {
                 nickname={nickname}
                 onChangeNickname={saveNickname}
               />
+            )}
+            {tab === 'notifications' && (
+              <NotificationsScreen />
+            )}
+            {tab === 'settings' && (
+              settingsSub === 'inquiry' ? (
+                <InquiryScreen onBack={() => setSettingsSub('main')} />
+              ) : settingsSub === 'legal' ? (
+                <LegalScreen mode="view" onBack={() => setSettingsSub('main')} />
+              ) : (
+                <SettingsScreen
+                  onOpenLegal={() => setSettingsSub('legal')}
+                  onOpenInquiry={() => setSettingsSub('inquiry')}
+                />
+              )
             )}
           </View>
 

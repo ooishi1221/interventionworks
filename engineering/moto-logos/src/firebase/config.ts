@@ -69,4 +69,52 @@ export function getStorageInstance(): FirebaseStorage {
   return _storage;
 }
 
+// ─────────────────────────────────────────────────────
+// Firebase Auth（匿名認証 — Firestore ルール認可用）
+// ─────────────────────────────────────────────────────
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  type Auth,
+  type User,
+} from 'firebase/auth';
+// @ts-ignore — React Native 環境では getReactNativePersistence が必要
+import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+
+let _auth: Auth | null = null;
+
+export function getFirebaseAuth(): Auth {
+  if (!_auth) {
+    try {
+      _auth = initializeAuth(app, {
+        persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+      });
+    } catch {
+      _auth = getAuth(app);
+    }
+  }
+  return _auth;
+}
+
+/**
+ * 匿名認証でサインイン。既にサインイン済みならそのまま返す。
+ * App.tsx の起動時に1回呼ぶ。
+ */
+export async function ensureAnonymousAuth(): Promise<User> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return auth.currentUser;
+
+  return new Promise((resolve, reject) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        unsub();
+        resolve(user);
+      }
+    });
+    signInAnonymously(auth).catch(reject);
+  });
+}
+
 export default app;
