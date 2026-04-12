@@ -1,14 +1,41 @@
 {
   "cli": {
-    "version": ">= 18.0.0"
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
-    "preview": {
-      "distribution": "internal"
+    "base": {
+      "node": "22.14.0",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://8155816c7a0bde9f6dcfa2919565b681@o4511206920814592.ingest.us.sentry.io/4511206927237120"
+      }
     },
-    "production": {}
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "preview",
+      "autoIncrement": true
+    },
+    "production": {
+      "extends": "base",
+      "channel": "production",
+      "autoIncrement": true
+    }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "APPLE_APP_STORE_CONNECT_APP_ID"
+      }
+    }
   }
 }

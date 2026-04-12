@@ -28,7 +28,8 @@
 | 地図 | react-native-maps + react-native-map-clustering |
 | アニメーション | react-native-reanimated + react-native-gesture-handler |
 | 空間検索 | Geohash プレフィクスクエリ（自前実装、外部依存なし） |
-| ビルド/配信 | EAS Build（preview / production）、EAS Update（OTA） |
+| クラッシュ監視 | Sentry `@sentry/react-native ~7.2.0`（org: `moto-logos-team`） |
+| ビルド/配信 | EAS Build（development / preview / production）、EAS Update（OTA） |
 | 状態管理 | React hooks のみ（外部ライブラリなし） |
 
 ---
@@ -112,15 +113,20 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 
 ### 環境変数
 
-- `.env` に Firebase 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
-- `.env` は `.gitignore` 済み。新規メンバーは Firebase Console から値を取得する
+- `.env` に Firebase + Sentry 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
+- `.env` は `.gitignore` 済み。新規メンバーは Firebase Console / Sentry から値を取得する
+- EAS Build 時は `eas.json` の `env` ブロックから Sentry DSN を注入
 
-### クラッシュ監視
+### クラッシュ監視（Sentry）
 
-- Sentry（`@sentry/react-native`）を使用（Expo managed workflow 対応）
+- Sentry（`@sentry/react-native ~7.2.0`）を使用（Expo managed workflow 対応）
+- **Organization:** `moto-logos-team` / **Project:** `moto-logos`
 - `App.tsx` で `initSentry()` + `sentryWrap()` で自動キャプチャ
 - `ErrorBoundary` コンポーネントで React レンダーエラーをキャッチ
-- DSN は `.env` の `EXPO_PUBLIC_SENTRY_DSN` に設定（要Sentryプロジェクト作成）
+- `captureError()` で try-catch 内の手動エラー送信
+- `setSentryUser()` でニックネーム設定時にユーザーコンテキストをセット
+- DSN 未設定時はサイレントスキップ（開発時の安全策）
+- 本番: `tracesSampleRate: 0.2`（パフォーマンス計測20%サンプリング）
 
 ### NGワードフィルタ
 
@@ -128,11 +134,38 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - サーバー側は管理ダッシュボード API で本格的なチェック
 - ひらがな/カタカナ正規化対応
 
-### ビルド・配信
+### アプリ識別子
 
-- OTA 更新: `eas update --branch preview`
-- ネイティブ変更時: `eas build --profile preview`
-- 本番リリース: `eas build --profile production`
+| プラットフォーム | 識別子 |
+|----------------|--------|
+| iOS bundleIdentifier | `com.interventionworks.motologos` |
+| Android package | `com.interventionworks.motologos` |
+
+### ビルド・配信（EAS Build）
+
+3プロファイル構成（`eas.json`）:
+
+| プロファイル | 用途 | 配布 | channel |
+|------------|------|------|---------|
+| `development` | 開発用 dev client | 内部 + iOSシミュレータ | `development` |
+| `preview` | テスト配布（実機） | Internal Distribution | `preview` |
+| `production` | ストアリリース | App Store / Google Play | `production` |
+
+共通設定: Node 22.14.0 / Sentry DSN 環境変数注入 / `appVersionSource: "remote"` / `autoIncrement: true`
+
+```bash
+# 開発ビルド（iOSシミュレータ）
+eas build --profile development --platform ios
+
+# テスト配布（実機）
+eas build --profile preview --platform all
+
+# 本番リリース
+eas build --profile production --platform all
+
+# OTA 更新（JS のみの変更）
+eas update --branch preview
+```
 
 ---
 

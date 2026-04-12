@@ -24,7 +24,7 @@
       [
         "@sentry/react-native",
         {
-          "organization": "SENTRY_ORG",
+          "organization": "moto-logos-team",
           "project": "moto-logos"
         }
       ],
@@ -38,6 +38,7 @@
       ]
     ],
     "ios": {
+      "bundleIdentifier": "com.interventionworks.motologos",
       "supportsTablet": true,
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
@@ -48,6 +49,7 @@
       }
     },
     "android": {
+      "package": "com.interventionworks.motologos",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1C1C1E"
