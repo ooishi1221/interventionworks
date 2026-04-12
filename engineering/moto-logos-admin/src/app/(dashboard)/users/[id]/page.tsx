@@ -117,11 +117,25 @@ export default function UserDetailPage() {
     }
   }, [userId]);
 
+  // 行動ログ
+  const [activityLog, setActivityLog] = useState<{ type: string; id: string; detail: string; createdAt: string }[]>([]);
+
+  const fetchActivity = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/users/${userId}/activity`);
+      if (res.ok) {
+        const data = await res.json();
+        setActivityLog(data.activity || []);
+      }
+    } catch {}
+  }, [userId]);
+
   useEffect(() => {
     fetchUser();
     fetchSpots();
     fetchReviews();
-  }, [fetchUser, fetchSpots, fetchReviews]);
+    fetchActivity();
+  }, [fetchUser, fetchSpots, fetchReviews, fetchActivity]);
 
   const handleBan = async () => {
     if (!banReason.trim()) {
@@ -494,6 +508,30 @@ export default function UserDetailPage() {
                 <p className="text-xs text-text-secondary mt-1">
                   スポットID: {review.spotId}
                 </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 行動ログ */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <h3 className="text-base font-bold mb-4">行動ログ（最新50件）</h3>
+        {activityLog.length === 0 ? (
+          <p className="text-sm text-text-secondary">行動履歴はありません</p>
+        ) : (
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {activityLog.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-3 bg-card rounded-lg px-4 py-2.5">
+                <span className="text-xs mt-0.5">
+                  {entry.type === 'review' ? '💬' : entry.type === 'spot' ? '📍' : '📋'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground truncate">{entry.detail}</p>
+                  <p className="text-xs text-text-secondary">
+                    {entry.createdAt ? new Date(entry.createdAt).toLocaleString('ja-JP') : '-'}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
