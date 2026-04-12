@@ -65,6 +65,11 @@ export default function UserDetailPage() {
   const [banDuration, setBanDuration] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // trustScore / rank 編集
+  const [editingScore, setEditingScore] = useState(false);
+  const [scoreInput, setScoreInput] = useState('');
+  const [editingRank, setEditingRank] = useState(false);
+
   // 通知モーダル
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyTitle, setNotifyTitle] = useState('');
@@ -188,6 +193,27 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleUpdateField = async (field: 'trustScore' | 'rank', value: number | string) => {
+    setProcessing(true);
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value, reason: `管理者による${field}手動調整` }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'エラーが発生しました');
+        return;
+      }
+      setUserDetail((prev) => (prev ? { ...prev, [field]: value } : prev));
+      setEditingScore(false);
+      setEditingRank(false);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleUnban = async () => {
     if (!confirm('このユーザーのBANを解除しますか？')) return;
     setProcessing(true);
@@ -300,17 +326,62 @@ export default function UserDetailPage() {
 
         {/* ステータス情報 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+          {/* ランク（クリックで編集） */}
           <div className="bg-card rounded-lg p-3">
             <p className="text-xs text-text-secondary mb-1">ランク</p>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${rankBadge.className}`}>
-              {rankBadge.label}
-            </span>
+            {editingRank && canEdit ? (
+              <select
+                value={userDetail.rank}
+                onChange={(e) => handleUpdateField('rank', e.target.value)}
+                disabled={processing}
+                className="w-full px-2 py-1 bg-surface border border-border rounded text-xs text-foreground"
+                autoFocus
+                onBlur={() => setEditingRank(false)}
+              >
+                <option value="novice">Novice</option>
+                <option value="rider">Rider</option>
+                <option value="patrol">Patrol</option>
+              </select>
+            ) : (
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${rankBadge.className} ${canEdit ? 'cursor-pointer hover:opacity-70' : ''}`}
+                onClick={() => canEdit && setEditingRank(true)}
+              >
+                {rankBadge.label}
+              </span>
+            )}
           </div>
+          {/* 信頼スコア（クリックで編集） */}
           <div className="bg-card rounded-lg p-3">
             <p className="text-xs text-text-secondary mb-1">信頼スコア</p>
-            <p className="text-lg font-bold font-[family-name:var(--font-inter)]">
-              {userDetail.trustScore}
-            </p>
+            {editingScore && canEdit ? (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const val = parseInt(scoreInput);
+                if (!isNaN(val)) handleUpdateField('trustScore', val);
+              }}>
+                <input
+                  type="number"
+                  value={scoreInput}
+                  onChange={(e) => setScoreInput(e.target.value)}
+                  className="w-full px-2 py-1 bg-surface border border-border rounded text-sm text-foreground font-bold"
+                  autoFocus
+                  onBlur={() => setEditingScore(false)}
+                />
+              </form>
+            ) : (
+              <p
+                className={`text-lg font-bold font-[family-name:var(--font-inter)] ${canEdit ? 'cursor-pointer hover:opacity-70' : ''}`}
+                onClick={() => {
+                  if (canEdit) {
+                    setScoreInput(String(userDetail.trustScore));
+                    setEditingScore(true);
+                  }
+                }}
+              >
+                {userDetail.trustScore}
+              </p>
+            )}
           </div>
           <div className="bg-card rounded-lg p-3">
             <p className="text-xs text-text-secondary mb-1">BANステータス</p>

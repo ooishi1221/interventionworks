@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { ModerationLogResponse } from '@/lib/types';
 
 const ACTION_LABELS: Record<string, string> = {
@@ -10,15 +11,21 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export default function AuditLogPage() {
+  const searchParams = useSearchParams();
+  const initialTargetId = searchParams.get('targetId') || '';
+  const initialTargetType = searchParams.get('targetType') || '';
+
   const [logs, setLogs] = useState<ModerationLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [targetTypeFilter, setTargetTypeFilter] = useState<string>('');
+  const [targetTypeFilter, setTargetTypeFilter] = useState<string>(initialTargetType);
+  const [targetIdFilter, setTargetIdFilter] = useState<string>(initialTargetId);
 
   const fetchLogs = useCallback(async (cursor?: string) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (targetTypeFilter) params.set('targetType', targetTypeFilter);
+    if (targetIdFilter) params.set('targetId', targetIdFilter);
     if (cursor) params.set('cursor', cursor);
     params.set('limit', '20');
 
@@ -27,7 +34,7 @@ export default function AuditLogPage() {
     setLogs(cursor ? (prev) => [...prev, ...data.logs] : data.logs);
     setNextCursor(data.nextCursor);
     setLoading(false);
-  }, [targetTypeFilter]);
+  }, [targetTypeFilter, targetIdFilter]);
 
   useEffect(() => {
     fetchLogs();
@@ -38,7 +45,7 @@ export default function AuditLogPage() {
       <h1 className="text-xl font-bold mb-6">監査ログ</h1>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-3 mb-4 flex-wrap items-center">
         <select
           value={targetTypeFilter}
           onChange={(e) => setTargetTypeFilter(e.target.value)}
@@ -50,6 +57,12 @@ export default function AuditLogPage() {
           <option value="review">レビュー</option>
           <option value="admin">管理者</option>
         </select>
+        {targetIdFilter && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 rounded-lg text-xs text-accent">
+            <span>ID: {targetIdFilter.slice(0, 12)}...</span>
+            <button onClick={() => setTargetIdFilter('')} className="hover:text-foreground">&times;</button>
+          </div>
+        )}
       </div>
 
       <div className="bg-surface border border-border rounded-xl overflow-hidden">

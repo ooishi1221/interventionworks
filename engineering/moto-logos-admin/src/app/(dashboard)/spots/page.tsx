@@ -285,12 +285,20 @@ export default function SpotsPage() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => setEditingId(spot.id)}
-                          className="px-2 py-1 text-xs text-accent hover:underline"
-                        >
-                          編集
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingId(spot.id)}
+                            className="px-2 py-1 text-xs text-accent hover:underline"
+                          >
+                            編集
+                          </button>
+                          <a
+                            href={`/audit-log?targetId=${spot.id}&targetType=spot`}
+                            className="px-2 py-1 text-xs text-text-secondary hover:text-foreground hover:underline"
+                          >
+                            履歴
+                          </a>
+                        </div>
                       )}
                     </td>
                   )}

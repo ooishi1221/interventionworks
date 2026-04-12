@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const targetType = searchParams.get('targetType');
+    const targetId = searchParams.get('targetId');
     const action = searchParams.get('action');
     const cursor = searchParams.get('cursor');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
     let query: FirebaseFirestore.Query = adminDb.collection(COLLECTIONS.MODERATION_LOGS);
 
     if (targetType) query = query.where('targetType', '==', targetType);
+    if (targetId) query = query.where('targetId', '==', targetId);
     if (action) query = query.where('action', '==', action);
 
     query = query.orderBy('createdAt', 'desc');
