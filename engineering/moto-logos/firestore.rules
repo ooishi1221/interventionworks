@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // spots: 認証済みユーザーのみ読み書き可。削除は禁止
+    match /spots/{spotId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // reviews: 認証済みユーザーのみ。更新・削除は本人のみ
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.userId;
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.userId;
+    }
+
+    // users: 本人のみ読み書き
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // validations: 認証済みユーザーのみ作成・読取。更新・削除は禁止
+    match /validations/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // moderation_logs: Admin SDK のみ（クライアントからはアクセス不可）
+    match /moderation_logs/{docId} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -23,8 +23,74 @@ export default function SpotsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ created?: number; updated?: number; skipped?: number; errors: string[] } | null>(null);
 
   const canEdit = user?.role === 'super_admin' || user?.role === 'moderator';
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === spots.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(spots.map((s) => s.id)));
+    }
+  };
+
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set('status', statusFilter);
+    window.location.href = `/api/spots/export?${params}`;
+  };
+
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>, endpoint: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(endpoint, { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (res.ok) {
+      setImportResult({ created: data.created, updated: data.updated, skipped: data.skipped, errors: data.errors });
+      fetchSpots();
+    } else {
+      setImportResult({ errors: [data.error] });
+    }
+    setImporting(false);
+    e.target.value = '';
+  };
+
+  const handleBulkStatus = async (newStatus: SpotStatus) => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    const res = await fetch('/api/spots/bulk-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spotIds: Array.from(selectedIds), status: newStatus }),
+    });
+    if (res.ok) {
+      setSpots((prev) =>
+        prev.map((s) => (selectedIds.has(s.id) ? { ...s, status: newStatus } : s))
+      );
+      setSelectedIds(new Set());
+    }
+    setBulkLoading(false);
+  };
 
   const fetchSpots = useCallback(async (cursor?: string) => {
     setLoading(true);
@@ -60,8 +126,8 @@ export default function SpotsPage() {
     <div>
       <h1 className="text-xl font-bold mb-6">スポット管理</h1>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      {/* Filters & Actions */}
+      <div className="flex items-center gap-3 mb-4">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -72,13 +138,84 @@ export default function SpotsPage() {
           <option value="pending">Pending</option>
           <option value="closed">Closed</option>
         </select>
+
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={handleExport}
+            className="px-3 py-2 text-xs font-medium bg-card border border-border rounded-lg hover:border-accent transition-colors"
+          >
+            CSVエクスポート
+          </button>
+          {canEdit && (
+            <>
+              <label className="px-3 py-2 text-xs font-medium bg-card border border-border rounded-lg hover:border-accent transition-colors cursor-pointer">
+                {importing ? '処理中...' : '新規インポート'}
+                <input type="file" accept=".csv" onChange={(e) => handleCsvUpload(e, '/api/spots/import')} className="hidden" disabled={importing} />
+              </label>
+              <label className="px-3 py-2 text-xs font-medium bg-card border border-border rounded-lg hover:border-accent transition-colors cursor-pointer">
+                {importing ? '処理中...' : '一括更新'}
+                <input type="file" accept=".csv" onChange={(e) => handleCsvUpload(e, '/api/spots/bulk-update')} className="hidden" disabled={importing} />
+              </label>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Import Result */}
+      {importResult && (
+        <div className={`mb-4 px-4 py-3 rounded-xl text-sm ${importResult.errors.length > 0 ? 'bg-danger/10 border border-danger/30' : 'bg-success/10 border border-success/30'}`}>
+          <div>
+            {importResult.created ? `${importResult.created} 件作成` : ''}
+            {importResult.updated ? `${importResult.updated} 件更新` : ''}
+            {importResult.skipped ? ` / ${importResult.skipped} 件スキップ` : ''}
+            {!importResult.created && !importResult.updated && importResult.errors.length === 0 && '変更なし'}
+          </div>
+          {importResult.errors.map((err, i) => (
+            <div key={i} className="text-danger text-xs mt-1">{err}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Bulk Action Bar */}
+      {canEdit && selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-accent/10 border border-accent/30 rounded-xl">
+          <span className="text-sm font-medium">{selectedIds.size} 件選択中</span>
+          <div className="flex gap-2 ml-auto">
+            {(['active', 'pending', 'closed'] as SpotStatus[]).map((s) => (
+              <button
+                key={s}
+                disabled={bulkLoading}
+                onClick={() => handleBulkStatus(s)}
+                className="px-3 py-1.5 text-xs font-medium bg-card border border-border rounded-lg hover:border-accent transition-colors disabled:opacity-50"
+              >
+                → {STATUS_BADGE[s].label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground"
+          >
+            選択解除
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-text-secondary">
+              {canEdit && (
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={spots.length > 0 && selectedIds.size === spots.length}
+                    onChange={toggleSelectAll}
+                    className="accent-accent w-4 h-4"
+                  />
+                </th>
+              )}
               <th className="text-left px-4 py-3 font-medium">名前</th>
               <th className="text-left px-4 py-3 font-medium">ステータス</th>
               <th className="text-left px-4 py-3 font-medium">検証レベル</th>
@@ -94,7 +231,17 @@ export default function SpotsPage() {
               const statusBadge = STATUS_BADGE[spot.status];
               const verBadge = VERIFICATION_BADGE[spot.verificationLevel];
               return (
-                <tr key={spot.id} className="border-b border-border/50 hover:bg-card/50 transition-colors">
+                <tr key={spot.id} className={`border-b border-border/50 transition-colors ${selectedIds.has(spot.id) ? 'bg-accent/5' : 'hover:bg-card/50'}`}>
+                  {canEdit && (
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(spot.id)}
+                        onChange={() => toggleSelect(spot.id)}
+                        className="accent-accent w-4 h-4"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <div className="font-medium">{spot.name}</div>
                     {spot.address && <div className="text-xs text-text-secondary">{spot.address}</div>}
