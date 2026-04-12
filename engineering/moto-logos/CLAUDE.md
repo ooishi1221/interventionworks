@@ -123,10 +123,17 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - **Organization:** `moto-logos-team` / **Project:** `moto-logos`
 - `App.tsx` で `initSentry()` + `sentryWrap()` で自動キャプチャ
 - `ErrorBoundary` コンポーネントで React レンダーエラーをキャッチ
-- `captureError()` で try-catch 内の手動エラー送信
+- `captureError()` で try-catch 内の手動エラー送信（全 Firestore 操作・レポート送信に適用済み）
 - `setSentryUser()` でニックネーム設定時にユーザーコンテキストをセット
 - DSN 未設定時はサイレントスキップ（開発時の安全策）
 - 本番: `tracesSampleRate: 0.2`（パフォーマンス計測20%サンプリング）
+
+### エラーハンドリング方針
+
+- Firestore 同期失敗時は `Alert` でユーザーに通知 + `captureError()` で Sentry 送信
+- 位置情報パーミッション拒否時はオレンジバナー表示 + 設定画面リンク + 東京にフォールバック
+- スポット0件時は地図上にオーバーレイ（「このエリアにはまだスポットがありません」）
+- `.catch(() => {})` での無言エラー握りつぶしは禁止。最低限 `captureError()` を入れる
 
 ### NGワードフィルタ
 
