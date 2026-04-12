@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { spawn, execFile } from "child_process";
+import { openSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "..", ".env") });
@@ -104,27 +105,31 @@ function postToSlack(text, threadTs) {
 const PROGRESS_DELAY = 5_000;
 const HEARTBEAT_DELAY = 30_000;
 
+// Tool アイコン
+const TOOL_ICONS = {
+  Read: "📖", Edit: "✏️", Write: "📝", Bash: "🔨",
+  Grep: "🔍", Glob: "📂", Agent: "🤖", WebSearch: "🌐",
+  WebFetch: "🌐", AskUserQuestion: "❓",
+};
+
 function startSession(initialPrompt, threadTs) {
   if (session) {
     session.proc.kill();
-    clearTimeout(session.progressTimer);
     clearTimeout(session.heartbeatTimer);
     session = null;
   }
 
-  const proc = spawn("claude", [], {
+  const devNull = openSync("/dev/null", "r");
+  const proc = spawn("claude", [
+    "-p", "--verbose", "--output-format", "stream-json",
+    initialPrompt,
+  ], {
     cwd: PROJECT_ROOT,
-    stdio: ["pipe", "pipe", "pipe"],
+    stdio: [devNull, "pipe", "pipe"],
+    env: { ...process.env, NO_COLOR: "1" },
   });
 
-  session = {
-    proc,
-    threadTs,
-    lineBuf: "",
-    progressBuf: "",
-    progressTimer: null,
-    heartbeatTimer: null,
-  };
+  session = { proc, threadTs, lineBuf: "", heartbeatTimer: null };
 
   function resetHeartbeat() {
     if (!session) return;
@@ -137,72 +142,73 @@ function startSession(initialPrompt, threadTs) {
     }, HEARTBEAT_DELAY);
   }
 
-  function flushProgress() {
-    if (!session) return;
-    clearTimeout(session.progressTimer);
-    const text = session.progressBuf.trim();
-    if (text) {
-      postToSlack(`\`\`\`\n${truncate(text)}\n\`\`\``, session.threadTs);
-      session.progressBuf = "";
-    }
-  }
-
-  function scheduleProgress() {
-    if (!session) return;
-    clearTimeout(session.progressTimer);
-    session.progressTimer = setTimeout(flushProgress, PROGRESS_DELAY);
-  }
-
-  function handleOutput(chunk) {
-    if (!session) return;
-    const text = stripAnsi(chunk.toString());
-    session.lineBuf += text;
+  function handleJsonLine(line) {
+    if (!session || !line.trim()) return;
+    let ev;
+    try { ev = JSON.parse(line); } catch { return; }
     resetHeartbeat();
 
-    const parts = session.lineBuf.split("\n");
-    session.lineBuf = parts.pop() || "";
-
-    for (const part of parts) {
-      const line = part.trim();
-      if (!line) continue;
-
-      if (isQuestion(line)) {
-        flushProgress();
-        postToSlack(line, session.threadTs);
-      } else {
-        session.progressBuf += line + "\n";
-        scheduleProgress();
+    // ツール使用開始
+    if (ev.type === "assistant" && ev.message?.content) {
+      for (const block of ev.message.content) {
+        if (block.type === "tool_use") {
+          const icon = TOOL_ICONS[block.name] || "🔧";
+          let detail = "";
+          if (block.name === "Read" && block.input?.file_path) {
+            detail = block.input.file_path.replace(PROJECT_ROOT + "/", "");
+          } else if (block.name === "Edit" && block.input?.file_path) {
+            detail = block.input.file_path.replace(PROJECT_ROOT + "/", "");
+          } else if (block.name === "Write" && block.input?.file_path) {
+            detail = block.input.file_path.replace(PROJECT_ROOT + "/", "");
+          } else if (block.name === "Bash" && block.input?.command) {
+            detail = truncate(block.input.command, 80);
+          } else if (block.name === "Grep" && block.input?.pattern) {
+            detail = `"${block.input.pattern}"`;
+          } else if (block.name === "Glob" && block.input?.pattern) {
+            detail = block.input.pattern;
+          }
+          postToSlack(`${icon} *${block.name}* ${detail}`, session.threadTs);
+        }
+        if (block.type === "text" && block.text?.trim()) {
+          postToSlack(truncate(block.text.trim(), 2000), session.threadTs);
+        }
       }
     }
 
-    const pending = session.lineBuf.trim();
-    if (pending && isQuestion(pending)) {
-      flushProgress();
-      postToSlack(pending, session.threadTs);
-      session.lineBuf = "";
+    // 最終結果
+    if (ev.type === "result") {
+      const text = ev.result || "";
+      if (text.trim()) {
+        postToSlack(truncate(text.trim(), 3000), session.threadTs);
+      }
+      const cost = ev.total_cost_usd ? `$${ev.total_cost_usd.toFixed(4)}` : "";
+      const dur = ev.duration_ms ? `${(ev.duration_ms / 1000).toFixed(1)}s` : "";
+      postToSlack(`✅ 完了 ${dur} ${cost}`, session.threadTs);
     }
   }
 
-  proc.stdout.on("data", handleOutput);
+  proc.stdout.on("data", (chunk) => {
+    if (!session) return;
+    session.lineBuf += chunk.toString();
+    const lines = session.lineBuf.split("\n");
+    session.lineBuf = lines.pop() || "";
+    for (const line of lines) handleJsonLine(line);
+  });
+
   proc.stderr.on("data", (chunk) => {
     console.log(`[claude:stderr] ${chunk.toString().trimEnd()}`);
   });
 
   proc.on("close", (code) => {
     if (!session) return;
-    clearTimeout(session.progressTimer);
     clearTimeout(session.heartbeatTimer);
-    const remaining = (session.progressBuf + session.lineBuf).trim();
-    if (remaining) {
-      postToSlack(truncate(remaining), session.threadTs);
-    }
-    postToSlack(`セッション終了 (exit ${code})`, threadTs);
+    if (session.lineBuf.trim()) handleJsonLine(session.lineBuf);
+    if (code !== 0) postToSlack(`⚠️ セッション終了 (exit ${code})`, threadTs);
     console.log(`[claude] exited with code ${code}`);
     session = null;
   });
 
-  proc.stdin.write(initialPrompt + "\n");
-  console.log(`[session] started: "${initialPrompt}"`);
+  console.log(`[session] started (stream-json): "${initialPrompt}"`);
 }
 
 // --- /claude command ---
