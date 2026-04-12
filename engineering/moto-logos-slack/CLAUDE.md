@@ -13,7 +13,8 @@ Slack と Claude Code を双方向で接続するブリッジ。PM2 で常駐化
 | スレッド返信 | アクティブセッションの Claude stdin に転送 |
 | DM | DM でもセッション起動・返信可能 |
 | ボタン通知 | `ask-notify.js` でボタン付き質問を送信 |
-| ボタン押下 | `claude_choice_*` アクションを受信 → stdin 転送 |
+| ボタン押下 | `claude_choice_*` アクションを受信 → stdin 転送 or ターミナル自動入力 |
+| リアルタイム表示 | `stream-json` でツール使用状況をスレッドに投稿 |
 
 ## ファイル構成
 

@@ -115,6 +115,19 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - `.env` に Firebase 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
 - `.env` は `.gitignore` 済み。新規メンバーは Firebase Console から値を取得する
 
+### クラッシュ監視
+
+- Sentry（`@sentry/react-native`）を使用（Expo managed workflow 対応）
+- `App.tsx` で `initSentry()` + `sentryWrap()` で自動キャプチャ
+- `ErrorBoundary` コンポーネントで React レンダーエラーをキャッチ
+- DSN は `.env` の `EXPO_PUBLIC_SENTRY_DSN` に設定（要Sentryプロジェクト作成）
+
+### NGワードフィルタ
+
+- `src/utils/ng-filter.ts` でクライアント側フィルタ（即時フィードバック用）
+- サーバー側は管理ダッシュボード API で本格的なチェック
+- ひらがな/カタカナ正規化対応
+
 ### ビルド・配信
 
 - OTA 更新: `eas update --branch preview`
@@ -134,6 +147,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
 | **ButlerScreen** | ヘルパー画面 |
 | **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告） |
+| **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー |
 
 ---
 
