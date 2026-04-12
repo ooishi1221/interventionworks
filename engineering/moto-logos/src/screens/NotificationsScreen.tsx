@@ -36,6 +36,7 @@ interface Announcement {
   id: string;
   title: string;
   body: string;
+  sortOrder: number | null;
   createdAt: string;
 }
 
@@ -65,9 +66,19 @@ export function NotificationsScreen({ onBack }: Props) {
           id: d.id,
           title: (data.title as string) || '',
           body: (data.body as string) || '',
+          sortOrder: typeof data.sortOrder === 'number' ? data.sortOrder : null,
           createdAt: ts?.toDate().toISOString() ?? new Date().toISOString(),
         };
       });
+
+      // sortOrder 昇順（未設定は末尾）→ createdAt 降順
+      results.sort((a, b) => {
+        const sa = a.sortOrder ?? Infinity;
+        const sb = b.sortOrder ?? Infinity;
+        if (sa !== sb) return sa - sb;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
       setItems(results);
 
       // 既読IDを読み込み

@@ -17,11 +17,23 @@ export async function GET() {
       .limit(50)
       .get();
 
-    const items = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() || '',
-    }));
+    const items = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        sortOrder: data.sortOrder ?? null,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || '',
+      };
+    });
+
+    // sortOrder があるものを優先、なければ createdAt desc
+    items.sort((a, b) => {
+      const sa = a.sortOrder ?? Infinity;
+      const sb = b.sortOrder ?? Infinity;
+      if (sa !== sb) return sa - sb;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     return NextResponse.json({ announcements: items });
   } catch (error) {
@@ -40,9 +52,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'タイトルと本文は必須です' }, { status: 400 });
     }
 
+    // 新規投稿は既存の最大 sortOrder + 1（先頭に表示されないよう末尾に追加）
     const ref = await adminDb.collection('announcements').add({
       title: title.trim(),
       body: body.trim(),
+      sortOrder: 0,
       createdAt: FieldValue.serverTimestamp(),
     });
 
