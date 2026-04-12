@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/spots', label: 'スポット管理', icon: '📍' },
   { href: '/duplicates', label: '重複検出', icon: '🔄' },
   { href: '/users', label: 'ユーザー管理', icon: '👤' },
+  { href: '/gamification', label: 'ゲーミフィケーション', icon: '🏆' },
   { href: '/security', label: 'セキュリティ', icon: '🔒' },
   { href: '/notifications', label: '通知管理', icon: '🔔' },
   { href: '/audit-log', label: '監査ログ', icon: '📋' },

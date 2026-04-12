@@ -292,6 +292,25 @@ export async function GET() {
       .slice(0, 10);
 
     // ─────────────────────────────────────────────────
+    // 9. Review & Photo Rates
+    // ─────────────────────────────────────────────────
+    const allReviewsSnap = await adminDb.collection(COLLECTIONS.REVIEWS).get();
+    const totalReviewCount = allReviewsSnap.size;
+    const reviewUserIds = new Set<string>();
+    let photoCount = 0;
+    for (const d of allReviewsSnap.docs) {
+      const data = d.data();
+      reviewUserIds.add(data.userId as string);
+      const urls = data.photoUrls as string[] | undefined;
+      if (urls && urls.length > 0) photoCount++;
+    }
+    const totalUserCount = (await adminDb.collection(COLLECTIONS.USERS).get()).size || 1;
+    const reviewRate = Math.round((reviewUserIds.size / totalUserCount) * 1000) / 10;
+    const photoAttachRate = totalReviewCount > 0
+      ? Math.round((photoCount / totalReviewCount) * 1000) / 10
+      : 0;
+
+    // ─────────────────────────────────────────────────
     // レスポンス構築
     // ─────────────────────────────────────────────────
     const stats: KpiStats = {
@@ -307,6 +326,8 @@ export async function GET() {
       rankDistribution,
       moderationAvgDays,
       topAreas,
+      reviewRate,
+      photoAttachRate,
       sessionMetrics: null,
     };
 

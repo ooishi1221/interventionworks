@@ -246,6 +246,12 @@ export interface KpiStats {
   /** エリア別スポット数 Top 10 */
   topAreas: { area: string; count: number }[];
 
+  /** レビュー投稿率: レビュー投稿ユーザー数 / 全ユーザー数 (%) */
+  reviewRate: number;
+
+  /** 写真添付率: 写真付きレビュー数 / 全レビュー数 (%) */
+  photoAttachRate: number;
+
   /** セッション指標（未実装） */
   sessionMetrics: null;
 }

@@ -224,6 +224,8 @@ export default function DashboardPage() {
         />
         <PercentCard label="投稿率" value={kpi?.postingRate} />
         <PercentCard label="検証率" value={kpi?.verificationRate} />
+        <PercentCard label="レビュー投稿率" value={kpi?.reviewRate} />
+        <PercentCard label="写真添付率" value={kpi?.photoAttachRate} />
       </div>
 
       {/* Row 2: Retention */}
