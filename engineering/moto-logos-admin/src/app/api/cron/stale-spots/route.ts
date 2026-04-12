@@ -84,9 +84,56 @@ export async function GET(request: Request) {
 
     console.log(`[cron/stale-spots] ${updatedCount}件を pending に変更`);
 
+    // ── 12ヶ月以上未更新 + goodCount=0 のスポットを closed（アーカイブ） ──
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const archiveSnapshot = await spotsRef
+      .where('status', 'in', ['active', 'pending'])
+      .where('updatedAt', '<', twelveMonthsAgo)
+      .get();
+
+    let archivedCount = 0;
+    const archiveIds: string[] = [];
+
+    // goodCount=0 のみアーカイブ（Firestore は複合 where の制約があるためクライアント側フィルタ）
+    const archiveDocs = archiveSnapshot.docs.filter((d) => (d.data().goodCount || 0) === 0);
+
+    for (let i = 0; i < archiveDocs.length; i += BATCH_LIMIT) {
+      const chunk = archiveDocs.slice(i, i + BATCH_LIMIT);
+      const batch = adminDb.batch();
+      for (const doc of chunk) {
+        batch.update(doc.ref, {
+          status: 'closed',
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        archiveIds.push(doc.id);
+        archivedCount++;
+      }
+      await batch.commit();
+    }
+
+    for (const id of archiveIds) {
+      await writeAuditLog({
+        adminId: 'system',
+        adminEmail: 'cron@moto-logos.system',
+        action: 'spot.auto_archive',
+        targetType: 'spot',
+        targetId: id,
+        reason: '12ヶ月以上更新なし + goodCount=0 のため自動アーカイブ',
+        previousState: { status: 'active_or_pending' },
+        newState: { status: 'closed' },
+      });
+    }
+
+    if (archivedCount > 0) {
+      console.log(`[cron/stale-spots] ${archivedCount}件を closed（アーカイブ）に変更`);
+    }
+
     return NextResponse.json({
       updated: updatedCount,
-      message: `${updatedCount}件のスポットを pending に変更しました`,
+      archived: archivedCount,
+      message: `${updatedCount}件を pending、${archivedCount}件をアーカイブしました`,
     });
   } catch (error) {
     console.error('[cron/stale-spots] エラー:', error);

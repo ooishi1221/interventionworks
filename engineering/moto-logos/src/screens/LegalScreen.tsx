@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Asset } from 'expo-asset';
 
 const THIRD_PARTY_CONSENT_KEY = 'moto_logos_third_party_consent';
+const CONTACT_EMAIL = process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'yuji.ooishi@intervention.jp';
 
 const C = {
   bg: '#0D0D0D',
@@ -212,9 +213,9 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => Linking.openURL('mailto:yuji.ooishi@intervention.jp?subject=お問い合わせ')}
+            onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}?subject=お問い合わせ`)}
           >
-            <Text style={s.contactLink}>お問い合わせ: yuji.ooishi@intervention.jp</Text>
+            <Text style={s.contactLink}>お問い合わせ: {CONTACT_EMAIL}</Text>
           </TouchableOpacity>
         </View>
       )}

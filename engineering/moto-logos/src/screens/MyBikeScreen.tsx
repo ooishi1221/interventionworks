@@ -20,7 +20,7 @@ const BORDER_ACT = SYS_BLUE;
 // ─── アイコン定義 ───────────────────────────────────────
 type IconDef =
   | { set: 'ion'; name: keyof typeof Ionicons.glyphMap }
-  | { set: 'mci'; name: string };
+  | { set: 'mci'; name: keyof typeof MaterialCommunityIcons.glyphMap };
 
 interface CCOption {
   value: UserCC;
@@ -74,7 +74,7 @@ const CC_OPTIONS: CCOption[] = [
 // ─── アイコン描画ヘルパー ────────────────────────────────
 function BikeIcon({ icon, size, color }: { icon: IconDef; size: number; color: string }) {
   if (icon.set === 'mci') {
-    return <MaterialCommunityIcons name={icon.name as any} size={size} color={color} />;
+    return <MaterialCommunityIcons name={icon.name} size={size} color={color} />;
   }
   return <Ionicons name={icon.name} size={size} color={color} />;
 }

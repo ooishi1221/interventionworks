@@ -21,8 +21,9 @@ const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN ?? '';
  */
 export function initSentry(): void {
   if (!DSN) {
-    if (__DEV__) {
-      console.warn('[Sentry] EXPO_PUBLIC_SENTRY_DSN が未設定のため初期化をスキップしました');
+    console.warn('[Sentry] EXPO_PUBLIC_SENTRY_DSN が未設定のため初期化をスキップしました');
+    if (!__DEV__) {
+      console.warn('[Sentry] 本番環境で DSN 未設定です。エラーは console.error にフォールバックします');
     }
     return;
   }
@@ -56,7 +57,11 @@ export function initSentry(): void {
  * try-catch で捕捉したエラーの報告に使う。
  */
 export function captureError(error: unknown, context?: Record<string, string>): void {
-  if (!DSN) return;
+  if (!DSN) {
+    // DSN 未設定時は console.error にフォールバック
+    console.error('[Sentry fallback]', error, context);
+    return;
+  }
 
   if (context) {
     Sentry.withScope((scope) => {
