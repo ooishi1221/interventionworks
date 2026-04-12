@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/freshness', label: '鮮度アラート', icon: '🕐' },
   { href: '/spots', label: 'スポット管理', icon: '📍' },
   { href: '/users', label: 'ユーザー管理', icon: '👤' },
+  { href: '/notifications', label: '通知管理', icon: '🔔' },
   { href: '/audit-log', label: '監査ログ', icon: '📋' },
   { href: '/roles', label: 'ロール管理', icon: '🔑', requireRole: 'super_admin' as const },
 ];

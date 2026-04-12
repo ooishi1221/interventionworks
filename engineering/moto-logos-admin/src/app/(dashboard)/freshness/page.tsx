@@ -232,17 +232,33 @@ export default function FreshnessPage() {
                     </td>
                     {canEdit && (
                       <td className="px-4 py-3">
-                        {isPending ? (
-                          <span className="text-xs text-text-secondary">pending済み</span>
-                        ) : (
+                        <div className="flex gap-2">
+                          {isPending ? (
+                            <span className="text-xs text-text-secondary">pending済み</span>
+                          ) : (
+                            <button
+                              onClick={() => handleSinglePending(spot.id)}
+                              disabled={singleLoading === spot.id}
+                              className="px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {singleLoading === spot.id ? '処理中...' : 'pending化'}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleSinglePending(spot.id)}
-                            disabled={singleLoading === spot.id}
-                            className="px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-lg transition-colors disabled:opacity-50"
+                            onClick={async () => {
+                              const res = await fetch('/api/notifications/verify-spot', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ spotId: spot.id }),
+                              });
+                              const data = await res.json();
+                              alert(res.ok ? `確認依頼を${data.sentCount}件送信しました` : data.error);
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-fresh-blue hover:bg-fresh-blue/10 rounded-lg transition-colors"
                           >
-                            {singleLoading === spot.id ? '処理中...' : 'pending化'}
+                            確認依頼
                           </button>
-                        )}
+                        </div>
                       </td>
                     )}
                   </tr>
