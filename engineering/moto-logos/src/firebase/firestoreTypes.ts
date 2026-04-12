@@ -192,8 +192,9 @@ export interface FirestoreValidation {
 // Firestore コレクションパス定数
 // ─────────────────────────────────────────────────────
 export const COLLECTIONS = {
-  SPOTS:       'spots',
-  USERS:       'users',
-  REVIEWS:     'reviews',
-  VALIDATIONS: 'validations',
+  SPOTS:          'spots',
+  USERS:          'users',
+  REVIEWS:        'reviews',
+  VALIDATIONS:    'validations',
+  USER_ACTIVITY:  'user_activity',
 } as const;

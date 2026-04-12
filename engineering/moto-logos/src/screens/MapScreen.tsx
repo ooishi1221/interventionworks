@@ -27,8 +27,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
-import { fetchSpotsInRegion, addUserSpotToFirestore } from '../firebase/firestoreService';
-import { insertUserSpot } from '../db/database';
+import { fetchSpotsInRegion, addUserSpotToFirestore, logActivity } from '../firebase/firestoreService';
+import { insertUserSpot, getUserRank } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { RadialMenu } from '../components/RadialMenu';
@@ -209,6 +209,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         fetchSpotsForRegion(JAPAN_CENTER);
       }
     })();
+    logActivity();
   }, []);
 
   // タブ2度押しリセット
@@ -434,7 +435,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     };
     try {
       const localId = await insertUserSpot(spotData);
-      addUserSpotToFirestore(localId, spotData).catch(() => {});
+      const rank = await getUserRank();
+      addUserSpotToFirestore(localId, spotData, rank).catch(() => {});
       // 写真があればレビューとして自動投稿
       if (reportForm.photo) {
         const { addReview } = await import('../firebase/firestoreService');

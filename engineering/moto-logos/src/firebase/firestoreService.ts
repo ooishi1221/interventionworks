@@ -20,9 +20,11 @@ import {
   Timestamp,
   GeoPoint,
 } from 'firebase/firestore';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './config';
 import { COLLECTIONS } from './firestoreTypes';
-import type { SpotCapacity } from './firestoreTypes';
+import type { SpotCapacity, UserRank } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 
@@ -145,10 +147,12 @@ export async function addUserSpotToFirestore(
     name: string; latitude: number; longitude: number;
     address?: string; maxCC: MaxCC; isFree: boolean;
     capacity?: number; pricePerHour?: number; openHours?: string;
-  }
+  },
+  userRank: UserRank = 'novice',
 ): Promise<void> {
   const now = Timestamp.now();
   const geohash = encodeGeohash(spot.latitude, spot.longitude, 9);
+  const status = userRank === 'novice' ? 'pending' : 'active';
   const data = stripUndef({
     name:       spot.name,
     coordinate: new GeoPoint(spot.latitude, spot.longitude),
@@ -166,7 +170,7 @@ export async function addUserSpotToFirestore(
     ...(spot.pricePerHour != null && { pricePerHour:    spot.pricePerHour }),
     ...(spot.openHours    != null && { openHours:       spot.openHours }),
     viewCount: 0, goodCount: 0, badReportCount: 0,
-    status: 'active', verificationLevel: 'community', source: 'user',
+    status, verificationLevel: 'community', source: 'user',
     updatedAt: now, lastVerifiedAt: now, createdAt: now,
   });
   await setDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`), data);
@@ -309,4 +313,45 @@ export async function fetchMyReviews(): Promise<(Review & { spotName: string })[
 
 export async function deleteReviewFromFirestore(firestoreId: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTIONS.REVIEWS, firestoreId));
+}
+
+// ─────────────────────────────────────────────────────
+// DAU/WAU/MAU — 日次アクティビティ記録
+// ─────────────────────────────────────────────────────
+
+const DEVICE_ID_KEY = 'moto_logos_device_id';
+
+async function getDeviceId(): Promise<string> {
+  let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    // crypto.randomUUID 非対応環境フォールバック
+    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+    await AsyncStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+
+/**
+ * アプリ起動時に 1日1回 Firestore へアクティビティを記録。
+ * DAU/WAU/MAU の集計元データになる。
+ */
+export async function logActivity(): Promise<void> {
+  try {
+    const deviceId = await getDeviceId();
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const docId = `${deviceId}_${today}`;
+
+    await setDoc(doc(db, COLLECTIONS.USER_ACTIVITY, docId), {
+      deviceId,
+      date: today,
+      platform: Platform.OS,
+      lastActiveAt: Timestamp.now(),
+    });
+  } catch (e) {
+    // アクティビティ記録失敗はアプリ動作に影響させない
+    console.warn('[logActivity]', e);
+  }
 }

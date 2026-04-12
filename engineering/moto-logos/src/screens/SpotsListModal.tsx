@@ -22,7 +22,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { Spacing, FontSize } from '../constants/theme';
 import { UserSpot, MaxCC, ParkingPin } from '../types';
-import { getAllUserSpots, deleteUserSpot, updateUserSpot } from '../db/database';
+import { getAllUserSpots, deleteUserSpot, updateUserSpot, getUserRank } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
 
 const C = {
@@ -99,7 +99,8 @@ export function SpotsListModal({ visible, onClose, onGoToSpot }: Props) {
       pricePerHour: form.price ? parseFloat(form.price) : undefined,
     };
     await updateUserSpot(editSpot.id, data);
-    addUserSpotToFirestore(editSpot.id, data).catch(() => {});
+    const rank = await getUserRank();
+    addUserSpotToFirestore(editSpot.id, data, rank).catch(() => {});
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEditSpot(null);
     setSaving(false);

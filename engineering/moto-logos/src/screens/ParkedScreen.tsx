@@ -21,7 +21,7 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { MaxCC, UserSpot, ParkingPin } from '../types';
-import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot } from '../db/database';
+import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot, getUserRank } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
 
 // ─── 色定数（Apple Maps 風ダーク） ─────────────────────
@@ -146,18 +146,22 @@ export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
       notes: form.notes || undefined,
     };
     try {
+      const rank = await getUserRank();
       if (editingId !== null) {
         await updateUserSpot(editingId, spotData);
-        addUserSpotToFirestore(editingId, spotData).catch((e) =>
+        addUserSpotToFirestore(editingId, spotData, rank).catch((e) =>
           console.warn('[ParkedScreen] Firestore update failed:', e)
         );
         Alert.alert('更新完了', '駐輪場情報を更新しました。');
       } else {
         const localId = await insertUserSpot(spotData);
-        addUserSpotToFirestore(localId, spotData).catch((e) =>
+        addUserSpotToFirestore(localId, spotData, rank).catch((e) =>
           console.warn('[ParkedScreen] Firestore insert failed:', e)
         );
-        Alert.alert('登録完了', '駐輪場を登録しました。地図に表示されます。');
+        const msg = rank === 'novice'
+          ? '駐輪場を登録しました。管理者の承認後に地図に表示されます。'
+          : '駐輪場を登録しました。地図に表示されます。';
+        Alert.alert('登録完了', msg);
       }
       await loadUserSpots();
       setShowForm(false);

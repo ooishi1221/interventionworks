@@ -128,6 +128,7 @@ export const COLLECTIONS = {
   VALIDATIONS: 'validations',
   REPORTS: 'reports',
   MODERATION_LOGS: 'moderation_logs',
+  USER_ACTIVITY: 'user_activity',
 } as const;
 
 // ─────────────────────────────────────────────────────
@@ -200,6 +201,14 @@ export interface DashboardStats {
   totalUsers: number;
   pendingSpots: number;
   totalReviews: number;
+}
+
+export interface KpiStats {
+  dau: number;
+  wau: number;
+  mau: number;
+  /** 過去30日間の日別アクティブユーザー数 [{date, count}] */
+  dailyTrend: { date: string; count: number }[];
 }
 
 // ─────────────────────────────────────────────────────

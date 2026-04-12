@@ -2,20 +2,17 @@ import bolt from "@slack/bolt";
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { writeFileSync, mkdirSync, readFileSync } from "fs";
-import { execFile } from "child_process";
+import { spawn } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "..", ".env") });
 
 const { App } = bolt;
 
-// --- Validate required tokens ---
 const requiredEnvs = ["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"];
 for (const key of requiredEnvs) {
   if (!process.env[key]) {
-    console.error(`[ERROR] ${key} が未設定です。.env を確認してください。`);
-    console.error("セットアップ手順: README.md を参照");
+    console.error(`[ERROR] ${key} が未設定です。`);
     process.exit(1);
   }
 }
@@ -26,190 +23,269 @@ const app = new App({
   socketMode: true,
 });
 
-const BOT_IDENTITY = { username: "Claude Code", icon_emoji: ":zap:" };
-
+const BOT = { username: "Claude Code", icon_emoji: ":zap:" };
 const PROJECT_ROOT = join(__dirname, "..", "..", "..");
-const RESPONSE_DIR = join(__dirname, "..", ".responses");
-mkdirSync(RESPONSE_DIR, { recursive: true });
+const CHANNEL = process.env.SLACK_CHANNEL_ID;
 
-// --- Helper: run Claude CLI ---
-function runClaude(args, cwd = PROJECT_ROOT) {
-  return new Promise((resolve, reject) => {
-    execFile("claude", args, {
-      cwd,
-      encoding: "utf-8",
-      timeout: 300_000,
-      maxBuffer: 1024 * 1024,
-    }, (err, stdout, stderr) => {
-      if (err) {
-        reject(new Error(stderr || err.message));
-      } else {
-        resolve(stdout);
-      }
-    });
-  });
+// --- Utilities ---
+
+// Strip ANSI escape sequences for clean Slack output
+function stripAnsi(str) {
+  return str
+    .replace(/\x1B\[[0-9;?]*[A-Za-z]/g, "")
+    .replace(/\x1B\][\s\S]*?(?:\x07|\x1B\\)/g, "")
+    .replace(/\x1B[P_^][\s\S]*?\x1B\\/g, "")
+    .replace(/\x1B[NO]./g, "")
+    .replace(/\x1B[()#][A-Z0-9]/g, "")
+    .replace(/\x1B[=><=<~{}|]/g, "")
+    .replace(/\x9B[0-9;?]*[A-Za-z]/g, "")
+    .replace(/\x1B./g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
-// --- Truncate long text for Slack (max 3000 chars) ---
 function truncate(text, max = 3000) {
   if (text.length <= max) return text;
   return text.slice(0, max) + "\n...(truncated)";
 }
 
-// --- Button action handler ---
-// When user clicks a choice button in Slack, capture the response
-app.action(/^claude_choice_/, async ({ action, body, ack, say }) => {
-  await ack();
+function isQuestion(text) {
+  const line = text.trim();
+  if (!line || line.length < 3) return false;
+  return (
+    /\?\s*$/.test(line) ||
+    /\(y\/n\)/i.test(line) ||
+    /\[y\/n\]/i.test(line) ||
+    /\[yes\/no\]/i.test(line) ||
+    /Allow .+\?/i.test(line) ||
+    /Do you want/i.test(line) ||
+    /確認してください|選択してください/.test(line)
+  );
+}
 
-  const selectedValue = action.value;
-  const user = body.user.name;
-  const timestamp = new Date().toISOString();
+// --- Active interactive session ---
+let session = null;
 
-  const response = {
-    selected: selectedValue,
-    user,
-    timestamp,
-    messageTs: body.message.ts,
-  };
-
-  // Save response to file for other processes to read
-  const responseFile = join(RESPONSE_DIR, "latest-response.json");
-  writeFileSync(responseFile, JSON.stringify(response, null, 2));
-
-  console.log(`[Slack] ${user} selected: ${selectedValue}`);
-
-  await say({
-    text: `*${selectedValue}* を選択しました。Claude に伝えます。`,
-    thread_ts: body.message.ts,
-    ...BOT_IDENTITY,
-  });
-
-  // Resume Claude Code with the selected response
-  try {
-    await runClaude([
-      "--continue",
-      "-p",
-      `ユーザーがSlackで「${selectedValue}」を選択しました。この選択に基づいて作業を続けてください。`,
-    ]);
-  } catch (err) {
-    console.error("[Claude] Resume failed:", err.message);
-  }
-});
-
-// --- Slash command: /claude ---
-// Users can send messages to Claude directly from Slack
-app.command("/claude", async ({ command, ack, say }) => {
-  await ack();
-
-  const userMessage = command.text;
-  const user = command.user_name;
-
-  console.log(`[Slack] /claude from ${user}: ${userMessage}`);
-
-  await say({ text: `*${user}* のリクエストを処理中...\n> ${userMessage}`, ...BOT_IDENTITY });
-
-  try {
-    const result = await runClaude(["-p", userMessage]);
-
-    await say({
-      text: `*Claude の回答:*\n${truncate(result)}`,
-      ...BOT_IDENTITY,
-    });
-  } catch (err) {
-    await say({ text: `エラーが発生しました: ${err.message.slice(0, 500)}`, ...BOT_IDENTITY });
-  }
-});
-
-// --- App mention handler ---
-// When someone @mentions the bot in a channel
-app.event("app_mention", async ({ event, say }) => {
-  const userMessage = event.text.replace(/<@[A-Z0-9]+>/g, "").trim();
-  const user = event.user;
-
-  if (!userMessage) {
-    await say({
-      text: "メッセージを入力してください。例: `@MotoLogos グローブの仕様を教えて`",
-      thread_ts: event.ts,
-      ...BOT_IDENTITY,
-    });
-    return;
-  }
-
-  console.log(`[Slack] Mention from ${user}: ${userMessage}`);
-
-  await say({
-    text: `処理中...`,
-    thread_ts: event.ts,
-    ...BOT_IDENTITY,
-  });
-
-  try {
-    const result = await runClaude(["-p", userMessage]);
-
-    await say({
-      text: truncate(result),
-      thread_ts: event.ts,
-      ...BOT_IDENTITY,
-    });
-  } catch (err) {
-    await say({
-      text: `エラー: ${err.message.slice(0, 500)}`,
-      thread_ts: event.ts,
-      ...BOT_IDENTITY,
-    });
-  }
-});
-
-// --- DM handler ---
-// Direct messages to the bot
-app.event("message", async ({ event, say }) => {
-  // Only handle DMs (channel type "im"), skip bot messages, skip threaded replies
-  if (event.channel_type !== "im" || event.bot_id || event.subtype || event.thread_ts) {
-    return;
-  }
-
-  const userMessage = event.text;
-  console.log(`[Slack] DM from ${event.user}: ${userMessage}`);
-
-  try {
-    const result = await runClaude(["-p", userMessage]);
-
-    await say({
-      text: truncate(result),
-      thread_ts: event.ts,
-      ...BOT_IDENTITY,
-    });
-  } catch (err) {
-    await say({
-      text: `エラー: ${err.message.slice(0, 500)}`,
-      thread_ts: event.ts,
-      ...BOT_IDENTITY,
-    });
-  }
-});
-
-// --- Graceful shutdown ---
-function shutdown(signal) {
-  console.log(`\n[Slack Bot] ${signal} received, shutting down...`);
-  app.stop().then(() => {
-    console.log("[Slack Bot] Disconnected.");
-    process.exit(0);
+function postToSlack(text, threadTs) {
+  return app.client.chat.postMessage({
+    channel: CHANNEL,
+    text,
+    thread_ts: threadTs,
+    ...BOT,
   });
 }
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+const PROGRESS_DELAY = 5_000;
+const HEARTBEAT_DELAY = 30_000;
+
+function startSession(initialPrompt, threadTs) {
+  if (session) {
+    session.proc.kill();
+    clearTimeout(session.progressTimer);
+    clearTimeout(session.heartbeatTimer);
+    session = null;
+  }
+
+  const proc = spawn("claude", [], {
+    cwd: PROJECT_ROOT,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  session = {
+    proc,
+    threadTs,
+    lineBuf: "",
+    progressBuf: "",
+    progressTimer: null,
+    heartbeatTimer: null,
+  };
+
+  function resetHeartbeat() {
+    if (!session) return;
+    clearTimeout(session.heartbeatTimer);
+    session.heartbeatTimer = setTimeout(() => {
+      if (session) {
+        postToSlack("... 作業中 ...", session.threadTs);
+        resetHeartbeat();
+      }
+    }, HEARTBEAT_DELAY);
+  }
+
+  function flushProgress() {
+    if (!session) return;
+    clearTimeout(session.progressTimer);
+    const text = session.progressBuf.trim();
+    if (text) {
+      postToSlack(`\`\`\`\n${truncate(text)}\n\`\`\``, session.threadTs);
+      session.progressBuf = "";
+    }
+  }
+
+  function scheduleProgress() {
+    if (!session) return;
+    clearTimeout(session.progressTimer);
+    session.progressTimer = setTimeout(flushProgress, PROGRESS_DELAY);
+  }
+
+  function handleOutput(chunk) {
+    if (!session) return;
+    const text = stripAnsi(chunk.toString());
+    session.lineBuf += text;
+    resetHeartbeat();
+
+    const parts = session.lineBuf.split("\n");
+    session.lineBuf = parts.pop() || "";
+
+    for (const part of parts) {
+      const line = part.trim();
+      if (!line) continue;
+
+      if (isQuestion(line)) {
+        flushProgress();
+        postToSlack(line, session.threadTs);
+      } else {
+        session.progressBuf += line + "\n";
+        scheduleProgress();
+      }
+    }
+
+    const pending = session.lineBuf.trim();
+    if (pending && isQuestion(pending)) {
+      flushProgress();
+      postToSlack(pending, session.threadTs);
+      session.lineBuf = "";
+    }
+  }
+
+  proc.stdout.on("data", handleOutput);
+  proc.stderr.on("data", (chunk) => {
+    console.log(`[claude:stderr] ${chunk.toString().trimEnd()}`);
+  });
+
+  proc.on("close", (code) => {
+    if (!session) return;
+    clearTimeout(session.progressTimer);
+    clearTimeout(session.heartbeatTimer);
+    const remaining = (session.progressBuf + session.lineBuf).trim();
+    if (remaining) {
+      postToSlack(truncate(remaining), session.threadTs);
+    }
+    postToSlack(`セッション終了 (exit ${code})`, threadTs);
+    console.log(`[claude] exited with code ${code}`);
+    session = null;
+  });
+
+  proc.stdin.write(initialPrompt + "\n");
+  console.log(`[session] started: "${initialPrompt}"`);
+}
+
+// --- /claude command ---
+app.command("/claude", async ({ command, ack, say }) => {
+  await ack();
+  const msg = command.text;
+  console.log(`[Slack] /claude from ${command.user_name}: ${msg}`);
+  const posted = await say({ text: `> ${msg}\nセッション開始...`, ...BOT });
+  startSession(msg, posted.ts);
+});
+
+// --- @mention ---
+app.event("app_mention", async ({ event, say }) => {
+  const msg = event.text.replace(/<@[A-Z0-9]+>/g, "").trim();
+  if (!msg) return;
+  console.log(`[Slack] mention: ${msg}`);
+  const posted = await say({
+    text: `> ${msg}\nセッション開始...`,
+    thread_ts: event.ts,
+    ...BOT,
+  });
+  startSession(msg, posted.ts || event.ts);
+});
+
+// --- Button click handler ---
+app.action(/^claude_choice_/, async ({ action, ack, body, client }) => {
+  await ack();
+  const chosen = action.value;
+  const userId = body.user?.id;
+  console.log(`[Slack] button clicked: "${chosen}" by ${userId}`);
+
+  // メッセージを更新して選択結果を表示
+  try {
+    await client.chat.update({
+      channel: body.channel?.id || CHANNEL,
+      ts: body.message?.ts,
+      text: `✅ *${chosen}* を選択しました`,
+      blocks: [
+        {
+          type: "section",
+          text: { type: "mrkdwn", text: `✅ *${chosen}* を選択しました（by <@${userId}>）` },
+        },
+      ],
+    });
+  } catch (e) {
+    console.error("[button] message update failed:", e.message);
+  }
+
+  // アクティブセッションがあれば選択結果を stdin に転送
+  if (session) {
+    console.log(`[button→stdin] ${chosen}`);
+    session.proc.stdin.write(chosen + "\n");
+    postToSlack(`📨 "${chosen}" をセッションに送信しました`, session.threadTs);
+  } else {
+    // セッションなし → チャンネルに結果だけ投稿
+    await client.chat.postMessage({
+      channel: body.channel?.id || CHANNEL,
+      text: `📋 選択: *${chosen}*（アクティブなセッションなし — 次回の指示に使えます）`,
+      ...BOT,
+    });
+  }
+});
+
+// --- Thread reply → stdin ---
+app.event("message", async ({ event }) => {
+  if (!session) return;
+  if (!event.thread_ts) return;
+  if (event.thread_ts !== session.threadTs) return;
+  if (event.bot_id || event.subtype) return;
+
+  const reply = event.text;
+  console.log(`[Slack→stdin] ${reply}`);
+  session.proc.stdin.write(reply + "\n");
+});
+
+// --- DM ---
+app.event("message", async ({ event, say }) => {
+  if (event.channel_type !== "im" || event.bot_id || event.subtype || event.thread_ts) return;
+
+  const msg = event.text;
+  console.log(`[Slack] DM: ${msg}`);
+
+  if (session) {
+    session.proc.stdin.write(msg + "\n");
+    return;
+  }
+
+  const posted = await say({
+    text: `> ${msg}\nセッション開始...`,
+    thread_ts: event.ts,
+    ...BOT,
+  });
+  startSession(msg, posted.ts || event.ts);
+});
+
+// --- Graceful shutdown ---
+process.on("SIGINT", () => {
+  if (session) session.proc.kill();
+  app.stop().then(() => process.exit(0));
+});
+process.on("SIGTERM", () => {
+  if (session) session.proc.kill();
+  app.stop().then(() => process.exit(0));
+});
 
 // --- Start ---
 (async () => {
-  try {
-    await app.start();
-    console.log("⚡ Moto-Logos Slack Bot is running (Socket Mode)");
-    console.log(`   Project root: ${PROJECT_ROOT}`);
-    console.log("   Listening for: /claude, @mentions, DMs, button clicks");
-  } catch (err) {
-    console.error("[FATAL] Bot startup failed:", err.message);
-    console.error("SLACK_BOT_TOKEN と SLACK_APP_TOKEN を確認してください。");
-    process.exit(1);
-  }
+  await app.start();
+  console.log("Slack <-> Claude Code bridge running");
+  console.log(`   Channel: ${CHANNEL}`);
+  console.log(`   Project: ${PROJECT_ROOT}`);
 })();
