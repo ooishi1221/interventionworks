@@ -22,12 +22,18 @@ import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
+import { LogBox } from 'react-native';
 
 // アプリ起動時に Sentry を初期化（最速で呼ぶ）
 initSentry();
 
 // プッシュ通知のフォアグラウンド表示設定（アプリ起動時に1回）
 setupNotificationHandler();
+
+// エミュレータでは Push 通知が動作しないため開発時の警告を非表示にする
+if (__DEV__) {
+  LogBox.ignoreLogs(['expo-notifications']);
+}
 
 const TUTORIAL_KEY = 'moto_logos_tutorial_done';
 const LEGAL_CONSENT_KEY = 'moto_logos_legal_consent';

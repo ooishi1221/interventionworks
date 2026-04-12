@@ -23,6 +23,7 @@ import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { MaxCC, UserSpot, ParkingPin } from '../types';
 import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot, getUserRank } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
+import { captureError } from '../utils/sentry';
 
 // ─── 色定数（Apple Maps 風ダーク） ─────────────────────
 const C = {
@@ -149,15 +150,17 @@ export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
       const rank = await getUserRank();
       if (editingId !== null) {
         await updateUserSpot(editingId, spotData);
-        addUserSpotToFirestore(editingId, spotData, rank).catch((e) =>
-          console.warn('[ParkedScreen] Firestore update failed:', e)
-        );
+        addUserSpotToFirestore(editingId, spotData, rank).catch((e) => {
+          captureError(e, { context: 'parked_firestore_update' });
+          Alert.alert('同期エラー', 'クラウドへの更新に失敗しました。ローカルには保存済みです。');
+        });
         Alert.alert('更新完了', '駐輪場情報を更新しました。');
       } else {
         const localId = await insertUserSpot(spotData);
-        addUserSpotToFirestore(localId, spotData, rank).catch((e) =>
-          console.warn('[ParkedScreen] Firestore insert failed:', e)
-        );
+        addUserSpotToFirestore(localId, spotData, rank).catch((e) => {
+          captureError(e, { context: 'parked_firestore_insert' });
+          Alert.alert('同期エラー', 'クラウドへの保存に失敗しました。ローカルには保存済みです。');
+        });
         const msg = rank === 'novice'
           ? '駐輪場を登録しました。管理者の承認後に地図に表示されます。'
           : '駐輪場を登録しました。地図に表示されます。';
@@ -181,9 +184,9 @@ export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
         style: 'destructive',
         onPress: async () => {
           await deleteUserSpot(spot.id);
-          deleteUserSpotFromFirestore(spot.id).catch((e) =>
-            console.warn('[ParkedScreen] Firestore delete failed:', e)
-          );
+          deleteUserSpotFromFirestore(spot.id).catch((e) => {
+            captureError(e, { context: 'parked_firestore_delete' });
+          });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           await loadUserSpots();
         },

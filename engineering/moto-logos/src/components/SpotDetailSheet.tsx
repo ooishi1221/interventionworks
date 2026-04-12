@@ -50,6 +50,7 @@ import {
   reportSpotClosed,
 } from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { captureError } from '../utils/sentry';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -191,8 +192,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     try {
       if (await Linking.canOpenURL(newLink)) { await Linking.openURL(newLink); return; }
       if (await Linking.canOpenURL(oldLink)) { await Linking.openURL(oldLink); return; }
-    } catch {}
-    Linking.openURL(web).catch(() => {});
+    } catch { /* navi app not installed */ }
+    Linking.openURL(web).catch((e) => captureError(e, { context: 'yahoo_navi' }));
   };
 
   const handleNav = () => {
@@ -571,7 +572,10 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
             style: 'destructive',
             onPress: () => {
               setReported('closed');
-              reportSpotClosed(spotId).catch(() => {});
+              reportSpotClosed(spotId).catch((e) => {
+                captureError(e, { context: 'report_closed' });
+                Alert.alert('送信エラー', '報告の送信に失敗しました。');
+              });
               incrementStat('reports');
             },
           },
@@ -580,12 +584,18 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
     } else if (type === 'full') {
       setReported('full');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      reportSpotFull(spotId).catch(() => {});
+      reportSpotFull(spotId).catch((e) => {
+        captureError(e, { context: 'report_full' });
+        Alert.alert('送信エラー', '報告の送信に失敗しました。');
+      });
       incrementStat('reports');
     } else {
       setReported('good');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      reportSpotGood(spotId).catch(() => {});
+      reportSpotGood(spotId).catch((e) => {
+        captureError(e, { context: 'report_good' });
+        Alert.alert('送信エラー', '報告の送信に失敗しました。');
+      });
       incrementStat('reports');
       // 👍の後にタイマー選択肢を表示
       setShowTimer(true);

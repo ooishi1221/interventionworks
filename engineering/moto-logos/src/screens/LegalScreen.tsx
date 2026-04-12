@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
 
 const C = {
   bg: '#0D0D0D',
@@ -67,8 +66,12 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
       for (const [key, asset] of Object.entries(files)) {
         const resolved = Asset.fromModule(asset);
         await resolved.downloadAsync();
-        if (resolved.localUri) {
-          docs[key] = await FileSystem.readAsStringAsync(resolved.localUri);
+        // localUri は Android Expo Go で null になることがあるため
+        // fetch() で確実に読み込む
+        const uri = resolved.localUri || resolved.uri;
+        if (uri) {
+          const res = await fetch(uri);
+          docs[key] = await res.text();
         }
       }
       setContent(docs);

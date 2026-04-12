@@ -17,6 +17,7 @@ import {
   Image,
   FlatList,
   Dimensions,
+  Linking,
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -27,11 +28,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
-import { fetchSpotsInRegion, addUserSpotToFirestore, logActivity } from '../firebase/firestoreService';
+import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
 import { insertUserSpot, getUserRank } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { RadialMenu } from '../components/RadialMenu';
+import { captureError } from '../utils/sentry';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -139,6 +141,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [loading, setLoading]             = useState(true);
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [locationDenied, setLocationDenied]   = useState(false);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   // ── 検索 ──────────────────────────────────────────────
@@ -165,7 +168,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         return Array.from(map.values());
       });
     } catch (e) {
-      console.warn('[MapScreen] fetchSpotsInRegion error:', e);
+      captureError(e, { context: 'fetchSpotsInRegion' });
     }
     setLoading(false);
     lastFetchRegionRef.current = region;
@@ -182,7 +185,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         try {
           const fresh = await fetchSpotsInRegion(lastFetchRegionRef.current!);
           setAllSpotsRaw(fresh); // マージではなく全置換
-        } catch {}
+        } catch (e) {
+          captureError(e, { context: 'refreshTrigger' });
+        }
         setLoading(false);
       })();
     }
@@ -194,18 +199,25 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         setLocationGranted(true);
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-        const initRegion: Region = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          latitudeDelta: 0.04,
-          longitudeDelta: 0.04,
-        };
-        mapRef.current?.animateToRegion(initRegion, 800);
-        fetchSpotsForRegion(initRegion);
+        try {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          const initRegion: Region = {
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+            latitudeDelta: 0.04,
+            longitudeDelta: 0.04,
+          };
+          mapRef.current?.animateToRegion(initRegion, 800);
+          fetchSpotsForRegion(initRegion);
+        } catch (e) {
+          captureError(e, { context: 'initialLocation' });
+          // GPS取得失敗 → 東京でフォールバック
+          fetchSpotsForRegion(JAPAN_CENTER);
+        }
       } else {
-        // 位置情報なし → 東京中心でフェッチ
+        // 位置情報拒否 → 東京中心でフェッチ + ユーザーに通知
+        setLocationDenied(true);
         fetchSpotsForRegion(JAPAN_CENTER);
       }
     })();
@@ -234,7 +246,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
               longitudeDelta: 0.03,
             }, 600);
           })
-          .catch(() => {});
+          .catch((e) => captureError(e, { context: 'resetView' }));
       }
     },
   }), [locationGranted]);
@@ -436,11 +448,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     try {
       const localId = await insertUserSpot(spotData);
       const rank = await getUserRank();
-      addUserSpotToFirestore(localId, spotData, rank).catch(() => {});
+      addUserSpotToFirestore(localId, spotData, rank).catch((e) => {
+        captureError(e, { context: 'quickReport_firestore' });
+        Alert.alert('同期エラー', 'クラウドへの保存に失敗しました。ネットワーク復帰後に再試行してください。');
+      });
       // 写真があればレビューとして自動投稿
       if (reportForm.photo) {
-        const { addReview } = await import('../firebase/firestoreService');
-        addReview(`user_${localId}`, 5, '写真を共有しました', reportForm.photo).catch(() => {});
+        addReview(`user_${localId}`, 5, '写真を共有しました', reportForm.photo).catch((e) => {
+          captureError(e, { context: 'quickReport_photo' });
+        });
       }
       const newPin: ParkingPin = {
         id: `user_${localId}`,
@@ -567,6 +583,31 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <View style={styles.loadingBadge}>
             <ActivityIndicator size="small" color={SYS_BLUE} />
             <Text style={styles.loadingText}>スポット読み込み中...</Text>
+          </View>
+        </View>
+      )}
+
+      {/* ── 位置情報拒否バナー ─────────────────────────── */}
+      {locationDenied && (
+        <View style={styles.deniedBanner} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.deniedBannerInner}
+            onPress={() => Linking.openSettings()}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="location-outline" size={16} color="#FF9F0A" />
+            <Text style={styles.deniedBannerText}>位置情報が無効です — タップして設定を開く</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── スポット0件メッセージ ──────────────────────── */}
+      {!loading && allSpots.length === 0 && (
+        <View style={styles.emptyOverlay} pointerEvents="none">
+          <View style={styles.emptyBadge}>
+            <Ionicons name="map-outline" size={32} color={SYS_GRAY} />
+            <Text style={styles.emptyTitle}>このエリアにはまだスポットがありません</Text>
+            <Text style={styles.emptySubtitle}>最初の発見者になろう！{'\n'}長押しメニューからスポットを登録できます</Text>
           </View>
         </View>
       )}
@@ -1252,4 +1293,29 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   loadingText: { color: '#AEAEB2', fontSize: 12 },
+  // 位置情報拒否バナー
+  deniedBanner: {
+    position: 'absolute', top: 54, left: 16, right: 16, zIndex: 20,
+    alignItems: 'center',
+  },
+  deniedBannerInner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(28,28,30,0.95)',
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,159,10,0.3)',
+  },
+  deniedBannerText: { color: '#FF9F0A', fontSize: 13, fontWeight: '600' },
+  // スポット0件
+  emptyOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', zIndex: 5,
+  },
+  emptyBadge: {
+    alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(28,28,30,0.92)',
+    paddingHorizontal: 24, paddingVertical: 20,
+    borderRadius: 16, maxWidth: 280,
+  },
+  emptyTitle: { color: '#F2F2F7', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  emptySubtitle: { color: '#8E8E93', fontSize: 13, textAlign: 'center', lineHeight: 20 },
 });
