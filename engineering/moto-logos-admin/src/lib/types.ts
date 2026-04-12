@@ -12,6 +12,8 @@ export type VerificationLevel = 'official' | 'trusted' | 'community';
 export type UserRank = 'novice' | 'rider' | 'patrol';
 export type ValidationType = 'good' | 'bad';
 export type AdminRole = 'super_admin' | 'moderator' | 'viewer';
+export type ReportReason = 'spam' | 'inappropriate' | 'misleading' | 'other';
+export type ReportStatus = 'open' | 'resolved' | 'dismissed';
 
 // ─────────────────────────────────────────────────────
 // spots コレクション
@@ -83,6 +85,23 @@ export interface FirestoreReview {
 }
 
 // ─────────────────────────────────────────────────────
+// reports コレクション（通報）
+// ─────────────────────────────────────────────────────
+
+export interface FirestoreReport {
+  reviewId: string;
+  spotId: string;
+  reporterUid: string;
+  reason: ReportReason;
+  description?: string;
+  status: ReportStatus;
+  resolvedBy?: string;
+  resolution?: string;
+  createdAt: FirebaseFirestore.Timestamp;
+  updatedAt: FirebaseFirestore.Timestamp;
+}
+
+// ─────────────────────────────────────────────────────
 // moderation_logs コレクション（新規）
 // ─────────────────────────────────────────────────────
 
@@ -107,6 +126,7 @@ export const COLLECTIONS = {
   USERS: 'users',
   REVIEWS: 'reviews',
   VALIDATIONS: 'validations',
+  REPORTS: 'reports',
   MODERATION_LOGS: 'moderation_logs',
 } as const;
 
@@ -149,6 +169,30 @@ export interface ModerationLogResponse {
   previousState: Record<string, unknown>;
   newState: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface ReportResponse {
+  id: string;
+  reviewId: string;
+  spotId: string;
+  reporterUid: string;
+  reason: ReportReason;
+  description?: string;
+  status: ReportStatus;
+  resolvedBy?: string;
+  resolution?: string;
+  createdAt: string;
+  updatedAt: string;
+  // joined review data
+  review?: {
+    id: string;
+    score: number;
+    comment?: string;
+    userId: string;
+    spotId: string;
+  };
+  // joined spot name
+  spotName?: string;
 }
 
 export interface DashboardStats {

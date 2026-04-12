@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 const NAV_ITEMS = [
   { href: '/', label: 'ダッシュボード', icon: '📊' },
   { href: '/moderation', label: 'モデレーション', icon: '🛡️', badge: true },
+  { href: '/reports', label: '通報管理', icon: '🚩' },
   { href: '/spots', label: 'スポット管理', icon: '📍' },
   { href: '/users', label: 'ユーザー管理', icon: '👤' },
   { href: '/audit-log', label: '監査ログ', icon: '📋' },
