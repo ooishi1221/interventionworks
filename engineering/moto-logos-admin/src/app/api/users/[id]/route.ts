@@ -19,12 +19,24 @@ export async function GET(
     }
 
     const data = doc.data()!;
-    return NextResponse.json({
+    const response: Record<string, unknown> = {
       id: doc.id,
-      ...data,
+      displayName: data.displayName,
+      trustScore: data.trustScore,
+      rank: data.rank,
+      photoUrl: data.photoUrl || null,
       createdAt: data.createdAt?.toDate().toISOString() || '',
       updatedAt: data.updatedAt?.toDate().toISOString() || '',
-    });
+    };
+    if (data.banStatus) response.banStatus = data.banStatus;
+    if (data.banReason) response.banReason = data.banReason;
+    if (data.bannedAt) response.bannedAt = data.bannedAt.toDate().toISOString();
+    if (data.banUntil !== undefined) {
+      response.banUntil = data.banUntil?.toDate().toISOString() || null;
+    }
+    if (data.bannedBy) response.bannedBy = data.bannedBy;
+
+    return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

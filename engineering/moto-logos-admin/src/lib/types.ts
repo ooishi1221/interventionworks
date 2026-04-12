@@ -59,11 +59,18 @@ export interface FirestoreSpot {
 // users コレクション
 // ─────────────────────────────────────────────────────
 
+export type BanStatus = 'active' | 'suspended' | 'banned';
+
 export interface FirestoreUser {
   displayName: string;
   trustScore: number;
   rank: UserRank;
   photoUrl?: string;
+  banStatus?: BanStatus;
+  banReason?: string;
+  bannedAt?: FirebaseFirestore.Timestamp;
+  banUntil?: FirebaseFirestore.Timestamp | null; // null = permanent
+  bannedBy?: string;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
@@ -156,6 +163,10 @@ export interface UserResponse {
   displayName: string;
   trustScore: number;
   rank: UserRank;
+  banStatus?: BanStatus;
+  banReason?: string;
+  bannedAt?: string;
+  banUntil?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,0 +1,454 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth-provider';
+import type { UserRank, BanStatus } from '@/lib/types';
+
+interface UserDetail {
+  id: string;
+  displayName: string;
+  trustScore: number;
+  rank: UserRank;
+  photoUrl?: string | null;
+  banStatus?: BanStatus;
+  banReason?: string;
+  bannedAt?: string;
+  banUntil?: string | null;
+  bannedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SpotItem {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+}
+
+interface ReviewItem {
+  id: string;
+  spotId: string;
+  score: number;
+  comment?: string;
+  createdAt: string;
+}
+
+const RANK_BADGE: Record<UserRank, { label: string; className: string }> = {
+  novice: { label: 'Novice', className: 'bg-text-secondary/20 text-text-secondary' },
+  rider: { label: 'Rider', className: 'bg-fresh-blue/20 text-fresh-blue' },
+  patrol: { label: 'Patrol', className: 'bg-accent/20 text-accent' },
+};
+
+const BAN_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  active: { label: '正常', className: 'bg-success/20 text-success' },
+  suspended: { label: '一時停止', className: 'bg-fresh-yellow/20 text-fresh-yellow' },
+  banned: { label: 'BAN', className: 'bg-fresh-red/20 text-fresh-red' },
+};
+
+export default function UserDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { user: admin } = useAuth();
+  const userId = params.id as string;
+
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [spots, setSpots] = useState<SpotItem[]>([]);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // BAN モーダル
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [banType, setBanType] = useState<'suspended' | 'banned'>('suspended');
+  const [banReason, setBanReason] = useState('');
+  const [banDuration, setBanDuration] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const canEdit = admin?.role === 'super_admin' || admin?.role === 'moderator';
+
+  const fetchUser = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/users/${userId}`);
+      if (!res.ok) {
+        router.push('/users');
+        return;
+      }
+      const data = await res.json();
+      setUserDetail(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, router]);
+
+  const fetchSpots = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/spots?createdBy=${userId}&limit=10`);
+      if (res.ok) {
+        const data = await res.json();
+        setSpots(data.spots || []);
+      }
+    } catch {
+      // スポット取得失敗は無視
+    }
+  }, [userId]);
+
+  const fetchReviews = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/users/${userId}/reviews`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.reviews || []);
+      }
+    } catch {
+      // レビュー取得失敗は無視
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUser();
+    fetchSpots();
+    fetchReviews();
+  }, [fetchUser, fetchSpots, fetchReviews]);
+
+  const handleBan = async () => {
+    if (!banReason.trim()) {
+      alert('BAN理由を入力してください');
+      return;
+    }
+    setProcessing(true);
+    try {
+      const body: Record<string, unknown> = {
+        type: banType,
+        reason: banReason.trim(),
+      };
+      if (banDuration) {
+        const days = parseInt(banDuration);
+        if (days > 0) body.durationDays = days;
+      }
+
+      const res = await fetch(`/api/users/${userId}/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'エラーが発生しました');
+        return;
+      }
+
+      const updated = await res.json();
+      setUserDetail((prev) => (prev ? { ...prev, ...updated } : prev));
+      setShowBanModal(false);
+      setBanReason('');
+      setBanDuration('');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleUnban = async () => {
+    if (!confirm('このユーザーのBANを解除しますか？')) return;
+    setProcessing(true);
+    try {
+      const res = await fetch(`/api/users/${userId}/unban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'エラーが発生しました');
+        return;
+      }
+
+      const updated = await res.json();
+      setUserDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...updated,
+              banReason: undefined,
+              bannedAt: undefined,
+              banUntil: undefined,
+              bannedBy: undefined,
+            }
+          : prev
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-12 text-text-secondary">読み込み中...</div>;
+  }
+
+  if (!userDetail) {
+    return <div className="text-center py-12 text-text-secondary">ユーザーが見つかりません</div>;
+  }
+
+  const banBadge = BAN_STATUS_BADGE[userDetail.banStatus || 'active'] || BAN_STATUS_BADGE.active;
+  const rankBadge = RANK_BADGE[userDetail.rank];
+  const isBanned = userDetail.banStatus === 'suspended' || userDetail.banStatus === 'banned';
+
+  return (
+    <div>
+      {/* ヘッダー */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => router.push('/users')}
+          className="px-3 py-1.5 text-sm bg-card border border-border rounded-lg hover:border-accent transition-colors"
+        >
+          &larr; ユーザー一覧
+        </button>
+        <h1 className="text-xl font-bold">ユーザー詳細</h1>
+      </div>
+
+      {/* プロフィールカード */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            {userDetail.photoUrl ? (
+              <img
+                src={userDetail.photoUrl}
+                alt={userDetail.displayName}
+                className="w-16 h-16 rounded-full object-cover border-2 border-border"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-card border-2 border-border flex items-center justify-center text-2xl text-text-secondary">
+                {userDetail.displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h2 className="text-lg font-bold">{userDetail.displayName}</h2>
+              <p className="text-xs text-text-secondary mt-0.5">ID: {userDetail.id}</p>
+            </div>
+          </div>
+
+          {/* BAN / UNBAN ボタン */}
+          {canEdit && (
+            <div className="flex gap-2">
+              {isBanned ? (
+                <button
+                  onClick={handleUnban}
+                  disabled={processing}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-success/15 text-success hover:bg-success/25 disabled:opacity-50 transition-colors"
+                >
+                  BAN解除
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBanModal(true)}
+                  disabled={processing}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-fresh-red/15 text-fresh-red hover:bg-fresh-red/25 disabled:opacity-50 transition-colors"
+                >
+                  BAN
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ステータス情報 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">ランク</p>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${rankBadge.className}`}>
+              {rankBadge.label}
+            </span>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">信頼スコア</p>
+            <p className="text-lg font-bold font-[family-name:var(--font-inter)]">
+              {userDetail.trustScore}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">BANステータス</p>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${banBadge.className}`}>
+              {banBadge.label}
+            </span>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">登録日</p>
+            <p className="text-sm">
+              {userDetail.createdAt ? new Date(userDetail.createdAt).toLocaleDateString('ja-JP') : '-'}
+            </p>
+          </div>
+        </div>
+
+        {/* BAN情報（BANされている場合） */}
+        {isBanned && (
+          <div className="mt-4 p-4 bg-fresh-red/5 border border-fresh-red/20 rounded-lg">
+            <h3 className="text-sm font-medium text-fresh-red mb-2">BAN情報</h3>
+            <div className="space-y-1 text-sm">
+              <p>
+                <span className="text-text-secondary">理由:</span>{' '}
+                {userDetail.banReason || '-'}
+              </p>
+              <p>
+                <span className="text-text-secondary">実行日:</span>{' '}
+                {userDetail.bannedAt
+                  ? new Date(userDetail.bannedAt).toLocaleString('ja-JP')
+                  : '-'}
+              </p>
+              <p>
+                <span className="text-text-secondary">期限:</span>{' '}
+                {userDetail.banUntil
+                  ? new Date(userDetail.banUntil).toLocaleString('ja-JP')
+                  : '無期限'}
+              </p>
+              {userDetail.bannedBy && (
+                <p>
+                  <span className="text-text-secondary">実行者:</span>{' '}
+                  {userDetail.bannedBy}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ユーザーの投稿スポット */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <h3 className="text-base font-bold mb-4">投稿スポット（最新10件）</h3>
+        {spots.length === 0 ? (
+          <p className="text-sm text-text-secondary">投稿スポットはありません</p>
+        ) : (
+          <div className="space-y-2">
+            {spots.map((spot) => (
+              <div
+                key={spot.id}
+                className="flex items-center justify-between bg-card rounded-lg px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">{spot.name}</p>
+                  <p className="text-xs text-text-secondary">
+                    {spot.createdAt
+                      ? new Date(spot.createdAt).toLocaleDateString('ja-JP')
+                      : '-'}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    spot.status === 'active'
+                      ? 'bg-success/20 text-success'
+                      : spot.status === 'pending'
+                        ? 'bg-fresh-yellow/20 text-fresh-yellow'
+                        : 'bg-text-secondary/20 text-text-secondary'
+                  }`}
+                >
+                  {spot.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ユーザーのレビュー */}
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <h3 className="text-base font-bold mb-4">レビュー（最新10件）</h3>
+        {reviews.length === 0 ? (
+          <p className="text-sm text-text-secondary">レビューはありません</p>
+        ) : (
+          <div className="space-y-2">
+            {reviews.map((review) => (
+              <div
+                key={review.id}
+                className="bg-card rounded-lg px-4 py-3"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-fresh-yellow text-sm">
+                    {'★'.repeat(review.score)}{'☆'.repeat(5 - review.score)}
+                  </span>
+                  <span className="text-xs text-text-secondary">
+                    {review.createdAt
+                      ? new Date(review.createdAt).toLocaleDateString('ja-JP')
+                      : '-'}
+                  </span>
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-foreground">{review.comment}</p>
+                )}
+                <p className="text-xs text-text-secondary mt-1">
+                  スポットID: {review.spotId}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* BAN モーダル */}
+      {showBanModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4">ユーザーをBANする</h3>
+            <p className="text-sm text-text-secondary mb-4">
+              対象: <span className="text-foreground font-medium">{userDetail.displayName}</span>
+            </p>
+
+            {/* BAN種別 */}
+            <label className="block text-sm text-text-secondary mb-1">BAN種別</label>
+            <select
+              value={banType}
+              onChange={(e) => setBanType(e.target.value as 'suspended' | 'banned')}
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground mb-3"
+            >
+              <option value="suspended">一時停止（suspended）</option>
+              <option value="banned">永久BAN（banned）</option>
+            </select>
+
+            {/* BAN理由 */}
+            <label className="block text-sm text-text-secondary mb-1">理由（必須）</label>
+            <textarea
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              placeholder="BAN理由を入力..."
+              rows={3}
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground resize-none focus:outline-none focus:border-accent mb-3"
+            />
+
+            {/* 期間（日数） */}
+            <label className="block text-sm text-text-secondary mb-1">
+              期間（日数） — 空欄で無期限
+            </label>
+            <input
+              type="number"
+              value={banDuration}
+              onChange={(e) => setBanDuration(e.target.value)}
+              placeholder="例: 30"
+              min="1"
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-accent mb-4"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowBanModal(false);
+                  setBanReason('');
+                  setBanDuration('');
+                }}
+                className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:text-foreground transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleBan}
+                disabled={processing || !banReason.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-fresh-red text-white hover:bg-fresh-red/80 disabled:opacity-50 transition-colors"
+              >
+                {processing ? '処理中...' : 'BANを実行'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

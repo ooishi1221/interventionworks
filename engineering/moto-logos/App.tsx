@@ -15,11 +15,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen, MapScreenHandle } from './src/screens/MapScreen';
 import { RiderScreen } from './src/screens/RiderScreen';
+import { LegalScreen } from './src/screens/LegalScreen';
 import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
 
+// アプリ起動時に Sentry を初期化（最速で呼ぶ）
+initSentry();
+
 const TUTORIAL_KEY = 'moto_logos_tutorial_done';
+const LEGAL_CONSENT_KEY = 'moto_logos_legal_consent';
 
 // iOS dark mode system colors
 const SYS_BLUE    = '#0A84FF';
@@ -40,7 +47,7 @@ const TABS: TabDef[] = [
   { id: 'rider', label: 'ライダー',  icon: 'person-outline', iconActive: 'person' },
 ];
 
-export default function App() {
+function App() {
   const { status, error } = useDatabase();
   const [tab, setTab]               = useState<Tab>('map');
   const [userCC, setUserCC]         = useState<UserCC>(125); // デフォルト: 原付二種
@@ -51,11 +58,31 @@ export default function App() {
   // ── ニックネーム ────────────────────────────────────
   const [nickname, setNickname] = useState<string>('');
   useEffect(() => {
-    AsyncStorage.getItem('moto_logos_nickname').then((v) => { if (v) setNickname(v); });
+    AsyncStorage.getItem('moto_logos_nickname').then((v) => {
+      if (v) {
+        setNickname(v);
+        setSentryUser(v);
+      }
+    });
   }, []);
   const saveNickname = useCallback((name: string) => {
     setNickname(name);
+    setSentryUser(name);
     AsyncStorage.setItem('moto_logos_nickname', name);
+  }, []);
+
+  // ── 利用規約同意 ───────────────────────────────────
+  const [legalConsented, setLegalConsented] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(LEGAL_CONSENT_KEY).then((v) => {
+      setLegalConsented(v === 'true');
+    });
+  }, []);
+
+  const handleLegalAccept = useCallback(() => {
+    setLegalConsented(true);
+    AsyncStorage.setItem(LEGAL_CONSENT_KEY, 'true');
   }, []);
 
   // ── チュートリアル ─────────────────────────────────
@@ -64,11 +91,11 @@ export default function App() {
 
   // DB初期化完了後にチュートリアルフラグをチェック
   useEffect(() => {
-    if (status !== 'ready') return;
+    if (status !== 'ready' || !legalConsented) return;
     AsyncStorage.getItem(TUTORIAL_KEY).then((v) => {
       if (v !== 'true') setTutorialVisible(true);
     });
-  }, [status]);
+  }, [status, legalConsented]);
 
   const finishTutorial = useCallback(() => {
     setTutorialVisible(false);
@@ -116,74 +143,93 @@ export default function App() {
     setTab('map');
   };
 
-  return (
-    <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="light" />
-
-      <View style={styles.content}>
-        {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
-        <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
-          <MapScreen
-            ref={mapScreenRef}
-            userCC={userCC}
-            onChangeCC={(cc) => setUserCC(cc)}
-            focusSpot={focusSpot}
-            onFocusConsumed={() => setFocusSpot(null)}
-            refreshTrigger={mapRefreshTrigger}
-            onRegisterTutorialTarget={registerTarget}
-          />
-        </View>
-        {tab === 'rider' && (
-          <RiderScreen
-            onGoToSpot={handleGoToSpot}
-            onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
-            onStartTutorial={startTutorial}
-            nickname={nickname}
-            onChangeNickname={saveNickname}
-          />
-        )}
+  // ── 利用規約未同意 → 同意画面を表示 ──
+  if (legalConsented === null) {
+    // 読み込み中
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={SYS_BLUE} />
       </View>
+    );
+  }
+  if (!legalConsented) {
+    return (
+      <ErrorBoundary>
+        <LegalScreen mode="consent" onAccept={handleLegalAccept} />
+      </ErrorBoundary>
+    );
+  }
 
-      <SafeAreaView style={styles.tabBarWrapper}>
-        <View style={styles.tabBar}>
-          {TABS.map((t) => {
-            const isActive = tab === t.id;
-            return (
-              <TouchableOpacity
-                key={t.id}
-                style={styles.tabItem}
-                onPress={() => handleTabPress(t.id)}
-                activeOpacity={0.6}
-                onLayout={t.id === 'rider' ? (e) => {
-                  (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
-                    registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
-                  });
-                } : undefined}
-              >
-                <Ionicons
-                  name={isActive ? t.iconActive : t.icon}
-                  size={24}
-                  color={isActive ? SYS_BLUE : SYS_GRAY}
-                />
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+  return (
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.root}>
+        <StatusBar style="light" />
+
+        <View style={styles.content}>
+          {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
+          <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
+            <MapScreen
+              ref={mapScreenRef}
+              userCC={userCC}
+              onChangeCC={(cc) => setUserCC(cc)}
+              focusSpot={focusSpot}
+              onFocusConsumed={() => setFocusSpot(null)}
+              refreshTrigger={mapRefreshTrigger}
+              onRegisterTutorialTarget={registerTarget}
+            />
+          </View>
+          {tab === 'rider' && (
+            <RiderScreen
+              onGoToSpot={handleGoToSpot}
+              onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
+              onStartTutorial={startTutorial}
+              nickname={nickname}
+              onChangeNickname={saveNickname}
+            />
+          )}
         </View>
-      </SafeAreaView>
 
-      {/* チュートリアルオーバーレイ */}
-      <TutorialOverlay
-        visible={tutorialVisible}
-        onFinish={finishTutorial}
-        targets={tutorialTargets}
-        userCC={userCC}
-        onChangeCC={(cc) => setUserCC(cc)}
-        onSetNickname={saveNickname}
-      />
-    </GestureHandlerRootView>
+        <SafeAreaView style={styles.tabBarWrapper}>
+          <View style={styles.tabBar}>
+            {TABS.map((t) => {
+              const isActive = tab === t.id;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={styles.tabItem}
+                  onPress={() => handleTabPress(t.id)}
+                  activeOpacity={0.6}
+                  onLayout={t.id === 'rider' ? (e) => {
+                    (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
+                      registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
+                    });
+                  } : undefined}
+                >
+                  <Ionicons
+                    name={isActive ? t.iconActive : t.icon}
+                    size={24}
+                    color={isActive ? SYS_BLUE : SYS_GRAY}
+                  />
+                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </SafeAreaView>
+
+        {/* チュートリアルオーバーレイ */}
+        <TutorialOverlay
+          visible={tutorialVisible}
+          onFinish={finishTutorial}
+          targets={tutorialTargets}
+          userCC={userCC}
+          onChangeCC={(cc) => setUserCC(cc)}
+          onSetNickname={saveNickname}
+        />
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 
@@ -223,3 +269,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+// Sentry.wrap でルートコンポーネントをラップし、
+// 未捕捉のネイティブクラッシュ・JS例外を自動レポートする
+export default sentryWrap(App);
