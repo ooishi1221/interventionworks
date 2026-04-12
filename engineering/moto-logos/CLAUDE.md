@@ -130,6 +130,32 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
 - `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, rank）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
+- **レビューは Firestore がマスター**。SQLite の reviews テーブルはマイグレーション用の読み取り専用レガシー
+
+### 投票フィードバック
+
+- スポット報告（Good/Bad/Closed）は AsyncStorage `vote_{spotId}` で重複投票を防止
+- ボタンに累計カウンター表示（goodCount / badReportCount）
+- 報告済みスポットはボタンを無効化して「報告済みです」を表示
+
+### 鮮度カラー（地図ピン）
+
+- `updatedAt` に基づいてピンの色を自動変更:
+  - 1ヶ月以内 → 青 `#0A84FF`（信頼）
+  - 3ヶ月以内 → 黄 `#FFD60A`（注意）
+  - 6ヶ月以上 → 赤 `#FF453A`（要確認）
+- ユーザー投稿スポットは常に紫 `#BF5AF2`
+
+### アクティビティログ
+
+- SQLite `activity_log` テーブルでアクション履歴を記録
+- 種別: `spot`（スポット登録）/ `review`（口コミ投稿）/ `report`（確認報告）/ `favorite`（お気に入り）
+- RiderScreen のタイムラインに実データ表示（相対時刻付き）
+
+### お気に入り参照整合性
+
+- FavoritesScreen / FavoritesListModal で、削除済みスポットのお気に入りを自動クリーンアップ
+- ゴーストレコード（spot === null）は SQLite から自動削除
 
 ### 環境変数
 
@@ -205,8 +231,7 @@ eas update --branch preview
 | **ParkedScreen** | スポット登録・編集フォーム |
 | **MyBikeScreen** | マイバイク管理 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
-| **ButlerScreen** | ヘルパー画面 |
-| **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告） |
+| **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告・投票カウンター） |
 | **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー |
 
 ---

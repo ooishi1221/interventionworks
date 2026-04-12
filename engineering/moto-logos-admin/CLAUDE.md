@@ -57,11 +57,11 @@ Firebase Auth Custom Claims でロールを管理。
 | ダッシュボード | `/` | KPIカード（DAU/WAU/MAU/スティッキネス/リテンション/投稿率/検証率）+ トレンドグラフ + 鮮度/ランク分布 + エリアカバレッジ |
 | モデレーション | `/moderation` | 審査待ちスポットの承認/却下 |
 | 通報管理 | `/reports` | ユーザー通報の確認・対応 |
-| スポット管理 | `/spots` | CRUD + 一括操作 + CSV入出力 |
+| スポット管理 | `/spots` | CRUD + 一括操作 + CSV入出力 + 編集履歴リンク |
 | ユーザー管理 | `/users` | 一覧・検索・フィルタ・BAN管理 |
-| ユーザー詳細 | `/users/[id]` | 投稿履歴・レビュー履歴・BAN/UNBAN |
+| ユーザー詳細 | `/users/[id]` | 投稿履歴・レビュー履歴・BAN/UNBAN・trustScore手動調整・ランク昇降格 |
 | 鮮度アラート | `/freshness` | 未更新スポット一覧 + 一括pending化 |
-| 監査ログ | `/audit-log` | 管理操作の完全な監査証跡 |
+| 監査ログ | `/audit-log` | 管理操作の完全な監査証跡（targetId フィルタ対応） |
 | ロール管理 | `/roles` | 管理者ロールの付与・変更（super_admin専用） |
 
 ## API エンドポイント
@@ -71,9 +71,10 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/dashboard/stats` | スポット総数・ユーザー総数・審査待ち・レビュー総数 |
 | `/api/dashboard/kpi` | DAU/WAU/MAU + スティッキネス + リテンション + 投稿率 + 検証率 + 鮮度分布 + ランク分布 + エリアカバレッジ + モデレーション処理時間 |
 | `/api/dashboard/freshness` | 鮮度アラート（GET: カテゴリ別一覧 / POST: 一括pending化） |
-| `/api/audit-log` | モデレーション監査ログ（ページネーション対応） |
+| `/api/audit-log` | モデレーション監査ログ（ページネーション + targetType/targetId フィルタ対応） |
 | `/api/spots` | スポット CRUD + bulk-status / bulk-update / export / import |
 | `/api/users` | ユーザー CRUD + 検索 + フィルタ（rank, banStatus） |
+| `/api/users/[id]` | GET: 詳細取得 / PATCH: trustScore・rank 手動調整（監査ログ付き） |
 | `/api/users/[id]/ban` | ユーザーBAN（一時停止/永久停止） |
 | `/api/users/[id]/unban` | BAN解除 |
 | `/api/reports` | 通報管理 + resolve |
