@@ -12,6 +12,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   Animated as RNAnimated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,7 +143,8 @@ export function FavoritesListModal({ visible, onClose, onGoToSpot }: Props) {
         ref={(ref) => { if (ref) swipeableRefs.current.set(item.key, ref); else swipeableRefs.current.delete(item.key); }}
         renderRightActions={(p, d) => renderRightActions(p, d, item)}
         overshootRight={false}
-        friction={2}
+        friction={Platform.OS === 'android' ? 3 : 2}
+        rightThreshold={Platform.OS === 'android' ? 60 : 40}
         onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
       >
         <TouchableOpacity

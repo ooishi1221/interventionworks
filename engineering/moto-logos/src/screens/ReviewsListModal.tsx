@@ -11,6 +11,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   Animated as RNAnimated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,7 +95,8 @@ export function ReviewsListModal({ visible, onClose }: Props) {
     <Swipeable
       renderRightActions={(p, d) => renderRightActions(p, d, item)}
       overshootRight={false}
-      friction={2}
+      friction={Platform.OS === 'android' ? 3 : 2}
+      rightThreshold={Platform.OS === 'android' ? 60 : 40}
       onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
     >
       <View style={styles.card}>

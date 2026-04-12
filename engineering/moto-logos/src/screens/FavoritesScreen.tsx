@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+  Platform,
   Animated as RNAnimated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -230,7 +231,9 @@ export function FavoritesScreen({ onGoToMap, onGoToSpot }: Props) {
         }}
         overshootLeft={false}
         overshootRight={false}
-        friction={2}
+        friction={Platform.OS === 'android' ? 3 : 2}
+        rightThreshold={Platform.OS === 'android' ? 60 : 40}
+        leftThreshold={Platform.OS === 'android' ? 60 : 40}
       >
         <View style={[styles.card, isPinned && styles.cardPinned]}>
           {/* ピンアイコン */}

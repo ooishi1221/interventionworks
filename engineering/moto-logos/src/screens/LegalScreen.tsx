@@ -9,8 +9,11 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Asset } from 'expo-asset';
+
+const THIRD_PARTY_CONSENT_KEY = 'moto_logos_third_party_consent';
 
 const C = {
   bg: '#0D0D0D',
@@ -43,10 +46,11 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
   const [activeDoc, setActiveDoc] = useState<DocType>(initialDoc ?? 'terms');
   const [content, setContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [agreed, setAgreed] = useState<Record<DocType, boolean>>({
+  const [agreed, setAgreed] = useState<Record<string, boolean>>({
     terms: false,
     privacy: false,
     moderation: false,
+    thirdParty: false,
   });
 
   useEffect(() => {
@@ -184,10 +188,24 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
             />
             <Text style={s.checkText}>プライバシーポリシーに同意する</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={s.checkRow}
+            onPress={() => setAgreed((p) => ({ ...p, thirdParty: !p.thirdParty }))}
+          >
+            <Ionicons
+              name={agreed.thirdParty ? 'checkbox' : 'square-outline'}
+              size={24}
+              color={agreed.thirdParty ? C.accent : C.sub}
+            />
+            <Text style={s.checkText}>第三者へのデータ提供に同意する（任意）</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[s.acceptBtn, !canAccept && s.acceptBtnDisabled]}
-            onPress={canAccept ? onAccept : undefined}
+            onPress={canAccept ? () => {
+              AsyncStorage.setItem(THIRD_PARTY_CONSENT_KEY, agreed.thirdParty ? 'true' : 'false');
+              onAccept?.();
+            } : undefined}
             disabled={!canAccept}
           >
             <Text style={s.acceptBtnText}>同意して始める</Text>

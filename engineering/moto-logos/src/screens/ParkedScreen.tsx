@@ -250,7 +250,8 @@ export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
       }}
       renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, spot)}
       overshootRight={false}
-      friction={2}
+      friction={Platform.OS === 'android' ? 3 : 2}
+      rightThreshold={Platform.OS === 'android' ? 60 : 40}
       onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
     >
       <TouchableOpacity
