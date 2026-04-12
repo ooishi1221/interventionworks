@@ -107,6 +107,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 
 - 新規スポットには必ず `geohash`（精度9）を付与する
 - Read 数を意識する。全件取得（`fetchAllSpots`）はマイグレーション期間のみ
+- `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
 
 ### 環境変数

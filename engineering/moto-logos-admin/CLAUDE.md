@@ -3,7 +3,7 @@
 ## 概要
 
 **目的:** Moto-Logos アプリのスポット・ユーザー・レビューを管理する内部ツール
-**URL:** https://moto-logos-admin.web.app（予定）
+**URL:** https://moto-logos-admin.vercel.app
 
 ## 技術スタック
 
@@ -15,7 +15,7 @@
 | 状態管理 | TanStack Query + TanStack Table |
 | 認証 | Firebase Auth (メール/パスワード) + セッションCookie |
 | バックエンド | Firebase Admin SDK (Next.js API Routes) |
-| ホスティング | Firebase Hosting（プロジェクト: `moto-spotter`、サイト: `moto-logos-admin`） |
+| ホスティング | Vercel（`npx vercel deploy --prod`） |
 
 ## ローカル開発
 
@@ -26,7 +26,7 @@ npm run dev
 ## デプロイ
 
 ```bash
-npm run build && firebase deploy --only hosting:moto-logos-admin --project moto-spotter
+npx vercel deploy --prod
 ```
 
 ## 認証・ロール
@@ -50,10 +50,22 @@ Firebase Auth Custom Claims でロールを管理。
 | `--foreground` | `#F5F5F5` | 本文 |
 | `--text-secondary` | `#A0A0A0` | 補助テキスト |
 
+## API エンドポイント
+
+| パス | 概要 |
+|------|------|
+| `/api/dashboard/stats` | スポット総数・ユーザー総数・審査待ち・レビュー総数 |
+| `/api/dashboard/kpi` | DAU/WAU/MAU + 30日間トレンドデータ |
+| `/api/audit-log` | モデレーション監査ログ（ページネーション対応） |
+| `/api/spots` | スポット CRUD + bulk-status / bulk-update / export / import |
+| `/api/users` | ユーザー CRUD + ロール管理 |
+| `/api/reports` | 通報管理 + resolve |
+
 ## Firestore コレクション
 
 - `spots` — 駐輪場スポット
 - `users` — ユーザー
 - `reviews` — レビュー
 - `validations` — Good/Bad 投票
+- `user_activity` — 日次アクティビティ（DAU/WAU/MAU 集計用、アプリ側で記録）
 - `moderation_logs` — 管理操作の監査ログ（本ダッシュボードで新規作成）
