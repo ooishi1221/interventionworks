@@ -227,12 +227,15 @@ eas update --branch preview
 | 画面 | 概要 |
 |------|------|
 | **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート |
-| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 |
+| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 + お知らせ/設定への導線 |
 | **ParkedScreen** | スポット登録・編集フォーム |
 | **MyBikeScreen** | マイバイク管理 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
 | **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告・投票カウンター） |
-| **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー |
+| **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理） |
+| **InquiryScreen** | お問い合わせフォーム（バグ報告・機能リクエスト・不正報告） |
+| **SettingsScreen** | 設定（通知ON/OFF・第三者同意・法的文書・アカウント削除） |
+| **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー + 第三者提供同意 |
 
 ---
 

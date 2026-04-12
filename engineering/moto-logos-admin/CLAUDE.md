@@ -63,7 +63,8 @@ Firebase Auth Custom Claims でロールを管理。
 | 鮮度アラート | `/freshness` | 未更新スポット一覧 + 一括pending化 + スポット確認依頼通知 |
 | 重複検出 | `/duplicates` | 重複候補スポット一覧（50m以内 + 名称類似）+ マージ機能 |
 | セキュリティ | `/security` | 異常検知・複数アカウント・写真確認キュー・BAN解除申請（4タブ） |
-| 通知管理 | `/notifications` | 一斉通知・エリア別セグメント通知 |
+| 通知管理 | `/notifications` | 一斉通知・エリア別セグメント通知・お知らせ投稿 |
+| ゲーミフィケーション | `/gamification` | 貢献者ランキング・ポイント付与ルール・バッジ定義管理（3タブ） |
 | 監査ログ | `/audit-log` | 管理操作の完全な監査証跡（targetId フィルタ対応） |
 | ロール管理 | `/roles` | 管理者ロールの付与・変更（super_admin専用） |
 
@@ -93,7 +94,12 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/moderation/multi-account` | 複数アカウント検知（レビュー対象重複分析） |
 | `/api/moderation/photos` | 写真付きレビューの目視確認キュー |
 | `/api/moderation/appeals` | BAN解除申請（POST: 申請 / GET: 一覧 / PATCH: 承認・却下） |
-| `/api/cron/stale-spots` | 6ヶ月未更新スポット自動pending（Vercel Cron 毎日3:00 UTC） |
+| `/api/users/ranking` | 週間/月間貢献者ランキング（レビュー+スポットでスコアリング） |
+| `/api/settings/point-rules` | 貢献ポイント付与ルール管理（GET/PUT） |
+| `/api/settings/badges` | バッジ定義管理（GET/POST/DELETE） |
+| `/api/announcements` | お知らせ管理（GET: 一覧 / POST: 投稿 → アプリ内表示） |
+| `/api/inquiries` | お問い合わせ一覧（GET: アプリから送信された問い合わせ） |
+| `/api/cron/stale-spots` | 6ヶ月→pending + 12ヶ月+goodCount=0→closed（Vercel Cron 毎日3:00 UTC） |
 
 ## Firestore コレクション
 
@@ -106,3 +112,7 @@ Firebase Auth Custom Claims でロールを管理。
 - `reports` — ユーザー通報
 - `ban_appeals` — BAN解除申請（userId, reason, status, reviewedBy）
 - `push_tokens` — Expo Push トークン（deviceId をキー）
+- `announcements` — アプリ内お知らせ（title, body, createdAt）
+- `inquiries` — お問い合わせ（userId, category, message, status）
+- `badge_definitions` — バッジ定義（name, icon, condition, sortOrder）
+- `settings/point_rules` — 貢献ポイント付与ルール設定ドキュメント
