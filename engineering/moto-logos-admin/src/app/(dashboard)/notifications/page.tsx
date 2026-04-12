@@ -7,6 +7,12 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const canSend = user?.role === 'super_admin' || user?.role === 'moderator';
 
+  // Announcement (in-app)
+  const [annTitle, setAnnTitle] = useState('');
+  const [annBody, setAnnBody] = useState('');
+  const [annSending, setAnnSending] = useState(false);
+  const [annResult, setAnnResult] = useState<string | null>(null);
+
   // Broadcast
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
@@ -91,6 +97,53 @@ export default function NotificationsPage() {
   return (
     <div>
       <h1 className="text-xl font-bold mb-6">通知管理</h1>
+
+      {/* お知らせ投稿（アプリ内表示） */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-base font-bold mb-2">お知らせ投稿</h2>
+        <p className="text-xs text-text-secondary mb-4">アプリ内の「お知らせ」画面に表示されます（プッシュ通知とは別）</p>
+        <div className="grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+          <input
+            value={annTitle}
+            onChange={(e) => setAnnTitle(e.target.value)}
+            placeholder="タイトル"
+            className="px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-accent"
+          />
+          <input
+            value={annBody}
+            onChange={(e) => setAnnBody(e.target.value)}
+            placeholder="本文"
+            className="px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-accent"
+          />
+          <button
+            onClick={async () => {
+              if (!annTitle.trim() || !annBody.trim()) return;
+              setAnnSending(true);
+              setAnnResult(null);
+              const res = await fetch('/api/announcements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: annTitle.trim(), body: annBody.trim() }),
+              });
+              setAnnSending(false);
+              if (res.ok) {
+                setAnnResult('投稿しました');
+                setAnnTitle(''); setAnnBody('');
+              } else {
+                const d = await res.json();
+                setAnnResult(`エラー: ${d.error}`);
+              }
+            }}
+            disabled={annSending || !annTitle.trim() || !annBody.trim()}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-50 transition-colors whitespace-nowrap"
+          >
+            {annSending ? '投稿中...' : '投稿'}
+          </button>
+        </div>
+        {annResult && (
+          <p className={`mt-2 text-xs ${annResult.startsWith('エラー') ? 'text-fresh-red' : 'text-success'}`}>{annResult}</p>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 一斉通知 */}

@@ -31,6 +31,10 @@ import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ReviewsListModal } from './ReviewsListModal';
 import { ParkingPin } from '../types';
+import { NotificationsScreen } from './NotificationsScreen';
+import { InquiryScreen } from './InquiryScreen';
+import { SettingsScreen } from './SettingsScreen';
+import { LegalScreen } from './LegalScreen';
 
 const C = {
   bg:     '#000000',
@@ -172,6 +176,9 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickna
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [activityEntries, setActivityEntries] = useState<ActivityLogEntry[]>([]);
 
+  // サブ画面
+  const [screen, setScreen] = useState<'main' | 'notifications' | 'settings' | 'inquiry' | 'legal'>('main');
+
   const loadStats = useCallback(async () => {
     const [spots, reviews, reports, favs, areas, recentActs] = await Promise.all([
       getAllUserSpots(),
@@ -219,6 +226,20 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickna
     { key: 'helped',  icon: 'people',            color: C.blue,   value: '--',              label: '助けたライダー' },
   ];
 
+  // サブ画面表示
+  if (screen === 'notifications') return <NotificationsScreen onBack={() => setScreen('main')} />;
+  if (screen === 'inquiry') return <InquiryScreen onBack={() => setScreen('main')} />;
+  if (screen === 'legal') return <LegalScreen mode="view" onBack={() => setScreen('main')} />;
+  if (screen === 'settings') {
+    return (
+      <SettingsScreen
+        onBack={() => setScreen('main')}
+        onOpenLegal={() => setScreen('legal')}
+        onOpenInquiry={() => setScreen('inquiry')}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -232,6 +253,16 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickna
           />
         }
       >
+
+        {/* ── ヘッダーアクション（お知らせ・設定） ── */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setScreen('notifications')} style={styles.headerIconBtn}>
+            <Ionicons name="notifications-outline" size={22} color={C.sub} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setScreen('settings')} style={styles.headerIconBtn}>
+            <Ionicons name="settings-outline" size={22} color={C.sub} />
+          </TouchableOpacity>
+        </View>
 
         {/* ── ヘッダー（ニックネーム + ランクアイコン） ── */}
         <View style={styles.header}>
@@ -337,6 +368,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   content: { padding: Spacing.lg },
 
+  headerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 4 },
+  headerIconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   header: { alignItems: 'center', gap: 6, marginBottom: 20 },
   avatarCircle: {
     width: 72, height: 72, borderRadius: 36,
