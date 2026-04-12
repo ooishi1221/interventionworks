@@ -27,6 +27,7 @@ import { COLLECTIONS } from './firestoreTypes';
 import type { SpotCapacity, UserRank } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
+import { isNgWord } from '../utils/ng-filter';
 
 // ─────────────────────────────────────────────────────
 // 変換ヘルパー
@@ -150,6 +151,11 @@ export async function addUserSpotToFirestore(
   },
   userRank: UserRank = 'novice',
 ): Promise<void> {
+  // NG ワードチェック（クライアント側即時フィードバック）
+  if (isNgWord(spot.name)) {
+    throw new Error('スポット名に不適切な表現が含まれています');
+  }
+
   const now = Timestamp.now();
   const geohash = encodeGeohash(spot.latitude, spot.longitude, 9);
   const status = userRank === 'novice' ? 'pending' : 'active';
@@ -265,6 +271,11 @@ export async function addReview(
   comment?: string,
   photoUri?: string
 ): Promise<void> {
+  // NG ワードチェック（クライアント側即時フィードバック）
+  if (comment && isNgWord(comment)) {
+    throw new Error('レビューに不適切な表現が含まれています');
+  }
+
   const now = Timestamp.now();
   await addDoc(collection(db, COLLECTIONS.REVIEWS), stripUndef({
     spotId,

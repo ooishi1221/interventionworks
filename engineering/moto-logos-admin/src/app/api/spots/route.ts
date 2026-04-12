@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
+import { checkNgWords } from '@/lib/ng-words';
 import { COLLECTIONS, type SpotResponse, type SpotStatus, type VerificationLevel } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +58,70 @@ export async function GET(request: NextRequest) {
     const nextCursor = hasMore ? docs[docs.length - 1].id : null;
 
     return NextResponse.json({ spots, nextCursor });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal error';
+    const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await requireAuth('moderator');
+    const body = await request.json();
+
+    const { name, latitude, longitude } = body;
+    if (!name || typeof latitude !== 'number' || typeof longitude !== 'number') {
+      return NextResponse.json(
+        { error: 'name, latitude, longitude は必須です' },
+        { status: 400 },
+      );
+    }
+
+    // NG ワードチェック
+    const ngResult = checkNgWords(name);
+    if (ngResult.blocked) {
+      return NextResponse.json(
+        { error: `スポット名に不適切な表現が含まれています: ${ngResult.matchedWord}` },
+        { status: 400 },
+      );
+    }
+
+    const now = FieldValue.serverTimestamp();
+    const docRef = adminDb.collection(COLLECTIONS.SPOTS).doc();
+
+    await docRef.set({
+      name,
+      coordinate: { latitude, longitude },
+      geohash: body.geohash || '',
+      address: body.address || '',
+      status: body.status || 'pending',
+      verificationLevel: body.verificationLevel || 'community',
+      source: body.source || 'user',
+      isFree: body.isFree ?? true,
+      pricePerHour: body.pricePerHour ?? null,
+      parkingCapacity: body.parkingCapacity ?? null,
+      capacity: body.capacity || { is50only: false, upTo125: true, upTo400: true, isLargeOk: true },
+      payment: body.payment || { cash: false, icCard: false, qrCode: false },
+      goodCount: 0,
+      badReportCount: 0,
+      viewCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await writeAuditLog({
+      adminId: user.uid,
+      adminEmail: user.email,
+      action: 'spot.create',
+      targetType: 'spot',
+      targetId: docRef.id,
+      reason: body.reason || 'スポット新規作成',
+      previousState: {},
+      newState: { name, latitude, longitude },
+    });
+
+    return NextResponse.json({ success: true, id: docRef.id }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;
