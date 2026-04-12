@@ -197,4 +197,5 @@ export const COLLECTIONS = {
   REVIEWS:        'reviews',
   VALIDATIONS:    'validations',
   USER_ACTIVITY:  'user_activity',
+  PUSH_TOKENS:    'push_tokens',
 } as const;

@@ -19,11 +19,15 @@ import { LegalScreen } from './src/screens/LegalScreen';
 import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
+import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
 
 // アプリ起動時に Sentry を初期化（最速で呼ぶ）
 initSentry();
+
+// プッシュ通知のフォアグラウンド表示設定（アプリ起動時に1回）
+setupNotificationHandler();
 
 const TUTORIAL_KEY = 'moto_logos_tutorial_done';
 const LEGAL_CONSENT_KEY = 'moto_logos_legal_consent';
@@ -83,18 +87,22 @@ function App() {
   const handleLegalAccept = useCallback(() => {
     setLegalConsented(true);
     AsyncStorage.setItem(LEGAL_CONSENT_KEY, 'true');
+    // 利用規約同意後にプッシュ通知のパーミッション要求 & トークン登録
+    registerForPushNotifications();
   }, []);
 
   // ── チュートリアル ─────────────────────────────────
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialTargets, setTutorialTargets] = useState<Record<string, SpotlightRect>>({});
 
-  // DB初期化完了後にチュートリアルフラグをチェック
+  // DB初期化完了後にチュートリアルフラグをチェック & プッシュ通知トークン更新
   useEffect(() => {
     if (status !== 'ready' || !legalConsented) return;
     AsyncStorage.getItem(TUTORIAL_KEY).then((v) => {
       if (v !== 'true') setTutorialVisible(true);
     });
+    // 既に同意済みの復帰ユーザーのトークンを更新
+    registerForPushNotifications();
   }, [status, legalConsented]);
 
   const finishTutorial = useCallback(() => {

@@ -28,7 +28,14 @@
           "project": "moto-logos"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF6B00"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,

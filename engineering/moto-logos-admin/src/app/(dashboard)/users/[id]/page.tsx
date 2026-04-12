@@ -65,6 +65,12 @@ export default function UserDetailPage() {
   const [banDuration, setBanDuration] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // 通知モーダル
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifyTitle, setNotifyTitle] = useState('');
+  const [notifyBody, setNotifyBody] = useState('');
+  const [notifySending, setNotifySending] = useState(false);
+
   const canEdit = admin?.role === 'super_admin' || admin?.role === 'moderator';
 
   const fetchUser = useCallback(async () => {
@@ -150,6 +156,38 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleSendNotification = async () => {
+    if (!notifyTitle.trim() || !notifyBody.trim()) {
+      alert('タイトルと本文を入力してください');
+      return;
+    }
+    setNotifySending(true);
+    try {
+      const res = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          title: notifyTitle.trim(),
+          body: notifyBody.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || '通知の送信に失敗しました');
+        return;
+      }
+
+      alert('通知を送信しました');
+      setShowNotifyModal(false);
+      setNotifyTitle('');
+      setNotifyBody('');
+    } finally {
+      setNotifySending(false);
+    }
+  };
+
   const handleUnban = async () => {
     if (!confirm('このユーザーのBANを解除しますか？')) return;
     setProcessing(true);
@@ -229,9 +267,16 @@ export default function UserDetailPage() {
             </div>
           </div>
 
-          {/* BAN / UNBAN ボタン */}
+          {/* BAN / UNBAN / 通知ボタン */}
           {canEdit && (
             <div className="flex gap-2">
+              <button
+                onClick={() => setShowNotifyModal(true)}
+                disabled={processing}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-50 transition-colors"
+              >
+                通知を送信
+              </button>
               {isBanned ? (
                 <button
                   onClick={handleUnban}
@@ -383,6 +428,58 @@ export default function UserDetailPage() {
           </div>
         )}
       </div>
+
+      {/* 通知送信モーダル */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4">通知を送信</h3>
+            <p className="text-sm text-text-secondary mb-4">
+              対象: <span className="text-foreground font-medium">{userDetail.displayName}</span>
+            </p>
+
+            {/* タイトル */}
+            <label className="block text-sm text-text-secondary mb-1">タイトル（必須）</label>
+            <input
+              type="text"
+              value={notifyTitle}
+              onChange={(e) => setNotifyTitle(e.target.value)}
+              placeholder="例: Moto-Logos からのお知らせ"
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-accent mb-3"
+            />
+
+            {/* 本文 */}
+            <label className="block text-sm text-text-secondary mb-1">本文（必須）</label>
+            <textarea
+              value={notifyBody}
+              onChange={(e) => setNotifyBody(e.target.value)}
+              placeholder="通知の本文を入力..."
+              rows={4}
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground resize-none focus:outline-none focus:border-accent mb-4"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowNotifyModal(false);
+                  setNotifyTitle('');
+                  setNotifyBody('');
+                }}
+                className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:text-foreground transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSendNotification}
+                disabled={notifySending || !notifyTitle.trim() || !notifyBody.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-50 transition-colors"
+              >
+                {notifySending ? '送信中...' : '送信'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BAN モーダル */}
       {showBanModal && (

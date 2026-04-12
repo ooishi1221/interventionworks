@@ -547,7 +547,7 @@ function StatusReportButtons({ spotId, spotName }: { spotId: string; spotName: s
           body: `${spotName} の駐車時間が ${minutes}分 経過しました。移動の準備を!`,
           sound: true,
         },
-        trigger: { seconds: minutes * 60 },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: minutes * 60 },
       });
     } catch {
       // Expo Go (Android SDK53+) では通知非対応 → Alertで代替通知

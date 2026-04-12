@@ -136,6 +136,7 @@ export const COLLECTIONS = {
   REPORTS: 'reports',
   MODERATION_LOGS: 'moderation_logs',
   USER_ACTIVITY: 'user_activity',
+  PUSH_TOKENS: 'push_tokens',
 } as const;
 
 // ─────────────────────────────────────────────────────
