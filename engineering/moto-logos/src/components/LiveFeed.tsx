@@ -1,40 +1,43 @@
 /**
  * LiveFeed — マップ上部を横断するティッカー
  *
- * 右から左へスライドして次々と活動が流れる。
- * 「このアプリには人がいる」を体感させる。
+ * 報告タイプ別カラーで「何が起きたか」を瞬時に伝える。
+ * 緑=停められた / 赤=満車 / グレー=閉鎖 / 黄=料金 / オレンジ=CC制限 / 紫=新規登録
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-const C = {
-  text:   '#F2F2F7',
-  sub:    '#636366',
-  green:  '#30D158',
-  purple: '#BF5AF2',
-  orange: '#FF9F0A',
+// ── 報告タイプ別カラー ──────────────────────────────────
+const TYPE = {
+  good:      { color: '#30D158', icon: 'thumbs-up'       as const },  // 停められた
+  full:      { color: '#FF453A', icon: 'alert-circle'    as const },  // 満車
+  closed:    { color: '#636366', icon: 'close-circle'    as const },  // 閉鎖
+  wrongPrice:{ color: '#FFD60A', icon: 'cash-outline'    as const },  // 料金違う
+  wrongCC:   { color: '#FF9F0A', icon: 'speedometer-outline' as const }, // CC制限違う
+  register:  { color: '#BF5AF2', icon: 'location'        as const },  // 新規登録
 };
 
 interface FeedItem {
   id: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+  type: keyof typeof TYPE;
   message: string;
   time: string;
 }
 
 const DUMMY_FEED: FeedItem[] = [
-  { id: '1', icon: 'location',    color: C.purple, message: 'CBR650Rのライダーが渋谷駅前を登録',       time: '2分前' },
-  { id: '2', icon: 'thumbs-up',   color: C.green,  message: 'PCX150で北千住駅東口「停められた」',      time: '5分前' },
-  { id: '3', icon: 'location',    color: C.purple, message: 'MT-07のライダーが新宿西口を登録',         time: '8分前' },
-  { id: '4', icon: 'thumbs-down', color: C.orange, message: 'Ninja400で赤羽駅東口「満車だった」',      time: '12分前' },
-  { id: '5', icon: 'thumbs-up',   color: C.green,  message: 'レブル250で池袋サンシャイン前「停められた」', time: '15分前' },
-  { id: '6', icon: 'location',    color: C.purple, message: 'ライダーが上野駅前を登録',                time: '18分前' },
-  { id: '7', icon: 'thumbs-up',   color: C.green,  message: 'YZF-R25で秋葉原UDX前「停められた」',     time: '22分前' },
-  { id: '8', icon: 'location',    color: C.purple, message: 'GB350のライダーが横浜みなとみらいを登録',  time: '25分前' },
+  { id: '1', type: 'register',  message: 'CBR650Rのライダーが渋谷駅前を登録',          time: '2分前' },
+  { id: '2', type: 'good',      message: 'PCX150で北千住駅東口「停められた」',          time: '5分前' },
+  { id: '3', type: 'register',  message: 'MT-07のライダーが新宿西口を登録',            time: '8分前' },
+  { id: '4', type: 'full',      message: 'Ninja400で赤羽駅東口「満車」と報告',         time: '12分前' },
+  { id: '5', type: 'good',      message: 'レブル250で池袋サンシャイン前「停められた」',    time: '15分前' },
+  { id: '6', type: 'closed',    message: '上野駅前バイク駐車場「閉鎖」と報告',           time: '18分前' },
+  { id: '7', type: 'good',      message: 'YZF-R25で秋葉原UDX前「停められた」',         time: '22分前' },
+  { id: '8', type: 'register',  message: 'GB350のライダーが横浜みなとみらいを登録',       time: '25分前' },
+  { id: '9', type: 'wrongPrice', message: '品川駅東口「料金が違う」と報告',              time: '28分前' },
+  { id: '10', type: 'wrongCC',   message: '六本木交差点「CC制限が違う」と報告',          time: '32分前' },
 ];
 
 const SLIDE_DURATION = 500;
@@ -49,7 +52,6 @@ export function LiveFeed() {
 
     const showNext = () => {
       if (!mounted) return;
-      // 上から降りてくる
       translateY.setValue(-80);
       Animated.spring(translateY, {
         toValue: 0,
@@ -58,7 +60,6 @@ export function LiveFeed() {
         useNativeDriver: true,
       }).start(() => {
         if (!mounted) return;
-        // 表示して待つ → 上に戻って消える
         setTimeout(() => {
           if (!mounted) return;
           Animated.timing(translateY, {
@@ -79,12 +80,13 @@ export function LiveFeed() {
   }, []);
 
   const item = DUMMY_FEED[index];
+  const t = TYPE[item.type];
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <Animated.View style={[styles.bar, { transform: [{ translateY }] }]}>
-        <View style={[styles.dot, { backgroundColor: item.color }]}>
-          <Ionicons name={item.icon} size={11} color="#fff" />
+      <Animated.View style={[styles.bar, { borderLeftColor: t.color, transform: [{ translateY }] }]}>
+        <View style={[styles.dot, { backgroundColor: t.color }]}>
+          <Ionicons name={t.icon} size={11} color="#fff" />
         </View>
         <Text style={styles.message} numberOfLines={1}>{item.message}</Text>
         <Text style={styles.time}>{item.time}</Text>
@@ -113,6 +115,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.08)',
+    // 左ボーダーで報告タイプを色分け
+    borderLeftWidth: 3,
   },
   dot: {
     width: 22,
