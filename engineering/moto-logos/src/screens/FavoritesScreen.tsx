@@ -24,6 +24,7 @@ import {
   updateFavoriteSortOrder,
 } from '../db/database';
 import { ADACHI_PARKING } from '../data/adachi-parking';
+import { captureError } from '../utils/sentry';
 
 // ─── 色定数 ─────────────────────────────────────────────
 const C = {
@@ -107,11 +108,11 @@ export function FavoritesScreen({ onGoToMap, onGoToSpot }: Props) {
       // ゴースト除去: 存在しないスポットのお気に入りを自動クリーンアップ
       const ghosts = resolved.filter((r) => r.spot === null);
       for (const g of ghosts) {
-        removeFavorite(g.favorite.spotId, g.favorite.source).catch(() => {});
+        removeFavorite(g.favorite.spotId, g.favorite.source).catch((e) => captureError(e, { context: 'favorites_ghost_cleanup' }));
       }
 
       setItems(resolved.filter((r) => r.spot !== null));
-    } catch {}
+    } catch (e) { captureError(e, { context: 'favorites_load' }); }
     setLoading(false);
   }, []);
 

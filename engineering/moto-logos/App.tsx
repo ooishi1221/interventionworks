@@ -25,7 +25,7 @@ import { TutorialGuide } from './src/components/TutorialGuide';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { UserProvider } from './src/contexts/UserContext';
 import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
-import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
+import { initSentry, setSentryUser, sentryWrap, captureError } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { FontSize, Spacing } from './src/constants/theme';
@@ -82,7 +82,7 @@ function App() {
   useEffect(() => {
     ensureAnonymousAuth()
       .then(() => setAuthReady(true))
-      .catch(() => setAuthReady(true)); // 失敗してもアプリは起動させる
+      .catch((e) => { captureError(e, { context: 'anonymous_auth' }); setAuthReady(true); }); // 失敗してもアプリは起動させる
   }, []);
 
   // ── ニックネーム ────────────────────────────────────

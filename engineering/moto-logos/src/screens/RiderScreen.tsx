@@ -32,6 +32,7 @@ import { getMySpotsTotalViews } from '../firebase/firestoreService';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle } from '../types';
+import { captureError } from '../utils/sentry';
 
 const C = {
   bg:     '#000000',
@@ -108,7 +109,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     setBike(vehicle);
 
     const spotIds = spots.map((s) => `user_${s.id}`);
-    getMySpotsTotalViews(spotIds).then(setTotalViews).catch(() => {});
+    getMySpotsTotalViews(spotIds).then(setTotalViews).catch((e) => captureError(e, { context: 'rider_total_views' }));
   }, []);
 
   useEffect(() => { loadStats(); }, [loadStats, favModalOpen, spotsModalOpen]);

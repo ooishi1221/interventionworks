@@ -257,6 +257,7 @@ export function ProximityContextCard({
       }
       if (result.canceled) return;
 
+      if (!result.assets?.length) return;
       const photoUri = result.assets[0].uri;
       await addReview(reportedSpotId, userId, 1, undefined, photoUri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

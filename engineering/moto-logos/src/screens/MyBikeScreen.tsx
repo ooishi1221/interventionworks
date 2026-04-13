@@ -86,7 +86,7 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
       if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
     }
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length) setPhotoUri(result.assets[0].uri);
   };
 
   const handleSave = async () => {

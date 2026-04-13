@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { COLLECTIONS } from '../firebase/firestoreTypes';
+import { captureError } from './sentry';
 
 const DEVICE_ID_KEY = 'moto_logos_device_id';
 
@@ -115,6 +116,7 @@ async function savePushToken(token: string): Promise<void> {
     });
   } catch (error) {
     // トークン保存失敗はアプリ動作に影響させない
+    captureError(error, { context: 'push_token_save' });
     console.warn('[PushNotifications] トークン保存に失敗:', error);
   }
 }

@@ -522,7 +522,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           aspect: [4, 3],
         });
       }
-      if (result.canceled) return;
+      if (result.canceled || !result.assets?.length) return;
       const photoUri = result.assets[0].uri;
 
       // 3. 住所を自動取得

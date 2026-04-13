@@ -225,7 +225,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       if (isFav) { await removeFavorite(spot.id, src); setIsFav(false); }
       else       { await addFavorite(spot.id, src);    setIsFav(true);  }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
+    } catch (e) { captureError(e, { context: 'toggle_favorite' }); }
     setFavLoading(false);
   };
 
@@ -248,7 +248,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     try {
       if (await Linking.canOpenURL(newLink)) { await Linking.openURL(newLink); return; }
       if (await Linking.canOpenURL(oldLink)) { await Linking.openURL(oldLink); return; }
-    } catch {}
+    } catch (e) { captureError(e, { context: 'yahoo_navi_deeplink' }); }
     Linking.openURL(web).catch((e) => captureError(e, { context: 'yahoo_navi' }));
   };
 
@@ -273,13 +273,13 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       if (status === 'granted') {
         result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
       }
-    } catch {}
+    } catch (e) { captureError(e, { context: 'report_camera_launch' }); }
     if (!result) {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
     }
-    if (!result.canceled) setReportPhoto(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length) setReportPhoto(result.assets[0].uri);
   };
 
   // ── 報告: 送信 ────────────────────────────────────────
@@ -333,7 +333,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     setReportStep('ask');
     setCorrection(null);
     setReportComment('');
-    if (reportPhoto) FileSystem.deleteAsync(reportPhoto, { idempotent: true }).catch(() => {});
+    if (reportPhoto) FileSystem.deleteAsync(reportPhoto, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' }));
     setReportPhoto(null);
   };
 
@@ -425,7 +425,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                 {reportPhoto ? (
                   <View style={styles.reportPhotoPreview}>
                     <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
+                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' })); setReportPhoto(null); }}>
                       <Ionicons name="close-circle" size={22} color={C.red} />
                     </TouchableOpacity>
                   </View>
@@ -483,7 +483,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                 {reportPhoto ? (
                   <View style={styles.reportPhotoPreview}>
                     <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
+                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' })); setReportPhoto(null); }}>
                       <Ionicons name="close-circle" size={22} color={C.red} />
                     </TouchableOpacity>
                   </View>

@@ -24,6 +24,7 @@ import { Spacing, FontSize } from '../constants/theme';
 import { UserSpot, MaxCC, ParkingPin } from '../types';
 import { getAllUserSpots, deleteUserSpot, updateUserSpot, getUserRank } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
+import { captureError } from '../utils/sentry';
 
 const C = {
   bg: '#000000', card: '#1C1C1E', border: 'rgba(255,255,255,0.10)',
@@ -65,7 +66,7 @@ export function SpotsListModal({ visible, onClose, onGoToSpot }: Props) {
         text: '削除', style: 'destructive',
         onPress: async () => {
           await deleteUserSpot(spot.id);
-          deleteUserSpotFromFirestore(spot.id).catch(() => {});
+          deleteUserSpotFromFirestore(spot.id).catch((e) => captureError(e, { context: 'spot_delete_sync' }));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setSpots((prev) => prev.filter((s) => s.id !== spot.id));
         },
@@ -100,7 +101,7 @@ export function SpotsListModal({ visible, onClose, onGoToSpot }: Props) {
     };
     await updateUserSpot(editSpot.id, data);
     const rank = await getUserRank();
-    addUserSpotToFirestore(editSpot.id, data, rank).catch(() => {});
+    addUserSpotToFirestore(editSpot.id, data, rank).catch((e) => captureError(e, { context: 'spot_edit_sync' }));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEditSpot(null);
     setSaving(false);

@@ -272,7 +272,7 @@ export async function incrementViewCount(spotId: string): Promise<void> {
   const { updateDoc, increment } = await import('firebase/firestore');
   try {
     await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), { viewCount: increment(1) });
-  } catch {}
+  } catch (e) { console.warn('[Firestore] viewCount update failed:', e); }
 }
 
 // ─────────────────────────────────────────────────────
@@ -281,15 +281,15 @@ export async function incrementViewCount(spotId: string): Promise<void> {
 
 export async function getMySpotsTotalViews(localSpotIds: string[]): Promise<number> {
   if (localSpotIds.length === 0) return 0;
-  let total = 0;
-  for (const id of localSpotIds) {
-    try {
-      const { getDoc } = await import('firebase/firestore');
-      const snap = await getDoc(doc(db, COLLECTIONS.SPOTS, id));
-      if (snap.exists()) total += (snap.data().viewCount as number) ?? 0;
-    } catch {}
-  }
-  return total;
+  const { getDoc } = await import('firebase/firestore');
+  const results = await Promise.all(
+    localSpotIds.map((id) =>
+      getDoc(doc(db, COLLECTIONS.SPOTS, id))
+        .then((snap) => (snap.exists() ? ((snap.data().viewCount as number) ?? 0) : 0))
+        .catch((e) => { console.warn('[Firestore] spot views fetch failed:', e); return 0; })
+    )
+  );
+  return results.reduce((sum, v) => sum + v, 0);
 }
 
 // ─────────────────────────────────────────────────────
@@ -413,10 +413,16 @@ export async function fetchMyReviews(userId: string): Promise<(Review & { spotNa
   );
   const snap = await getDocs(q);
 
-  // スポット名解決用: spots コレクションから名前だけ取得
-  const spotsSnap = await getDocs(collection(db, COLLECTIONS.SPOTS));
+  // スポット名解決用: レビューに紐づくスポットだけバッチ取得（全件スキャン回避）
+  const spotIds = [...new Set(snap.docs.map((d) => d.data().spotId as string))];
   const nameMap = new Map<string, string>();
-  for (const d of spotsSnap.docs) nameMap.set(d.id, d.data().name ?? d.id);
+  // Firestore in クエリは10件制限のためチャンク分割
+  for (let i = 0; i < spotIds.length; i += 10) {
+    const chunk = spotIds.slice(i, i + 10);
+    const { documentId } = await import('firebase/firestore');
+    const spotsSnap = await getDocs(query(collection(db, COLLECTIONS.SPOTS), where(documentId(), 'in', chunk)));
+    for (const d of spotsSnap.docs) nameMap.set(d.id, d.data().name ?? d.id);
+  }
 
   const results = snap.docs.map((d) => {
     const data = d.data();
