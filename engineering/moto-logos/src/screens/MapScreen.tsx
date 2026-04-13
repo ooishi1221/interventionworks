@@ -30,6 +30,7 @@ import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { RadialMenu } from '../components/RadialMenu';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
+import { LiveFeed } from '../components/LiveFeed';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -681,6 +682,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           </View>
         </View>
       )}
+
+      {/* ── ライブフィード（上部） ────────────────────── */}
+      {!selected && !searchFocused && <LiveFeed />}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
       {!searchFocused && !selected && showCoach && (
