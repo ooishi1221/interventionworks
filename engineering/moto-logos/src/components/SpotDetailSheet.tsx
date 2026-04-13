@@ -148,6 +148,27 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     setTimeout(measure, 900);
   }, [tutorial.active, tutorial.stepIndex]);
 
+  // チュートリアル: バッジ行/鮮度/口コミのピカピカ
+  const badgeGlow = useRef(new Animated.Value(0)).current;
+  const badgeGlowRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    const shouldGlow = tutorial.isStep('explore-detail-badges') || tutorial.isStep('explore-detail-freshness') || tutorial.isStep('explore-detail-reviews');
+    if (shouldGlow) {
+      badgeGlow.setValue(0);
+      badgeGlowRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(badgeGlow, { toValue: 1, duration: 500, useNativeDriver: false }),
+          Animated.timing(badgeGlow, { toValue: 0, duration: 500, useNativeDriver: false }),
+        ])
+      );
+      badgeGlowRef.current.start();
+    } else {
+      badgeGlowRef.current?.stop();
+      badgeGlow.setValue(0);
+    }
+  }, [tutorial.stepIndex]);
+
   // 下スワイプで閉じるアニメーション
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
   const swipePan = useRef(
@@ -542,6 +563,26 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
             {/* バッジ */}
             <View ref={badgeRowRef} style={styles.badgeRow}>
+              {tutorial.isStep('explore-detail-badges') && (
+                <Animated.View
+                  style={{
+                    ...StyleSheet.absoluteFillObject,
+                    borderRadius: 8,
+                    borderWidth: 3,
+                    borderColor: badgeGlow.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
+                    }),
+                    shadowColor: '#FF9F0A',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowRadius: 16,
+                    shadowOpacity: badgeGlow,
+                    zIndex: 10,
+                    margin: -4,
+                  }}
+                  pointerEvents="none"
+                />
+              )}
               {spot.source === 'user' && (
                 <View style={[styles.badge, { backgroundColor: C.purple }]}>
                   <Text style={styles.badgeText}>ユーザー登録</Text>
@@ -570,7 +611,27 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
-              <View ref={freshnessRef}>
+              <View ref={freshnessRef} style={{ position: 'relative' }}>
+                {tutorial.isStep('explore-detail-freshness') && (
+                  <Animated.View
+                    style={{
+                      ...StyleSheet.absoluteFillObject,
+                      borderRadius: 10,
+                      borderWidth: 3,
+                      borderColor: badgeGlow.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
+                      }),
+                      shadowColor: '#FF9F0A',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowRadius: 16,
+                      shadowOpacity: badgeGlow,
+                      zIndex: 10,
+                      margin: -4,
+                    }}
+                    pointerEvents="none"
+                  />
+                )}
                 <FreshnessBadge updatedAt={spot.updatedAt} />
               </View>
             </View>
@@ -613,7 +674,27 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             {reportsLoading ? (
               <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} />
             ) : reports.length > 0 ? (
-              <View ref={reviewsRef} style={styles.reportsSection}>
+              <View ref={reviewsRef} style={[styles.reportsSection, { position: 'relative' }]}>
+                {tutorial.isStep('explore-detail-reviews') && (
+                  <Animated.View
+                    style={{
+                      ...StyleSheet.absoluteFillObject,
+                      borderRadius: 12,
+                      borderWidth: 3,
+                      borderColor: badgeGlow.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
+                      }),
+                      shadowColor: '#FF9F0A',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowRadius: 16,
+                      shadowOpacity: badgeGlow,
+                      zIndex: 10,
+                      margin: -4,
+                    }}
+                    pointerEvents="none"
+                  />
+                )}
                 <Text style={styles.sectionLabel}>みんなの報告</Text>
                 {reports.map((r) => (
                   <ReportCard key={r.firestoreId ?? String(r.id)} report={r} onPhotoTap={setFullPhoto} />
