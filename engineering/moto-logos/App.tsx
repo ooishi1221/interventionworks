@@ -224,7 +224,6 @@ function App() {
                 <RiderScreen
                   onGoToSpot={handleGoToSpot}
                   onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
-                  onStartTutorial={startTutorial}
                   onOpenMyBike={() => setRiderSub('mybike')}
                   nickname={nickname}
                   onChangeNickname={saveNickname}
@@ -243,6 +242,7 @@ function App() {
                 <SettingsScreen
                   onOpenLegal={() => setSettingsSub('legal')}
                   onOpenInquiry={() => setSettingsSub('inquiry')}
+                  onStartTutorial={startTutorial}
                 />
               )
             )}

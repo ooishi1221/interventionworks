@@ -175,22 +175,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     AsyncStorage.getItem('moto_logos_live_feed').then((v) => setLiveFeedEnabled(v !== 'false'));
   }, []);
 
-  // ── FAB コーチマーク ────────────────────────────────
-  const [showCoach, setShowCoach] = useState(false);
-
-  // FABメニュー「にゅっ」アニメーション
-  const fabMenuAnim = useRef(new RNAnimated.Value(0)).current;
-
-  useEffect(() => {
-    AsyncStorage.getItem('fab_coach_shown').then((v) => {
-      if (!v) setShowCoach(true);
-    });
-  }, []);
-
-  const dismissCoach = () => {
-    setShowCoach(false);
-    AsyncStorage.setItem('fab_coach_shown', '1');
-  };
 
   const lastFetchRegionRef = useRef<Region | null>(null);
 
@@ -442,27 +426,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }, 800);
   };
 
-  // ── FABメニュー（長押しで開く） ───────────────────────
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
-
-  const openFabMenu = () => {
-    setFabMenuOpen(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    RNAnimated.spring(fabMenuAnim, {
-      toValue: 1,
-      tension: 200,
-      friction: 14,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeFabMenu = () => {
-    RNAnimated.timing(fabMenuAnim, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => setFabMenuOpen(false));
-  };
 
   // ── クイックレポート「写真1枚で即登録」 ─────────────
   const [reportLoading, setReportLoading] = useState(false);
@@ -743,6 +706,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             }, 800);
             setTimeout(() => setSelected(spot), 900);
           }}
+          onSearchPress={() => {
+            setSearchVisible(true);
+            setSearchText('');
+            setTimeout(() => searchInputRef.current?.focus(), 200);
+          }}
         />
       )}
 
@@ -751,88 +719,20 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         <ProximityContextCard
           proximityState={proximityState}
           getNearbyAlternatives={getNearbyAlternatives}
-          onQuickReport={() => { dismissCoach(); handleQuickReport(); }}
+          onQuickReport={handleQuickReport}
           onSpotUpdated={handleProximitySpotUpdated}
         />
       )}
 
-      {/* ── FABコーチマーク（吹き出し） ────────────────── */}
-      {!searchFocused && !selected && showCoach && !fabMenuOpen && (
-        <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
-          <Text style={styles.coachText}>長押しでメニュー</Text>
-          <View style={styles.coachArrow} />
-        </TouchableOpacity>
-      )}
-
-      {/* ── FABメニュー背景タップで閉じる ────────────────── */}
-      {fabMenuOpen && (
-        <TouchableOpacity
-          style={StyleSheet.absoluteFillObject}
-          activeOpacity={1}
-          onPress={closeFabMenu}
-        />
-      )}
-
-      {/* ── FAB オレンジボタン（長押しでメニュー） ──────── */}
+      {/* ── カメラピル（下部: パシャで登録） ──────────────── */}
       {!searchFocused && !selected && (
-        <View style={styles.fabArea} pointerEvents="box-none">
-          {/* メニュー（にゅっとスプリング） */}
-          {fabMenuOpen && (
-            <RNAnimated.View style={[
-              styles.fabMenu,
-              {
-                opacity: fabMenuAnim,
-                transform: [{
-                  translateY: fabMenuAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0],
-                  }),
-                }, {
-                  scale: fabMenuAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1],
-                  }),
-                }],
-              },
-            ]}>
-              <TouchableOpacity
-                style={styles.fabMenuItem}
-                onPress={() => {
-                  closeFabMenu();
-                  setSearchVisible(true);
-                  setSearchText('');
-                  setTimeout(() => searchInputRef.current?.focus(), 200);
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="search" size={18} color="#F2F2F7" />
-                <Text style={styles.fabMenuText}>文字で探す</Text>
-              </TouchableOpacity>
-              <View style={styles.fabMenuDivider} />
-              <TouchableOpacity
-                style={styles.fabMenuItem}
-                onPress={() => {
-                  closeFabMenu();
-                  dismissCoach();
-                  handleQuickReport();
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="camera" size={18} color="#F2F2F7" />
-                <Text style={styles.fabMenuText}>場所を登録</Text>
-              </TouchableOpacity>
-            </RNAnimated.View>
-          )}
-          <TouchableOpacity
-            style={styles.fab}
-            onLongPress={() => { dismissCoach(); openFabMenu(); }}
-            onPress={() => { dismissCoach(); if (fabMenuOpen) closeFabMenu(); }}
-            delayLongPress={250}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={30} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.cameraPill}
+          onPress={handleQuickReport}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="camera" size={20} color="#F2F2F7" />
+        </TouchableOpacity>
       )}
 
       {/* ── 下部: 検索バー（ラジアルから開閉、キーボード追従） */}
@@ -911,76 +811,25 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // ── FAB オレンジボタン + メニュー ──────────────────
-  fabArea: {
+  // ── カメラピル（下部） ─────────────────────────────
+  cameraPill: {
     position: 'absolute',
     right: 14,
     bottom: BOTTOM_BASE + 10,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
-    zIndex: 5,
-  },
-  fab: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: '#FF6B00',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
-  },
-  fabMenu: {
-    marginBottom: 10,
-    backgroundColor: 'rgba(28,28,30,0.96)',
-    borderRadius: 14,
-    paddingVertical: 4,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28,28,30,0.88)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
-    minWidth: 160,
-  },
-  fabMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  fabMenuText: {
-    color: '#F2F2F7',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  fabMenuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginHorizontal: 12,
-  },
-  coachBubble: {
-    position: 'absolute',
-    bottom: BOTTOM_BASE + 10 + 64 + 8, // FABの上
-    right: 6,
-    backgroundColor: 'rgba(28,28,30,0.96)',
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,107,0,0.4)',
-    zIndex: 10,
-  },
-  coachText: {
-    color: '#FF6B00', fontSize: 13, fontWeight: '700',
-  },
-  coachArrow: {
-    position: 'absolute',
-    bottom: -6,
-    right: 28,
-    width: 12, height: 12,
-    backgroundColor: 'rgba(28,28,30,0.96)',
-    transform: [{ rotate: '45deg' }],
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,107,0,0.4)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 5,
   },
 
   // ── 詳細シート背景（タップで閉じる） ────────────────

@@ -31,19 +31,14 @@ function fmtDist(m: number): string {
   return `${(m / 1000).toFixed(1)}km`;
 }
 
-// 名前を短縮（長すぎるとインラインに収まらない）
-function shortName(name: string, max: number): string {
-  if (name.length <= max) return name;
-  return name.slice(0, max - 1) + '…';
-}
-
 interface Props {
   alternatives: NearbySpotInfo[];
   onSpotPress?: (spot: ParkingPin) => void;
   onLocationPress?: () => void;
+  onSearchPress?: () => void;
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress }: Props) {
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
@@ -75,10 +70,15 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress }: 
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
+  const barBottomRadius = expandAnim.interpolate({
+    inputRange: [0, 0.3],
+    outputRange: [22, 0],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <View style={styles.bar}>
+      <Animated.View style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
         {/* ── 現在地ボタン ─────────────────────────────── */}
         <TouchableOpacity
           style={styles.locBtn}
@@ -95,22 +95,22 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress }: 
           onPress={toggle}
           activeOpacity={0.7}
         >
-          {/* 折りたたみ時: インライン3件 */}
+          {/* 折りたたみ時: 最寄り1件のみ明確表示 */}
           <Animated.View style={[styles.inlineRow, { opacity: inlineOpacity }]}>
-            {items.map((item, i) => (
-              <TouchableOpacity
-                key={item.spot.id}
-                onPress={() => onSpotPress?.(item.spot)}
-                activeOpacity={0.7}
-                style={styles.inlineItem}
-              >
-                <Text style={styles.inlineRank}>{i + 1}</Text>
-                <Text style={styles.inlineName} numberOfLines={1}>
-                  {shortName(item.spot.name, 8)}
-                </Text>
-                <Text style={styles.inlineDist}>{fmtDist(item.distanceM)}</Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              onPress={() => onSpotPress?.(items[0].spot)}
+              activeOpacity={0.7}
+              style={styles.inlineItem}
+            >
+              <Text style={styles.inlineRank}>1</Text>
+              <Text style={styles.inlineName} numberOfLines={1}>
+                {items[0].spot.name}
+              </Text>
+              <Text style={styles.inlineDist}>{fmtDist(items[0].distanceM)}</Text>
+            </TouchableOpacity>
+            {items.length > 1 && (
+              <Text style={styles.inlineMore}>他{items.length - 1}件 ▾</Text>
+            )}
           </Animated.View>
 
           {/* 展開時ヘッダー */}
@@ -121,7 +121,17 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress }: 
             </View>
           )}
         </TouchableOpacity>
-      </View>
+
+        {/* ── 検索ボタン ──────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.searchBtn}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSearchPress?.(); }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Ionicons name="search" size={15} color={C.text} />
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* ── 展開リスト ────────────────────────────────── */}
       <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
@@ -180,6 +190,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // ── 検索ボタン ────────────────────────────────────
+  searchBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   // ── ヘッダータップ領域 ─────────────────────────────
   headerTap: {
     flex: 1,
@@ -206,13 +226,19 @@ const styles = StyleSheet.create({
   },
   inlineName: {
     color: C.text,
-    fontSize: 12,
-    fontWeight: '500',
-    maxWidth: 70,
+    fontSize: 13,
+    fontWeight: '600',
+    flexShrink: 1,
   },
   inlineDist: {
     color: C.sub,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  inlineMore: {
+    color: C.sub,
     fontSize: 11,
+    marginLeft: 6,
   },
 
   // ── 展開時ヘッダー ────────────────────────────────
@@ -230,8 +256,8 @@ const styles = StyleSheet.create({
   // ── 展開リスト ─────────────────────────────────────
   expandedList: {
     backgroundColor: 'rgba(28,28,30,0.88)',
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
     marginTop: -1,
     paddingHorizontal: 14,
     overflow: 'hidden',

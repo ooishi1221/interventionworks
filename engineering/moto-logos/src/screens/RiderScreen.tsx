@@ -1,8 +1,9 @@
 /**
- * RiderScreen v2 — 貢献ダッシュボード
+ * RiderScreen v3 — ライダープロフィール + 活動データ
  *
- * ランクシステム廃止 → 発見(新規スポット)と更新(報告)の2軸で
- * 「誰に届いたか」を可視化。ポイントで釣らず、事実を返す。
+ * 上部: 愛車写真付きHeroカード（ニックネーム + バイク情報）
+ * 中部: インパクトメッセージ + 横3列数字サマリー
+ * 下部: 活動タイムライン
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -14,22 +15,23 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
   getAllUserSpots,
   getAllFavorites,
   getStat,
   getRecentActivity,
+  getFirstVehicle,
   type ActivityLogEntry,
 } from '../db/database';
 import { getMySpotsTotalViews } from '../firebase/firestoreService';
-import { useUser } from '../contexts/UserContext';
-import { Spacing } from '../constants/theme';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
-import { ParkingPin } from '../types';
+import { ParkingPin, Vehicle } from '../types';
 
 const C = {
   bg:     '#000000',
@@ -42,6 +44,14 @@ const C = {
   orange: '#FF9F0A',
   purple: '#BF5AF2',
   pink:   '#FF375F',
+  accent: '#FF6B00',
+};
+
+const CC_LABEL: Record<string, string> = {
+  '50': '原付',
+  '125': '125cc',
+  '400': '400cc',
+  'null': '大型',
 };
 
 // ─── 最近の活動タイムライン ───────────────────────────
@@ -67,36 +77,36 @@ function formatRelative(iso: string): string {
 interface Props {
   onGoToSpot?: (spot: ParkingPin) => void;
   onDataChanged?: () => void;
-  onStartTutorial?: () => void;
   onOpenMyBike?: () => void;
   nickname?: string;
   onChangeNickname?: (name: string) => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpenMyBike, nickname, onChangeNickname }: Props) {
-  const user = useUser();
+export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname }: Props) {
   const [spotsCount, setSpotsCount] = useState(0);
   const [reportsCount, setReportsCount] = useState(0);
   const [favsCount, setFavsCount] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
+  const [bike, setBike] = useState<Vehicle | null>(null);
   const [activityEntries, setActivityEntries] = useState<ActivityLogEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [favModalOpen, setFavModalOpen] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
 
   const loadStats = useCallback(async () => {
-    const [spots, reports, favs, recentActs] = await Promise.all([
+    const [spots, reports, favs, recentActs, vehicle] = await Promise.all([
       getAllUserSpots(),
       getStat('reports'),
       getAllFavorites(),
       getRecentActivity(10),
+      getFirstVehicle(),
     ]);
     setSpotsCount(spots.length);
     setReportsCount(reports);
     setFavsCount(favs.length);
     setActivityEntries(recentActs);
+    setBike(vehicle);
 
-    // 自分のスポットの合計閲覧数を取得
     const spotIds = spots.map((s) => `user_${s.id}`);
     getMySpotsTotalViews(spotIds).then(setTotalViews).catch(() => {});
   }, []);
@@ -109,6 +119,20 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpen
     setRefreshing(false);
   }, [loadStats]);
 
+  // バイク情報のサマリーテキスト
+  const bikeLabel = bike
+    ? [bike.name || bike.manufacturer, bike.year ? `${bike.year}` : null].filter(Boolean).join(' · ')
+    : null;
+  const ccLabel = bike?.cc !== undefined ? CC_LABEL[String(bike.cc)] : null;
+
+  // インパクトメッセージの出し分け
+  const impactMessage = (() => {
+    if (totalViews > 0) return `あなたの発見が ${totalViews}人 のライダーに届いています`;
+    if (spotsCount > 0) return 'あなたが登録したスポット、もうすぐ誰かに届きます';
+    if (reportsCount > 0) return `仲間の地図を ${reportsCount}回 最新に保ちました`;
+    return '最初の一歩を踏み出そう — マップで + をタップ';
+  })();
+
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView
@@ -117,113 +141,92 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpen
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.blue} />}
       >
 
-        {/* ── ヘッダー ──────────────────────────── */}
-        <View style={s.header}>
-          <View style={s.avatarCircle}>
-            <MaterialCommunityIcons name="motorbike" size={36} color={C.orange} />
-          </View>
-          <TouchableOpacity
-            onPress={() => {
-              Alert.prompt?.(
-                'ニックネーム変更',
-                '新しいニックネームを入力',
-                (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
-                'plain-text',
-                nickname ?? '',
-              ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={s.title}>{nickname || 'ライダー'}</Text>
-          </TouchableOpacity>
-          <Text style={s.subtitle}>Moto-Logos</Text>
-        </View>
-
-        {/* ── 貢献ダッシュボード（発見 / 更新） ── */}
-        <Text style={s.sectionTitle}>あなたの貢献</Text>
-
-        {/* 発見（新規スポット登録） */}
-        <TouchableOpacity
-          style={s.contribCard}
-          onPress={() => { setSpotsModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          activeOpacity={0.7}
-        >
-          <View style={s.contribHeader}>
-            <View style={[s.contribIcon, { backgroundColor: 'rgba(191,90,242,0.15)' }]}>
-              <Ionicons name="telescope" size={20} color={C.purple} />
+        {/* ── 1. ライダーカード（Hero） ─────────────── */}
+        <View style={s.heroCard}>
+          {bike?.photoUrl ? (
+            <ImageBackground
+              source={{ uri: bike.photoUrl }}
+              style={s.heroBg}
+              imageStyle={s.heroBgImage}
+            >
+              <LinearGradient
+                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
+                style={s.heroOverlay}
+              >
+                <HeroContent
+                  nickname={nickname}
+                  bikeLabel={bikeLabel}
+                  ccLabel={ccLabel}
+                  tagline={bike?.tagline}
+                  hasPhoto
+                  onChangeNickname={onChangeNickname}
+                />
+              </LinearGradient>
+            </ImageBackground>
+          ) : (
+            <View style={s.heroNoBg}>
+              <HeroContent
+                nickname={nickname}
+                bikeLabel={bikeLabel}
+                ccLabel={ccLabel}
+                tagline={bike?.tagline}
+                onChangeNickname={onChangeNickname}
+              />
             </View>
-            <Text style={s.contribLabel}>発見</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.sub} />
-          </View>
-          <View style={s.contribStats}>
-            <View style={s.contribStat}>
-              <Text style={s.contribValue}>{spotsCount}</Text>
-              <Text style={s.contribUnit}>スポット登録</Text>
-            </View>
-            <View style={s.contribDivider} />
-            <View style={s.contribStat}>
-              <Text style={s.contribValue}>{totalViews}</Text>
-              <Text style={s.contribUnit}>人が閲覧</Text>
-            </View>
-          </View>
-          {totalViews > 0 && (
-            <Text style={s.contribImpact}>
-              あなたの発見が {totalViews}人 のライダーに届いています
-            </Text>
           )}
-        </TouchableOpacity>
 
-        {/* 更新（報告） */}
-        <View style={s.contribCard}>
-          <View style={s.contribHeader}>
-            <View style={[s.contribIcon, { backgroundColor: 'rgba(48,209,88,0.15)' }]}>
-              <Ionicons name="shield-checkmark" size={20} color={C.green} />
-            </View>
-            <Text style={s.contribLabel}>更新</Text>
-          </View>
-          <View style={s.contribStats}>
-            <View style={s.contribStat}>
-              <Text style={s.contribValue}>{reportsCount}</Text>
-              <Text style={s.contribUnit}>件の報告</Text>
-            </View>
-          </View>
-          {reportsCount > 0 && (
-            <Text style={s.contribImpact}>
-              仲間の情報を最新に保っています
-            </Text>
+          {/* マイバイク編集リンク */}
+          {onOpenMyBike && (
+            <TouchableOpacity
+              style={s.editBikeBtn}
+              onPress={() => { onOpenMyBike(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={14} color={C.sub} />
+              <Text style={s.editBikeText}>
+                {bike ? 'マイバイク編集' : '愛車を登録しよう'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* ── マイバイク ──────────────────────────── */}
-        {onOpenMyBike && (
+        {/* ── 2. インパクトメッセージ ──────────────── */}
+        <View style={s.impactRow}>
+          <View style={s.impactDot} />
+          <Text style={s.impactText}>{impactMessage}</Text>
+        </View>
+
+        {/* ── 3. 数字サマリー（横3列） ────────────── */}
+        <View style={s.statsRow}>
           <TouchableOpacity
-            style={s.miniCard}
-            onPress={() => { onOpenMyBike(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            style={s.statItem}
+            onPress={() => { setSpotsModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="motorbike" size={18} color={C.orange} />
-            <Text style={s.miniLabel}>マイバイク</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.sub} />
+            <Text style={s.statValue}>{spotsCount}</Text>
+            <Text style={s.statLabel}>発見</Text>
           </TouchableOpacity>
-        )}
+          <View style={s.statDivider} />
+          <View style={s.statItem}>
+            <Text style={s.statValue}>{reportsCount}</Text>
+            <Text style={s.statLabel}>報告</Text>
+          </View>
+          <View style={s.statDivider} />
+          <TouchableOpacity
+            style={s.statItem}
+            onPress={() => { setFavModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            activeOpacity={0.7}
+          >
+            <Text style={s.statValue}>{favsCount}</Text>
+            <Text style={s.statLabel}>保存</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* ── お気に入り ─────────────────────────── */}
-        <TouchableOpacity
-          style={s.miniCard}
-          onPress={() => { setFavModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="heart" size={18} color={C.pink} />
-          <Text style={s.miniLabel}>お気に入り</Text>
-          <Text style={s.miniValue}>{favsCount}</Text>
-          <Ionicons name="chevron-forward" size={14} color={C.sub} />
-        </TouchableOpacity>
-
-        {/* ── 最近の活動 ─────────────────────────── */}
-        <Text style={[s.sectionTitle, { marginTop: 24 }]}>最近の活動</Text>
+        {/* ── 4. 活動タイムライン ─────────────────── */}
+        <Text style={s.sectionTitle}>最近の活動</Text>
         {activityEntries.length === 0 ? (
           <View style={s.emptyActivity}>
-            <Ionicons name="flag" size={24} color={C.orange} />
+            <Ionicons name="flag" size={24} color={C.accent} />
             <Text style={s.emptyText}>マップでスポットを共有して{'\n'}あなたの活動を始めよう</Text>
           </View>
         ) : (
@@ -244,14 +247,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpen
           })
         )}
 
-        {/* ── 使い方を見る ──────────────────────── */}
-        {onStartTutorial && (
-          <TouchableOpacity style={s.tutorialBtn} onPress={onStartTutorial} activeOpacity={0.7}>
-            <Ionicons name="help-circle-outline" size={18} color={C.sub} />
-            <Text style={s.tutorialBtnText}>使い方を見る</Text>
-          </TouchableOpacity>
-        )}
-
         <View style={{ height: 60 }} />
       </ScrollView>
 
@@ -270,66 +265,231 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpen
   );
 }
 
+// ─── Heroカード内コンテンツ（写真あり/なしで共有） ──────
+function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChangeNickname }: {
+  nickname?: string; bikeLabel: string | null; ccLabel: string | null;
+  tagline?: string; hasPhoto?: boolean; onChangeNickname?: (name: string) => void;
+}) {
+  return (
+    <View style={s.heroInner}>
+      {!hasPhoto && (
+        <View style={s.avatarCircle}>
+          <MaterialCommunityIcons name="motorbike" size={32} color={C.accent} />
+        </View>
+      )}
+      <TouchableOpacity
+        onPress={() => {
+          Alert.prompt?.(
+            'ニックネーム変更',
+            '新しいニックネームを入力',
+            (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
+            'plain-text',
+            nickname ?? '',
+          ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={s.heroName}>{nickname || 'ライダー'}</Text>
+      </TouchableOpacity>
+      {bikeLabel && (
+        <Text style={s.heroBike}>
+          {bikeLabel}{ccLabel ? ` · ${ccLabel}` : ''}
+        </Text>
+      )}
+      {tagline ? <Text style={s.heroTagline}>{tagline}</Text> : null}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  content: { padding: Spacing.lg },
+  content: { paddingBottom: 20 },
 
-  // Header
-  header: { alignItems: 'center', gap: 6, marginBottom: 24 },
+  // ── Hero Card ──
+  heroCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  heroBg: {
+    width: '100%',
+    height: 220,
+  },
+  heroBgImage: {
+    borderRadius: 20,
+  },
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 20,
+  },
+  heroNoBg: {
+    height: 200,
+    justifyContent: 'flex-end',
+    padding: 20,
+    backgroundColor: C.card,
+  },
+  heroInner: {
+    alignItems: 'center',
+    gap: 4,
+  },
   avatarCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: C.card, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,107,0,0.3)', marginBottom: 4,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,107,0,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,107,0,0.3)',
+    marginBottom: 6,
   },
-  title: { color: C.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { color: C.sub, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
-
-  // Section
-  sectionTitle: { color: C.sub, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginLeft: 2 },
-
-  // Contribution card
-  contribCard: {
-    backgroundColor: C.card, borderRadius: 16, padding: Spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, marginBottom: 10,
+  heroName: {
+    color: C.text,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  contribHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  contribIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  contribLabel: { color: C.text, fontSize: 16, fontWeight: '700', flex: 1 },
-  contribStats: { flexDirection: 'row', alignItems: 'center' },
-  contribStat: { flex: 1, alignItems: 'center' },
-  contribValue: { color: C.text, fontSize: 28, fontWeight: '800' },
-  contribUnit: { color: C.sub, fontSize: 11, fontWeight: '600', marginTop: 2 },
-  contribDivider: { width: 1, height: 32, backgroundColor: C.border },
-  contribImpact: { color: C.orange, fontSize: 12, fontWeight: '600', marginTop: 12, textAlign: 'center' },
-
-  // Mini card (favorites)
-  miniCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: C.card, borderRadius: 14, padding: 16,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, marginTop: 6,
+  heroBike: {
+    color: C.sub,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 2,
   },
-  miniLabel: { color: C.text, fontSize: 15, fontWeight: '600', flex: 1 },
-  miniValue: { color: C.text, fontSize: 18, fontWeight: '800' },
+  heroTagline: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  editBikeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.border,
+  },
+  editBikeText: {
+    color: C.sub,
+    fontSize: 12,
+    fontWeight: '500',
+  },
 
-  // Activity
-  emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 24 },
-  emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  activityItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
+  // ── Impact Message ──
+  impactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(255,107,0,0.08)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,107,0,0.2)',
+    gap: 10,
+  },
+  impactDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.accent,
+  },
+  impactText: {
+    color: C.accent,
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+    lineHeight: 20,
+  },
+
+  // ── Stats Row ──
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 24,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    paddingVertical: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    color: C.text,
+    fontSize: 26,
+    fontWeight: '800',
+  },
+  statLabel: {
+    color: C.sub,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: C.border,
+  },
+
+  // ── Section ──
+  sectionTitle: {
+    color: C.sub,
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginLeft: 18,
+  },
+
+  // ── Activity ──
+  emptyActivity: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 32,
+  },
+  emptyText: {
+    color: C.sub,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
   activityDot: {
-    width: 28, height: 28, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   activityLine: {
-    position: 'absolute', left: 13, top: 30, width: 2, height: 20,
+    position: 'absolute',
+    left: 29,
+    top: 30,
+    width: 2,
+    height: 20,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   activityText: { color: C.text, fontSize: 14, lineHeight: 20 },
   activityTime: { color: C.sub, fontSize: 11, marginTop: 2 },
-
-  // Tutorial
-  tutorialBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginTop: 24, paddingVertical: 12,
-  },
-  tutorialBtnText: { color: C.sub, fontSize: 13 },
 });

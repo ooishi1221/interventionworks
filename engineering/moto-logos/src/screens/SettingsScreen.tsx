@@ -30,9 +30,10 @@ interface Props {
   onBack?: () => void;
   onOpenLegal: () => void;
   onOpenInquiry: () => void;
+  onStartTutorial?: () => void;
 }
 
-export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
+export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTutorial }: Props) {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
@@ -195,6 +196,18 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
             </View>
             <Ionicons name="chevron-forward" size={16} color={C.sub} />
           </TouchableOpacity>
+          {onStartTutorial && (
+            <>
+              <View style={s.separator} />
+              <TouchableOpacity style={s.row} onPress={onStartTutorial}>
+                <View style={s.rowLeft}>
+                  <Ionicons name="help-circle-outline" size={20} color={C.blue} />
+                  <Text style={s.rowLabel}>使い方を見る</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* アカウント */}
