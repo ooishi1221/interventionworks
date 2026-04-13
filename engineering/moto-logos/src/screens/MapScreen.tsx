@@ -24,6 +24,7 @@ import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
@@ -163,6 +164,30 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [searchText, setSearchText]           = useState('');
   const [searching, setSearching]             = useState(false);
   const [searchResultMsg, setSearchResultMsg] = useState<string | null>(null);
+
+  // ── FAB コーチマーク ────────────────────────────────
+  const [showCoach, setShowCoach] = useState(false);
+  const fabPulse = useRef(new RNAnimated.Value(1)).current;
+
+  useEffect(() => {
+    AsyncStorage.getItem('fab_coach_shown').then((v) => {
+      if (!v) setShowCoach(true);
+    });
+    // FAB 脈動アニメーション（注意を引く）
+    const anim = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(fabPulse, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
+        RNAnimated.timing(fabPulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const dismissCoach = () => {
+    setShowCoach(false);
+    AsyncStorage.setItem('fab_coach_shown', '1');
+  };
 
   const lastFetchRegionRef = useRef<Region | null>(null);
 
@@ -625,7 +650,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <View style={styles.emptyBadge}>
             <Ionicons name="map-outline" size={32} color={SYS_GRAY} />
             <Text style={styles.emptyTitle}>このエリアにはまだスポットがありません</Text>
-            <Text style={styles.emptySubtitle}>最初の発見者になろう！{'\n'}長押しメニューからスポットを登録できます</Text>
+            <Text style={styles.emptySubtitle}>最初の発見者になろう！{'\n'}右下の「＋」ボタンからスポットを登録できます</Text>
             <Text style={styles.emptyDismissHint}>タップで閉じる</Text>
           </View>
         </TouchableOpacity>
@@ -742,6 +767,29 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </View>
       )}
 
+      {/* ── FABコーチマーク（吹き出し） ────────────────── */}
+      {!searchFocused && showCoach && (
+        <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
+          <Text style={styles.coachText}>ここからスポット登録！</Text>
+          <View style={styles.coachArrow} />
+        </TouchableOpacity>
+      )}
+
+      {/* ── FAB「+」スポット登録ボタン ───────────────── */}
+      {!searchFocused && (
+        <View style={styles.fabArea} pointerEvents="box-none">
+          <RNAnimated.View style={{ transform: [{ scale: fabPulse }] }}>
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => { dismissCoach(); handleQuickReport(); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={34} color="#fff" />
+            </TouchableOpacity>
+          </RNAnimated.View>
+        </View>
+      )}
+
       {/* ── 右下ラジアルメニュー ─────────────────────── */}
       {!searchFocused && (
         <View
@@ -753,7 +801,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onGoToNearest={goToNearestSpot}
             onGoToCurrentLocation={goToCurrentLocation}
             onResearchArea={handleResearch}
-            onQuickReport={handleQuickReport}
             onOpenSearch={() => {
               setSearchVisible(true);
               setSearchText('');
@@ -1094,6 +1141,49 @@ const styles = StyleSheet.create({
   },
   ccOptionDot: { width: 8, height: 8, borderRadius: 4 },
   ccOptionLabel: { color: '#E5E5EA', fontSize: 14, fontWeight: '600', flex: 1 },
+
+  // ── FAB「+」──────────────────────────────────────
+  fabArea: {
+    position: 'absolute',
+    right: 14,
+    bottom: BOTTOM_BASE + 56 + 14, // ラジアルメニューの上
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  fab: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
+  },
+  coachBubble: {
+    position: 'absolute',
+    bottom: BOTTOM_BASE + 56 + 14 + 64 + 8, // FABの上
+    right: 6,
+    backgroundColor: 'rgba(28,28,30,0.96)',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,107,0,0.4)',
+    zIndex: 10,
+  },
+  coachText: {
+    color: '#FF6B00', fontSize: 13, fontWeight: '700',
+  },
+  coachArrow: {
+    position: 'absolute',
+    bottom: -6,
+    right: 28,
+    width: 12, height: 12,
+    backgroundColor: 'rgba(28,28,30,0.96)',
+    transform: [{ rotate: '45deg' }],
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,107,0,0.4)',
+  },
 
   // ── 右下ラジアル ──────────────────────────────────
   rightControls: {

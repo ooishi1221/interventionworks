@@ -11,10 +11,12 @@ import {
   ScrollView,
   Switch,
   Alert,
+  DevSettings,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { migrateSeedSpots } from '../firebase/migration';
 
 const C = {
@@ -85,6 +87,34 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
               Alert.alert('エラー', `アップロードに失敗しました: ${e}`);
             }
             setSeeding(false);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleResetCache = () => {
+    Alert.alert(
+      'キャッシュクリア',
+      'チュートリアル・コーチマーク等の表示フラグをリセットします。アプリを再起動すると初回体験からやり直せます。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: 'リセット',
+          style: 'destructive',
+          onPress: async () => {
+            const keys = [
+              'fab_coach_shown',
+              'moto_logos_tutorial_done',
+              'moto_logos_legal_consent',
+              'moto_logos_third_party_consent',
+            ];
+            await AsyncStorage.multiRemove(keys);
+            if (__DEV__) {
+              DevSettings.reload();
+            } else {
+              await Updates.reloadAsync();
+            }
           },
         },
       ],
@@ -172,6 +202,13 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry }: Props) {
               <Text style={[s.rowLabel, seeding && { color: C.sub }]}>
                 {seeding ? 'アップロード中...' : 'シードデータ投入（127件）'}
               </Text>
+            </View>
+          </TouchableOpacity>
+          <View style={s.separator} />
+          <TouchableOpacity style={s.row} onPress={handleResetCache}>
+            <View style={s.rowLeft}>
+              <Ionicons name="refresh-outline" size={20} color={C.accent} />
+              <Text style={s.rowLabel}>キャッシュクリア（初回体験リセット）</Text>
             </View>
           </TouchableOpacity>
         </View>

@@ -94,7 +94,8 @@ export default function NotificationsPage() {
       cancelEdit();
       fetchItems();
     } else {
-      alert('保存に失敗しました');
+      const d = await res.json().catch(() => null);
+      alert(`保存に失敗しました（${res.status}: ${d?.error ?? '不明なエラー'}）`);
     }
   };
 

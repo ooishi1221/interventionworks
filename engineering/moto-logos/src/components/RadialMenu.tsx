@@ -1,8 +1,9 @@
 /**
- * RadialMenu v4 — 4項目ラジアル
+ * RadialMenu v5 — 4項目ラジアル
  *
- * 長押し → 現在地 / 最寄り / エリア検索 / 場所検索 が左上に扇形展開
- * 短押し → 最寄りスポットへジャンプ
+ * 長押し → 現在地 / 最寄り / エリア更新 / 場所検索 が左上に扇形展開
+ * 短押し → エリア再検索
+ * ※ スポット登録は FAB「+」ボタンに移動済み
  */
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -35,14 +36,13 @@ interface MenuItem {
   label: string;
 }
 
-// 5 アイテム: 85°→ 205° の弧（30°間隔）
-// ラベルは3文字以内（アイコン下に表示、切れない）
+// 4 アイテム: 90°→ 200° の弧（約37°間隔）
+// ※ 「報告」は FAB に移動
 const ITEMS: MenuItem[] = [
-  { id: 'location', angle: 85,  icon: 'navigate',        color: '#0A84FF', label: '現在地' },
-  { id: 'nearest',  angle: 115, icon: 'locate',           color: '#30D158', label: '最寄り' },
-  { id: 'report',   angle: 145, icon: 'add-circle',       color: '#FF375F', label: '報告' },
-  { id: 'refresh',  angle: 175, icon: 'refresh-circle',   color: '#FF9F0A', label: '更新' },
-  { id: 'search',   angle: 205, icon: 'search',           color: '#BF5AF2', label: '検索' },
+  { id: 'location', angle: 90,  icon: 'navigate',        color: '#0A84FF', label: '現在地' },
+  { id: 'nearest',  angle: 127, icon: 'locate',           color: '#30D158', label: '最寄り' },
+  { id: 'refresh',  angle: 164, icon: 'refresh-circle',   color: '#FF9F0A', label: '更新' },
+  { id: 'search',   angle: 200, icon: 'search',           color: '#BF5AF2', label: '検索' },
 ];
 
 const POSITIONS = ITEMS.map((m) => ({ ...m, ...toXY(m.angle, RADIUS) }));
@@ -52,10 +52,9 @@ interface Props {
   onGoToCurrentLocation: () => void;
   onResearchArea: () => void;
   onOpenSearch: () => void;
-  onQuickReport: () => void;
 }
 
-export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchArea, onOpenSearch, onQuickReport }: Props) {
+export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchArea, onOpenSearch }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -88,11 +87,10 @@ export function RadialMenu({ onGoToNearest, onGoToCurrentLocation, onResearchAre
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (selectedId === 'location') onGoToCurrentLocation();
       else if (selectedId === 'nearest') onGoToNearest();
-      else if (selectedId === 'report') onQuickReport();
       else if (selectedId === 'refresh') onResearchArea();
       else if (selectedId === 'search') onOpenSearch();
     }
-  }, [onGoToNearest, onGoToCurrentLocation, onResearchArea, onOpenSearch, onQuickReport]);
+  }, [onGoToNearest, onGoToCurrentLocation, onResearchArea, onOpenSearch]);
 
   const checkHover = useCallback((dx: number, dy: number) => {
     let closest: string | null = null;
