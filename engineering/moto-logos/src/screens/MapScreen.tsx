@@ -33,6 +33,7 @@ import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
 import { ProximityContextCard } from '../components/ProximityContextCard';
 import { NearbySpotsList } from '../components/NearbySpotsList';
+import { useTutorial } from '../contexts/TutorialContext';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -139,14 +140,14 @@ interface Props {
   focusSpot?: ParkingPin | null;
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
-  onRegisterTutorialTarget?: (key: string, rect: { x: number; y: number; w: number; h: number; borderRadius?: number }) => void;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, focusSpot, onFocusConsumed, refreshTrigger, onRegisterTutorialTarget },
+  { userCC, onChangeCC, focusSpot, onFocusConsumed, refreshTrigger },
   ref
 ) {
   const user = useUser();
+  const tutorial = useTutorial();
   const mapRef = useRef<MapView>(null);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
@@ -531,8 +532,51 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setReportLoading(false);
   };
 
-  const allSpots = filterByCC(allSpotsRaw, userCC);
+  const allSpotsBase = filterByCC(allSpotsRaw, userCC);
+  // チュートリアル中はダミースポットを注入
+  const allSpots = tutorial.active
+    ? [tutorial.dummySpot, ...allSpotsBase]
+    : allSpotsBase;
 
+  // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
+  useEffect(() => {
+    if (tutorial.isStep('explore-pillbar')) {
+      mapRef.current?.animateToRegion({
+        latitude: tutorial.dummySpot.latitude,
+        longitude: tutorial.dummySpot.longitude,
+        latitudeDelta: 0.008,
+        longitudeDelta: 0.008,
+      }, 800);
+    }
+  }, [tutorial.active, tutorial.stepIndex]);
+
+  // チュートリアル: 詳細シート表示ステップで自動選択
+  useEffect(() => {
+    if (tutorial.isStep('explore-detail') || tutorial.isStep('explore-nav')) {
+      if (!selected) setSelected(tutorial.dummySpot);
+    }
+    if (tutorial.isStep('explore-close-sheet')) {
+      setSelected(null);
+    }
+    if (tutorial.isStep('explore-search-done')) {
+      setSearchVisible(false);
+      setSearchFocused(false);
+      setSearchText('');
+      Keyboard.dismiss();
+    }
+  }, [tutorial.active, tutorial.stepIndex]);
+
+  // チュートリアル: カメラボタンの位置を登録
+  const cameraBtnRef = useRef<View>(null);
+  useEffect(() => {
+    if (tutorial.active && cameraBtnRef.current) {
+      setTimeout(() => {
+        cameraBtnRef.current?.measureInWindow((x, y, w, h) => {
+          if (w > 0) tutorial.registerTarget('camera-button', { x, y, w, h, borderRadius: 26 });
+        });
+      }, 500);
+    }
+  }, [tutorial.active, tutorial.stepIndex]);
 
   // ── キーボード追従アニメーション ───────────────────
   const [searchFocused, setSearchFocused] = useState(false);
@@ -697,7 +741,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
       {!selected && !searchFocused && (
         <NearbySpotsList
-          alternatives={getNearbyAlternatives(undefined, 3)}
+          alternatives={
+            tutorial.active && tutorial.phase === 'explore'
+              ? [{ spot: tutorial.dummySpot, distanceM: 120 }, ...getNearbyAlternatives(undefined, 2)]
+              : getNearbyAlternatives(undefined, 3)
+          }
           onLocationPress={goToCurrentLocation}
           onSpotPress={(spot) => {
             mapRef.current?.animateToRegion({
@@ -727,8 +775,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {/* ── カメラピル（下部: パシャで登録） ──────────────── */}
       {!searchFocused && !selected && (
         <TouchableOpacity
+          ref={cameraBtnRef}
           style={styles.cameraPill}
-          onPress={handleQuickReport}
+          onPress={() => {
+            if (tutorial.isStep('register-camera')) {
+              tutorial.advanceTutorial();
+              return;
+            }
+            handleQuickReport();
+          }}
           activeOpacity={0.8}
         >
           <Ionicons name="camera" size={20} color="#F2F2F7" />

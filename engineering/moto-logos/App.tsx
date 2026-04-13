@@ -20,9 +20,11 @@ import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { InquiryScreen } from './src/screens/InquiryScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
-import { TutorialOverlay, SpotlightRect } from './src/components/TutorialOverlay';
+import { TutorialOverlay } from './src/components/TutorialOverlay';
+import { TutorialGuide } from './src/components/TutorialGuide';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { UserProvider } from './src/contexts/UserContext';
+import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
 import { initSentry, setSentryUser, sentryWrap } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
@@ -117,8 +119,6 @@ function App() {
 
   // ── チュートリアル ─────────────────────────────────
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [tutorialTargets, setTutorialTargets] = useState<Record<string, SpotlightRect>>({});
-
   // DB初期化完了後にチュートリアルフラグをチェック & プッシュ通知トークン更新
   useEffect(() => {
     if (status !== 'ready' || !legalConsented) return;
@@ -139,9 +139,6 @@ function App() {
     setTutorialVisible(true);
   }, []);
 
-  const registerTarget = useCallback((key: string, rect: SpotlightRect) => {
-    setTutorialTargets((prev) => ({ ...prev, [key]: rect }));
-  }, []);
 
   /** タブ押下ハンドラ。マップタブ2度押しでリセット */
   const handleTabPress = (id: Tab) => {
@@ -198,6 +195,7 @@ function App() {
     <ErrorBoundary>
       <UserProvider nickname={nickname}>
         <GestureHandlerRootView style={styles.root}>
+        <TutorialProvider>
           <StatusBar style="light" />
 
           <View style={styles.content}>
@@ -210,7 +208,7 @@ function App() {
                 focusSpot={focusSpot}
                 onFocusConsumed={() => setFocusSpot(null)}
                 refreshTrigger={mapRefreshTrigger}
-                onRegisterTutorialTarget={registerTarget}
+
               />
             </View>
             {tab === 'rider' && (
@@ -258,11 +256,6 @@ function App() {
                     style={styles.tabItem}
                     onPress={() => handleTabPress(t.id)}
                     activeOpacity={0.6}
-                    onLayout={t.id === 'rider' ? (e) => {
-                      (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
-                        registerTarget('riderTab', { x, y, w, h, borderRadius: 4 });
-                      });
-                    } : undefined}
                   >
                     <Ionicons
                       name={isActive ? t.iconActive : t.icon}
@@ -278,15 +271,18 @@ function App() {
             </View>
           </SafeAreaView>
 
-          {/* チュートリアルオーバーレイ */}
+          {/* ガイドツアー: スポットライト + 指示テキスト */}
+          <TutorialGuide />
+
+          {/* チュートリアルオーバーレイ（セットアップ + 完了画面） */}
           <TutorialOverlay
             visible={tutorialVisible}
             onFinish={finishTutorial}
-            targets={tutorialTargets}
             userCC={userCC}
             onChangeCC={(cc) => setUserCC(cc)}
             onSetNickname={saveNickname}
           />
+        </TutorialProvider>
         </GestureHandlerRootView>
       </UserProvider>
     </ErrorBoundary>

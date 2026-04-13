@@ -28,6 +28,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
+import { useTutorial } from '../contexts/TutorialContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
@@ -114,6 +115,23 @@ interface Props {
 export function SpotDetailSheet({ spot, onClose }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
+  const tutorial = useTutorial();
+  const navBtnRef = useRef<View>(null);
+  const sheetRef = useRef<View>(null);
+
+  // チュートリアル: ターゲット位置登録
+  useEffect(() => {
+    if (!tutorial.active) return;
+    const measure = () => {
+      navBtnRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('nav-button', { x, y, w, h, borderRadius: 14 });
+      });
+      sheetRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('detail-sheet', { x, y, w, h, borderRadius: 20 });
+      });
+    };
+    setTimeout(measure, 400);
+  }, [tutorial.active, tutorial.stepIndex]);
 
   // 下スワイプで閉じるアニメーション
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
@@ -166,7 +184,21 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     setReportsLoading(false);
   }, [spot]);
 
-  useEffect(() => { loadAll(); incrementViewCount(spot.id); }, [loadAll]);
+  useEffect(() => {
+    if (tutorial.active && spot.id === '_tutorial_spot_') {
+      // チュートリアル: ダミーレビューを表示
+      setReports([
+        { id: 901, spotId: spot.id, source: 'seed', score: 1, comment: '広くて停めやすい！', photoUri: null, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 902, spotId: spot.id, source: 'seed', score: 1, comment: null, photoUri: null, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 903, spotId: spot.id, source: 'seed', score: 0, comment: '[full] 土日は満車多い', photoUri: null, createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() },
+      ]);
+      setAlreadyVoted(false);
+      setReportsLoading(false);
+      return;
+    }
+    loadAll();
+    incrementViewCount(spot.id);
+  }, [loadAll, tutorial.active]);
 
   // ── お気に入りトグル ──────────────────────────────────
   const toggleFav = async () => {
@@ -465,7 +497,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
       {/* シート */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrapper} pointerEvents="box-none">
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
+        <Animated.View ref={sheetRef} style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
           {/* スワイプハンドル */}
           <View {...swipePan.panHandlers} style={styles.handleArea}>
             <View style={styles.handle} />
@@ -573,7 +605,23 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
           {/* ── アクションゾーン（固定フッター） ────── */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.footerNavBtn} onPress={handleNav} activeOpacity={0.85}>
+            <TouchableOpacity
+              ref={navBtnRef}
+              style={styles.footerNavBtn}
+              onPress={() => {
+                if (tutorial.isStep('explore-nav')) {
+                  // チュートリアル: 実リンクを開かず説明テキストで進む
+                  Alert.alert(
+                    '案内開始',
+                    'GoogleマップやYahoo!カーナビが開いて\nスポットまでナビしてくれるよ',
+                    [{ text: 'OK', onPress: () => tutorial.advanceTutorial() }],
+                  );
+                  return;
+                }
+                handleNav();
+              }}
+              activeOpacity={0.85}
+            >
               <Ionicons name="navigate" size={17} color="#fff" />
               <Text style={styles.footerNavText}>案内開始</Text>
             </TouchableOpacity>

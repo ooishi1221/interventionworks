@@ -5,7 +5,7 @@
  * タップで展開: 3行リスト
  * 📍 = 現在地に戻る
  */
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
+import { useTutorial } from '../contexts/TutorialContext';
 
 const C = {
   text: '#F2F2F7',
@@ -39,9 +40,26 @@ interface Props {
 }
 
 export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress }: Props) {
+  const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
+  const barRef = useRef<View>(null);
+  const searchBtnRef = useRef<View>(null);
+
+  // チュートリアル: ターゲット位置登録
+  useEffect(() => {
+    if (!tutorial.active) return;
+    const measure = () => {
+      barRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('pillbar', { x, y, w, h, borderRadius: 22 });
+      });
+      searchBtnRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('search-button', { x, y, w, h, borderRadius: 16 });
+      });
+    };
+    setTimeout(measure, 600);
+  }, [tutorial.active, tutorial.stepIndex]);
 
   const toggle = () => {
     const next = !expanded;
@@ -78,7 +96,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <Animated.View style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
+      <Animated.View ref={barRef} style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
         {/* ── 現在地ボタン ─────────────────────────────── */}
         <TouchableOpacity
           style={styles.locBtn}
@@ -98,7 +116,12 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
           {/* 折りたたみ時: 最寄り1件のみ明確表示 */}
           <Animated.View style={[styles.inlineRow, { opacity: inlineOpacity }]}>
             <TouchableOpacity
-              onPress={() => onSpotPress?.(items[0].spot)}
+              onPress={() => {
+                if (tutorial.isStep('explore-pillbar')) {
+                  tutorial.advanceTutorial(); // → explore-detail
+                }
+                onSpotPress?.(items[0].spot);
+              }}
               activeOpacity={0.7}
               style={styles.inlineItem}
             >
@@ -124,8 +147,15 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
 
         {/* ── 検索ボタン ──────────────────────────────── */}
         <TouchableOpacity
+          ref={searchBtnRef}
           style={styles.searchBtn}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSearchPress?.(); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (tutorial.isStep('explore-search')) {
+              tutorial.advanceTutorial(); // → explore-search-done
+            }
+            onSearchPress?.();
+          }}
           activeOpacity={0.7}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >

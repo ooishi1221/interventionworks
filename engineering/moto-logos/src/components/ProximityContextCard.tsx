@@ -30,6 +30,7 @@ import {
 import { incrementStat, logActivityLocal } from '../db/database';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
+import { useTutorial } from '../contexts/TutorialContext';
 import {
   ProximityState,
   NearbySpotInfo,
@@ -91,10 +92,22 @@ export function ProximityContextCard({
   onSpotUpdated,
 }: Props) {
   const user = useUser();
+  const tutorial = useTutorial();
 
   // アニメーション
   const slideAnim = useRef(new Animated.Value(200)).current; // 下からスライドイン
-  const visible = proximityState.kind !== 'normal';
+  const cardRef = useRef<View>(null);
+  const goodBtnRef = useRef<View>(null);
+  const badBtnRef = useRef<View>(null);
+  const reasonsRef = useRef<View>(null);
+
+  // チュートリアル中はダミー近接状態を強制表示
+  const isTutorialReport = tutorial.active && tutorial.phase === 'report';
+  const effectiveState: ProximityState = isTutorialReport
+    ? { kind: 'nearby', nearest: { spot: tutorial.dummySpot, distanceM: 12 } }
+    : proximityState;
+
+  const visible = effectiveState.kind !== 'normal';
 
   // カード内部状態
   const [phase, setPhase] = useState<
@@ -103,12 +116,49 @@ export function ProximityContextCard({
   const [submitting, setSubmitting] = useState(false);
 
   // 表示中のスポット（nearby の場合）
-  const nearbySpot = proximityState.kind === 'nearby' ? proximityState.nearest : null;
+  const nearbySpot = effectiveState.kind === 'nearby' ? effectiveState.nearest : null;
+
+  // チュートリアルステップ変更時にカード状態をリセット
+  useEffect(() => {
+    if (!tutorial.active) return;
+    if (tutorial.isStep('report-intro') || tutorial.isStep('report-good')) {
+      setPhase('initial');
+    }
+    if (tutorial.isStep('report-bad-intro')) {
+      setPhase('initial');
+    }
+  }, [tutorial.stepIndex]);
+
+  // チュートリアル: ターゲット位置登録（onLayout + 繰り返しリトライ）
+  const measureTargets = useCallback(() => {
+    if (!tutorial.active || !isTutorialReport) return;
+    cardRef.current?.measureInWindow((x, y, w, h) => {
+      if (w > 0) tutorial.registerTarget('proximity-card', { x, y, w, h, borderRadius: 20 });
+    });
+    goodBtnRef.current?.measureInWindow((x, y, w, h) => {
+      if (w > 0) tutorial.registerTarget('report-good-btn', { x, y, w, h, borderRadius: 14 });
+    });
+    badBtnRef.current?.measureInWindow((x, y, w, h) => {
+      if (w > 0) tutorial.registerTarget('report-bad-btn', { x, y, w, h, borderRadius: 14 });
+    });
+    reasonsRef.current?.measureInWindow((x, y, w, h) => {
+      if (w > 0) tutorial.registerTarget('report-reasons', { x, y, w, h, borderRadius: 12 });
+    });
+  }, [tutorial.active, isTutorialReport, tutorial.stepIndex, phase]);
+
+  // ステップ変更時とレイアウト完了時に測定
+  useEffect(() => {
+    if (!isTutorialReport) return;
+    // アニメーション完了を待って複数回リトライ
+    const t1 = setTimeout(measureTargets, 300);
+    const t2 = setTimeout(measureTargets, 800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [measureTargets]);
 
   // 状態変更時にリセット
   useEffect(() => {
     setPhase('initial');
-  }, [proximityState.kind, nearbySpot?.spot.id]);
+  }, [effectiveState.kind, nearbySpot?.spot.id]);
 
   // スライドイン/アウト
   useEffect(() => {
@@ -125,6 +175,13 @@ export function ProximityContextCard({
 
   // ── 報告: 停められた ────────────────────────────────
   const handleGood = useCallback(async () => {
+    // チュートリアル中: Firestore書き込みなしでadvance
+    if (tutorial.isStep('report-good')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPhase('thanks');
+      tutorial.advanceTutorial(); // → report-good-done
+      return;
+    }
     if (!nearbySpot || submitting) return;
     const spotId = nearbySpot.spot.id;
 
@@ -192,10 +249,20 @@ export function ProximityContextCard({
   const handleBad = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('corrections');
-  }, []);
+    if (tutorial.isStep('report-bad-intro')) {
+      tutorial.advanceTutorial(); // → report-bad-reason
+    }
+  }, [tutorial]);
 
   // ── 報告: 理由選択後に送信 ─────────────────────────
   const submitCorrection = useCallback(async (correction: CorrectionType) => {
+    // チュートリアル中: ダミー
+    if (tutorial.isStep('report-bad-reason')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPhase('initial');
+      tutorial.advanceTutorial(); // → report-bad-done
+      return;
+    }
     if (!nearbySpot || submitting) return;
     const spotId = nearbySpot.spot.id;
 
@@ -253,9 +320,9 @@ export function ProximityContextCard({
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
       pointerEvents="box-none"
     >
-      <View style={styles.card}>
+      <View ref={cardRef} style={styles.card} onLayout={measureTargets}>
         {/* ── ニアバイ: 初期カード ─────────────────────── */}
-        {proximityState.kind === 'nearby' && phase === 'initial' && nearbySpot && (
+        {effectiveState.kind === 'nearby' && phase === 'initial' && nearbySpot && (
           <>
             <View style={styles.header}>
               <Ionicons name="location" size={18} color={C.accent} />
@@ -271,6 +338,7 @@ export function ProximityContextCard({
             </Text>
             <View style={styles.buttonRow}>
               <TouchableOpacity
+                ref={goodBtnRef}
                 style={[styles.actionBtn, styles.goodBtn]}
                 onPress={handleGood}
                 activeOpacity={0.8}
@@ -280,6 +348,7 @@ export function ProximityContextCard({
                 <Text style={styles.actionText}>停められた</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                ref={badBtnRef}
                 style={[styles.actionBtn, styles.badBtn]}
                 onPress={handleBad}
                 activeOpacity={0.8}
@@ -293,10 +362,10 @@ export function ProximityContextCard({
         )}
 
         {/* ── ニアバイ: 理由選択 ──────────────────────── */}
-        {proximityState.kind === 'nearby' && phase === 'corrections' && (
+        {effectiveState.kind === 'nearby' && phase === 'corrections' && (
           <>
             <Text style={styles.correctionTitle}>何がダメだった？</Text>
-            <View style={styles.correctionGrid}>
+            <View ref={reasonsRef} style={styles.correctionGrid}>
               {CORRECTION_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.id}
@@ -344,7 +413,7 @@ export function ProximityContextCard({
         )}
 
         {/* ── スポットなし: 初期カード ─────────────────── */}
-        {proximityState.kind === 'no-spots' && phase === 'initial' && (
+        {effectiveState.kind === 'no-spots' && phase === 'initial' && (
           <>
             <Text style={styles.noSpotTitle}>この周辺にスポットがありません</Text>
             <View style={styles.buttonRow}>
