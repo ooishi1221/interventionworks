@@ -436,17 +436,27 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const { latitude, longitude } = loc.coords;
 
-      // 2. カメラ起動
+      // 2. カメラ起動（使えない場合はライブラリから選択）
+      let result: ImagePicker.ImagePickerResult;
       const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
-      if (camStatus !== 'granted') {
-        Alert.alert('カメラへのアクセスが必要です', '設定からカメラを許可してください。');
-        return;
+      if (camStatus === 'granted') {
+        result = await ImagePicker.launchCameraAsync({
+          quality: 0.7,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      } else {
+        const { status: libStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libStatus !== 'granted') {
+          Alert.alert('写真へのアクセスが必要です', '設定から許可してください。');
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          quality: 0.7,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
       }
-      const result = await ImagePicker.launchCameraAsync({
-        quality: 0.7,
-        allowsEditing: true,
-        aspect: [4, 3],
-      });
       if (result.canceled) return;
       const photoUri = result.assets[0].uri;
 
