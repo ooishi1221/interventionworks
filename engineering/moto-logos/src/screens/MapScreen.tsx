@@ -437,15 +437,20 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const { latitude, longitude } = loc.coords;
 
       // 2. カメラ起動（使えない場合はライブラリから選択）
-      let result: ImagePicker.ImagePickerResult;
-      const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
-      if (camStatus === 'granted') {
-        result = await ImagePicker.launchCameraAsync({
-          quality: 0.7,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      } else {
+      let result: ImagePicker.ImagePickerResult | null = null;
+      try {
+        const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        if (camStatus === 'granted') {
+          result = await ImagePicker.launchCameraAsync({
+            quality: 0.7,
+            allowsEditing: true,
+            aspect: [4, 3],
+          });
+        }
+      } catch {
+        // シミュレータ等でカメラ非対応 → ライブラリにフォールバック
+      }
+      if (!result) {
         const { status: libStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (libStatus !== 'granted') {
           Alert.alert('写真へのアクセスが必要です', '設定から許可してください。');
@@ -512,8 +517,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSearchResultMsg('スポットを共有しました!');
       setTimeout(() => setSearchResultMsg(null), 3000);
-    } catch {
-      Alert.alert('エラー', '登録に失敗しました。');
+    } catch (e: any) {
+      captureError(e, { context: 'quickReport' });
+      Alert.alert('エラー', `登録に失敗しました: ${e?.message ?? e}`);
     }
     setReportLoading(false);
   };
