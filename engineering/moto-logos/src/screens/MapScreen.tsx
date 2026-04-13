@@ -735,6 +735,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {!selected && !searchFocused && (
         <NearbySpotsList
           alternatives={getNearbyAlternatives(undefined, 3)}
+          onLocationPress={goToCurrentLocation}
           onSpotPress={(spot) => {
             mapRef.current?.animateToRegion({
               latitude: spot.latitude, longitude: spot.longitude,
@@ -753,17 +754,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           onQuickReport={() => { dismissCoach(); handleQuickReport(); }}
           onSpotUpdated={handleProximitySpotUpdated}
         />
-      )}
-
-      {/* ── 現在地ボタン（右下） ─────────────────────────── */}
-      {!searchFocused && !selected && (
-        <TouchableOpacity
-          style={styles.locationBtn}
-          onPress={goToCurrentLocation}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="locate" size={22} color="#F2F2F7" />
-        </TouchableOpacity>
       )}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
@@ -889,9 +879,14 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </View>
       )}
 
-      {/* ── 詳細シート ────────────────────────────────── */}
+      {/* ── 詳細シート（地図タップで閉じる） ────────────── */}
       {selected && (
         <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.sheetBackdrop}
+            activeOpacity={1}
+            onPress={() => setSelected(null)}
+          />
           <SpotDetailSheet
             spot={selected}
             onClose={() => setSelected(null)}
@@ -988,20 +983,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,107,0,0.4)',
   },
 
-  // ── 現在地ボタン ──────────────────────────────────
-  locationBtn: {
-    position: 'absolute',
-    right: 14,
-    bottom: BOTTOM_BASE + 10 + 64 + 14, // FABの上
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(28,28,30,0.94)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4, shadowRadius: 6, elevation: 6,
-    zIndex: 4,
+  // ── 詳細シート背景（タップで閉じる） ────────────────
+  sheetBackdrop: {
+    flex: 1,
   },
 
   // ── 検索バー（下部、キーボード追従） ──────────────

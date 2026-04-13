@@ -1,8 +1,9 @@
 /**
- * NearbySpotsList — 画面上部の最寄り3件スリムリスト
+ * NearbySpotsList v3 — 上部フローティングバー
  *
- * 1行 = NO・名前・距離。タップで地図ジャンプ+詳細シート。
- * ▾ タップで折りたたみ（タイトル行のみ残る）。
+ * デフォルト: 1行コンパクト表示（📍 + 最寄り3件インライン）
+ * タップで展開: 3行リスト
+ * 📍 = 現在地に戻る
  */
 import React, { useMemo, useRef, useState } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
@@ -21,29 +23,38 @@ const C = {
   text: '#F2F2F7',
   sub: '#8E8E93',
   accent: '#FF6B00',
+  blue: '#0A84FF',
 };
 
-function formatDistance(m: number): string {
+function fmtDist(m: number): string {
   if (m < 1000) return `${Math.round(m)}m`;
   return `${(m / 1000).toFixed(1)}km`;
+}
+
+// 名前を短縮（長すぎるとインラインに収まらない）
+function shortName(name: string, max: number): string {
+  if (name.length <= max) return name;
+  return name.slice(0, max - 1) + '…';
 }
 
 interface Props {
   alternatives: NearbySpotInfo[];
   onSpotPress?: (spot: ParkingPin) => void;
+  onLocationPress?: () => void;
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress }: Props) {
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
-  const [collapsed, setCollapsed] = useState(false);
-  const heightAnim = useRef(new Animated.Value(1)).current;
+  const [expanded, setExpanded] = useState(false);
+  const expandAnim = useRef(new Animated.Value(0)).current;
 
   const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    Animated.spring(heightAnim, {
-      toValue: next ? 0 : 1,
-      tension: 200,
+    const next = !expanded;
+    setExpanded(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.spring(expandAnim, {
+      toValue: next ? 1 : 0,
+      tension: 240,
       friction: 20,
       useNativeDriver: false,
     }).start();
@@ -51,56 +62,82 @@ export function NearbySpotsList({ alternatives, onSpotPress }: Props) {
 
   if (items.length === 0) return null;
 
-  // リスト部分の最大高さ（1行28px × 3件）
-  const listMaxHeight = heightAnim.interpolate({
+  const listHeight = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 28 * items.length + 4],
+    outputRange: [0, 36 * items.length],
   });
-
-  const listOpacity = heightAnim.interpolate({
-    inputRange: [0, 0.5, 1],
+  const listOpacity = expandAnim.interpolate({
+    inputRange: [0, 0.4, 1],
     outputRange: [0, 0, 1],
+  });
+  const inlineOpacity = expandAnim.interpolate({
+    inputRange: [0, 0.3],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
   });
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <View style={styles.card}>
-        {/* ヘッダー（タップで折りたたみ） */}
+      <View style={styles.bar}>
+        {/* ── 現在地ボタン ─────────────────────────────── */}
         <TouchableOpacity
-          style={styles.header}
-          onPress={toggle}
+          style={styles.locBtn}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onLocationPress?.(); }}
           activeOpacity={0.7}
-          hitSlop={{ top: 6, bottom: 6, left: 10, right: 10 }}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
-          <Ionicons
-            name={collapsed ? 'chevron-forward' : 'chevron-down'}
-            size={12}
-            color={C.sub}
-          />
-          <Text style={styles.title}>近くのスポット</Text>
-          {collapsed && items[0] && (
-            <Text style={styles.collapsedHint} numberOfLines={1}>
-              {items[0].spot.name} {formatDistance(items[0].distanceM)}
-            </Text>
-          )}
+          <Ionicons name="locate" size={16} color={C.blue} />
         </TouchableOpacity>
 
-        {/* リスト本体（アニメーションで開閉） */}
-        <Animated.View style={{ maxHeight: listMaxHeight, opacity: listOpacity, overflow: 'hidden' }}>
-          {items.map((item, i) => (
-            <TouchableOpacity
-              key={item.spot.id}
-              style={styles.row}
-              onPress={() => onSpotPress?.(item.spot)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.rank}>{i + 1}</Text>
-              <Text style={styles.name} numberOfLines={1}>{item.spot.name}</Text>
-              <Text style={styles.dist}>{formatDistance(item.distanceM)}</Text>
-            </TouchableOpacity>
-          ))}
-        </Animated.View>
+        {/* ── ヘッダー行（タップで展開/折りたたみ） ────── */}
+        <TouchableOpacity
+          style={styles.headerTap}
+          onPress={toggle}
+          activeOpacity={0.7}
+        >
+          {/* 折りたたみ時: インライン3件 */}
+          <Animated.View style={[styles.inlineRow, { opacity: inlineOpacity }]}>
+            {items.map((item, i) => (
+              <TouchableOpacity
+                key={item.spot.id}
+                onPress={() => onSpotPress?.(item.spot)}
+                activeOpacity={0.7}
+                style={styles.inlineItem}
+              >
+                <Text style={styles.inlineRank}>{i + 1}</Text>
+                <Text style={styles.inlineName} numberOfLines={1}>
+                  {shortName(item.spot.name, 8)}
+                </Text>
+                <Text style={styles.inlineDist}>{fmtDist(item.distanceM)}</Text>
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+
+          {/* 展開時ヘッダー */}
+          {expanded && (
+            <View style={styles.expandedHeader}>
+              <Text style={styles.expandedTitle}>近くのスポット</Text>
+              <Ionicons name="chevron-up" size={14} color={C.sub} />
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
+
+      {/* ── 展開リスト ────────────────────────────────── */}
+      <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
+        {items.map((item, i) => (
+          <TouchableOpacity
+            key={item.spot.id}
+            style={styles.expandedRow}
+            onPress={() => { onSpotPress?.(item.spot); toggle(); }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.expandedRank}>{i + 1}</Text>
+            <Text style={styles.expandedName} numberOfLines={1}>{item.spot.name}</Text>
+            <Text style={styles.expandedDist}>{fmtDist(item.distanceM)}</Text>
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
     </View>
   );
 }
@@ -113,62 +150,116 @@ const styles = StyleSheet.create({
     right: 12,
     zIndex: 8,
   },
-  card: {
-    backgroundColor: 'rgba(28,28,30,0.92)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+
+  // ── メインバー（1行） ──────────────────────────────
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(28,28,30,0.88)',
+    borderRadius: 22,
+    height: 40,
+    paddingLeft: 4,
+    paddingRight: 12,
+    gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 6,
   },
 
-  // ── ヘッダー ──────────────────────────────────────
-  header: {
-    flexDirection: 'row',
+  // ── 現在地ボタン ──────────────────────────────────
+  locBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10,132,255,0.15)',
     alignItems: 'center',
-    gap: 4,
-    height: 24,
-  },
-  title: {
-    color: C.sub,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  collapsedHint: {
-    flex: 1,
-    color: C.text,
-    fontSize: 11,
-    marginLeft: 6,
-    opacity: 0.6,
+    justifyContent: 'center',
   },
 
-  // ── 行（1行スリム） ──────────────────────────────
-  row: {
+  // ── ヘッダータップ領域 ─────────────────────────────
+  headerTap: {
+    flex: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+
+  // ── インライン表示（折りたたみ時） ────────────────
+  inlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 28,
-    gap: 6,
+    gap: 2,
   },
-  rank: {
+  inlineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 4,
+  },
+  inlineRank: {
     color: C.accent,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    width: 14,
-    textAlign: 'center',
   },
-  name: {
-    flex: 1,
+  inlineName: {
     color: C.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
+    maxWidth: 70,
   },
-  dist: {
+  inlineDist: {
+    color: C.sub,
+    fontSize: 11,
+  },
+
+  // ── 展開時ヘッダー ────────────────────────────────
+  expandedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  expandedTitle: {
     color: C.sub,
     fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // ── 展開リスト ─────────────────────────────────────
+  expandedList: {
+    backgroundColor: 'rgba(28,28,30,0.88)',
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    marginTop: -1,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 0,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  expandedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    gap: 8,
+  },
+  expandedRank: {
+    color: C.accent,
+    fontSize: 13,
+    fontWeight: '800',
+    width: 16,
+    textAlign: 'center',
+  },
+  expandedName: {
+    flex: 1,
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  expandedDist: {
+    color: C.sub,
+    fontSize: 13,
   },
 });
