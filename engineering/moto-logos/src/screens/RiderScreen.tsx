@@ -58,11 +58,29 @@ const CC_LABEL: Record<string, string> = {
 // ─── 最近の活動タイムライン ───────────────────────────
 
 const ACTIVITY_ICON: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  spot:     { icon: 'location',        color: C.purple },
-  review:   { icon: 'chatbubble',      color: C.blue },
-  report:   { icon: 'checkmark-circle', color: C.green },
-  favorite: { icon: 'heart',           color: C.pink },
+  spot:     { icon: 'location',           color: C.purple },
+  review:   { icon: 'chatbubble',         color: C.blue },
+  report:   { icon: 'checkmark-circle',   color: C.green },
+  favorite: { icon: 'heart',             color: C.pink },
+  // 報告サブタイプ別カラー
+  report_good:   { icon: 'thumbs-up',          color: '#30D158' },  // 停められた
+  report_full:   { icon: 'alert-circle',       color: '#FF453A' },  // 満車
+  report_closed: { icon: 'close-circle',       color: '#636366' },  // 閉鎖
+  report_price:  { icon: 'cash-outline',       color: '#FFD60A' },  // 料金違う
+  report_cc:     { icon: 'speedometer-outline', color: '#FF9F0A' },  // CC制限違う
+  report_bad:    { icon: 'thumbs-down',        color: '#FF9F0A' },  // その他ダメだった
 };
+
+/** report ラベルからサブタイプを判定 */
+function getReportSubtype(label: string): string {
+  if (label.includes('停められた')) return 'report_good';
+  if (label.includes('full') || label.includes('満車')) return 'report_full';
+  if (label.includes('closed') || label.includes('閉鎖')) return 'report_closed';
+  if (label.includes('wrong_price') || label.includes('料金')) return 'report_price';
+  if (label.includes('wrong_cc') || label.includes('CC')) return 'report_cc';
+  if (label.includes('停められなかった') || label.includes('other')) return 'report_bad';
+  return 'report';
+}
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -232,7 +250,8 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
           </View>
         ) : (
           activityEntries.map((entry, i) => {
-            const meta = ACTIVITY_ICON[entry.type] ?? ACTIVITY_ICON.report;
+            const key = entry.type === 'report' ? getReportSubtype(entry.label) : entry.type;
+            const meta = ACTIVITY_ICON[key] ?? ACTIVITY_ICON.report;
             return (
               <View key={entry.id} style={s.activityItem}>
                 <View style={[s.activityDot, { backgroundColor: meta.color }]}>
