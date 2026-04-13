@@ -27,14 +27,14 @@ interface FeedItem {
 }
 
 const DUMMY_FEED: FeedItem[] = [
-  { id: '1', icon: 'location',    color: C.purple, message: 'ライダーが渋谷駅前を登録',         time: '2分前' },
-  { id: '2', icon: 'thumbs-up',   color: C.green,  message: '北千住駅東口「停められた」',       time: '5分前' },
-  { id: '3', icon: 'location',    color: C.purple, message: 'ライダーが新宿西口を登録',         time: '8分前' },
-  { id: '4', icon: 'thumbs-down', color: C.orange, message: '赤羽駅東口「満車だった」',        time: '12分前' },
-  { id: '5', icon: 'thumbs-up',   color: C.green,  message: '池袋サンシャイン前「停められた」', time: '15分前' },
-  { id: '6', icon: 'location',    color: C.purple, message: 'ライダーが上野駅前を登録',         time: '18分前' },
-  { id: '7', icon: 'thumbs-up',   color: C.green,  message: '秋葉原UDX前「停められた」',       time: '22分前' },
-  { id: '8', icon: 'location',    color: C.purple, message: 'ライダーが横浜みなとみらいを登録', time: '25分前' },
+  { id: '1', icon: 'location',    color: C.purple, message: 'CBR650Rのライダーが渋谷駅前を登録',       time: '2分前' },
+  { id: '2', icon: 'thumbs-up',   color: C.green,  message: 'PCX150で北千住駅東口「停められた」',      time: '5分前' },
+  { id: '3', icon: 'location',    color: C.purple, message: 'MT-07のライダーが新宿西口を登録',         time: '8分前' },
+  { id: '4', icon: 'thumbs-down', color: C.orange, message: 'Ninja400で赤羽駅東口「満車だった」',      time: '12分前' },
+  { id: '5', icon: 'thumbs-up',   color: C.green,  message: 'レブル250で池袋サンシャイン前「停められた」', time: '15分前' },
+  { id: '6', icon: 'location',    color: C.purple, message: 'ライダーが上野駅前を登録',                time: '18分前' },
+  { id: '7', icon: 'thumbs-up',   color: C.green,  message: 'YZF-R25で秋葉原UDX前「停められた」',     time: '22分前' },
+  { id: '8', icon: 'location',    color: C.purple, message: 'GB350のライダーが横浜みなとみらいを登録',  time: '25分前' },
 ];
 
 const SLIDE_DURATION = 500;

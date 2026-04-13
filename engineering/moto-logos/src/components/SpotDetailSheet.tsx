@@ -51,6 +51,7 @@ import {
   reportSpotClosed,
   incrementViewCount,
 } from '../firebase/firestoreService';
+import { getFirstVehicle } from '../db/database';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
@@ -306,7 +307,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       }
 
       // レビューとして保存（score: 1=停められた, 0=停められなかった）
-      await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined);
+      const bike = await getFirstVehicle();
+      await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined, undefined, bike?.name);
 
       // ローカル記録
       AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
@@ -774,6 +776,9 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         )}
         <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
       </View>
+      {report.vehicleName ? (
+        <Text style={styles.reportCardVehicle}>{report.vehicleName} で報告</Text>
+      ) : null}
       {cleanComment ? (
         <Text style={styles.reportCardComment}>{cleanComment}</Text>
       ) : null}
@@ -838,6 +843,7 @@ const styles = StyleSheet.create({
   reportCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   reportCardBadgeText: { fontSize: 12, fontWeight: '700' },
   reportCardDate: { color: C.sub, fontSize: 11 },
+  reportCardVehicle: { color: C.sub, fontSize: 12, marginTop: 4 },
   reportCardComment: { color: C.text, fontSize: 14, marginTop: 8, lineHeight: 20 },
   reportCardPhoto: { width: '100%', height: 160, borderRadius: 8 },
 

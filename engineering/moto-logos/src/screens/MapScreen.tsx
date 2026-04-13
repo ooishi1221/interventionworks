@@ -24,7 +24,7 @@ import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
 import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
-import { insertUserSpot, getUserRank } from '../db/database';
+import { insertUserSpot, getUserRank, getFirstVehicle } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { captureError } from '../utils/sentry';
@@ -549,9 +549,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         captureError(e, { context: 'quickReport_firestore' });
       });
 
-      // 5. 写真をレビューとしてアップロード
+      // 5. 写真をレビューとしてアップロード（バイク情報付き）
       if (user) {
-        addReview(`user_${localId}`, user.userId, 0, undefined, photoUri).catch((e) => {
+        const bike = await getFirstVehicle();
+        addReview(`user_${localId}`, user.userId, 0, undefined, photoUri, undefined, bike?.name).catch((e) => {
           captureError(e, { context: 'quickReport_photo' });
         });
       }

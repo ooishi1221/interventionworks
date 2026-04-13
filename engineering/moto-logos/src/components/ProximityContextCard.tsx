@@ -27,7 +27,7 @@ import {
   reportSpotClosed,
   addReview,
 } from '../firebase/firestoreService';
-import { incrementStat, logActivityLocal } from '../db/database';
+import { incrementStat, logActivityLocal, getFirstVehicle } from '../db/database';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -211,8 +211,9 @@ export function ProximityContextCard({
 
     setSubmitting(true);
     try {
+      const bike = await getFirstVehicle();
       await reportSpotGood(spotId);
-      await addReview(spotId, userId, 1, undefined, undefined);
+      await addReview(spotId, userId, 1, undefined, undefined, undefined, bike?.name);
       await AsyncStorage.setItem(`vote_${spotId}`, 'matched');
       await markReported(spotId);
       logActivityLocal('report', `${nearbySpot.spot.name}を停められた報告`);
@@ -259,7 +260,8 @@ export function ProximityContextCard({
 
       if (!result.assets?.length) return;
       const photoUri = result.assets[0].uri;
-      await addReview(reportedSpotId, userId, 1, undefined, photoUri);
+      const bike = await getFirstVehicle();
+      await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       captureError(e, { context: 'proximity_snap_photo' });
@@ -306,7 +308,8 @@ export function ProximityContextCard({
       } else if (correction === 'closed') {
         await reportSpotClosed(spotId);
       }
-      await addReview(spotId, userId, 0, `[${correction}]`, undefined);
+      const bike = await getFirstVehicle();
+      await addReview(spotId, userId, 0, `[${correction}]`, undefined, undefined, bike?.name);
       await AsyncStorage.setItem(`vote_${spotId}`, correction);
       await markReported(spotId);
       logActivityLocal('report', `${nearbySpot.spot.name}を${correction}報告`);

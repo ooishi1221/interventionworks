@@ -53,6 +53,8 @@ export interface Review {
   score: number;
   comment: string | null;
   photoUri: string | null;
+  /** 報告時のバイク車種名（例: 「CBR650R」） */
+  vehicleName?: string | null;
   createdAt: string;
 }
 

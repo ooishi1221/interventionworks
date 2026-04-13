@@ -352,6 +352,7 @@ export async function fetchReviews(
       score:       data.score as number,
       comment:     (data.comment as string) ?? null,
       photoUri:    (data.photoUrls as string[])?.[0] ?? null,
+      vehicleName: (data.vehicleName as string) ?? null,
       createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
     };
   });
@@ -378,6 +379,7 @@ export async function addReview(
   comment?: string,
   photoUri?: string,
   onUploadProgress?: (progress: number) => void,
+  vehicleName?: string,
 ): Promise<void> {
   // NG ワードチェック（クライアント側即時フィードバック）
   if (comment && isNgWord(comment)) {
@@ -397,6 +399,7 @@ export async function addReview(
     userId,
     score,
     ...(comment  != null && comment !== '' && { comment }),
+    ...(vehicleName && { vehicleName }),
     photoUrls,
     goodCount: 0,
     badCount:  0,
