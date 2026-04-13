@@ -166,6 +166,27 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
   - 6ヶ月以上 → 赤 `#FF453A`（要確認）
 - ユーザー投稿スポットは常に紫 `#BF5AF2`
 
+### 報告タイプカラー（ライブフィード・活動タイムライン共通）
+
+| 報告タイプ | 色 | アイコン | 用途 |
+|-----------|-----|---------|------|
+| 停められた | 緑 `#30D158` | thumbs-up | 安心。行ける |
+| 満車 | 赤 `#FF453A` | alert-circle | 危険。避けろ |
+| 閉鎖 | 濃グレー `#636366` | close-circle | 死んでる |
+| 料金違う | 黄 `#FFD60A` | cash-outline | 注意。想定と違う |
+| CC制限違う | オレンジ `#FF9F0A` | speedometer-outline | 入れないかも |
+| 新規登録 | 紫 `#BF5AF2` | location | 発見。新しい情報 |
+
+- ライブフィード: 左ボーダー3pxで色分け
+- RiderScreen活動タイムライン: ドット色で色分け（labelテキストから`getReportSubtype()`で自動判定）
+
+### レビューのバイク車種名紐づけ
+
+- `addReview()` に `vehicleName` 引数追加 → Firestore reviews に保存
+- 呼び出し元で `getFirstVehicle()` から車種名を取得して渡す
+- SpotDetailSheet の ReportCard に「{車種名} で報告」表示
+- ライブフィードのダミーデータに車種名付き（CBR650R, PCX150, MT-07 等）
+
 ### アクティビティログ
 
 - SQLite `activity_log` テーブルでアクション履歴を記録
@@ -271,6 +292,10 @@ eas update --branch preview
 | ライダー | RiderScreen（→ マイバイクサブ画面） | `person` |
 | お知らせ | NotificationsScreen | `notifications` |
 | 設定 | SettingsScreen（→ お問い合わせ・利用規約サブ画面） | `settings` |
+
+**タブ2度押し動作:**
+- マップ → 現在地にリセット
+- ライダー / お知らせ / 設定 → マップに戻る
 
 ### マップ操作UI
 
