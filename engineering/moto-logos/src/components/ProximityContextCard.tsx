@@ -17,6 +17,7 @@ import {
   Dimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
@@ -119,6 +120,9 @@ export function ProximityContextCard({
     }).start();
   }, [visible]);
 
+  // 報告済みスポットID（写真追加用に保持）
+  const [reportedSpotId, setReportedSpotId] = useState<string | null>(null);
+
   // ── 報告: 停められた ────────────────────────────────
   const handleGood = useCallback(async () => {
     if (!nearbySpot || submitting) return;
@@ -137,15 +141,52 @@ export function ProximityContextCard({
       logActivityLocal('report', `${nearbySpot.spot.name}を停められた報告`);
       incrementStat('reports');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setReportedSpotId(spotId);
       setPhase('thanks');
       onSpotUpdated?.();
-      // 2秒後にカードを消す（次回の状態判定で normal になる）
-      setTimeout(() => setPhase('initial'), 2000);
     } catch (e) {
       captureError(e, { context: 'proximity_report_good' });
     }
     setSubmitting(false);
   }, [nearbySpot, user, submitting, onSpotUpdated]);
+
+  // ── 写真パシャッ（停められた後のワンタップ写真） ────
+  const handleSnapPhoto = useCallback(async () => {
+    if (!reportedSpotId) return;
+    let userId = user?.userId;
+    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
+    if (!userId) return;
+
+    try {
+      let result: ImagePicker.ImagePickerResult | null = null;
+      try {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status === 'granted') {
+          result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false });
+        }
+      } catch {}
+      // カメラ非対応時はライブラリから
+      if (!result) {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') return;
+        result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: false });
+      }
+      if (result.canceled) return;
+
+      const photoUri = result.assets[0].uri;
+      await addReview(reportedSpotId, userId, 1, undefined, photoUri);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      captureError(e, { context: 'proximity_snap_photo' });
+    }
+    // 写真撮っても撮らなくても閉じる
+    setPhase('initial');
+  }, [reportedSpotId, user]);
+
+  // ── 写真スキップ（ありがとうだけで閉じる） ──────────
+  const dismissThanks = useCallback(() => {
+    setPhase('initial');
+  }, []);
 
   // ── 報告: ダメだった → 理由選択表示 ────────────────
   const handleBad = useCallback(() => {
@@ -275,11 +316,30 @@ export function ProximityContextCard({
           </>
         )}
 
-        {/* ── ありがとう ──────────────────────────────── */}
+        {/* ── ありがとう + 写真パシャッ ─────────────────── */}
         {phase === 'thanks' && (
-          <View style={styles.thanksWrap}>
-            <Ionicons name="checkmark-circle" size={32} color={C.green} />
-            <Text style={styles.thanksText}>ありがとう！情報を更新しました</Text>
+          <View>
+            <View style={styles.thanksWrap}>
+              <Ionicons name="checkmark-circle" size={28} color={C.green} />
+              <Text style={styles.thanksText}>ありがとう！</Text>
+            </View>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.snapBtn]}
+                onPress={handleSnapPhoto}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="camera" size={22} color="#fff" />
+                <Text style={styles.actionText}>パシャッも残す</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.skipBtn]}
+                onPress={dismissThanks}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipText}>OK</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -416,6 +476,19 @@ const styles = StyleSheet.create({
   },
   searchBtn: {
     backgroundColor: '#48484A',
+  },
+  snapBtn: {
+    flex: 2,
+    backgroundColor: C.blue,
+  },
+  skipBtn: {
+    flex: 1,
+    backgroundColor: '#3A3A3C',
+  },
+  skipText: {
+    color: C.sub,
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   // ── 理由選択 ───────────────────────────────────────
