@@ -177,21 +177,14 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── FAB コーチマーク ────────────────────────────────
   const [showCoach, setShowCoach] = useState(false);
-  const fabPulse = useRef(new RNAnimated.Value(1)).current;
+
+  // FABメニュー「にゅっ」アニメーション
+  const fabMenuAnim = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
     AsyncStorage.getItem('fab_coach_shown').then((v) => {
       if (!v) setShowCoach(true);
     });
-    // FAB 脈動アニメーション（注意を引く）
-    const anim = RNAnimated.loop(
-      RNAnimated.sequence([
-        RNAnimated.timing(fabPulse, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
-        RNAnimated.timing(fabPulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
   }, []);
 
   const dismissCoach = () => {
@@ -449,8 +442,27 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }, 800);
   };
 
-  // ── FABメニュー ───────────────────────────────────────
+  // ── FABメニュー（長押しで開く） ───────────────────────
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
+
+  const openFabMenu = () => {
+    setFabMenuOpen(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    RNAnimated.spring(fabMenuAnim, {
+      toValue: 1,
+      tension: 200,
+      friction: 14,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeFabMenu = () => {
+    RNAnimated.timing(fabMenuAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => setFabMenuOpen(false));
+  };
 
   // ── クイックレポート「写真1枚で即登録」 ─────────────
   const [reportLoading, setReportLoading] = useState(false);
@@ -755,9 +767,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
-      {!searchFocused && !selected && showCoach && (
+      {!searchFocused && !selected && showCoach && !fabMenuOpen && (
         <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
-          <Text style={styles.coachText}>ここからスポット登録！</Text>
+          <Text style={styles.coachText}>長押しでメニュー</Text>
           <View style={styles.coachArrow} />
         </TouchableOpacity>
       )}
@@ -767,33 +779,50 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         <TouchableOpacity
           style={StyleSheet.absoluteFillObject}
           activeOpacity={1}
-          onPress={() => setFabMenuOpen(false)}
+          onPress={closeFabMenu}
         />
       )}
 
-      {/* ── FAB オレンジボタン ─────────────────────────── */}
+      {/* ── FAB オレンジボタン（長押しでメニュー） ──────── */}
       {!searchFocused && !selected && (
         <View style={styles.fabArea} pointerEvents="box-none">
-          {/* FABメニュー（2択） */}
+          {/* メニュー（にゅっとスプリング） */}
           {fabMenuOpen && (
-            <View style={styles.fabMenu}>
+            <RNAnimated.View style={[
+              styles.fabMenu,
+              {
+                opacity: fabMenuAnim,
+                transform: [{
+                  translateY: fabMenuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                }, {
+                  scale: fabMenuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  }),
+                }],
+              },
+            ]}>
               <TouchableOpacity
                 style={styles.fabMenuItem}
                 onPress={() => {
-                  setFabMenuOpen(false);
+                  closeFabMenu();
                   setSearchVisible(true);
                   setSearchText('');
-                  setTimeout(() => searchInputRef.current?.focus(), 100);
+                  setTimeout(() => searchInputRef.current?.focus(), 200);
                 }}
                 activeOpacity={0.8}
               >
                 <Ionicons name="search" size={18} color="#F2F2F7" />
                 <Text style={styles.fabMenuText}>文字で探す</Text>
               </TouchableOpacity>
+              <View style={styles.fabMenuDivider} />
               <TouchableOpacity
                 style={styles.fabMenuItem}
                 onPress={() => {
-                  setFabMenuOpen(false);
+                  closeFabMenu();
                   dismissCoach();
                   handleQuickReport();
                 }}
@@ -802,17 +831,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
                 <Ionicons name="camera" size={18} color="#F2F2F7" />
                 <Text style={styles.fabMenuText}>場所を登録</Text>
               </TouchableOpacity>
-            </View>
+            </RNAnimated.View>
           )}
-          <RNAnimated.View style={{ transform: [{ scale: fabPulse }] }}>
-            <TouchableOpacity
-              style={styles.fab}
-              onPress={() => { dismissCoach(); setFabMenuOpen((v) => !v); }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={fabMenuOpen ? 'close' : 'add'} size={34} color="#fff" />
-            </TouchableOpacity>
-          </RNAnimated.View>
+          <TouchableOpacity
+            style={styles.fab}
+            onLongPress={() => { dismissCoach(); openFabMenu(); }}
+            onPress={() => { dismissCoach(); if (fabMenuOpen) closeFabMenu(); }}
+            delayLongPress={250}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={30} color="#fff" />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -927,6 +956,11 @@ const styles = StyleSheet.create({
     color: '#F2F2F7',
     fontSize: 15,
     fontWeight: '600',
+  },
+  fabMenuDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: 12,
   },
   coachBubble: {
     position: 'absolute',
