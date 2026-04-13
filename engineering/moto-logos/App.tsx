@@ -31,6 +31,32 @@ import { setupNotificationHandler, registerForPushNotifications } from './src/ut
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
 import { LogBox } from 'react-native';
+import { Text as RNText } from 'react-native';
+
+// ── チュートリアルスキップボタン ──────────────────────
+function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
+  const tutorial = useTutorial();
+  // セットアップ/完了画面/非アクティブ時は非表示（TutorialOverlayが管理）
+  if (!tutorial.active || tutorial.phase === 'setup' || tutorial.phase === 'complete') return null;
+  return (
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 56 : 36,
+        right: 16,
+        zIndex: 10000,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+      }}
+      onPress={() => { tutorial.finishTutorial(); onSkip(); }}
+      activeOpacity={0.7}
+    >
+      <RNText style={{ color: '#8E8E93', fontSize: 13, fontWeight: '600' }}>スキップ</RNText>
+    </TouchableOpacity>
+  );
+}
 
 // アプリ起動時に Sentry を初期化（最速で呼ぶ）
 initSentry();
@@ -140,10 +166,19 @@ function App() {
   }, []);
 
 
-  /** タブ押下ハンドラ。マップタブ2度押しでリセット */
+  /** タブ押下ハンドラ
+   *  - マップ2度押し → 現在地リセット
+   *  - 他タブ2度押し → マップに戻る
+   */
   const handleTabPress = (id: Tab) => {
-    if (id === 'map' && tab === 'map') {
-      mapScreenRef.current?.resetView();
+    if (id === tab) {
+      // 同じタブを2度押し
+      if (id === 'map') {
+        mapScreenRef.current?.resetView();
+      } else {
+        // ライダー/お知らせ/設定 → マップに戻る
+        setTab('map');
+      }
     } else {
       if (id !== 'settings') setSettingsSub('main');
       if (id !== 'rider') setRiderSub('main');
@@ -271,8 +306,9 @@ function App() {
             </View>
           </SafeAreaView>
 
-          {/* ガイドツアー: スポットライト + 指示テキスト */}
+          {/* ガイドツアー: スポットライト + 指示テキスト + スキップ */}
           <TutorialGuide />
+          <TutorialSkipButton onSkip={finishTutorial} />
 
           {/* チュートリアルオーバーレイ（セットアップ + 完了画面） */}
           <TutorialOverlay

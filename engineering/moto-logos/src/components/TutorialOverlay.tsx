@@ -154,6 +154,10 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
               <Text style={styles.primaryBtnText}>はじめる</Text>
               <Ionicons name="arrow-forward" size={16} color="#fff" />
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.skipLink} onPress={handleComplete} activeOpacity={0.7}>
+              <Text style={styles.skipText}>スキップ</Text>
+            </TouchableOpacity>
           </ScrollView>
         </Animated.View>
       )}
@@ -238,4 +242,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   primaryBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  skipLink: { marginTop: 16, paddingVertical: 8 },
+  skipText: { color: '#636366', fontSize: 14 },
 });
