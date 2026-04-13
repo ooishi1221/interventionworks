@@ -184,7 +184,7 @@ export async function addUserSpotToFirestore(
   localId: number,
   spot: {
     name: string; latitude: number; longitude: number;
-    address?: string; maxCC: MaxCC; isFree: boolean;
+    address?: string; maxCC: MaxCC; isFree: boolean | null;
     capacity?: number; pricePerHour?: number; openHours?: string;
   },
   userRank: UserRank = 'novice',
@@ -209,7 +209,7 @@ export async function addUserSpotToFirestore(
       isLargeOk: spot.maxCC === null,
     },
     ...(spot.capacity     != null && { parkingCapacity: spot.capacity }),
-    payment: { cash: !spot.isFree, icCard: false, qrCode: false },
+    payment: { cash: spot.isFree === false, icCard: false, qrCode: false },
     isFree:    spot.isFree,
     ...(spot.pricePerHour != null && { pricePerHour:    spot.pricePerHour }),
     ...(spot.openHours    != null && { openHours:       spot.openHours }),

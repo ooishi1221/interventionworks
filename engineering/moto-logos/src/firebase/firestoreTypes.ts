@@ -71,8 +71,8 @@ export interface FirestoreSpot {
   parkingCapacity?:  number;
   /** 精算方法 */
   payment:           SpotPayment;
-  /** 無料 / 有料 */
-  isFree:            boolean;
+  /** 無料 / 有料 / 未確認(null) */
+  isFree:            boolean | null;
   /** 料金（円/時間）（任意） */
   pricePerHour?:     number;
   /** 営業時間（任意） */

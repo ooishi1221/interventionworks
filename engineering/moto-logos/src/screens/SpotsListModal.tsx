@@ -47,7 +47,7 @@ interface Props {
 export function SpotsListModal({ visible, onClose, onGoToSpot }: Props) {
   const [spots, setSpots] = useState<UserSpot[]>([]);
   const [editSpot, setEditSpot] = useState<UserSpot | null>(null);
-  const [form, setForm] = useState({ name: '', maxCC: null as MaxCC, isFree: true, capacity: '', price: '' });
+  const [form, setForm] = useState({ name: '', maxCC: null as MaxCC, isFree: true as boolean | null, capacity: '', price: '' });
   const [saving, setSaving] = useState(false);
   const swipeRefs = useRef<Map<number, Swipeable>>(new Map());
 

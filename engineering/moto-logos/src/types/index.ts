@@ -26,7 +26,7 @@ export interface UserSpot {
   longitude: number;
   address?: string;
   maxCC: MaxCC;
-  isFree: boolean;
+  isFree: boolean | null;
   capacity?: number;
   pricePerHour?: number;
   openHours?: string;

@@ -49,7 +49,7 @@ const MAX_CC_OPTIONS: { value: MaxCC; label: string }[] = [
 interface SpotFormState {
   name: string;
   maxCC: MaxCC;
-  isFree: boolean;
+  isFree: boolean | null;
   capacity: string;
   price: string;
   notes: string;

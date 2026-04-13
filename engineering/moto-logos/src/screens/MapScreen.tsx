@@ -11,10 +11,6 @@ import {
   Keyboard,
   Animated as RNAnimated,
   Modal,
-  ScrollView,
-  KeyboardAvoidingView,
-  SafeAreaView,
-  Image,
   FlatList,
   Dimensions,
   Linking,
@@ -424,27 +420,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     await fetchSpotsForRegion(currentRegionRef.current);
   };
 
-  // ── クイックレポート「ここに停めた！」 ─────────────
-  const [reportForm, setReportForm] = useState<{
-    visible: boolean;
-    lat: number; lon: number; address: string;
-    name: string; maxCC: MaxCC; isFree: boolean;
-    capacity: string; price: string; photo: string | null;
-  }>({
-    visible: false, lat: 0, lon: 0, address: '',
-    name: '', maxCC: null, isFree: true, capacity: '', price: '', photo: null,
-  });
+  // ── クイックレポート「写真1枚で即登録」 ─────────────
   const [reportLoading, setReportLoading] = useState(false);
 
-  const MAX_CC_OPTIONS: { value: MaxCC; label: string }[] = [
-    { value: null, label: '制限なし' },
-    { value: 250,  label: '〜250cc' },
-    { value: 125,  label: '〜125cc' },
-    { value: 50,   label: '原付のみ' },
-  ];
-
   const handleQuickReport = async () => {
+    if (reportLoading) return;
     try {
+      // 1. GPS取得
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('位置情報が必要です', '設定から位置情報を許可してください。');
@@ -453,73 +435,75 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       setLocationGranted(true);
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const { latitude, longitude } = loc.coords;
+
+      // 2. カメラ起動
+      const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (camStatus !== 'granted') {
+        Alert.alert('カメラへのアクセスが必要です', '設定からカメラを許可してください。');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (result.canceled) return;
+      const photoUri = result.assets[0].uri;
+
+      // 3. 住所を自動取得
+      setReportLoading(true);
       let address = '';
       try {
         const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
         if (geo) address = [geo.region, geo.city, geo.street, geo.streetNumber].filter(Boolean).join(' ');
       } catch {}
-      // フォームを開く（GPS + 住所は自動入力済み）
-      setReportForm({
-        visible: true, lat: latitude, lon: longitude, address,
-        name: address ? `${address} 付近` : '', maxCC: null, isFree: true, capacity: '', price: '', photo: null,
-      });
-    } catch {
-      Alert.alert('エラー', '位置情報の取得に失敗しました。');
-    }
-  };
 
-  const submitReport = async () => {
-    if (!reportForm.name.trim()) {
-      Alert.alert('入力エラー', '名称を入力してください。');
-      return;
-    }
-    setReportLoading(true);
-    const spotData = {
-      name: reportForm.name.trim(),
-      latitude: reportForm.lat,
-      longitude: reportForm.lon,
-      address: reportForm.address || undefined,
-      maxCC: reportForm.maxCC,
-      isFree: reportForm.isFree,
-      capacity: reportForm.capacity ? parseInt(reportForm.capacity, 10) : undefined,
-      pricePerHour: reportForm.price ? parseFloat(reportForm.price) : undefined,
-    };
-    try {
+      // 4. 即座に登録（CC/料金/台数は未確認）
+      const name = address ? `${address} 付近` : `${latitude.toFixed(4)}, ${longitude.toFixed(4)} 付近`;
+      const spotData = {
+        name,
+        latitude,
+        longitude,
+        address: address || undefined,
+        maxCC: null as MaxCC,
+        isFree: null as boolean | null,
+      };
       const localId = await insertUserSpot(spotData);
       const rank = await getUserRank();
       addUserSpotToFirestore(localId, spotData, rank).catch((e) => {
         captureError(e, { context: 'quickReport_firestore' });
-        Alert.alert('同期エラー', 'クラウドへの保存に失敗しました。ネットワーク復帰後に再試行してください。');
       });
-      // 写真があればレビューとして自動投稿
-      if (reportForm.photo && user) {
-        addReview(`user_${localId}`, user.userId, 5, '写真を共有しました', reportForm.photo).catch((e) => {
+
+      // 5. 写真をレビューとしてアップロード
+      if (user) {
+        addReview(`user_${localId}`, user.userId, 0, undefined, photoUri).catch((e) => {
           captureError(e, { context: 'quickReport_photo' });
         });
       }
+
+      // 6. マップにピン追加
       const newPin: ParkingPin = {
         id: `user_${localId}`,
-        name: spotData.name,
-        latitude: spotData.latitude,
-        longitude: spotData.longitude,
-        maxCC: spotData.maxCC,
-        isFree: spotData.isFree,
-        capacity: spotData.capacity ?? null,
+        name,
+        latitude,
+        longitude,
+        maxCC: null,
+        isFree: null,
+        capacity: null,
         source: 'user',
         address: spotData.address,
         updatedAt: new Date().toISOString(),
       };
       setAllSpotsRaw((prev) => [...prev, newPin]);
       mapRef.current?.animateToRegion({
-        latitude: spotData.latitude, longitude: spotData.longitude,
+        latitude, longitude,
         latitudeDelta: 0.005, longitudeDelta: 0.005,
       }, 600);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setReportForm((f) => ({ ...f, visible: false }));
       setSearchResultMsg('スポットを共有しました!');
       setTimeout(() => setSearchResultMsg(null), 3000);
     } catch {
-      Alert.alert('エラー', '保存に失敗しました。');
+      Alert.alert('エラー', '登録に失敗しました。');
     }
     setReportLoading(false);
   };
@@ -898,155 +882,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </View>
       </Modal>
 
-      {/* ── クイックレポートフォーム ─────────────────── */}
-      <Modal
-        visible={reportForm.visible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setReportForm((f) => ({ ...f, visible: false }))}
-      >
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setReportForm((f) => ({ ...f, visible: false }))}>
-              <Text style={styles.modalCancel}>キャンセル</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>スポットを共有</Text>
-            <View style={{ width: 60 }} />
+      {/* ── 登録中インジケーター ───────────────────── */}
+      {reportLoading && (
+        <View style={styles.reportingOverlay} pointerEvents="none">
+          <View style={styles.reportingBadge}>
+            <ActivityIndicator size="small" color="#FF6B00" />
+            <Text style={styles.reportingText}>共有中...</Text>
           </View>
-          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView contentContainerStyle={styles.formContent}>
-              {/* 位置情報 */}
-              <View style={styles.formMetaRow}>
-                <Ionicons name="location" size={14} color={SYS_GRAY} />
-                <Text style={styles.formMeta}>
-                  {reportForm.address || `${reportForm.lat.toFixed(5)}, ${reportForm.lon.toFixed(5)}`}
-                </Text>
-              </View>
-
-              {/* 名称 */}
-              <Text style={styles.formLabel}>名称 *</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="例: 北千住駅東口バイク置き場"
-                placeholderTextColor={SYS_GRAY}
-                value={reportForm.name}
-                onChangeText={(v) => setReportForm((f) => ({ ...f, name: v }))}
-              />
-
-              {/* 最大排気量 */}
-              <Text style={styles.formLabel}>最大排気量</Text>
-              <View style={styles.formOptionRow}>
-                {MAX_CC_OPTIONS.map((opt) => (
-                  <TouchableOpacity
-                    key={String(opt.value)}
-                    style={[styles.formChip, reportForm.maxCC === opt.value && styles.formChipActive]}
-                    onPress={() => setReportForm((f) => ({ ...f, maxCC: opt.value }))}
-                  >
-                    <Text style={[styles.formChipText, reportForm.maxCC === opt.value && styles.formChipTextActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* 料金 */}
-              <Text style={styles.formLabel}>料金</Text>
-              <View style={styles.formOptionRow}>
-                {[{ v: true, l: '無料' }, { v: false, l: '有料' }].map(({ v, l }) => (
-                  <TouchableOpacity
-                    key={l}
-                    style={[styles.formChip, reportForm.isFree === v && styles.formChipActive]}
-                    onPress={() => setReportForm((f) => ({ ...f, isFree: v }))}
-                  >
-                    <Text style={[styles.formChipText, reportForm.isFree === v && styles.formChipTextActive]}>
-                      {l}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {!reportForm.isFree && (
-                <>
-                  <Text style={styles.formLabel}>料金（円/時）</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    placeholder="例: 200"
-                    placeholderTextColor={SYS_GRAY}
-                    keyboardType="numeric"
-                    value={reportForm.price}
-                    onChangeText={(v) => setReportForm((f) => ({ ...f, price: v }))}
-                  />
-                </>
-              )}
-
-              {/* 収容台数 */}
-              <Text style={styles.formLabel}>収容台数</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="例: 10"
-                placeholderTextColor={SYS_GRAY}
-                keyboardType="numeric"
-                value={reportForm.capacity}
-                onChangeText={(v) => setReportForm((f) => ({ ...f, capacity: v }))}
-              />
-
-              {/* 写真（任意） */}
-              <Text style={styles.formLabel}>写真（任意）</Text>
-              {reportForm.photo ? (
-                <View style={styles.photoPreview}>
-                  <Image source={{ uri: reportForm.photo }} style={styles.photoThumb} />
-                  <TouchableOpacity
-                    style={styles.photoRemove}
-                    onPress={() => setReportForm((f) => ({ ...f, photo: null }))}
-                  >
-                    <Ionicons name="close-circle" size={24} color="#FF453A" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.photoBtn}
-                  onPress={async () => {
-                    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                    if (status !== 'granted') {
-                      Alert.alert('カメラへのアクセスが必要です');
-                      return;
-                    }
-                    const result = await ImagePicker.launchCameraAsync({
-                      quality: 0.7,
-                      allowsEditing: true,
-                      aspect: [4, 3],
-                    });
-                    if (!result.canceled) {
-                      setReportForm((f) => ({ ...f, photo: result.assets[0].uri }));
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="camera" size={22} color={SYS_BLUE} />
-                  <Text style={styles.photoBtnText}>写真を撮る</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* 送信 */}
-              <TouchableOpacity
-                style={[styles.formSubmit, reportLoading && { opacity: 0.6 }]}
-                onPress={submitReport}
-                disabled={reportLoading}
-                activeOpacity={0.8}
-              >
-                {reportLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.formSubmitText}>仲間に共有する</Text>
-                )}
-              </TouchableOpacity>
-
-              <View style={{ height: 40 }} />
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
+        </View>
+      )}
 
       {/* ── 詳細シート ────────────────────────────────── */}
       {selected && (
@@ -1327,56 +1171,18 @@ const styles = StyleSheet.create({
   priceSub: { color: '#8E8E93', fontSize: 12, marginTop: 1 },
   priceDist: { color: '#636366', fontSize: 13, fontWeight: '600' },
 
-  // ── レポートフォームモーダル ────────────────────────
-  modalSafe: { flex: 1, backgroundColor: '#000' },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.1)',
+  // ── 登録中インジケーター ─────────────────────────────
+  reportingOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', zIndex: 15,
   },
-  modalCancel: { color: SYS_BLUE, fontSize: 15 },
-  modalTitle: { color: '#F2F2F7', fontSize: 16, fontWeight: '700' },
-  formContent: { padding: Spacing.lg, gap: 4 },
-  formMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  formMeta: { color: SYS_GRAY, fontSize: 12 },
-  formLabel: { color: SYS_GRAY, fontSize: 13, marginTop: 12 },
-  formInput: {
-    backgroundColor: '#1C1C1E', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 10,
-    color: '#F2F2F7', fontSize: 15,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)',
-    marginTop: 4,
+  reportingBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(28,28,30,0.95)',
+    paddingHorizontal: 18, paddingVertical: 12,
+    borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)',
   },
-  formOptionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  formChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  formChipActive: { backgroundColor: SYS_BLUE, borderColor: SYS_BLUE },
-  formChipText: { color: SYS_GRAY, fontSize: 13 },
-  formChipTextActive: { color: '#fff', fontWeight: '700' },
-  photoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(10,132,255,0.3)',
-    backgroundColor: 'rgba(10,132,255,0.08)',
-  },
-  photoBtnText: { color: SYS_BLUE, fontSize: 15, fontWeight: '600' },
-  photoPreview: { marginTop: 8, position: 'relative' },
-  photoThumb: { width: '100%', height: 180, borderRadius: 12, backgroundColor: '#1C1C1E' },
-  photoRemove: { position: 'absolute', top: 8, right: 8 },
-  formSubmit: {
-    marginTop: 24, backgroundColor: SYS_BLUE, borderRadius: 14,
-    paddingVertical: 15, alignItems: 'center',
-  },
-  formSubmitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  reportingText: { color: '#FF6B00', fontSize: 14, fontWeight: '600' },
 
   // ── マーカー ──────────────────────────────────────
   pin: {
