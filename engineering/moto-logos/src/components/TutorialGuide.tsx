@@ -117,12 +117,12 @@ export function TutorialGuide() {
     );
   }
 
-  // ── ターゲットなし + tap-anywhere: オーバーレイ貫通 + カードタップで次へ
+  // ── ターゲットなし + tap-anywhere: どこタップしても次へ
   if (!target) {
     return (
-      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="box-none">
-        {currentStep.instruction ? (
-          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
+          {currentStep.instruction ? (
             <View style={styles.floatingCard}>
               <Text style={styles.instructionText}>{currentStep.instruction}</Text>
               <View style={styles.tapHintRow}>
@@ -130,9 +130,9 @@ export function TutorialGuide() {
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        ) : null}
-      </Animated.View>
+          ) : null}
+        </Animated.View>
+      </TouchableWithoutFeedback>
     );
   }
 
@@ -241,6 +241,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     letterSpacing: -0.5,
+  },
+  fullOverlayClear: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.01)',
+    zIndex: 9998,
   },
   fullOverlayLight: {
     ...StyleSheet.absoluteFillObject,
