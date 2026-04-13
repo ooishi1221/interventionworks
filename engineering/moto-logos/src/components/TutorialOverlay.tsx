@@ -211,22 +211,22 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
         </Animated.View>
       )}
 
-      {/* ── Step 3: ラジアル指アニメ ──────────────── */}
+      {/* ── Step 3: FAB + ラジアル指アニメ ──────────── */}
       {step === 3 && (
         <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
-          <Text style={styles.stepQuestion}>右下のボタンを長押し</Text>
-          <Text style={styles.stepHint}>メニューが展開します</Text>
-          <View style={{ height: 32 }} />
+          <Text style={styles.stepQuestion}>2つのボタンを使いこなそう</Text>
+          <Text style={styles.stepHint}>スポット登録は「＋」、地図操作は長押しメニュー</Text>
+          <View style={{ height: 24 }} />
 
           {/* アニメーションエリア */}
           <View style={styles.demoArea}>
-            {/* 扇形メニュー（簡略） */}
+            {/* 扇形メニュー（4項目: 登録はFABに移動済み） */}
             <Animated.View style={[styles.demoFan, { opacity: fanOpacity }]}>
-              {['現在地', '最寄り', 'ここに停めた!', '周辺更新', '場所検索'].map((label, i) => (
+              {['現在地', '最寄り', '更新', '検索'].map((label, i) => (
                 <View key={label} style={[styles.demoFanItem, {
                   transform: [
-                    { translateX: -55 - i * 8 },
-                    { translateY: -30 - i * 22 },
+                    { translateX: -55 - i * 10 },
+                    { translateY: -30 - i * 24 },
                   ],
                 }]}>
                   <View style={styles.demoFanDot} />
@@ -235,10 +235,16 @@ export function TutorialOverlay({ visible, onFinish, targets, userCC, onChangeCC
               ))}
             </Animated.View>
 
-            {/* トリガーボタン */}
+            {/* トリガーボタン（ラジアル） */}
             <View style={styles.demoTrigger}>
               <Ionicons name="options-outline" size={22} color="#E5E5EA" />
             </View>
+
+            {/* FAB「+」ボタン */}
+            <View style={styles.demoFab}>
+              <Ionicons name="add" size={28} color="#fff" />
+            </View>
+            <Text style={styles.demoFabLabel}>スポット登録</Text>
 
             {/* 指アイコン */}
             <Animated.View style={[styles.finger, {
@@ -360,6 +366,19 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
   },
   demoFanLabel: { color: '#ccc', fontSize: 10, fontWeight: '600' },
+  demoFab: {
+    position: 'absolute',
+    bottom: 70, right: 0,
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 6,
+  },
+  demoFabLabel: {
+    position: 'absolute',
+    bottom: 76, right: 58,
+    color: '#FF6B00', fontSize: 10, fontWeight: '700',
+  },
   finger: {
     position: 'absolute',
     bottom: 0, right: 8,

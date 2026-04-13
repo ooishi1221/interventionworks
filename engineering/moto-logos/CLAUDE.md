@@ -235,7 +235,7 @@ eas update --branch preview
 | **MyBikeScreen** | マイバイク管理 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
 | **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告・投票カウンター） |
-| **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理） |
+| **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理 + タップ詳細モーダル） |
 | **InquiryScreen** | お問い合わせフォーム（バグ報告・機能リクエスト・不正報告） |
 | **SettingsScreen** | 設定（通知ON/OFF・第三者同意・法的文書・アカウント削除・シードデータ投入） |
 | **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー + 第三者提供同意 |
@@ -248,6 +248,12 @@ eas update --branch preview
 | ライダー | RiderScreen | `person` |
 | お知らせ | NotificationsScreen | `notifications` |
 | 設定 | SettingsScreen（→ お問い合わせ・利用規約サブ画面） | `settings` |
+
+### マップ操作UI
+
+- **FAB「+」ボタン（左下）** — スポット登録専用。タップで即座に登録フォーム（ParkedScreen）を起動
+- **ラジアルメニュー（右下）** — 長押しで4項目の扇形メニューが展開（現在地 / 最寄り / 更新 / 検索）。短押しでエリア再検索
+- **チュートリアル Step 3** — FAB「+」とラジアルメニューの両方をアニメーションで案内。「スポット登録は＋、地図操作は長押しメニュー」
 
 ---
 

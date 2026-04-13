@@ -1,6 +1,7 @@
 /**
  * NotificationsScreen — お知らせ一覧
  * Firestore announcements コレクションから取得 + ローカル既読管理
+ * カードタップで詳細モーダル表示 → 「閉じる」で閉じられる
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -11,6 +12,8 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,6 +51,7 @@ export function NotificationsScreen({ onBack }: Props) {
   const [items, setItems] = useState<Announcement[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Announcement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,7 +101,7 @@ export function NotificationsScreen({ onBack }: Props) {
 
   function formatDate(iso: string): string {
     const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   return (
@@ -127,15 +131,53 @@ export function NotificationsScreen({ onBack }: Props) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
-            <View style={[s.card, !readIds.has(item.id) && s.cardUnread]}>
+            <TouchableOpacity
+              style={[s.card, !readIds.has(item.id) && s.cardUnread]}
+              onPress={() => setSelected(item)}
+              activeOpacity={0.7}
+            >
               {!readIds.has(item.id) && <View style={s.unreadDot} />}
               <Text style={s.cardTitle}>{item.title}</Text>
-              <Text style={s.cardBody}>{item.body}</Text>
+              <Text style={s.cardBody} numberOfLines={2}>{item.body}</Text>
               <Text style={s.cardDate}>{formatDate(item.createdAt)}</Text>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
+
+      {/* ── お知らせ詳細モーダル ───────────────────────── */}
+      <Modal
+        visible={selected !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelected(null)}
+      >
+        <View style={s.modalOverlay}>
+          <SafeAreaView style={s.modalContainer}>
+            {/* ヘッダー */}
+            <View style={s.modalHeader}>
+              <Text style={s.modalHeaderTitle}>お知らせ</Text>
+              <TouchableOpacity onPress={() => setSelected(null)} style={s.modalCloseBtn}>
+                <Ionicons name="close" size={22} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={s.modalContent}>
+              <Text style={s.modalTitle}>{selected?.title}</Text>
+              <Text style={s.modalDate}>{selected ? formatDate(selected.createdAt) : ''}</Text>
+              <View style={s.modalDivider} />
+              <Text style={s.modalBody}>{selected?.body}</Text>
+            </ScrollView>
+
+            {/* 閉じるボタン */}
+            <View style={s.modalFooter}>
+              <TouchableOpacity style={s.closeButton} onPress={() => setSelected(null)} activeOpacity={0.8}>
+                <Text style={s.closeButtonText}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -153,4 +195,18 @@ const s = StyleSheet.create({
   cardTitle: { color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 6 },
   cardBody: { color: C.sub, fontSize: 14, lineHeight: 20 },
   cardDate: { color: C.sub, fontSize: 11, marginTop: 8 },
+  // モーダル
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalContainer: { flex: 1, backgroundColor: C.bg, marginTop: 60, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+  modalHeaderTitle: { color: C.text, fontSize: 17, fontWeight: '700' },
+  modalCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  modalContent: { padding: 20, paddingBottom: 40 },
+  modalTitle: { color: C.text, fontSize: 20, fontWeight: '800', lineHeight: 28 },
+  modalDate: { color: C.sub, fontSize: 12, marginTop: 8 },
+  modalDivider: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginVertical: 16 },
+  modalBody: { color: C.text, fontSize: 15, lineHeight: 24 },
+  modalFooter: { paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+  closeButton: { backgroundColor: C.card, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  closeButtonText: { color: C.text, fontSize: 16, fontWeight: '600' },
 });
