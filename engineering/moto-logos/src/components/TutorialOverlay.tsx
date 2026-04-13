@@ -27,10 +27,6 @@ import { useTutorial } from '../contexts/TutorialContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-export interface SpotlightRect {
-  x: number; y: number; w: number; h: number; borderRadius?: number;
-}
-
 // ─── CC 選択肢 ──────────────────────────────────────
 const CC_OPTIONS: { value: UserCC; label: string; color: string; icon: string }[] = [
   { value: 50,   label: '50cc',  color: '#8E8E93', icon: 'moped' },
@@ -62,7 +58,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
       // チュートリアル開始
       tutorial.startTutorial();
     }
-  }, [visible]);
+  }, [visible, tutorial]);
 
   useEffect(() => {
     if (showOverlay) {
@@ -127,7 +123,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
 
             <View style={{ height: 24 }} />
 
-            <Text style={styles.ccLabel}>あなたのバイクは？</Text>
+            <Text style={styles.ccLabel}>探したい排気量のバイクは？</Text>
             <View style={{ height: 10 }} />
             <View style={styles.ccRow}>
               {CC_OPTIONS.map((opt) => {

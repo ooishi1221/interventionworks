@@ -129,6 +129,58 @@ function SpotPin({ spot }: { spot: ParkingPin }) {
   );
 }
 
+// ── チュートリアル: ピカピカ通知バナー ──────────────────
+function TutorialFeedBanner() {
+  const tutorial = useTutorial();
+  const glowAnim = useRef(new RNAnimated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(glowAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+        RNAnimated.timing(glowAnim, { toValue: 0, duration: 400, useNativeDriver: false }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const borderColor = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255,159,10,0.3)', 'rgba(255,159,10,1)'],
+  });
+  const shadowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.2, 1],
+  });
+
+  return (
+    <RNAnimated.View
+      ref={(ref: any) => {
+        if (ref) setTimeout(() => {
+          ref.measureInWindow?.((x: number, y: number, w: number, h: number) => {
+            if (w > 0) tutorial.registerTarget('feed-notification', { x, y, w, h, borderRadius: 14 });
+          });
+        }, 200);
+      }}
+      style={[styles.tutorialFeedBanner, {
+        borderColor,
+        borderWidth: 2,
+        shadowColor: '#FF9F0A',
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 16,
+        shadowOpacity,
+      }]}
+    >
+      <Ionicons name="thumbs-down" size={14} color="#FF9F0A" />
+      <Text style={styles.tutorialFeedText}>
+        東京駅八重洲口バイク駐車場「満車」と報告されました
+      </Text>
+      <Text style={styles.tutorialFeedTime}>たった今</Text>
+    </RNAnimated.View>
+  );
+}
+
 /** App.tsx から ref 経由で呼び出せるメソッド */
 export interface MapScreenHandle {
   resetView: () => void;
@@ -539,8 +591,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     : allSpotsBase;
 
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
+  const prevTutorialActive = useRef(tutorial.active);
   useEffect(() => {
-    if (tutorial.isStep('explore-pillbar')) {
+    if (tutorial.isStep('explore-pillbar') || tutorial.isStep('scene-explore')) {
       mapRef.current?.animateToRegion({
         latitude: tutorial.dummySpot.latitude,
         longitude: tutorial.dummySpot.longitude,
@@ -550,18 +603,75 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
+  // チュートリアル終了後: GPS現在地に移動
+  useEffect(() => {
+    if (prevTutorialActive.current && !tutorial.active) {
+      // チュートリアルが終了した
+      setSelected(null);
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            setLocationGranted(true);
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+            mapRef.current?.animateToRegion({
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              latitudeDelta: 0.03,
+              longitudeDelta: 0.03,
+            }, 800);
+            // 現在地周辺のスポットをフェッチ
+            fetchSpotsForRegion({
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              latitudeDelta: 0.06,
+              longitudeDelta: 0.06,
+            });
+          }
+        } catch {}
+      })();
+    }
+    prevTutorialActive.current = tutorial.active;
+  }, [tutorial.active]);
+
   // チュートリアル: 詳細シート表示ステップで自動選択
   useEffect(() => {
-    if (tutorial.isStep('explore-detail') || tutorial.isStep('explore-nav')) {
+    if (tutorial.isStep('explore-detail-badges') || tutorial.isStep('explore-detail-freshness') || tutorial.isStep('explore-detail-reviews') || tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
     }
     if (tutorial.isStep('explore-close-sheet')) {
       setSelected(null);
     }
+    if (tutorial.isStep('explore-search-show')) {
+      // 自動入力: 東京駅八重洲口バイク置き場
+      Keyboard.dismiss();
+      setSearchFocused(false);
+      setTimeout(() => {
+        setSearchText('東京駅八重洲口バイク置き場');
+        setSearchResultMsg('1件の駐輪場が近くにあります');
+        setTimeout(() => setSearchResultMsg(null), 4000);
+      }, 300);
+    }
+    if (tutorial.isStep('explore-search-result')) {
+      // 検索バーを閉じてダミースポットの詳細を表示
+      setSearchVisible(false);
+      setSearchFocused(false);
+      setSearchText('');
+      Keyboard.dismiss();
+      setSelected(tutorial.dummySpot);
+      mapRef.current?.animateToRegion({
+        latitude: tutorial.dummySpot.latitude,
+        longitude: tutorial.dummySpot.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 600);
+    }
     if (tutorial.isStep('explore-search-done')) {
       setSearchVisible(false);
       setSearchFocused(false);
       setSearchText('');
+      setSelected(null);
       Keyboard.dismiss();
     }
   }, [tutorial.active, tutorial.stepIndex]);
@@ -737,6 +847,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
       {/* ── ライブフィード（上部） ────────────────────── */}
       {!selected && !searchFocused && liveFeedEnabled && <LiveFeed />}
+
+      {/* ── チュートリアル: ダメだった報告後のフィード通知（ピカピカ） */}
+      {tutorial.isStep('report-bad-done') && <TutorialFeedBanner />}
 
       {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
       {!selected && !searchFocused && (
@@ -1053,4 +1166,23 @@ const styles = StyleSheet.create({
   emptyTitle: { color: '#F2F2F7', fontSize: 15, fontWeight: '700', textAlign: 'center' },
   emptySubtitle: { color: '#8E8E93', fontSize: 13, textAlign: 'center', lineHeight: 20 },
   emptyDismissHint: { color: '#636366', fontSize: 11, marginTop: 4 },
+
+  // ── チュートリアル: ダメだった後の通知バナー ──────
+  tutorialFeedBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 36,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(28,28,30,0.95)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    zIndex: 20,
+    elevation: 10,
+  },
+  tutorialFeedText: { flex: 1, color: '#F2F2F7', fontSize: 13, fontWeight: '600' },
+  tutorialFeedTime: { color: '#636366', fontSize: 11 },
 });

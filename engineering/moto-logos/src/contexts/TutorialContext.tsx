@@ -6,7 +6,6 @@
  * ユーザーの操作完了を advanceTutorial() で報告する。
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions } from 'react-native';
 import { ParkingPin } from '../types';
 
 // ─── ステップ定義 ──────────────────────────────────────
@@ -53,15 +52,29 @@ export const STEPS: StepDef[] = [
   {
     id: 'explore-pillbar',
     phase: 'explore',
-    instruction: 'ここにスポットが表示されます\n1番をタップしてみましょう',
+    instruction: 'ここに最寄りのスポットが表示されます\n1番をタップしてみましょう',
     target: 'pillbar',
     waitFor: 'tap-target',
   },
   {
-    id: 'explore-detail',
+    id: 'explore-detail-badges',
     phase: 'explore',
-    instruction: '駐車場の詳細情報が見られます\n住所・料金・みんなの報告をチェック',
-    target: null,
+    instruction: '排気量・有料無料・台数などが\n確認できます',
+    target: 'detail-badges',
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'explore-detail-freshness',
+    phase: 'explore',
+    instruction: 'ライダーが報告をすると\n情報の鮮度が上がります',
+    target: 'detail-freshness',
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'explore-detail-reviews',
+    phase: 'explore',
+    instruction: 'みんなの口コミも見られます',
+    target: 'detail-reviews',
     waitFor: 'tap-anywhere',
   },
   {
@@ -89,7 +102,14 @@ export const STEPS: StepDef[] = [
   {
     id: 'explore-search-show',
     phase: 'explore',
-    instruction: 'ここに場所名を入力して検索できます',
+    instruction: '場所名を入力して検索できます',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'explore-search-result',
+    phase: 'explore',
+    instruction: 'このように検索して\n詳細情報を確認できます',
     target: null,
     waitFor: 'tap-anywhere',
   },
@@ -129,6 +149,13 @@ export const STEPS: StepDef[] = [
     waitFor: 'tap-target',
   },
   {
+    id: 'report-good-thanks',
+    phase: 'report',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-target',
+  },
+  {
     id: 'report-good-done',
     phase: 'report',
     instruction: '簡単ですよね',
@@ -152,8 +179,8 @@ export const STEPS: StepDef[] = [
   {
     id: 'report-bad-done',
     phase: 'report',
-    instruction: 'これで次のライダーが助かります！',
-    target: null,
+    instruction: 'このようにライダー全員に通知されます\n次のライダーが助かります！',
+    target: 'feed-notification',
     waitFor: 'tap-anywhere',
   },
 
@@ -274,8 +301,13 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     return targets.current[id] ?? null;
   }, []);
 
-  // ステップ進行
+  // ステップ進行（ダブルタップ防止付き）
+  const advancingRef = useRef(false);
   const advanceTutorial = useCallback(() => {
+    if (advancingRef.current) return; // ダブルタップ防止
+    advancingRef.current = true;
+    setTimeout(() => { advancingRef.current = false; }, 300);
+
     if (autoTimerRef.current) {
       clearTimeout(autoTimerRef.current);
       autoTimerRef.current = null;
@@ -318,10 +350,6 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     return active && currentStep.id === id;
   }, [active, currentStep.id]);
 
-  /** ダミースポットの位置を更新（ユーザー位置が取れたら） */
-  const updateDummyLocation = useCallback((lat: number, lon: number) => {
-    setDummySpot(createNearbyDummySpot(lat, lon));
-  }, []);
 
   const value = useMemo<TutorialContextValue>(() => ({
     active,

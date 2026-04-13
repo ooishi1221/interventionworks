@@ -28,6 +28,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
+import { Asset } from 'expo-asset';
 import { useTutorial } from '../contexts/TutorialContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -118,6 +119,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
   const tutorial = useTutorial();
   const navBtnRef = useRef<View>(null);
   const sheetRef = useRef<View>(null);
+  const badgeRowRef = useRef<View>(null);
+  const freshnessRef = useRef<View>(null);
+  const reviewsRef = useRef<View>(null);
 
   // チュートリアル: ターゲット位置登録
   useEffect(() => {
@@ -129,8 +133,18 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       sheetRef.current?.measureInWindow((x, y, w, h) => {
         if (w > 0) tutorial.registerTarget('detail-sheet', { x, y, w, h, borderRadius: 20 });
       });
+      badgeRowRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('detail-badges', { x, y, w, h, borderRadius: 8 });
+      });
+      freshnessRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('detail-freshness', { x, y, w, h, borderRadius: 10 });
+      });
+      reviewsRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('detail-reviews', { x, y, w, h, borderRadius: 12 });
+      });
     };
     setTimeout(measure, 400);
+    setTimeout(measure, 900);
   }, [tutorial.active, tutorial.stepIndex]);
 
   // 下スワイプで閉じるアニメーション
@@ -186,12 +200,15 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
   useEffect(() => {
     if (tutorial.active && spot.id === '_tutorial_spot_') {
-      // チュートリアル: ダミーレビューを表示
-      setReports([
-        { id: 901, spotId: spot.id, source: 'seed', score: 1, comment: '広くて停めやすい！', photoUri: null, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: 902, spotId: spot.id, source: 'seed', score: 1, comment: null, photoUri: null, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: 903, spotId: spot.id, source: 'seed', score: 0, comment: '[full] 土日は満車多い', photoUri: null, createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() },
-      ]);
+      // チュートリアル: ダミーレビュー + 写真を表示
+      const asset = Asset.fromModule(require('../../assets/tutorial-parking.jpg'));
+      asset.downloadAsync().then(() => {
+        setReports([
+          { id: 901, spotId: spot.id, source: 'seed', score: 1, comment: '広くて停めやすい！', photoUri: asset.localUri ?? asset.uri, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+          { id: 902, spotId: spot.id, source: 'seed', score: 1, comment: null, photoUri: null, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+          { id: 903, spotId: spot.id, source: 'seed', score: 0, comment: '[full] 土日は満車多い', photoUri: null, createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() },
+        ]);
+      });
       setAlreadyVoted(false);
       setReportsLoading(false);
       return;
@@ -522,7 +539,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             </View>
 
             {/* バッジ */}
-            <View style={styles.badgeRow}>
+            <View ref={badgeRowRef} style={styles.badgeRow}>
               {spot.source === 'user' && (
                 <View style={[styles.badge, { backgroundColor: C.purple }]}>
                   <Text style={styles.badgeText}>ユーザー登録</Text>
@@ -551,7 +568,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
-              <FreshnessBadge updatedAt={spot.updatedAt} />
+              <View ref={freshnessRef}>
+                <FreshnessBadge updatedAt={spot.updatedAt} />
+              </View>
             </View>
 
             {/* 写真ギャラリー */}
@@ -592,7 +611,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             {reportsLoading ? (
               <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} />
             ) : reports.length > 0 ? (
-              <View style={styles.reportsSection}>
+              <View ref={reviewsRef} style={styles.reportsSection}>
                 <Text style={styles.sectionLabel}>みんなの報告</Text>
                 {reports.map((r) => (
                   <ReportCard key={r.firestoreId ?? String(r.id)} report={r} onPhotoTap={setFullPhoto} />
@@ -613,8 +632,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                   // チュートリアル: 実リンクを開かず説明テキストで進む
                   Alert.alert(
                     '案内開始',
-                    'GoogleマップやYahoo!カーナビが開いて\nスポットまでナビしてくれるよ',
+                    'GoogleマップやYahoo!カーナビに遷移します',
                     [{ text: 'OK', onPress: () => tutorial.advanceTutorial() }],
+                    { cancelable: false },
                   );
                   return;
                 }

@@ -28,21 +28,39 @@ const PADDING = 8; // ターゲット周囲のパディング
 export function TutorialGuide() {
   const { active, currentStep, stepIndex, getTarget, advanceTutorial, phase } = useTutorial();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const contentAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
+  const prevStepRef = useRef(stepIndex);
 
-  // フェードイン
+  // ステップ切替: フェードアウト → フェードイン
   useEffect(() => {
     if (active && phase !== 'setup' && phase !== 'complete') {
-      fadeAnim.setValue(0);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      const isScene = !!currentStep.sceneTitle;
+      const isFirstStep = prevStepRef.current === 0 && stepIndex > 0;
+      prevStepRef.current = stepIndex;
 
-      // パルスグロー
-      pulseAnim.setValue(0.4);
+      if (isScene || isFirstStep) {
+        // シーンカード / 最初のステップ: ゆっくりフェードイン
+        fadeAnim.setValue(0);
+        contentAnim.setValue(0);
+        Animated.sequence([
+          Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(contentAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        ]).start();
+      } else {
+        // 通常ステップ: コンテンツだけクロスフェード（背景暗幕は維持）
+        fadeAnim.setValue(1);
+        contentAnim.setValue(0);
+        Animated.timing(contentAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      }
+
+      // パルスグロー（ピカピカ — 常に光ってる＋脈動）
+      pulseAnim.setValue(0.5);
       pulseRef.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 0.4, duration: 1000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.5, duration: 500, useNativeDriver: true }),
         ])
       );
       pulseRef.current.start();
@@ -55,6 +73,8 @@ export function TutorialGuide() {
   if (!active || phase === 'setup' || phase === 'complete') return null;
   // auto ステップは何も表示しない（タイマーで自動遷移）
   if (currentStep.waitFor === 'auto') return null;
+  // ありがとう画面（写真/OK選択）: オーバーレイなし
+  if (currentStep.id === 'report-good-thanks') return null;
 
   const target = currentStep.target ? getTarget(currentStep.target) : null;
 
@@ -70,23 +90,26 @@ export function TutorialGuide() {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim }]}>
+          <Animated.View style={{ alignItems: 'center', gap: 16, opacity: contentAnim }}>
           <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as any} size={48} color="#FF9F0A" />
           <Text style={styles.sceneTitle}>{currentStep.sceneTitle}</Text>
           <View style={styles.tapHintRow}>
             <Text style={styles.tapHint}>タップして次へ</Text>
             <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
           </View>
+          </Animated.View>
         </Animated.View>
       </TouchableWithoutFeedback>
     );
   }
 
-  // ── tap-target + ターゲット未測定: タッチ貫通（コンポーネントがadvance）
+  // ── tap-target でターゲット未取得（定義なし or 測定未完了）: 完全タッチ貫通
+  //    pointerEvents="none" で全タッチを下のUIに通す。コンポーネント側がadvance
   if (!target && currentStep.waitFor === 'tap-target') {
     return (
-      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="box-none">
+      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none">
         {currentStep.instruction ? (
-          <View style={styles.floatingCard} pointerEvents="none">
+          <View style={styles.floatingCard}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           </View>
         ) : null}
@@ -128,12 +151,15 @@ export function TutorialGuide() {
   const SAFE_BOTTOM = Platform.OS === 'ios' ? 100 : 80;
   const spaceAbove = hole.y - SAFE_TOP;
   const spaceBelow = SCREEN_H - SAFE_BOTTOM - (hole.y + hole.h);
-  const instructionAbove = spaceAbove > spaceBelow;
-  // 上: 空きスペースの中央 / 下: ターゲット直下
-  const CARD_HEIGHT_EST = 80; // 指示カードの推定高さ
+  // 上の空きスペースが十分（200px以上）なら上、そうでなければ下
+  const instructionAbove = spaceAbove > 200 && spaceAbove > spaceBelow;
+  const CARD_HEIGHT_EST = 90;
+  const GAP = 24;
+  // 下半分のスペースの中央に配置（ターゲットの下）
+  const belowCenter = hole.y + hole.h + (SCREEN_H - SAFE_BOTTOM - hole.y - hole.h) / 2 - CARD_HEIGHT_EST / 2;
   const instructionTop = instructionAbove
-    ? Math.max(SAFE_TOP, hole.y / 2 - CARD_HEIGHT_EST / 2)
-    : hole.y + hole.h + 16;
+    ? Math.max(SAFE_TOP, hole.y - CARD_HEIGHT_EST - GAP)
+    : Math.max(hole.y + hole.h + GAP, Math.min(belowCenter, SCREEN_H - SAFE_BOTTOM - CARD_HEIGHT_EST));
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]} pointerEvents="box-none">
@@ -179,9 +205,9 @@ export function TutorialGuide() {
 
       {/* ── 指示テキスト ─────────────────────────────── */}
       {currentStep.instruction ? (
-        <View style={[
+        <Animated.View style={[
           styles.instructionCard,
-          { top: instructionTop },
+          { top: instructionTop, opacity: contentAnim },
         ]}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
@@ -190,7 +216,7 @@ export function TutorialGuide() {
               <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
             </View>
           )}
-        </View>
+        </Animated.View>
       ) : null}
     </Animated.View>
   );
@@ -227,12 +253,18 @@ const styles = StyleSheet.create({
   },
   glowBorder: {
     position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#0A84FF',
+    borderWidth: 3,
+    borderColor: '#FF9F0A',
+    shadowColor: '#FF9F0A',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 20,
+    shadowOpacity: 1,
+    elevation: 12,
+    backgroundColor: 'rgba(255,159,10,0.08)',
   },
   floatingCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 70 : 50,
+    top: '35%',
     left: 20,
     right: 20,
     alignItems: 'center',

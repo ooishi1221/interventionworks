@@ -96,6 +96,8 @@ export function ProximityContextCard({
 
   // アニメーション
   const slideAnim = useRef(new Animated.Value(200)).current; // 下からスライドイン
+  const okGlowAnim = useRef(new Animated.Value(0)).current;
+  const okGlowRef = useRef<Animated.CompositeAnimation | null>(null);
   const cardRef = useRef<View>(null);
   const goodBtnRef = useRef<View>(null);
   const badBtnRef = useRef<View>(null);
@@ -107,7 +109,9 @@ export function ProximityContextCard({
     ? { kind: 'nearby', nearest: { spot: tutorial.dummySpot, distanceM: 12 } }
     : proximityState;
 
-  const visible = effectiveState.kind !== 'normal';
+  // report-good-done/scene steps: カード非表示
+  const tutorialHideCard = tutorial.isStep('report-good-done') || (tutorial.active && !!tutorial.currentStep.sceneTitle);
+  const visible = effectiveState.kind !== 'normal' && !tutorialHideCard;
 
   // カード内部状態
   const [phase, setPhase] = useState<
@@ -128,6 +132,22 @@ export function ProximityContextCard({
       setPhase('initial');
     }
   }, [tutorial.stepIndex]);
+
+  // チュートリアル: OKボタンピカピカ
+  useEffect(() => {
+    if (tutorial.active && phase === 'thanks') {
+      okGlowAnim.setValue(0);
+      okGlowRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(okGlowAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+          Animated.timing(okGlowAnim, { toValue: 0, duration: 500, useNativeDriver: false }),
+        ])
+      );
+      okGlowRef.current.start();
+    } else {
+      okGlowRef.current?.stop();
+    }
+  }, [tutorial.active, phase]);
 
   // チュートリアル: ターゲット位置登録（onLayout + 繰り返しリトライ）
   const measureTargets = useCallback(() => {
@@ -179,7 +199,7 @@ export function ProximityContextCard({
     if (tutorial.isStep('report-good')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPhase('thanks');
-      tutorial.advanceTutorial(); // → report-good-done
+      tutorial.advanceTutorial(); // → report-good-thanks（オーバーレイなし）
       return;
     }
     if (!nearbySpot || submitting) return;
@@ -205,10 +225,17 @@ export function ProximityContextCard({
       captureError(e, { context: 'proximity_report_good' });
     }
     setSubmitting(false);
-  }, [nearbySpot, user, submitting, onSpotUpdated]);
+  }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
 
-  // ── 写真パシャッ（停められた後のワンタップ写真） ────
+  // ── 写真投稿（停められた後のワンタップ写真） ────────
   const handleSnapPhoto = useCallback(async () => {
+    // チュートリアル: ダミー画像で投稿完了演出
+    if (tutorial.isStep('report-good-thanks')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPhase('initial');
+      tutorial.advanceTutorial(); // → report-good-done
+      return;
+    }
     if (!reportedSpotId) return;
     let userId = user?.userId;
     if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
@@ -238,12 +265,13 @@ export function ProximityContextCard({
     }
     // 写真撮っても撮らなくても閉じる
     setPhase('initial');
-  }, [reportedSpotId, user]);
+  }, [reportedSpotId, user, tutorial]);
 
   // ── 写真スキップ（ありがとうだけで閉じる） ──────────
   const dismissThanks = useCallback(() => {
     setPhase('initial');
-  }, []);
+    if (tutorial.isStep('report-good-thanks')) tutorial.advanceTutorial();
+  }, [tutorial]);
 
   // ── 報告: ダメだった → 理由選択表示 ────────────────
   const handleBad = useCallback(() => {
@@ -290,7 +318,7 @@ export function ProximityContextCard({
       captureError(e, { context: 'proximity_report_bad' });
     }
     setSubmitting(false);
-  }, [nearbySpot, user, submitting, onSpotUpdated]);
+  }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
 
   // ── 「他を探す」表示 ────────────────────────────────
   const showAlternatives = useCallback(() => {
@@ -385,13 +413,18 @@ export function ProximityContextCard({
           </>
         )}
 
-        {/* ── ありがとう + 写真パシャッ ─────────────────── */}
+        {/* ── ありがとう + 写真投稿 ──────────────────────── */}
         {phase === 'thanks' && (
           <View>
             <View style={styles.thanksWrap}>
               <Ionicons name="checkmark-circle" size={28} color={C.green} />
               <Text style={styles.thanksText}>ありがとう！</Text>
             </View>
+            {tutorial.active && (
+              <Text style={{ color: '#FF9F0A', fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 8 }}>
+                写真も投稿できます。OKをタップして次へ
+              </Text>
+            )}
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.snapBtn]}
@@ -399,14 +432,32 @@ export function ProximityContextCard({
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera" size={22} color="#fff" />
-                <Text style={styles.actionText}>パシャッも残す</Text>
+                <Text style={styles.actionText}>写真も投稿する</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.skipBtn]}
                 onPress={dismissThanks}
                 activeOpacity={0.8}
               >
-                <Text style={styles.skipText}>OK</Text>
+                {tutorial.active && (
+                  <Animated.View
+                    style={{
+                      ...StyleSheet.absoluteFillObject,
+                      borderRadius: 14,
+                      borderWidth: 3,
+                      borderColor: okGlowAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
+                      }),
+                      shadowColor: '#FF9F0A',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowRadius: 14,
+                      shadowOpacity: okGlowAnim,
+                    }}
+                    pointerEvents="none"
+                  />
+                )}
+                <Text style={[styles.skipText, tutorial.active && { color: '#FF9F0A', fontWeight: '700' }]}>OK</Text>
               </TouchableOpacity>
             </View>
           </View>
