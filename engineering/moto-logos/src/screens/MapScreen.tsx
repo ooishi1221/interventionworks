@@ -160,6 +160,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [searching, setSearching]             = useState(false);
   const [searchResultMsg, setSearchResultMsg] = useState<string | null>(null);
 
+  // ── ライブフィード設定 ──────────────────────────────
+  const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
+  useEffect(() => {
+    AsyncStorage.getItem('moto_logos_live_feed').then((v) => setLiveFeedEnabled(v !== 'false'));
+  }, []);
+
   // ── FAB コーチマーク ────────────────────────────────
   const [showCoach, setShowCoach] = useState(false);
   const fabPulse = useRef(new RNAnimated.Value(1)).current;
@@ -684,7 +690,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── ライブフィード（上部） ────────────────────── */}
-      {!selected && !searchFocused && <LiveFeed />}
+      {!selected && !searchFocused && liveFeedEnabled && <LiveFeed />}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
       {!searchFocused && !selected && showCoach && (
