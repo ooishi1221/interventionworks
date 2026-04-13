@@ -63,7 +63,7 @@ src/
 ├── contexts/       # React Context（UserContext — ユーザー識別）
 ├── firebase/       # Firestore/Storage 初期化・CRUD・型定義
 ├── db/             # SQLite スキーマ・CRUD
-├── hooks/          # カスタムフック（useDatabase）
+├── hooks/          # カスタムフック（useDatabase, useProximityState）
 ├── utils/          # ユーティリティ（geohash, image-upload, ng-filter, sentry）
 ├── constants/      # テーマ・地図スタイル
 ├── types/          # TypeScript 型定義
@@ -144,6 +144,19 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - AsyncStorage `vote_{spotId}` で重複報告を防止
 - 報告データは Firestore reviews コレクションに保存（score: 1=停められた, 0=ダメだった）
 - 旧星レビュー（score 2-5）は「口コミ」ラベルで後方互換表示
+
+### 近接コンテキストカード（#90）
+
+- 現在地と最寄りスポットの距離で3状態を自動判定し、地図下部にカードを表示
+- **ニアバイ（≤50m）**: 「停められた👍 / ダメだった👎」の1タップ報告カード
+  - 「停められた」→ `reportSpotGood` + review 保存 → 「ありがとう！」→ 2秒で消滅
+  - 「ダメだった」→ 理由5択（満車/閉鎖/料金/CC/その他）→ 報告後「他を探す」リスト表示
+- **スポットなし（表示圏内0件）**: 「登録する」（FABと同じフロー）/ 「他を探す」
+- **通常（上記以外）**: カード非表示
+- クールダウン: AsyncStorage `lastReport_{spotId}` で同一スポット24h以内は抑制
+- GPS監視: `Location.watchPositionAsync`（5秒/10m間隔）
+- SpotDetailSheet表示中・検索フォーカス中はカード非表示
+- 実装: `useProximityState` フック（`src/hooks/`）+ `ProximityContextCard` コンポーネント（`src/components/`）
 
 ### 鮮度カラー（地図ピン）
 
@@ -233,12 +246,13 @@ eas update --branch preview
 
 | 画面 | 概要 |
 |------|------|
-| **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート。ライブフィード表示 |
+| **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート。ライブフィード・近接コンテキストカード表示 |
 | **RiderScreen** | 貢献ダッシュボード（発見/更新の2軸）+ 活動タイムライン |
 | **MyBikeScreen** | 愛車プロフィール（CC・メーカー・車種・年式・カラー・写真・ひとこと）→ Firestore同期 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
 | **SpotDetailSheet** | 情報ゾーン（上スクロール）+ アクションゾーン（下固定: 案内・報告・シェア） |
 | **LiveFeed** | マップ上部のプッシュ通知風ティッカー（ライダーの活動をリアルタイム表示） |
+| **ProximityContextCard** | 現在地ベースの自動アクション提示カード（≤50mでニアバイ報告、スポットなしで登録誘導） |
 | **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理 + タップ詳細モーダル） |
 | **InquiryScreen** | お問い合わせフォーム（バグ報告・機能リクエスト・不正報告） |
 | **SettingsScreen** | 設定（通知ON/OFF・ライブフィードON/OFF・法的文書・アカウント削除） |
@@ -258,7 +272,8 @@ eas update --branch preview
 - **FAB「+」ボタン（右下）** — スポット登録。タップ → カメラ → 撮影 → 即登録（写真1枚で完了、フォーム不要）
 - **ラジアルメニュー（右下）** — 長押しで4項目の扇形メニューが展開（現在地 / 最寄り / 更新 / 検索）。短押しでエリア再検索
 - **ライブフィード（上部）** — プッシュ通知風にライダーの活動が流れる。設定からON/OFF可能
-- スポット詳細シート表示中はFAB・ラジアルメニューを非表示
+- **近接コンテキストカード（下部）** — 現在地と最寄りスポットの距離で自動表示。≤50mで「停められた👍/ダメだった👎」、スポット0件で「登録する/他を探す」。24hクールダウン付き
+- スポット詳細シート表示中はFAB・ラジアルメニュー・近接カードを非表示
 
 ---
 

@@ -31,6 +31,8 @@ import { RadialMenu } from '../components/RadialMenu';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { LiveFeed } from '../components/LiveFeed';
+import { useProximityState } from '../hooks/useProximityState';
+import { ProximityContextCard } from '../components/ProximityContextCard';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -154,6 +156,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [locationDenied, setLocationDenied]   = useState(false);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
+  // ── 近接コンテキストカード (#90) ────────────────────
+  const proximityEnabled = !selected && locationGranted;
+  const { state: proximityState, getNearbyAlternatives } = useProximityState({
+    spots: allSpotsRaw,
+    enabled: proximityEnabled,
+  });
+
   // ── 検索 ──────────────────────────────────────────────
   const [searchVisible, setSearchVisible]     = useState(false); // ラジアルから開閉
   const [searchText, setSearchText]           = useState('');
@@ -214,6 +223,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     lastFetchRegionRef.current = region;
     return fetched;
   }, []);
+
+  // 報告後に現在リージョンのスポットを再取得して鮮度を反映
+  const handleProximitySpotUpdated = useCallback(() => {
+    if (lastFetchRegionRef.current) {
+      fetchSpotsForRegion(lastFetchRegionRef.current);
+    }
+  }, [fetchSpotsForRegion]);
 
   // refreshTrigger 変化時 → 全置換で再取得（削除されたスポットもマップから消える）
   const prevTrigger = useRef(refreshTrigger);
@@ -691,6 +707,16 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
       {/* ── ライブフィード（上部） ────────────────────── */}
       {!selected && !searchFocused && liveFeedEnabled && <LiveFeed />}
+
+      {/* ── 近接コンテキストカード (#90) ─────────────────── */}
+      {!selected && !searchFocused && (
+        <ProximityContextCard
+          proximityState={proximityState}
+          getNearbyAlternatives={getNearbyAlternatives}
+          onQuickReport={() => { dismissCoach(); handleQuickReport(); }}
+          onSpotUpdated={handleProximitySpotUpdated}
+        />
+      )}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
       {!searchFocused && !selected && showCoach && (
