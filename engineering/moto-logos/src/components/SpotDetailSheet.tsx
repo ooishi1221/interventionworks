@@ -1,9 +1,9 @@
 /**
- * SpotDetailSheet v2 — 情報ゾーン / アクションゾーン分離 + あってた/ちがってた報告
+ * SpotDetailSheet v2 — 情報ゾーン / アクションゾーン分離 + 停められた/停められなかった報告
  *
  * 上: 情報ゾーン（スクロール） — 名称・バッジ・写真・住所・料金・過去の報告
  * 下: アクションゾーン（固定） — 案内開始・報告する・シェア
- * 星評価廃止 → 「あってた/ちがってた」で情報の正確さを報告
+ * 星評価廃止 → 「停められた/停められなかった」で体験を共有
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -215,11 +215,20 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     ]);
   };
 
-  // ── 報告: 写真ピッカー ────────────────────────────────
+  // ── 報告: 写真ピッカー（カメラ非対応時はライブラリ） ───
   const pickReportPhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('カメラへのアクセスが必要です'); return; }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+    let result: ImagePicker.ImagePickerResult | null = null;
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status === 'granted') {
+        result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+      }
+    } catch {}
+    if (!result) {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
+      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+    }
     if (!result.canceled) setReportPhoto(result.assets[0].uri);
   };
 
@@ -246,12 +255,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         await reportSpotClosed(spotId).catch((e) => captureError(e, { context: 'report_closed' }));
       }
 
-      // レビューとして保存（score: 1=あってた, 0=ちがってた）
+      // レビューとして保存（score: 1=停められた, 0=停められなかった）
       await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined);
 
       // ローカル記録
       AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
-      logActivityLocal('report', `${spot.name}を${matched ? 'あってた' : 'ちがってた'}報告`);
+      logActivityLocal('report', `${spot.name}を${matched ? '停められた' : '停められなかった'}報告`);
       incrementStat('reports');
 
       Haptics.notificationAsync(matched
@@ -306,7 +315,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         </Modal>
       )}
 
-      {/* ── 報告モーダル（あってた/ちがってた） ──────── */}
+      {/* ── 報告モーダル（停められた/停められなかった） ── */}
       <Modal
         visible={reportModalOpen}
         animationType="slide"
@@ -314,11 +323,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         onRequestClose={() => { setReportModalOpen(false); resetReportModal(); }}
       >
         <View style={styles.reportOverlay}>
+          <TouchableOpacity style={styles.reportOverlayTap} activeOpacity={1} onPress={() => { setReportModalOpen(false); resetReportModal(); }} />
           <View style={styles.reportSheet}>
-            {/* ステップ1: あってた？ */}
+            {/* ステップ1: 停められた？ */}
             {reportStep === 'ask' && (
               <View style={styles.reportCenter}>
-                <Text style={styles.reportQuestion}>この情報あってた？</Text>
+                <Text style={styles.reportQuestion}>停められた？</Text>
                 <Text style={styles.reportHint}>{spot.name}</Text>
                 <View style={{ height: 24 }} />
                 <View style={styles.reportChoiceRow}>
@@ -328,7 +338,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-up" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>あってた</Text>
+                    <Text style={styles.reportChoiceText}>停められた</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.reportUnmatchedBtn}
@@ -336,7 +346,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-down" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>ちがってた</Text>
+                    <Text style={styles.reportChoiceText}>ダメだった</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.reportCancelLink} onPress={() => { setReportModalOpen(false); resetReportModal(); }}>
@@ -345,12 +355,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               </View>
             )}
 
-            {/* ステップ2a: あってた → ひとこと + 写真（任意） */}
+            {/* ステップ2a: 停められた → ひとこと + 写真（任意） */}
             {reportStep === 'matched' && (
               <View style={styles.reportFormContent}>
                 <View style={styles.reportMatchedBadge}>
                   <Ionicons name="thumbs-up" size={20} color={C.green} />
-                  <Text style={[styles.reportBadgeText, { color: C.green }]}>あってた！</Text>
+                  <Text style={[styles.reportBadgeText, { color: C.green }]}>停められた！</Text>
                 </View>
                 <Text style={styles.reportFormHint}>ひとことや写真を残せます（任意）</Text>
                 <TextInput
@@ -391,12 +401,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               </View>
             )}
 
-            {/* ステップ2b: ちがってた → 何がちがった？ + ひとこと + 写真 */}
+            {/* ステップ2b: ダメだった → 何があった？ + ひとこと + 写真 */}
             {reportStep === 'unmatched' && (
               <ScrollView contentContainerStyle={styles.reportFormContent} keyboardShouldPersistTaps="handled">
                 <View style={styles.reportUnmatchedBadge}>
                   <Ionicons name="thumbs-down" size={20} color={C.orange} />
-                  <Text style={[styles.reportBadgeText, { color: C.orange }]}>何がちがった？</Text>
+                  <Text style={[styles.reportBadgeText, { color: C.orange }]}>何があった？</Text>
                 </View>
                 <View style={styles.correctionGrid}>
                   {CORRECTION_OPTIONS.map((opt) => (
@@ -452,11 +462,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         </View>
       </Modal>
 
-      {/* バックドロップ */}
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-
       {/* シート */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrapper}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrapper} pointerEvents="box-none">
         <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
           {/* スワイプハンドル */}
           <View {...swipePan.panHandlers} style={styles.handleArea}>
@@ -653,11 +660,25 @@ function PaymentSection({ spot }: { spot: ParkingPin }) {
 }
 
 // ─── 報告カード（旧レビューカード） ─────────────────────
+const CORRECTION_LABELS: Record<string, { label: string; color: string }> = {
+  full: { label: '満車だった', color: C.orange },
+  closed: { label: '閉鎖されていた', color: C.red },
+  wrong_price: { label: '料金が違う', color: C.orange },
+  wrong_cc: { label: '排気量制限が違う', color: C.orange },
+  other: { label: 'その他', color: C.sub },
+};
+
 function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: string) => void }) {
-  // score: 1=あってた, 0=ちがってた, 2-5=旧星レビュー
+  // score: 1=停められた, 0=停められなかった, 2-5=旧星レビュー
   const isMatched = report.score === 1;
   const isUnmatched = report.score === 0;
   const isLegacy = report.score >= 2;
+
+  // コメントから修正タイプを抽出
+  const correctionMatch = report.comment?.match(/^\[(full|closed|wrong_price|wrong_cc|other)\]\s*/);
+  const correctionKey = correctionMatch?.[1];
+  const correctionInfo = correctionKey ? CORRECTION_LABELS[correctionKey] : null;
+  const cleanComment = report.comment?.replace(/^\[(full|closed|wrong_price|wrong_cc|other)\]\s*/, '').trim();
 
   return (
     <View style={styles.reportCard}>
@@ -665,13 +686,15 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         {isMatched && (
           <View style={styles.reportCardBadge}>
             <Ionicons name="thumbs-up" size={13} color={C.green} />
-            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>あってた</Text>
+            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>停められた</Text>
           </View>
         )}
         {isUnmatched && (
           <View style={styles.reportCardBadge}>
-            <Ionicons name="thumbs-down" size={13} color={C.orange} />
-            <Text style={[styles.reportCardBadgeText, { color: C.orange }]}>ちがってた</Text>
+            <Ionicons name="thumbs-down" size={13} color={correctionInfo?.color ?? C.orange} />
+            <Text style={[styles.reportCardBadgeText, { color: correctionInfo?.color ?? C.orange }]}>
+              {correctionInfo?.label ?? '停められなかった'}
+            </Text>
           </View>
         )}
         {isLegacy && (
@@ -682,11 +705,9 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         )}
         <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
       </View>
-      {report.comment && (
-        <Text style={styles.reportCardComment}>
-          {report.comment.replace(/^\[(full|closed|wrong_price|wrong_cc|other)\]\s*/, '')}
-        </Text>
-      )}
+      {cleanComment ? (
+        <Text style={styles.reportCardComment}>{cleanComment}</Text>
+      ) : null}
       {report.photoUri && (
         <TouchableOpacity onPress={() => onPhotoTap(report.photoUri!)} activeOpacity={0.85} style={{ marginTop: 8 }}>
           <Image source={{ uri: report.photoUri }} style={styles.reportCardPhoto} />
@@ -773,7 +794,8 @@ const styles = StyleSheet.create({
   },
 
   // Report modal
-  reportOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  reportOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  reportOverlayTap: { flex: 1 },
   reportSheet: { backgroundColor: C.sheet, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: SCREEN_H * 0.7, minHeight: 300 },
   reportCenter: { alignItems: 'center', padding: 32 },
   reportQuestion: { color: C.text, fontSize: 22, fontWeight: '800' },

@@ -10,8 +10,6 @@ import {
   TextInput,
   Keyboard,
   Animated as RNAnimated,
-  Modal,
-  FlatList,
   Dimensions,
   Linking,
 } from 'react-native';
@@ -527,43 +525,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const allSpots = filterByCC(allSpotsRaw, userCC);
 
 
-  // ── 料金順リスト ──────────────────────────────────
-  const [priceListOpen, setPriceListOpen] = useState(false);
-
-  const sortedByPrice = (() => {
-    if (!priceListOpen) return [];
-    const loc = lastLocationRef.current;
-    return allSpots
-      .map((s) => ({
-        ...s,
-        dist: loc ? haversineMeters(loc.latitude, loc.longitude, s.latitude, s.longitude) : 0,
-      }))
-      .filter((s) => s.dist < 5000) // 5km以内
-      .sort((a, b) => {
-        // 無料が先、有料は安い順、料金不明は最後
-        const pa = a.isFree ? -1 : (a.pricePerHour ?? 99999);
-        const pb = b.isFree ? -1 : (b.pricePerHour ?? 99999);
-        if (pa !== pb) return pa - pb;
-        return a.dist - b.dist;
-      })
-      .slice(0, 20);
-  })();
-
-  // ── CC セレクター ──────────────────────────────────
-  const [ccOpen, setCcOpen] = useState(false);
-  const CC_OPTIONS: { value: UserCC; label: string; color: string; icon: string }[] = [
-    { value: 50,   label: '50cc',  color: '#8E8E93', icon: '原付' },
-    { value: 125,  label: '125cc', color: '#30D158', icon: '小型' },
-    { value: 400,  label: '400cc', color: '#0A84FF', icon: '中型' },
-    { value: null,  label: '大型',  color: '#FF9F0A', icon: '大型' },
-  ];
-  const ccMeta = CC_OPTIONS.find((o) => o.value === userCC) ?? CC_OPTIONS[3];
-  const selectCC = (cc: UserCC) => {
-    if (onChangeCC) onChangeCC(cc);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCcOpen(false);
-  };
-
   // ── キーボード追従アニメーション ───────────────────
   const [searchFocused, setSearchFocused] = useState(false);
   const kbOffset = useRef(new RNAnimated.Value(0)).current;
@@ -721,52 +682,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </View>
       )}
 
-      {/* ── CC セレクター（左下） ────────────────────── */}
-      {!searchFocused && (
-        <View style={styles.ccArea} pointerEvents="box-none">
-          {/* 展開パネル */}
-          {ccOpen && (
-            <View style={styles.ccPanel}>
-              {CC_OPTIONS.map((opt) => {
-                const isActive = userCC === opt.value;
-                return (
-                  <TouchableOpacity
-                    key={String(opt.value)}
-                    style={[styles.ccOption, isActive && { backgroundColor: `${opt.color}20`, borderColor: `${opt.color}66` }]}
-                    onPress={() => selectCC(opt.value)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.ccOptionDot, { backgroundColor: opt.color }]} />
-                    <Text style={[styles.ccOptionLabel, isActive && { color: opt.color, fontWeight: '800' }]}>{opt.label}</Text>
-                    {isActive && <Ionicons name="checkmark" size={16} color={opt.color} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-          {/* CC ボタン + ¥ ボタン */}
-          <View style={styles.ccRow}>
-            <TouchableOpacity
-              style={[styles.ccButton, { borderColor: `${ccMeta.color}55` }]}
-              onPress={() => { setCcOpen((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              activeOpacity={0.75}
-              onLayout={(e) => (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => onRegisterTutorialTarget?.('ccButton', { x, y, w, h, borderRadius: 14 }))}
-            >
-              <View style={[styles.ccButtonDot, { backgroundColor: ccMeta.color }]} />
-              <Text style={[styles.ccButtonText, { color: ccMeta.color }]}>{ccMeta.label}</Text>
-              <Ionicons name={ccOpen ? 'chevron-down' : 'chevron-up'} size={14} color={ccMeta.color} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.priceBtn}
-              onPress={() => { setPriceListOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.priceBtnText}>¥</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
       {!searchFocused && !selected && showCoach && (
         <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
@@ -844,60 +759,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       </RNAnimated.View>
       )}
 
-      {/* ── 料金順ボトムシート ────────────────────────── */}
-      <Modal
-        visible={priceListOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setPriceListOpen(false)}
-      >
-        <TouchableOpacity style={styles.priceOverlay} activeOpacity={1} onPress={() => setPriceListOpen(false)} />
-        <View style={styles.priceSheet}>
-          <View style={styles.priceHandle} />
-          <View style={styles.priceHeader}>
-            <Text style={styles.priceTitle}>近くの駐輪場（安い順・{ccMeta.label}対応）</Text>
-            <TouchableOpacity onPress={() => setPriceListOpen(false)}>
-              <Ionicons name="close-circle" size={24} color="#636366" />
-            </TouchableOpacity>
-          </View>
-          {sortedByPrice.length === 0 ? (
-            <View style={styles.priceEmpty}>
-              <Text style={styles.priceEmptyText}>周辺にスポットがありません</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={sortedByPrice}
-              keyExtractor={(s) => s.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.priceItem}
-                  onPress={() => {
-                    setPriceListOpen(false);
-                    mapRef.current?.animateToRegion({
-                      latitude: item.latitude, longitude: item.longitude,
-                      latitudeDelta: 0.005, longitudeDelta: 0.005,
-                    }, 600);
-                    setTimeout(() => setSelected(item), 700);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.priceDot, { backgroundColor: item.isFree ? '#30D158' : '#FF9F0A' }]} />
-                  <View style={styles.priceInfo}>
-                    <Text style={styles.priceName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.priceSub}>
-                      {item.isFree ? '無料' : item.pricePerHour ? `¥${item.pricePerHour}/h` : '有料'}
-                    </Text>
-                  </View>
-                  <Text style={styles.priceDist}>
-                    {item.dist < 1000 ? `${Math.round(item.dist)}m` : `${(item.dist / 1000).toFixed(1)}km`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-        </View>
-      </Modal>
-
       {/* ── 登録中インジケーター ───────────────────── */}
       {reportLoading && (
         <View style={styles.reportingOverlay} pointerEvents="none">
@@ -934,73 +795,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
     zIndex: 1,
   },
-
-  // ── CC セレクター（左下） ──────────────────────────
-  ccArea: {
-    position: 'absolute',
-    left: 14,
-    bottom: BOTTOM_BASE,
-    alignItems: 'flex-start',
-  },
-  ccRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  priceBtn: {
-    backgroundColor: 'rgba(28,28,30,0.94)',
-    width: 42, height: 42,
-    borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,159,10,0.4)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.45, shadowRadius: 8, elevation: 8,
-  },
-  priceBtnText: { color: '#FF9F0A', fontSize: 18, fontWeight: '800' },
-  ccButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(28,28,30,0.94)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  ccButtonDot: { width: 9, height: 9, borderRadius: 5 },
-  ccButtonText: { fontSize: 14, fontWeight: '800' },
-  ccPanel: {
-    backgroundColor: 'rgba(28,28,30,0.96)',
-    borderRadius: 14,
-    padding: 6,
-    marginBottom: 8,
-    minWidth: 140,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-    gap: 2,
-  },
-  ccOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  ccOptionDot: { width: 8, height: 8, borderRadius: 4 },
-  ccOptionLabel: { color: '#E5E5EA', fontSize: 14, fontWeight: '600', flex: 1 },
 
   // ── FAB「+」──────────────────────────────────────
   fabArea: {
@@ -1151,41 +945,6 @@ const styles = StyleSheet.create({
   clusterText: {
     color: '#fff', fontSize: 13, fontWeight: '800',
   },
-
-  // ── 料金順ボトムシート ──────────────────────────────
-  priceOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  priceSheet: {
-    backgroundColor: '#1C1C1E',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    maxHeight: SCREEN_H * 0.55,
-    paddingBottom: 30,
-  },
-  priceHandle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignSelf: 'center', marginTop: 10, marginBottom: 8,
-  },
-  priceHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  priceTitle: { color: '#F2F2F7', fontSize: 16, fontWeight: '700' },
-  priceEmpty: { alignItems: 'center', paddingVertical: 32 },
-  priceEmptyText: { color: '#636366', fontSize: 14 },
-  priceItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  priceDot: { width: 10, height: 10, borderRadius: 5 },
-  priceInfo: { flex: 1 },
-  priceName: { color: '#F2F2F7', fontSize: 14, fontWeight: '600' },
-  priceSub: { color: '#8E8E93', fontSize: 12, marginTop: 1 },
-  priceDist: { color: '#636366', fontSize: 13, fontWeight: '600' },
 
   // ── 登録中インジケーター ─────────────────────────────
   reportingOverlay: {
