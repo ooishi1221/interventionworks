@@ -27,12 +27,12 @@ import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } fr
 import { insertUserSpot, getUserRank } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
-import { RadialMenu } from '../components/RadialMenu';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
 import { ProximityContextCard } from '../components/ProximityContextCard';
+import { NearbySpotsList } from '../components/NearbySpotsList';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
 const JAPAN_CENTER: Region = {
@@ -429,17 +429,28 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   // ── 最後に変化完了した region を保持（再検索ボタン用）
   const currentRegionRef = useRef<Region>(JAPAN_CENTER);
 
-  // ── カメラ移動追跡 ─────────────────────────────────
+  // ── カメラ移動追跡 + エリア自動再検索 ──────────────
+  const autoFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleRegionChangeComplete = (region: Region) => {
     currentRegionRef.current = region;
-    if (!lastFetchRegionRef.current) lastFetchRegionRef.current = region;
+    if (!lastFetchRegionRef.current) { lastFetchRegionRef.current = region; return; }
+
+    // 前回取得リージョンから十分移動した場合のみ自動再検索（デバウンス 800ms）
+    if (autoFetchTimerRef.current) clearTimeout(autoFetchTimerRef.current);
+    autoFetchTimerRef.current = setTimeout(() => {
+      const prev = lastFetchRegionRef.current!;
+      const moved = haversineMeters(prev.latitude, prev.longitude, region.latitude, region.longitude);
+      // 表示範囲の30%以上移動したら再検索
+      const threshold = Math.max(region.latitudeDelta, region.longitudeDelta) * 111_000 * 0.3;
+      if (moved > threshold) {
+        fetchSpotsForRegion(region);
+      }
+    }, 800);
   };
 
-  // ── このエリアで再検索（ラジアルメニューから呼ばれる） ──
-  const handleResearch = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await fetchSpotsForRegion(currentRegionRef.current);
-  };
+  // ── FABメニュー ───────────────────────────────────────
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
 
   // ── クイックレポート「写真1枚で即登録」 ─────────────
   const [reportLoading, setReportLoading] = useState(false);
@@ -708,6 +719,20 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {/* ── ライブフィード（上部） ────────────────────── */}
       {!selected && !searchFocused && liveFeedEnabled && <LiveFeed />}
 
+      {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
+      {!selected && !searchFocused && (
+        <NearbySpotsList
+          alternatives={getNearbyAlternatives(undefined, 3)}
+          onSpotPress={(spot) => {
+            mapRef.current?.animateToRegion({
+              latitude: spot.latitude, longitude: spot.longitude,
+              latitudeDelta: 0.005, longitudeDelta: 0.005,
+            }, 800);
+            setTimeout(() => setSelected(spot), 900);
+          }}
+        />
+      )}
+
       {/* ── 近接コンテキストカード (#90) ─────────────────── */}
       {!selected && !searchFocused && (
         <ProximityContextCard
@@ -718,6 +743,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         />
       )}
 
+      {/* ── 現在地ボタン（右下） ─────────────────────────── */}
+      {!searchFocused && !selected && (
+        <TouchableOpacity
+          style={styles.locationBtn}
+          onPress={goToCurrentLocation}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="locate" size={22} color="#F2F2F7" />
+        </TouchableOpacity>
+      )}
+
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
       {!searchFocused && !selected && showCoach && (
         <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
@@ -726,38 +762,57 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </TouchableOpacity>
       )}
 
-      {/* ── FAB「+」スポット登録ボタン ───────────────── */}
+      {/* ── FABメニュー背景タップで閉じる ────────────────── */}
+      {fabMenuOpen && (
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={() => setFabMenuOpen(false)}
+        />
+      )}
+
+      {/* ── FAB オレンジボタン ─────────────────────────── */}
       {!searchFocused && !selected && (
         <View style={styles.fabArea} pointerEvents="box-none">
+          {/* FABメニュー（2択） */}
+          {fabMenuOpen && (
+            <View style={styles.fabMenu}>
+              <TouchableOpacity
+                style={styles.fabMenuItem}
+                onPress={() => {
+                  setFabMenuOpen(false);
+                  setSearchVisible(true);
+                  setSearchText('');
+                  setTimeout(() => searchInputRef.current?.focus(), 100);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="search" size={18} color="#F2F2F7" />
+                <Text style={styles.fabMenuText}>文字で探す</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.fabMenuItem}
+                onPress={() => {
+                  setFabMenuOpen(false);
+                  dismissCoach();
+                  handleQuickReport();
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="camera" size={18} color="#F2F2F7" />
+                <Text style={styles.fabMenuText}>場所を登録</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <RNAnimated.View style={{ transform: [{ scale: fabPulse }] }}>
             <TouchableOpacity
               style={styles.fab}
-              onPress={() => { dismissCoach(); handleQuickReport(); }}
+              onPress={() => { dismissCoach(); setFabMenuOpen((v) => !v); }}
               activeOpacity={0.8}
             >
-              <Ionicons name="add" size={34} color="#fff" />
+              <Ionicons name={fabMenuOpen ? 'close' : 'add'} size={34} color="#fff" />
             </TouchableOpacity>
           </RNAnimated.View>
-        </View>
-      )}
-
-      {/* ── 右下ラジアルメニュー ─────────────────────── */}
-      {!searchFocused && !selected && (
-        <View
-          style={styles.rightControls}
-          pointerEvents="box-none"
-          onLayout={(e) => (e.target as any).measureInWindow?.((x: number, y: number, w: number, h: number) => onRegisterTutorialTarget?.('radialMenu', { x, y, w, h, borderRadius: 28 }))}
-        >
-          <RadialMenu
-            onGoToNearest={goToNearestSpot}
-            onGoToCurrentLocation={goToCurrentLocation}
-            onResearchArea={handleResearch}
-            onOpenSearch={() => {
-              setSearchVisible(true);
-              setSearchText('');
-              setTimeout(() => searchInputRef.current?.focus(), 100);
-            }}
-          />
         </View>
       )}
 
@@ -832,11 +887,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // ── FAB「+」──────────────────────────────────────
+  // ── FAB オレンジボタン + メニュー ──────────────────
   fabArea: {
     position: 'absolute',
     right: 14,
-    bottom: BOTTOM_BASE + 56 + 14, // ラジアルメニューの上
+    bottom: BOTTOM_BASE + 10,
     alignItems: 'center',
     zIndex: 5,
   },
@@ -849,9 +904,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
   },
+  fabMenu: {
+    marginBottom: 10,
+    backgroundColor: 'rgba(28,28,30,0.96)',
+    borderRadius: 14,
+    paddingVertical: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
+    minWidth: 160,
+  },
+  fabMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  fabMenuText: {
+    color: '#F2F2F7',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   coachBubble: {
     position: 'absolute',
-    bottom: BOTTOM_BASE + 56 + 14 + 64 + 8, // FABの上
+    bottom: BOTTOM_BASE + 10 + 64 + 8, // FABの上
     right: 6,
     backgroundColor: 'rgba(28,28,30,0.96)',
     paddingHorizontal: 14, paddingVertical: 8,
@@ -875,20 +954,27 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,107,0,0.4)',
   },
 
-  // ── 右下ラジアル ──────────────────────────────────
-  rightControls: {
+  // ── 現在地ボタン ──────────────────────────────────
+  locationBtn: {
     position: 'absolute',
     right: 14,
-    bottom: BOTTOM_BASE,
-    alignItems: 'center',
-    overflow: 'visible',
+    bottom: BOTTOM_BASE + 10 + 64 + 14, // FABの上
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(28,28,30,0.94)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4, shadowRadius: 6, elevation: 6,
+    zIndex: 4,
   },
 
   // ── 検索バー（下部、キーボード追従） ──────────────
   searchRow: {
     position: 'absolute',
     left: 12,
-    right: 80,  // 右コントロールの分だけ空ける
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
