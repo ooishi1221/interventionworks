@@ -131,15 +131,19 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 新規スポットには必ず `geohash`（精度9）を付与する
 - Read 数を意識する。全件取得（`fetchAllSpots`）はマイグレーション期間のみ
 - `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
-- `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, rank）
+- `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, bike情報）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
 - **レビューは Firestore がマスター**。SQLite の reviews テーブルはマイグレーション用の読み取り専用レガシー
 
-### 投票フィードバック
+### 報告システム（停められた / ダメだった）
 
-- スポット報告（Good/Bad/Closed）は AsyncStorage `vote_{spotId}` で重複投票を防止
-- ボタンに累計カウンター表示（goodCount / badReportCount）
-- 報告済みスポットはボタンを無効化して「報告済みです」を表示
+- 星評価は廃止。「停められた👍 / ダメだった👎」の体験ベース二択
+- 「ダメだった」→ 理由選択（満車 / 閉鎖 / 料金違う / CC制限違う / その他）
+- ひとこと + 写真を任意で追加可能
+- 「停められた」報告 → `reportSpotGood` で鮮度（updatedAt）を更新
+- AsyncStorage `vote_{spotId}` で重複報告を防止
+- 報告データは Firestore reviews コレクションに保存（score: 1=停められた, 0=ダメだった）
+- 旧星レビュー（score 2-5）は「口コミ」ラベルで後方互換表示
 
 ### 鮮度カラー（地図ピン）
 
@@ -229,15 +233,15 @@ eas update --branch preview
 
 | 画面 | 概要 |
 |------|------|
-| **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート |
-| **RiderScreen** | ライダーダッシュボード。貢献統計6項目 |
-| **ParkedScreen** | スポット登録・編集フォーム |
-| **MyBikeScreen** | マイバイク管理 |
+| **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート。ライブフィード表示 |
+| **RiderScreen** | 貢献ダッシュボード（発見/更新の2軸）+ 活動タイムライン |
+| **MyBikeScreen** | 愛車プロフィール（CC・メーカー・車種・年式・カラー・写真・ひとこと）→ Firestore同期 |
 | **FavoritesScreen** | お気に入りリスト（並び替え・ピン留め対応） |
-| **SpotDetailSheet** | スポット詳細モーダル（レビュー・写真・報告・投票カウンター） |
+| **SpotDetailSheet** | 情報ゾーン（上スクロール）+ アクションゾーン（下固定: 案内・報告・シェア） |
+| **LiveFeed** | マップ上部のプッシュ通知風ティッカー（ライダーの活動をリアルタイム表示） |
 | **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理 + タップ詳細モーダル） |
 | **InquiryScreen** | お問い合わせフォーム（バグ報告・機能リクエスト・不正報告） |
-| **SettingsScreen** | 設定（通知ON/OFF・第三者同意・法的文書・アカウント削除・シードデータ投入） |
+| **SettingsScreen** | 設定（通知ON/OFF・ライブフィードON/OFF・法的文書・アカウント削除） |
 | **LegalScreen** | 利用規約・プライバシーポリシー表示 + 初回同意フロー + 第三者提供同意 |
 
 ### ナビゲーション（ボトムタブ 4タブ構成）
@@ -245,15 +249,16 @@ eas update --branch preview
 | タブ | 画面 | アイコン |
 |------|------|----------|
 | マップ | MapScreen | `map` |
-| ライダー | RiderScreen | `person` |
+| ライダー | RiderScreen（→ マイバイクサブ画面） | `person` |
 | お知らせ | NotificationsScreen | `notifications` |
 | 設定 | SettingsScreen（→ お問い合わせ・利用規約サブ画面） | `settings` |
 
 ### マップ操作UI
 
-- **FAB「+」ボタン（左下）** — スポット登録専用。タップで即座に登録フォーム（ParkedScreen）を起動
+- **FAB「+」ボタン（右下）** — スポット登録。タップ → カメラ → 撮影 → 即登録（写真1枚で完了、フォーム不要）
 - **ラジアルメニュー（右下）** — 長押しで4項目の扇形メニューが展開（現在地 / 最寄り / 更新 / 検索）。短押しでエリア再検索
-- **チュートリアル Step 3** — FAB「+」とラジアルメニューの両方をアニメーションで案内。「スポット登録は＋、地図操作は長押しメニュー」
+- **ライブフィード（上部）** — プッシュ通知風にライダーの活動が流れる。設定からON/OFF可能
+- スポット詳細シート表示中はFAB・ラジアルメニューを非表示
 
 ---
 
