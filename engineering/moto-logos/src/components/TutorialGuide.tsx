@@ -26,7 +26,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const PADDING = 8; // ターゲット周囲のパディング
 
 export function TutorialGuide() {
-  const { active, currentStep, stepIndex, getTarget, advanceTutorial, phase } = useTutorial();
+  const { active, currentStep, stepIndex, getTarget, advanceTutorial, finishTutorial, phase } = useTutorial();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
@@ -117,12 +117,12 @@ export function TutorialGuide() {
     );
   }
 
-  // ── ターゲットなし + tap-anywhere: 薄暗幕 + 指示テキスト
+  // ── ターゲットなし + tap-anywhere: オーバーレイ貫通 + カードタップで次へ
   if (!target) {
     return (
-      <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]}>
-          {currentStep.instruction ? (
+      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="box-none">
+        {currentStep.instruction ? (
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
             <View style={styles.floatingCard}>
               <Text style={styles.instructionText}>{currentStep.instruction}</Text>
               <View style={styles.tapHintRow}>
@@ -130,9 +130,9 @@ export function TutorialGuide() {
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
               </View>
             </View>
-          ) : null}
-        </Animated.View>
-      </TouchableWithoutFeedback>
+          </TouchableWithoutFeedback>
+        ) : null}
+      </Animated.View>
     );
   }
 
