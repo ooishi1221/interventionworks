@@ -38,31 +38,32 @@ const DUMMY_FEED: FeedItem[] = [
 ];
 
 const SLIDE_DURATION = 500;
-const DISPLAY_DURATION = 3000;
+const DISPLAY_DURATION = 5000;
 
 export function LiveFeed() {
   const [index, setIndex] = useState(0);
-  const translateX = useRef(new Animated.Value(SCREEN_W)).current;
+  const translateY = useRef(new Animated.Value(-80)).current;
 
   useEffect(() => {
     let mounted = true;
 
     const showNext = () => {
       if (!mounted) return;
-      // 右から入ってくる
-      translateX.setValue(SCREEN_W);
-      Animated.timing(translateX, {
+      // 上から降りてくる
+      translateY.setValue(-80);
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: SLIDE_DURATION,
+        tension: 120,
+        friction: 12,
         useNativeDriver: true,
       }).start(() => {
         if (!mounted) return;
-        // 表示して待つ → 左へ出ていく
+        // 表示して待つ → 上に戻って消える
         setTimeout(() => {
           if (!mounted) return;
-          Animated.timing(translateX, {
-            toValue: -SCREEN_W,
-            duration: SLIDE_DURATION,
+          Animated.timing(translateY, {
+            toValue: -80,
+            duration: 300,
             useNativeDriver: true,
           }).start(() => {
             if (!mounted) return;
@@ -81,7 +82,7 @@ export function LiveFeed() {
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <Animated.View style={[styles.bar, { transform: [{ translateX }] }]}>
+      <Animated.View style={[styles.bar, { transform: [{ translateY }] }]}>
         <View style={[styles.dot, { backgroundColor: item.color }]}>
           <Ionicons name={item.icon} size={11} color="#fff" />
         </View>
