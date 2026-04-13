@@ -768,7 +768,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── FABコーチマーク（吹き出し） ────────────────── */}
-      {!searchFocused && showCoach && (
+      {!searchFocused && !selected && showCoach && (
         <TouchableOpacity style={styles.coachBubble} onPress={dismissCoach} activeOpacity={0.8}>
           <Text style={styles.coachText}>ここからスポット登録！</Text>
           <View style={styles.coachArrow} />
@@ -776,7 +776,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── FAB「+」スポット登録ボタン ───────────────── */}
-      {!searchFocused && (
+      {!searchFocused && !selected && (
         <View style={styles.fabArea} pointerEvents="box-none">
           <RNAnimated.View style={{ transform: [{ scale: fabPulse }] }}>
             <TouchableOpacity
@@ -791,7 +791,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── 右下ラジアルメニュー ─────────────────────── */}
-      {!searchFocused && (
+      {!searchFocused && !selected && (
         <View
           style={styles.rightControls}
           pointerEvents="box-none"

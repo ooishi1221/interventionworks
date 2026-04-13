@@ -219,7 +219,7 @@ export async function getAllUserSpots(): Promise<UserSpot[]> {
   const rows = await db.getAllAsync<any>('SELECT * FROM user_spots ORDER BY createdAt DESC;');
   return rows.map((row) => ({
     ...row,
-    isFree: row.isFree === 1,
+    isFree: row.isFree === -1 ? null : row.isFree === 1,
     maxCC: (row.maxCC ?? null) as MaxCC,
   }));
 }
@@ -237,7 +237,7 @@ export async function insertUserSpot(
       spot.longitude,
       spot.address ?? null,
       spot.maxCC ?? null,
-      spot.isFree === null ? null : spot.isFree ? 1 : 0,
+      spot.isFree === null ? -1 : spot.isFree ? 1 : 0,
       spot.capacity ?? null,
       spot.pricePerHour ?? null,
       spot.openHours ?? null,
@@ -267,7 +267,7 @@ export async function updateUserSpot(
       spot.longitude,
       spot.address ?? null,
       spot.maxCC ?? null,
-      spot.isFree === null ? null : spot.isFree ? 1 : 0,
+      spot.isFree === null ? -1 : spot.isFree ? 1 : 0,
       spot.capacity ?? null,
       spot.pricePerHour ?? null,
       spot.openHours ?? null,

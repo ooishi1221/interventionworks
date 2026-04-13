@@ -1,9 +1,9 @@
 /**
- * SpotDetailSheet v2 — 情報ゾーン / アクションゾーン分離 + 合ってた/違ってた報告
+ * SpotDetailSheet v2 — 情報ゾーン / アクションゾーン分離 + あってた/ちがってた報告
  *
  * 上: 情報ゾーン（スクロール） — 名称・バッジ・写真・住所・料金・過去の報告
  * 下: アクションゾーン（固定） — 案内開始・報告する・シェア
- * 星評価廃止 → 「合ってた/違ってた」で情報の正確さを報告
+ * 星評価廃止 → 「あってた/ちがってた」で情報の正確さを報告
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -225,7 +225,11 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
   // ── 報告: 送信 ────────────────────────────────────────
   const submitReport = async (matched: boolean) => {
-    if (!user) return;
+    let userId = user?.userId;
+    if (!userId) {
+      userId = await AsyncStorage.getItem('moto_logos_device_id') ?? undefined;
+    }
+    if (!userId) { Alert.alert('エラー', 'ユーザー情報を読み込めません。アプリを再起動してください。'); return; }
     setReportSubmitting(true);
     try {
       const spotId = spot.id;
@@ -242,12 +246,12 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         await reportSpotClosed(spotId).catch((e) => captureError(e, { context: 'report_closed' }));
       }
 
-      // レビューとして保存（score: 1=合ってた, 0=違ってた）
-      await addReview(spotId, user.userId, matched ? 1 : 0, comment, reportPhoto ?? undefined);
+      // レビューとして保存（score: 1=あってた, 0=ちがってた）
+      await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined);
 
       // ローカル記録
       AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
-      logActivityLocal('report', `${spot.name}を${matched ? '合ってた' : '違ってた'}報告`);
+      logActivityLocal('report', `${spot.name}を${matched ? 'あってた' : 'ちがってた'}報告`);
       incrementStat('reports');
 
       Haptics.notificationAsync(matched
@@ -259,9 +263,9 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       setReportModalOpen(false);
       resetReportModal();
       await loadAll();
-    } catch (e) {
+    } catch (e: any) {
       captureError(e, { context: 'submitReport' });
-      Alert.alert('送信に失敗しました');
+      Alert.alert('送信に失敗しました', e?.message ?? String(e));
     }
     setReportSubmitting(false);
   };
@@ -302,7 +306,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         </Modal>
       )}
 
-      {/* ── 報告モーダル（合ってた/違ってた） ──────── */}
+      {/* ── 報告モーダル（あってた/ちがってた） ──────── */}
       <Modal
         visible={reportModalOpen}
         animationType="slide"
@@ -311,10 +315,10 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
       >
         <View style={styles.reportOverlay}>
           <View style={styles.reportSheet}>
-            {/* ステップ1: 合ってた？ */}
+            {/* ステップ1: あってた？ */}
             {reportStep === 'ask' && (
               <View style={styles.reportCenter}>
-                <Text style={styles.reportQuestion}>この情報合ってた？</Text>
+                <Text style={styles.reportQuestion}>この情報あってた？</Text>
                 <Text style={styles.reportHint}>{spot.name}</Text>
                 <View style={{ height: 24 }} />
                 <View style={styles.reportChoiceRow}>
@@ -324,7 +328,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-up" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>合ってた</Text>
+                    <Text style={styles.reportChoiceText}>あってた</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.reportUnmatchedBtn}
@@ -332,7 +336,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-down" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>違ってた</Text>
+                    <Text style={styles.reportChoiceText}>ちがってた</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.reportCancelLink} onPress={() => { setReportModalOpen(false); resetReportModal(); }}>
@@ -341,110 +345,108 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               </View>
             )}
 
-            {/* ステップ2a: 合ってた → ひとこと + 写真（任意） */}
+            {/* ステップ2a: あってた → ひとこと + 写真（任意） */}
             {reportStep === 'matched' && (
-              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={styles.reportFormContent}>
-                  <View style={styles.reportMatchedBadge}>
-                    <Ionicons name="thumbs-up" size={20} color={C.green} />
-                    <Text style={[styles.reportBadgeText, { color: C.green }]}>合ってた！</Text>
-                  </View>
-                  <Text style={styles.reportFormHint}>ひとことや写真を残せます（任意）</Text>
-                  <TextInput
-                    style={styles.reportInput}
-                    placeholder="例: 空きあり、停めやすかった"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
-                    value={reportComment}
-                    onChangeText={setReportComment}
-                    multiline
-                  />
-                  {reportPhoto ? (
-                    <View style={styles.reportPhotoPreview}>
-                      <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                      <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
-                        <Ionicons name="close-circle" size={22} color={C.red} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                      <Ionicons name="camera-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
+              <View style={styles.reportFormContent}>
+                <View style={styles.reportMatchedBadge}>
+                  <Ionicons name="thumbs-up" size={20} color={C.green} />
+                  <Text style={[styles.reportBadgeText, { color: C.green }]}>あってた！</Text>
+                </View>
+                <Text style={styles.reportFormHint}>ひとことや写真を残せます（任意）</Text>
+                <TextInput
+                  style={styles.reportInput}
+                  placeholder="例: 空きあり、停めやすかった"
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={reportComment}
+                  onChangeText={setReportComment}
+                  multiline
+                  blurOnSubmit
+                />
+                {reportPhoto ? (
+                  <View style={styles.reportPhotoPreview}>
+                    <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
+                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
+                      <Ionicons name="close-circle" size={22} color={C.red} />
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[styles.reportSubmitBtn, { backgroundColor: C.green }]}
-                    onPress={() => submitReport(true)}
-                    disabled={reportSubmitting}
-                    activeOpacity={0.8}
-                  >
-                    {reportSubmitting
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.reportSubmitText}>送信する</Text>}
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
+                    <Ionicons name="camera-outline" size={18} color={C.blue} />
+                    <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
-                    <Text style={styles.reportCancelText}>戻る</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </KeyboardAvoidingView>
+                )}
+                <TouchableOpacity
+                  style={[styles.reportSubmitBtn, { backgroundColor: C.green }]}
+                  onPress={() => submitReport(true)}
+                  disabled={reportSubmitting}
+                  activeOpacity={0.8}
+                >
+                  {reportSubmitting
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.reportSubmitText}>送信する</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
+                  <Text style={styles.reportCancelText}>戻る</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
-            {/* ステップ2b: 違ってた → 何が違った？ + ひとこと + 写真 */}
+            {/* ステップ2b: ちがってた → 何がちがった？ + ひとこと + 写真 */}
             {reportStep === 'unmatched' && (
-              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={styles.reportFormContent}>
-                  <View style={styles.reportUnmatchedBadge}>
-                    <Ionicons name="thumbs-down" size={20} color={C.orange} />
-                    <Text style={[styles.reportBadgeText, { color: C.orange }]}>何が違った？</Text>
-                  </View>
-                  <View style={styles.correctionGrid}>
-                    {CORRECTION_OPTIONS.map((opt) => (
-                      <TouchableOpacity
-                        key={opt.id}
-                        style={[styles.correctionBtn, correction === opt.id && { borderColor: opt.color, backgroundColor: `${opt.color}18` }]}
-                        onPress={() => setCorrection(opt.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name={opt.icon} size={18} color={correction === opt.id ? opt.color : C.sub} />
-                        <Text style={[styles.correctionLabel, correction === opt.id && { color: opt.color }]}>{opt.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <TextInput
-                    style={styles.reportInput}
-                    placeholder="詳細があれば（任意）"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
-                    value={reportComment}
-                    onChangeText={setReportComment}
-                    multiline
-                  />
-                  {reportPhoto ? (
-                    <View style={styles.reportPhotoPreview}>
-                      <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                      <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
-                        <Ionicons name="close-circle" size={22} color={C.red} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                      <Ionicons name="camera-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
+              <ScrollView contentContainerStyle={styles.reportFormContent} keyboardShouldPersistTaps="handled">
+                <View style={styles.reportUnmatchedBadge}>
+                  <Ionicons name="thumbs-down" size={20} color={C.orange} />
+                  <Text style={[styles.reportBadgeText, { color: C.orange }]}>何がちがった？</Text>
+                </View>
+                <View style={styles.correctionGrid}>
+                  {CORRECTION_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.id}
+                      style={[styles.correctionBtn, correction === opt.id && { borderColor: opt.color, backgroundColor: `${opt.color}18` }]}
+                      onPress={() => setCorrection(opt.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={opt.icon} size={18} color={correction === opt.id ? opt.color : C.sub} />
+                      <Text style={[styles.correctionLabel, correction === opt.id && { color: opt.color }]}>{opt.label}</Text>
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[styles.reportSubmitBtn, { backgroundColor: C.orange }, !correction && { opacity: 0.4 }]}
-                    onPress={() => submitReport(false)}
-                    disabled={reportSubmitting || !correction}
-                    activeOpacity={0.8}
-                  >
-                    {reportSubmitting
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.reportSubmitText}>報告する</Text>}
+                  ))}
+                </View>
+                <TextInput
+                  style={styles.reportInput}
+                  placeholder="詳細があれば（任意）"
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={reportComment}
+                  onChangeText={setReportComment}
+                  multiline
+                  blurOnSubmit
+                />
+                {reportPhoto ? (
+                  <View style={styles.reportPhotoPreview}>
+                    <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
+                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch(() => {}); setReportPhoto(null); }}>
+                      <Ionicons name="close-circle" size={22} color={C.red} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
+                    <Ionicons name="camera-outline" size={18} color={C.blue} />
+                    <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
-                    <Text style={styles.reportCancelText}>戻る</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </KeyboardAvoidingView>
+                )}
+                <TouchableOpacity
+                  style={[styles.reportSubmitBtn, { backgroundColor: C.orange }, !correction && { opacity: 0.4 }]}
+                  onPress={() => submitReport(false)}
+                  disabled={reportSubmitting || !correction}
+                  activeOpacity={0.8}
+                >
+                  {reportSubmitting
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.reportSubmitText}>報告する</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
+                  <Text style={styles.reportCancelText}>戻る</Text>
+                </TouchableOpacity>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -652,7 +654,7 @@ function PaymentSection({ spot }: { spot: ParkingPin }) {
 
 // ─── 報告カード（旧レビューカード） ─────────────────────
 function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: string) => void }) {
-  // score: 1=合ってた, 0=違ってた, 2-5=旧星レビュー
+  // score: 1=あってた, 0=ちがってた, 2-5=旧星レビュー
   const isMatched = report.score === 1;
   const isUnmatched = report.score === 0;
   const isLegacy = report.score >= 2;
@@ -663,13 +665,13 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         {isMatched && (
           <View style={styles.reportCardBadge}>
             <Ionicons name="thumbs-up" size={13} color={C.green} />
-            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>合ってた</Text>
+            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>あってた</Text>
           </View>
         )}
         {isUnmatched && (
           <View style={styles.reportCardBadge}>
             <Ionicons name="thumbs-down" size={13} color={C.orange} />
-            <Text style={[styles.reportCardBadgeText, { color: C.orange }]}>違ってた</Text>
+            <Text style={[styles.reportCardBadgeText, { color: C.orange }]}>ちがってた</Text>
           </View>
         )}
         {isLegacy && (
