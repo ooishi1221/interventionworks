@@ -1,8 +1,10 @@
 import Hero from './components/Hero'
-import Pain from './components/Pain'
-import CoreValues from './components/CoreValues'
-import Stats from './components/Stats'
-import Testimonials from './components/Testimonials'
+import Before from './components/Before'
+import Explore from './components/Explore'
+import Report from './components/Report'
+import Notify from './components/Notify'
+import Register from './components/Register'
+import Social from './components/Social'
 import HowTo from './components/HowTo'
 import Faq from './components/Faq'
 import FinalCta from './components/FinalCta'
@@ -14,10 +16,12 @@ function App() {
   return (
     <>
       <Hero />
-      <Pain />
-      <CoreValues />
-      <Stats />
-      <Testimonials />
+      <Before />
+      <Explore />
+      <Report />
+      <Notify />
+      <Register />
+      <Social />
       <HowTo />
       <Faq />
       <FinalCta />

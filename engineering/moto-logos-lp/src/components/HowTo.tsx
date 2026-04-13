@@ -7,20 +7,24 @@ export default function HowTo() {
     },
     {
       num: '2',
-      title: 'マップを開く',
-      text: '現在地周辺のバイク駐輪場がマップ上に表示。鮮度バッジで情報の新しさが一目瞭然。',
+      title: 'ガイドツアーで体験',
+      text: '探す・報告する・登録する。全部の操作をチュートリアルで体験。誰でもすぐに使いこなせる。',
     },
     {
       num: '3',
-      title: '親指一本で貢献',
-      text: '「停められた」「閉鎖されてた」をワンタップで報告。あなたの一瞬が、仲間を救う。',
+      title: '走り出す',
+      text: 'あとは走るだけ。停めたら報告、困ったら検索。あなたの一報がマップに命を灯す。',
     },
   ]
 
   return (
-    <section className="section howto">
+    <section className="section howto surface-bg">
       <div className="container">
-        <h2 className="section-title">使い方は、シンプル。</h2>
+        <h2 className="section-title">はじめての方も安心。</h2>
+        <p className="section-sub">
+          アプリを開くと、インタラクティブなガイドツアーが始まります。<br />
+          実際に画面をタップしながら操作を覚えられるので、誰でもすぐに使えます。
+        </p>
         <div className="howto-steps">
           {steps.map((s) => (
             <div key={s.num} className="howto-step">

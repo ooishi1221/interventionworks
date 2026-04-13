@@ -4,12 +4,12 @@ export default function Hero() {
       <div className="hero-content">
         <div className="hero-logo">MOTO-LOGOS</div>
         <h1>
-          <span className="accent">「駐輪場、見つからない」</span>を<br />
-          終わらせにきた。
+          あなたの<span className="accent">一報</span>が<br />
+          マップに命を灯す。
         </h1>
         <p className="hero-sub">
-          一人の発見を、全ライダーの安心に。<br />
-          ライダー同士がリアルタイムで駐輪場を共有する、日本初のコミュニティマップ。
+          バイク乗りがバイク乗りのためにつくった駐輪場マップ。<br />
+          探す。報告する。仲間に届く。このループで地図が生きる。
         </p>
         <div className="hero-cta-group">
           <a href="#" className="btn-primary">App Store で入手</a>
