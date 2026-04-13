@@ -240,6 +240,34 @@ export async function fetchSpotCounts(spotId: string): Promise<{ goodCount: numb
 }
 
 // ─────────────────────────────────────────────────────
+// viewCount インクリメント（スポット詳細を開いた時）
+// ─────────────────────────────────────────────────────
+
+export async function incrementViewCount(spotId: string): Promise<void> {
+  const { updateDoc, increment } = await import('firebase/firestore');
+  try {
+    await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), { viewCount: increment(1) });
+  } catch {}
+}
+
+// ─────────────────────────────────────────────────────
+// 自分が登録したスポットの合計閲覧数を取得
+// ─────────────────────────────────────────────────────
+
+export async function getMySpotsTotalViews(localSpotIds: string[]): Promise<number> {
+  if (localSpotIds.length === 0) return 0;
+  let total = 0;
+  for (const id of localSpotIds) {
+    try {
+      const { getDoc } = await import('firebase/firestore');
+      const snap = await getDoc(doc(db, COLLECTIONS.SPOTS, id));
+      if (snap.exists()) total += (snap.data().viewCount as number) ?? 0;
+    } catch {}
+  }
+  return total;
+}
+
+// ─────────────────────────────────────────────────────
 // ステータス報告（👍停められた / 👎満車・閉鎖）
 // ─────────────────────────────────────────────────────
 

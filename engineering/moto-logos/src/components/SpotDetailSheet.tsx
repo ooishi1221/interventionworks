@@ -47,6 +47,7 @@ import {
   reportSpotGood,
   reportSpotFull,
   reportSpotClosed,
+  incrementViewCount,
 } from '../firebase/firestoreService';
 import { Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
@@ -165,7 +166,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
     setReportsLoading(false);
   }, [spot]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { loadAll(); incrementViewCount(spot.id); }, [loadAll]);
 
   // ── お気に入りトグル ──────────────────────────────────
   const toggleFav = async () => {
