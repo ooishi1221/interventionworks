@@ -68,6 +68,31 @@ export async function ensureUserDocument(
 }
 
 // ─────────────────────────────────────────────────────
+// バイク情報をFirestoreに同期
+// ─────────────────────────────────────────────────────
+
+export async function syncBikeToFirestore(
+  userId: string,
+  bike: { name: string; manufacturer?: string; model?: string; year?: number; cc?: number | null; color?: string; photoUrl?: string; tagline?: string }
+): Promise<void> {
+  const { updateDoc } = await import('firebase/firestore');
+  const ref = doc(db, COLLECTIONS.USERS, userId);
+  await updateDoc(ref, {
+    bike: stripUndef({
+      name: bike.name,
+      manufacturer: bike.manufacturer,
+      model: bike.model,
+      year: bike.year,
+      cc: bike.cc,
+      color: bike.color,
+      photoUrl: bike.photoUrl,
+      tagline: bike.tagline,
+    }),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+// ─────────────────────────────────────────────────────
 // 変換ヘルパー
 // ─────────────────────────────────────────────────────
 

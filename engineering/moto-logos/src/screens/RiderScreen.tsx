@@ -68,11 +68,12 @@ interface Props {
   onGoToSpot?: (spot: ParkingPin) => void;
   onDataChanged?: () => void;
   onStartTutorial?: () => void;
+  onOpenMyBike?: () => void;
   nickname?: string;
   onChangeNickname?: (name: string) => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickname, onChangeNickname }: Props) {
+export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, onOpenMyBike, nickname, onChangeNickname }: Props) {
   const user = useUser();
   const [spotsCount, setSpotsCount] = useState(0);
   const [reportsCount, setReportsCount] = useState(0);
@@ -192,6 +193,19 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onStartTutorial, nickna
             </Text>
           )}
         </View>
+
+        {/* ── マイバイク ──────────────────────────── */}
+        {onOpenMyBike && (
+          <TouchableOpacity
+            style={s.miniCard}
+            onPress={() => { onOpenMyBike(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons name="motorbike" size={18} color={C.orange} />
+            <Text style={s.miniLabel}>マイバイク</Text>
+            <Ionicons name="chevron-forward" size={14} color={C.sub} />
+          </TouchableOpacity>
+        )}
 
         {/* ── お気に入り ─────────────────────────── */}
         <TouchableOpacity

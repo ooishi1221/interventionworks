@@ -66,8 +66,13 @@ export interface Vehicle {
   name: string;
   type: VehicleType;
   cc?: UserCC;
-  licensePlate?: string;
+  manufacturer?: string;
+  model?: string;
+  year?: number;
   color?: string;
+  photoUrl?: string;
+  tagline?: string;
+  licensePlate?: string;
   notes?: string;
   createdAt: string;
 }

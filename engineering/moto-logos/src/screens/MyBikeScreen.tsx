@@ -1,4 +1,10 @@
-import React from 'react';
+/**
+ * MyBikeScreen v2 — 愛車プロフィール
+ *
+ * CC選択 + メーカー・車種・年式・カラー・写真・ひとこと
+ * 保存時にSQLite + Firestoreに同期
+ */
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,239 +12,258 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
+  TextInput,
+  Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { UserCC } from '../types';
+import { UserCC, Vehicle } from '../types';
 import { Spacing, FontSize } from '../constants/theme';
+import { getFirstVehicle, insertVehicle, updateVehicle } from '../db/database';
+import { syncBikeToFirestore } from '../firebase/firestoreService';
+import { captureError } from '../utils/sentry';
 
-const SYS_BLUE   = '#0A84FF';
-const SYS_GRAY   = '#636366';
-const CARD_BG    = '#1C1C1E';
-const BORDER_DEF = 'rgba(255,255,255,0.08)';
-const BORDER_ACT = SYS_BLUE;
+const C = {
+  bg: '#000000', card: '#1C1C1E', border: 'rgba(255,255,255,0.10)',
+  text: '#F2F2F7', sub: '#8E8E93', blue: '#0A84FF', orange: '#FF6B00',
+  green: '#30D158', purple: '#BF5AF2',
+};
 
-// ─── アイコン定義 ───────────────────────────────────────
-type IconDef =
-  | { set: 'ion'; name: keyof typeof Ionicons.glyphMap }
-  | { set: 'mci'; name: keyof typeof MaterialCommunityIcons.glyphMap };
-
-interface CCOption {
-  value: UserCC;
-  label: string;
-  sub: string;
-  detail: string;
-  ccText: string;
-  icon: IconDef;
-  iconColor: string;
-}
-
-const CC_OPTIONS: CCOption[] = [
-  {
-    value: 50,
-    label: '原付一種',
-    sub: '50cc以下',
-    detail: '全ての駐輪場（原付専用を含む）が表示されます',
-    ccText: '50',
-    icon: { set: 'mci', name: 'moped' },   // 小型モペッド
-    iconColor: SYS_GRAY,
-  },
-  {
-    value: 125,
-    label: '原付二種',
-    sub: '51〜125cc',
-    detail: '原付専用を除いた125cc対応以上の駐輪場が表示されます',
-    ccText: '125',
-    icon: { set: 'mci', name: 'scooter' }, // スクーター
-    iconColor: '#30D158',
-  },
-  {
-    value: 400,
-    label: '普通二輪',
-    sub: '126〜400cc',
-    detail: '250cc以上対応または制限なしの駐輪場が表示されます',
-    ccText: '400',
-    icon: { set: 'mci', name: 'motorbike' }, // ネイキッドバイク
-    iconColor: SYS_BLUE,
-  },
-  {
-    value: null,
-    label: '大型二輪',
-    sub: '401cc以上',
-    detail: '制限なし（大型車OK）の駐輪場のみ表示されます',
-    ccText: '∞',
-    icon: { set: 'mci', name: 'motorbike' }, // 大型バイク（サイズ・グローで差別化）
-    iconColor: '#FF9F0A',
-  },
+const CC_OPTIONS: { value: UserCC; label: string; color: string }[] = [
+  { value: 50,   label: '原付',  color: '#8E8E93' },
+  { value: 125,  label: '125cc', color: '#30D158' },
+  { value: 400,  label: '400cc', color: '#0A84FF' },
+  { value: null,  label: '大型',  color: '#FF9F0A' },
 ];
 
-// ─── アイコン描画ヘルパー ────────────────────────────────
-function BikeIcon({ icon, size, color }: { icon: IconDef; size: number; color: string }) {
-  if (icon.set === 'mci') {
-    return <MaterialCommunityIcons name={icon.name} size={size} color={color} />;
-  }
-  return <Ionicons name={icon.name} size={size} color={color} />;
-}
-
-// ─── Props ──────────────────────────────────────────────
 interface Props {
   userCC: UserCC;
   onChangeCC: (cc: UserCC) => void;
+  onBack: () => void;
 }
 
-export function MyBikeScreen({ userCC, onChangeCC }: Props) {
-  const current = CC_OPTIONS.find((o) => o.value === userCC) ?? CC_OPTIONS[1];
+export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
+  const [name, setName] = useState('');
+  const [manufacturer, setManufacturer] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState('');
+  const [color, setColor] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [tagline, setTagline] = useState('');
+  const [existingId, setExistingId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // 既存データ読み込み
+  useEffect(() => {
+    getFirstVehicle().then((v) => {
+      if (v) {
+        setExistingId(v.id);
+        setName(v.name || '');
+        setManufacturer(v.manufacturer || '');
+        setModel(v.model || '');
+        setYear(v.year ? String(v.year) : '');
+        setColor(v.color || '');
+        setPhotoUri(v.photoUrl || null);
+        setTagline(v.tagline || '');
+      }
+    });
+  }, []);
+
+  const pickPhoto = async () => {
+    let result: ImagePicker.ImagePickerResult | null = null;
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status === 'granted') {
+        result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+      }
+    } catch {}
+    if (!result) {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
+      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+    }
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  };
+
+  const handleSave = async () => {
+    const bikeName = name.trim() || `${manufacturer} ${model}`.trim() || '愛車';
+    setSaving(true);
+    try {
+      const vehicleData: Omit<Vehicle, 'id' | 'createdAt'> = {
+        name: bikeName,
+        type: 'motorcycle',
+        cc: userCC,
+        manufacturer: manufacturer.trim() || undefined,
+        model: model.trim() || undefined,
+        year: year ? parseInt(year, 10) : undefined,
+        color: color.trim() || undefined,
+        photoUrl: photoUri ?? undefined,
+        tagline: tagline.trim() || undefined,
+      };
+
+      if (existingId) {
+        await updateVehicle(existingId, vehicleData);
+      } else {
+        const result = await insertVehicle(vehicleData);
+        setExistingId(result.lastInsertRowId);
+      }
+
+      // Firestore同期
+      const userId = await AsyncStorage.getItem('moto_logos_device_id');
+      if (userId) {
+        syncBikeToFirestore(userId, vehicleData).catch((e) => captureError(e, { context: 'syncBike' }));
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onBack();
+    } catch (e) {
+      captureError(e, { context: 'saveBike' });
+      Alert.alert('保存に失敗しました');
+    }
+    setSaving(false);
+  };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={s.safe}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={onBack} style={s.backBtn}>
+          <Ionicons name="chevron-back" size={24} color={C.text} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>マイバイク</Text>
+        <TouchableOpacity onPress={handleSave} disabled={saving}>
+          <Text style={[s.saveBtn, saving && { opacity: 0.5 }]}>
+            {saving ? '保存中...' : '保存'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* ヘッダー */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <MaterialCommunityIcons name="scooter" size={28} color={SYS_BLUE} />
-          </View>
-          <View>
-            <Text style={styles.title}>マイバイク設定</Text>
-            <Text style={styles.subtitle}>排気量を選ぶと地図の駐輪場が絞り込まれます</Text>
-          </View>
-        </View>
+      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        {/* 写真 */}
+        <TouchableOpacity style={s.photoArea} onPress={pickPhoto} activeOpacity={0.8}>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={s.photo} />
+          ) : (
+            <View style={s.photoPlaceholder}>
+              <Ionicons name="camera" size={32} color={C.sub} />
+              <Text style={s.photoText}>愛車の写真を追加</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
-        <Text style={styles.sectionLabel}>あなたのバイクの排気量</Text>
+        {/* ひとこと */}
+        <TextInput
+          style={s.taglineInput}
+          placeholder="ひとこと（例: 日本一周中）"
+          placeholderTextColor="rgba(255,255,255,0.25)"
+          value={tagline}
+          onChangeText={setTagline}
+          maxLength={30}
+        />
 
-        {/* 選択カード一覧 */}
-        <View style={styles.optionList}>
+        {/* 排気量 */}
+        <Text style={s.sectionTitle}>排気量</Text>
+        <View style={s.ccRow}>
           {CC_OPTIONS.map((opt) => {
-            const isActive = userCC === opt.value;
+            const active = userCC === opt.value;
             return (
               <TouchableOpacity
                 key={String(opt.value)}
-                style={[styles.optionBtn, isActive && styles.optionBtnActive]}
-                onPress={() => onChangeCC(opt.value)}
-                activeOpacity={0.75}
+                style={[s.ccChip, active && { backgroundColor: `${opt.color}20`, borderColor: opt.color }]}
+                onPress={() => { onChangeCC(opt.value); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                activeOpacity={0.7}
               >
-                {/* アイコンボックス */}
-                <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
-                  <BikeIcon
-                    icon={opt.icon}
-                    size={isActive ? 26 : 22}
-                    color={isActive ? opt.iconColor : SYS_GRAY}
-                  />
-                  <Text style={[styles.iconCC, isActive && { color: opt.iconColor }]}>
-                    {opt.ccText}
-                  </Text>
-                </View>
-
-                {/* テキスト */}
-                <View style={styles.optionText}>
-                  <Text style={[styles.optionLabel, isActive && { color: opt.iconColor }]}>
-                    {opt.label}
-                  </Text>
-                  <Text style={styles.optionSub}>{opt.sub}</Text>
-                </View>
-
-                {/* ラジオボタン */}
-                <View style={[styles.radio, isActive && { borderColor: opt.iconColor, borderWidth: 1.5 }]}>
-                  {isActive && <View style={[styles.radioDot, { backgroundColor: opt.iconColor }]} />}
-                </View>
+                <Text style={[s.ccChipText, active && { color: opt.color, fontWeight: '800' }]}>{opt.label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* 現在の設定カード */}
-        <View style={[styles.infoCard, { borderColor: `${current.iconColor}55` }]}>
-          <Text style={styles.infoTitle}>現在の設定</Text>
-          <View style={styles.infoBody}>
-            <BikeIcon icon={current.icon} size={22} color={current.iconColor} />
-            <View>
-              <Text style={[styles.infoCC, { color: current.iconColor }]}>
-                {current.label}（{current.sub}）
-              </Text>
-              <Text style={styles.infoDetail}>{current.detail}</Text>
-            </View>
-          </View>
+        {/* 車両情報 */}
+        <Text style={s.sectionTitle}>車両情報</Text>
+        <View style={s.formCard}>
+          <FormRow label="車名" placeholder="例: CBR650R" value={name} onChangeText={setName} />
+          <View style={s.separator} />
+          <FormRow label="メーカー" placeholder="例: Honda" value={manufacturer} onChangeText={setManufacturer} />
+          <View style={s.separator} />
+          <FormRow label="車種" placeholder="例: ネイキッド" value={model} onChangeText={setModel} />
+          <View style={s.separator} />
+          <FormRow label="年式" placeholder="例: 2024" value={year} onChangeText={setYear} keyboardType="numeric" />
+          <View style={s.separator} />
+          <FormRow label="カラー" placeholder="例: レッド" value={color} onChangeText={setColor} />
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:      { flex: 1, backgroundColor: '#000' },
-  container: { padding: Spacing.lg, gap: Spacing.lg, paddingBottom: Spacing.xxl },
+function FormRow({ label, placeholder, value, onChangeText, keyboardType }: {
+  label: string; placeholder: string; value: string;
+  onChangeText: (t: string) => void; keyboardType?: 'numeric' | 'default';
+}) {
+  return (
+    <View style={s.formRow}>
+      <Text style={s.formLabel}>{label}</Text>
+      <TextInput
+        style={s.formInput}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.2)"
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+      />
+    </View>
+  );
+}
 
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.md },
-  headerIcon: {
-    width: 48, height: 48, borderRadius: 12,
-    backgroundColor: 'rgba(10,132,255,0.12)',
-    alignItems: 'center', justifyContent: 'center',
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border,
   },
-  title:    { color: '#F2F2F7', fontSize: FontSize.xl, fontWeight: '700' },
-  subtitle: { color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2 },
+  backBtn: { width: 32 },
+  headerTitle: { color: C.text, fontSize: 18, fontWeight: '700' },
+  saveBtn: { color: C.orange, fontSize: 16, fontWeight: '700' },
+  content: { padding: 16, paddingBottom: 60 },
 
-  sectionLabel: {
-    color: SYS_GRAY, fontSize: 11, fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 1,
+  // Photo
+  photoArea: { borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
+  photo: { width: '100%', height: 200, borderRadius: 16 },
+  photoPlaceholder: {
+    width: '100%', height: 200, borderRadius: 16,
+    backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1, borderColor: C.border, borderStyle: 'dashed',
   },
+  photoText: { color: C.sub, fontSize: 13 },
 
-  optionList: { gap: Spacing.sm },
-  optionBtn: {
-    minHeight: 72,
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER_DEF,
-  },
-  optionBtnActive: {
-    backgroundColor: 'rgba(10,132,255,0.06)',
-    borderColor: BORDER_ACT,
-    borderWidth: 1,
+  // Tagline
+  taglineInput: {
+    backgroundColor: C.card, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
+    color: C.text, fontSize: 15, fontWeight: '600', textAlign: 'center',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border, marginBottom: 20,
   },
 
-  iconBox: {
-    width: 52, height: 52, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: BORDER_DEF,
-    flexShrink: 0,
+  // CC
+  sectionTitle: { color: C.sub, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginLeft: 2 },
+  ccRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  ccChip: {
+    flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: C.border,
   },
-  iconBoxActive: {
-    backgroundColor: 'rgba(10,132,255,0.10)',
-    borderColor: 'rgba(10,132,255,0.3)',
-  },
-  iconCC: { color: SYS_GRAY, fontSize: 9, fontWeight: '700', marginTop: 1 },
+  ccChipText: { color: C.sub, fontSize: 14, fontWeight: '600' },
 
-  optionText:  { flex: 1, gap: 2 },
-  optionLabel: { color: '#F2F2F7', fontSize: FontSize.md, fontWeight: '600' },
-  optionSub:   { color: SYS_GRAY, fontSize: FontSize.sm },
-
-  radio: {
-    width: 22, height: 22, borderRadius: 11,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
+  // Form
+  formCard: {
+    backgroundColor: C.card, borderRadius: 14, overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
   },
-  radioDot: { width: 12, height: 12, borderRadius: 6 },
-
-  infoCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  infoTitle: {
-    color: SYS_GRAY, fontSize: 11, fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 1,
-  },
-  infoBody:   { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4 },
-  infoCC:     { fontSize: FontSize.md, fontWeight: '700' },
-  infoDetail: { color: SYS_GRAY, fontSize: FontSize.sm, marginTop: 2, lineHeight: 18 },
+  formRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
+  formLabel: { color: C.sub, fontSize: 14, width: 70 },
+  formInput: { flex: 1, color: C.text, fontSize: 15, textAlign: 'right' },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginLeft: 16 },
 });

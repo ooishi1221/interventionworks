@@ -130,6 +130,19 @@ export async function initDatabase(): Promise<void> {
     await db.execAsync(`ALTER TABLE favorites ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;`);
   } catch { /* already exists */ }
 
+  // マイグレーション: vehicles にバイクプロフィールカラムを追加
+  const vehicleMigrations = [
+    `ALTER TABLE vehicles ADD COLUMN cc INTEGER;`,
+    `ALTER TABLE vehicles ADD COLUMN manufacturer TEXT;`,
+    `ALTER TABLE vehicles ADD COLUMN model TEXT;`,
+    `ALTER TABLE vehicles ADD COLUMN year INTEGER;`,
+    `ALTER TABLE vehicles ADD COLUMN photoUrl TEXT;`,
+    `ALTER TABLE vehicles ADD COLUMN tagline TEXT;`,
+  ];
+  for (const sql of vehicleMigrations) {
+    try { await db.execAsync(sql); } catch { /* already exists */ }
+  }
+
   await seedInitialData(db);
 }
 
@@ -161,10 +174,23 @@ export async function insertVehicle(
 ) {
   const db = getDatabase();
   return db.runAsync(
-    `INSERT INTO vehicles (name, type, licensePlate, color, notes)
-     VALUES (?, ?, ?, ?, ?);`,
-    [vehicle.name, vehicle.type, vehicle.licensePlate ?? null, vehicle.color ?? null, vehicle.notes ?? null]
+    `INSERT INTO vehicles (name, type, cc, manufacturer, model, year, color, photoUrl, tagline, licensePlate, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [vehicle.name, vehicle.type, vehicle.cc ?? null, vehicle.manufacturer ?? null, vehicle.model ?? null, vehicle.year ?? null, vehicle.color ?? null, vehicle.photoUrl ?? null, vehicle.tagline ?? null, vehicle.licensePlate ?? null, vehicle.notes ?? null]
   );
+}
+
+export async function updateVehicle(id: number, vehicle: Omit<import('../types').Vehicle, 'id' | 'createdAt'>) {
+  const db = getDatabase();
+  return db.runAsync(
+    `UPDATE vehicles SET name=?, type=?, cc=?, manufacturer=?, model=?, year=?, color=?, photoUrl=?, tagline=?, licensePlate=?, notes=? WHERE id=?;`,
+    [vehicle.name, vehicle.type, vehicle.cc ?? null, vehicle.manufacturer ?? null, vehicle.model ?? null, vehicle.year ?? null, vehicle.color ?? null, vehicle.photoUrl ?? null, vehicle.tagline ?? null, vehicle.licensePlate ?? null, vehicle.notes ?? null, id]
+  );
+}
+
+export async function getFirstVehicle(): Promise<import('../types').Vehicle | null> {
+  const db = getDatabase();
+  return db.getFirstAsync<import('../types').Vehicle>('SELECT * FROM vehicles ORDER BY id ASC LIMIT 1;');
 }
 
 export async function deleteVehicle(id: number) {

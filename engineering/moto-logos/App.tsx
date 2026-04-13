@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from './src/hooks/useDatabase';
 import { MapScreen, MapScreenHandle } from './src/screens/MapScreen';
 import { RiderScreen } from './src/screens/RiderScreen';
+import { MyBikeScreen } from './src/screens/MyBikeScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { InquiryScreen } from './src/screens/InquiryScreen';
@@ -71,6 +72,7 @@ function App() {
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const [settingsSub, setSettingsSub] = useState<'main' | 'inquiry' | 'legal'>('main');
+  const [riderSub, setRiderSub] = useState<'main' | 'mybike'>('main');
   const mapScreenRef = useRef<MapScreenHandle>(null);
   const [authReady, setAuthReady] = useState(false);
 
@@ -147,6 +149,7 @@ function App() {
       mapScreenRef.current?.resetView();
     } else {
       if (id !== 'settings') setSettingsSub('main');
+      if (id !== 'rider') setRiderSub('main');
       setTab(id);
     }
   };
@@ -211,13 +214,22 @@ function App() {
               />
             </View>
             {tab === 'rider' && (
-              <RiderScreen
-                onGoToSpot={handleGoToSpot}
-                onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
-                onStartTutorial={startTutorial}
-                nickname={nickname}
-                onChangeNickname={saveNickname}
-              />
+              riderSub === 'mybike' ? (
+                <MyBikeScreen
+                  userCC={userCC}
+                  onChangeCC={(cc) => setUserCC(cc)}
+                  onBack={() => setRiderSub('main')}
+                />
+              ) : (
+                <RiderScreen
+                  onGoToSpot={handleGoToSpot}
+                  onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
+                  onStartTutorial={startTutorial}
+                  onOpenMyBike={() => setRiderSub('mybike')}
+                  nickname={nickname}
+                  onChangeNickname={saveNickname}
+                />
+              )
             )}
             {tab === 'notifications' && (
               <NotificationsScreen />
