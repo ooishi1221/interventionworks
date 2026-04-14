@@ -115,7 +115,7 @@ export function ProximityContextCard({
 
   // カード内部状態
   const [phase, setPhase] = useState<
-    'initial' | 'corrections' | 'thanks' | 'alternatives'
+    'initial' | 'photo' | 'corrections' | 'thanks' | 'alternatives'
   >('initial');
   const [submitting, setSubmitting] = useState(false);
 
@@ -135,7 +135,7 @@ export function ProximityContextCard({
 
   // チュートリアル: OKボタンピカピカ
   useEffect(() => {
-    if (tutorial.active && phase === 'thanks') {
+    if (tutorial.active && phase === 'photo') {
       okGlowAnim.setValue(0);
       okGlowRef.current = Animated.loop(
         Animated.sequence([
@@ -180,6 +180,13 @@ export function ProximityContextCard({
     setPhase('initial');
   }, [effectiveState.kind, nearbySpot?.spot.id]);
 
+  // thanks自動消滅（2秒）
+  useEffect(() => {
+    if (phase !== 'thanks') return;
+    const timer = setTimeout(() => setPhase('initial'), 2000);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
   // スライドイン/アウト
   useEffect(() => {
     Animated.spring(slideAnim, {
@@ -193,12 +200,12 @@ export function ProximityContextCard({
   // 報告済みスポットID（写真追加用に保持）
   const [reportedSpotId, setReportedSpotId] = useState<string | null>(null);
 
-  // ── 報告: 停められた ────────────────────────────────
+  // ── 足跡: 停めた → 写真メモ → 完了 ────────────────────
   const handleGood = useCallback(async () => {
     // チュートリアル中: Firestore書き込みなしでadvance
     if (tutorial.isStep('report-good')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('thanks');
+      setPhase('photo');
       tutorial.advanceTutorial(); // → report-good-thanks（オーバーレイなし）
       return;
     }
@@ -220,7 +227,7 @@ export function ProximityContextCard({
       incrementStat('reports');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
-      setPhase('thanks');
+      setPhase('photo');
       onSpotUpdated?.();
     } catch (e) {
       captureError(e, { context: 'proximity_report_good' });
@@ -228,12 +235,12 @@ export function ProximityContextCard({
     setSubmitting(false);
   }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
 
-  // ── 写真投稿（停められた後のワンタップ写真） ────────
+  // ── 看板メモ（写真撮影） ────────────────────────────
   const handleSnapPhoto = useCallback(async () => {
     // チュートリアル: ダミー画像で投稿完了演出
     if (tutorial.isStep('report-good-thanks')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('initial');
+      setPhase('thanks');
       tutorial.advanceTutorial(); // → report-good-done
       return;
     }
@@ -253,12 +260,12 @@ export function ProximityContextCard({
       // カメラ非対応時はライブラリから
       if (!result) {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') return;
+        if (status !== 'granted') { setPhase('thanks'); return; }
         result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: false });
       }
-      if (result.canceled) return;
+      if (result.canceled) { setPhase('thanks'); return; }
 
-      if (!result.assets?.length) return;
+      if (!result.assets?.length) { setPhase('thanks'); return; }
       const photoUri = result.assets[0].uri;
       const bike = await getFirstVehicle();
       await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name);
@@ -266,15 +273,19 @@ export function ProximityContextCard({
     } catch (e) {
       captureError(e, { context: 'proximity_snap_photo' });
     }
-    // 写真撮っても撮らなくても閉じる
-    setPhase('initial');
+    setPhase('thanks');
   }, [reportedSpotId, user, tutorial]);
 
-  // ── 写真スキップ（ありがとうだけで閉じる） ──────────
-  const dismissThanks = useCallback(() => {
-    setPhase('initial');
+  // ── 写真スキップ → 足跡完了 ──────────────────────────
+  const skipPhoto = useCallback(() => {
+    setPhase('thanks');
     if (tutorial.isStep('report-good-thanks')) tutorial.advanceTutorial();
   }, [tutorial]);
+
+  // ── thanks消滅 ────────────────────────────────────────
+  const dismissThanks = useCallback(() => {
+    setPhase('initial');
+  }, []);
 
   // ── 報告: ダメだった → 理由選択表示 ────────────────
   const handleBad = useCallback(() => {
@@ -323,6 +334,27 @@ export function ProximityContextCard({
     }
     setSubmitting(false);
   }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
+
+  // ── 理由スキップ → そのまま「他を探す」へ ──────────
+  const skipCorrection = useCallback(async () => {
+    if (!nearbySpot) { setPhase('alternatives'); return; }
+    const spotId = nearbySpot.spot.id;
+    let userId = user?.userId;
+    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
+    if (userId) {
+      // 理由なしでも「停められなかった」事実を記録
+      const bike = await getFirstVehicle();
+      addReview(spotId, userId, 0, undefined, undefined, undefined, bike?.name).catch((e) =>
+        captureError(e, { context: 'proximity_skip_correction' })
+      );
+      AsyncStorage.setItem(`vote_${spotId}`, 'unmatched');
+      markReported(spotId);
+      logActivityLocal('report', `${nearbySpot.spot.name}で停められなかった`);
+      incrementStat('reports');
+    }
+    onSpotUpdated?.();
+    setPhase('alternatives');
+  }, [nearbySpot, user, onSpotUpdated]);
 
   // ── 「他を探す」表示 ────────────────────────────────
   const showAlternatives = useCallback(() => {
@@ -393,7 +425,7 @@ export function ProximityContextCard({
           </>
         )}
 
-        {/* ── ニアバイ: 理由選択 ──────────────────────── */}
+        {/* ── ニアバイ: 理由選択（スキップ可） ──────────── */}
         {effectiveState.kind === 'nearby' && phase === 'corrections' && (
           <>
             <Text style={styles.correctionTitle}>何があった？</Text>
@@ -411,22 +443,20 @@ export function ProximityContextCard({
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity onPress={() => setPhase('initial')} style={styles.backLink}>
-              <Text style={styles.backText}>戻る</Text>
+            <TouchableOpacity onPress={() => { skipCorrection(); }} style={styles.skipAltLink}>
+              <Ionicons name="navigate-outline" size={16} color={C.blue} />
+              <Text style={styles.skipAltText}>スキップして近くの別の場所を探す</Text>
             </TouchableOpacity>
           </>
         )}
 
-        {/* ── ありがとう + 写真投稿 ──────────────────────── */}
-        {phase === 'thanks' && (
+        {/* ── 写真メモ（停めた直後） ──────────────────────── */}
+        {phase === 'photo' && (
           <View>
-            <View style={styles.thanksWrap}>
-              <Ionicons name="checkmark-circle" size={28} color={C.green} />
-              <Text style={styles.thanksText}>足跡を残しました！</Text>
-            </View>
+            <Text style={styles.photoPromptText}>看板や入口の写真をメモしとく？</Text>
             {tutorial.active && (
               <Text style={{ color: '#FF9F0A', fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 8 }}>
-                写真も投稿できます。OKをタップして次へ
+                写真もメモできます。OKをタップして次へ
               </Text>
             )}
             <View style={styles.buttonRow}>
@@ -436,11 +466,11 @@ export function ProximityContextCard({
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera" size={22} color="#fff" />
-                <Text style={styles.actionText}>写真もメモする</Text>
+                <Text style={styles.actionText}>📸 パシャ</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.skipBtn]}
-                onPress={dismissThanks}
+                onPress={skipPhoto}
                 activeOpacity={0.8}
               >
                 {tutorial.active && (
@@ -465,6 +495,16 @@ export function ProximityContextCard({
               </TouchableOpacity>
             </View>
           </View>
+        )}
+
+        {/* ── 足跡完了（自動消滅） ──────────────────────── */}
+        {phase === 'thanks' && (
+          <TouchableOpacity onPress={dismissThanks} activeOpacity={0.8}>
+            <View style={styles.thanksWrap}>
+              <Ionicons name="checkmark-circle" size={28} color={C.green} />
+              <Text style={styles.thanksText}>足跡を残しました！</Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* ── スポットなし: 初期カード ─────────────────── */}
@@ -642,7 +682,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── ありがとう ─────────────────────────────────────
+  // ── 写真メモ ──────────────────────────────────────
+  photoPromptText: {
+    color: C.text,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+
+  // ── 理由スキップリンク ────────────────────────────
+  skipAltLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  skipAltText: {
+    color: '#0A84FF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // ── 足跡完了 ──────────────────────────────────────
   thanksWrap: {
     flexDirection: 'row',
     alignItems: 'center',
