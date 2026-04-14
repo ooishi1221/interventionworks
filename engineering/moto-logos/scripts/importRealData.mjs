@@ -146,15 +146,9 @@ const allDocs = await db.collection('spots').get();
 let deleted = 0;
 const BATCH_SIZE = 499;
 
-// seedデータ(seed_)とダミー生成データを削除対象に
-const dummyDocs = allDocs.docs.filter(d => {
-  const id = d.id;
-  return id.startsWith('東京_') || id.startsWith('神奈_') || id.startsWith('埼玉_') ||
-         id.startsWith('千葉_') || id.startsWith('茨城_') || id.startsWith('栃木_') ||
-         id.startsWith('群馬_') || id.startsWith('静岡_') || id.startsWith('山梨_') ||
-         id.startsWith('長野_') || id.startsWith('kanto_') || id.startsWith('shizuoka_') ||
-         id.startsWith('yamanashi_') || id.startsWith('nagano_') || id.startsWith('import_');
-});
+// real_ と jmpsa_ 以外は全部消す（seed_, user_, ダミー生成含む）
+const keepPrefixes = ['real_', 'jmpsa_'];
+const dummyDocs = allDocs.docs.filter(d => !keepPrefixes.some(p => d.id.startsWith(p)));
 
 console.log(`  ダミーデータ: ${dummyDocs.length}件`);
 for (let i = 0; i < dummyDocs.length; i += BATCH_SIZE) {
