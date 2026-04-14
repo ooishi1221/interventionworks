@@ -132,6 +132,7 @@ for (let i = 0; i < spots.length; i += BATCH_SIZE) {
       payment:           s.payment ?? { cash: true, icCard: false, qrCode: false },
       isFree:            s.isFree ?? false,
       ...(s.pricePerHour != null && { pricePerHour: s.pricePerHour }),
+      ...(s.priceInfo    && { priceInfo: s.priceInfo }),
       ...(s.openHours    && { openHours: s.openHours }),
       viewCount:         0,
       goodCount:         0,

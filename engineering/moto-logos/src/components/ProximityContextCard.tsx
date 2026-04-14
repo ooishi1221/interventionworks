@@ -27,7 +27,7 @@ import {
   reportSpotClosed,
   addReview,
 } from '../firebase/firestoreService';
-import { incrementStat, logActivityLocal, getFirstVehicle } from '../db/database';
+import { incrementStat, logActivityLocal, getFirstVehicle, addFootprint, startParking } from '../db/database';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -225,6 +225,8 @@ export function ProximityContextCard({
       await markReported(spotId);
       logActivityLocal('report', `${nearbySpot.spot.name}に停めた`);
       incrementStat('reports');
+      addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'parked');
+      startParking(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, bike?.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
       setPhase('photo');
@@ -325,6 +327,7 @@ export function ProximityContextCard({
       await markReported(spotId);
       logActivityLocal('report', `${nearbySpot.spot.name}で${correction}`);
       incrementStat('reports');
+      addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, correction);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       onSpotUpdated?.();
       // 理由送信後 → 「他を探す」リスト表示
@@ -351,6 +354,7 @@ export function ProximityContextCard({
       markReported(spotId);
       logActivityLocal('report', `${nearbySpot.spot.name}で停められなかった`);
       incrementStat('reports');
+      addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'failed');
     }
     onSpotUpdated?.();
     setPhase('alternatives');

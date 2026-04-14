@@ -122,6 +122,36 @@ export async function initDatabase(): Promise<void> {
     );
   `);
 
+  // footprints テーブル（足跡地図用）
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS footprints (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      spotId    TEXT    NOT NULL,
+      spotName  TEXT    NOT NULL,
+      latitude  REAL    NOT NULL,
+      longitude REAL    NOT NULL,
+      type      TEXT    NOT NULL DEFAULT 'parked',
+      createdAt TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_footprints_created ON footprints(createdAt DESC);
+  `);
+
+  // parking_history テーブル（駐車履歴 — Firestoreスポット対応）
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS parking_history (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      spotId     TEXT    NOT NULL,
+      spotName   TEXT    NOT NULL,
+      latitude   REAL    NOT NULL,
+      longitude  REAL    NOT NULL,
+      vehicleId  INTEGER,
+      startedAt  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+      endedAt    TEXT,
+      notes      TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_parking_history_started ON parking_history(startedAt DESC);
+  `);
+
   // マイグレーション: favorites に isPinned / sortOrder カラムを追加（既存DB対応）
   try {
     await db.execAsync(`ALTER TABLE favorites ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0;`);
@@ -467,6 +497,99 @@ export async function getRecentActivity(limit = 20): Promise<ActivityLogEntry[]>
   return db.getAllAsync<ActivityLogEntry>(
     'SELECT * FROM activity_log ORDER BY createdAt DESC LIMIT ?;',
     [limit]
+  );
+}
+
+// --- Parking History ---
+
+export interface ParkingSession {
+  id: number;
+  spotId: string;
+  spotName: string;
+  latitude: number;
+  longitude: number;
+  vehicleId: number | null;
+  startedAt: string;
+  endedAt: string | null;
+  notes: string | null;
+}
+
+export async function startParking(
+  spotId: string, spotName: string, latitude: number, longitude: number, vehicleId?: number,
+): Promise<number> {
+  const db = getDatabase();
+  const result = await db.runAsync(
+    'INSERT INTO parking_history (spotId, spotName, latitude, longitude, vehicleId) VALUES (?, ?, ?, ?, ?);',
+    [spotId, spotName, latitude, longitude, vehicleId ?? null],
+  );
+  return result.lastInsertRowId;
+}
+
+export async function endParking(sessionId: number): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `UPDATE parking_history SET endedAt = datetime('now', 'localtime') WHERE id = ?;`,
+    [sessionId],
+  );
+}
+
+export async function getActiveParkingSession(): Promise<ParkingSession | null> {
+  const db = getDatabase();
+  return db.getFirstAsync<ParkingSession>(
+    'SELECT * FROM parking_history WHERE endedAt IS NULL ORDER BY startedAt DESC LIMIT 1;',
+  );
+}
+
+export async function getParkingHistory(limit = 50): Promise<ParkingSession[]> {
+  const db = getDatabase();
+  return db.getAllAsync<ParkingSession>(
+    'SELECT * FROM parking_history ORDER BY startedAt DESC LIMIT ?;',
+    [limit],
+  );
+}
+
+// --- Footprints ---
+
+export interface Footprint {
+  id: number;
+  spotId: string;
+  spotName: string;
+  latitude: number;
+  longitude: number;
+  type: string;
+  createdAt: string;
+}
+
+export async function addFootprint(
+  spotId: string, spotName: string, latitude: number, longitude: number, type = 'parked'
+): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    'INSERT INTO footprints (spotId, spotName, latitude, longitude, type) VALUES (?, ?, ?, ?, ?);',
+    [spotId, spotName, latitude, longitude, type],
+  );
+}
+
+export async function getFootprints(limit = 100): Promise<Footprint[]> {
+  const db = getDatabase();
+  return db.getAllAsync<Footprint>(
+    'SELECT * FROM footprints ORDER BY createdAt DESC LIMIT ?;',
+    [limit],
+  );
+}
+
+export async function getFootprintCount(): Promise<number> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM footprints;',
+  );
+  return row?.count ?? 0;
+}
+
+export async function getUniqueFootprintLocations(): Promise<Footprint[]> {
+  const db = getDatabase();
+  return db.getAllAsync<Footprint>(
+    `SELECT *, MAX(createdAt) as createdAt FROM footprints GROUP BY spotId ORDER BY createdAt DESC;`,
   );
 }
 

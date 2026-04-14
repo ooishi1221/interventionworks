@@ -15,7 +15,11 @@ export interface ParkingPin {
   source: 'seed' | 'osm' | 'user';
   address?: string;
   pricePerHour?: number;
+  priceInfo?: string;
   openHours?: string;
+  paymentCash?: boolean;
+  paymentIC?: boolean;
+  paymentQR?: boolean;
   updatedAt?: string; // ISO8601
 }
 

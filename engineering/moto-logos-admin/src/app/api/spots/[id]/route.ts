@@ -79,7 +79,7 @@ export async function PATCH(
     }
 
     // ── 許可フィールドのフィルタリング ──
-    const allowedScalarFields = ['name', 'status', 'verificationLevel'];
+    const allowedScalarFields = ['name', 'status', 'verificationLevel', 'priceInfo', 'openHours', 'isFree', 'pricePerHour', 'parkingCapacity'];
     const filtered: Record<string, unknown> = {};
 
     for (const key of allowedScalarFields) {
@@ -95,6 +95,16 @@ export async function PATCH(
           { status: 400 },
         );
       }
+    }
+
+    // payment の処理（cash / icCard / qrCode）
+    if (updates.payment) {
+      const { cash, icCard, qrCode } = updates.payment;
+      filtered.payment = {
+        cash: !!cash,
+        icCard: !!icCard,
+        qrCode: !!qrCode,
+      };
     }
 
     // coordinate の処理（latitude / longitude 必須 → geohash 自動再計算）

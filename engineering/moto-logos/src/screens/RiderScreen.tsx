@@ -1,11 +1,11 @@
 /**
- * RiderScreen v3 — ライダープロフィール + 活動データ
+ * RiderScreen v4 — 足跡地図 + 日記タイムライン
  *
- * 上部: 愛車写真付きHeroカード（ニックネーム + バイク情報）
- * 中部: インパクトメッセージ + 横3列数字サマリー
- * 下部: 活動タイムライン
+ * 上部: 愛車写真付きHeroカード
+ * 中部: 足跡マップ（自分が停めた場所にピン）
+ * 下部: 日記形式の活動タイムライン
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,23 +16,31 @@ import {
   TouchableOpacity,
   Alert,
   ImageBackground,
+  Dimensions,
 } from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
   getAllUserSpots,
   getAllFavorites,
-  getStat,
-  getRecentActivity,
   getFirstVehicle,
-  type ActivityLogEntry,
+  getFootprints,
+  getUniqueFootprintLocations,
+  getActiveParkingSession,
+  endParking,
+  type Footprint,
+  type ParkingSession,
 } from '../db/database';
 import { getMySpotsTotalViews } from '../firebase/firestoreService';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle } from '../types';
+import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { captureError } from '../utils/sentry';
+
+const { width: SCREEN_W } = Dimensions.get('window');
 
 const C = {
   bg:     '#000000',
@@ -55,43 +63,51 @@ const CC_LABEL: Record<string, string> = {
   'null': '大型',
 };
 
-// ─── 最近の活動タイムライン ───────────────────────────
-
-const ACTIVITY_ICON: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  spot:     { icon: 'location',           color: C.purple },
-  review:   { icon: 'chatbubble',         color: C.blue },
-  report:   { icon: 'checkmark-circle',   color: C.green },
-  favorite: { icon: 'heart',             color: C.pink },
-  // 足跡サブタイプ別カラー
-  report_good:   { icon: 'thumbs-up',          color: '#30D158' },  // 停めた
-  report_full:   { icon: 'alert-circle',       color: '#FF453A' },  // 満車
-  report_closed: { icon: 'close-circle',       color: '#636366' },  // 閉鎖
-  report_price:  { icon: 'cash-outline',       color: '#FFD60A' },  // 料金違った
-  report_cc:     { icon: 'speedometer-outline', color: '#FF9F0A' },  // CC制限違った
-  report_bad:    { icon: 'thumbs-down',        color: '#FF9F0A' },  // 停められなかった
+// ─── 足跡タイプ別のアイコン/カラー ───────────────────
+const FOOTPRINT_STYLE: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
+  parked: { icon: 'footsteps', color: C.green, label: 'に停めた' },
+  full:   { icon: 'alert-circle', color: '#FF453A', label: 'は満車だった' },
+  closed: { icon: 'close-circle', color: '#636366', label: 'は閉鎖していた' },
+  wrong_price: { icon: 'cash-outline', color: '#FFD60A', label: 'で料金が違った' },
+  wrong_cc:    { icon: 'speedometer-outline', color: C.orange, label: 'でCC制限が違った' },
+  failed: { icon: 'footsteps-outline' as any, color: C.orange, label: 'で停められなかった' },
 };
 
-/** report ラベルからサブタイプを判定 */
-function getReportSubtype(label: string): string {
-  if (label.includes('停めた') && !label.includes('停められなかった')) return 'report_good';
-  if (label.includes('full') || label.includes('満車')) return 'report_full';
-  if (label.includes('closed') || label.includes('閉鎖')) return 'report_closed';
-  if (label.includes('wrong_price') || label.includes('料金')) return 'report_price';
-  if (label.includes('wrong_cc') || label.includes('CC')) return 'report_cc';
-  if (label.includes('停められなかった') || label.includes('other')) return 'report_bad';
-  return 'report';
+// ─── 日付フォーマット ────────────────────────────────
+function formatDiaryDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-function formatRelative(iso: string): string {
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function isSameDay(a: string, b: string): boolean {
+  return a.slice(0, 10) === b.slice(0, 10);
+}
+
+function formatElapsed(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return 'たった今';
-  if (min < 60) return `${min}分前`;
+  if (min < 60) return `${min}分`;
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}時間前`;
+  if (hr < 24) return `${hr}時間${min % 60 > 0 ? `${min % 60}分` : ''}`;
   const d = Math.floor(hr / 24);
-  return `${d}日前`;
+  return `${d}日`;
 }
+
+// ─── 東京デフォルトリージョン ────────────────────────
+const TOKYO_REGION: Region = {
+  latitude: 35.6812,
+  longitude: 139.7671,
+  latitudeDelta: 0.15,
+  longitudeDelta: 0.15,
+};
 
 interface Props {
   onGoToSpot?: (spot: ParkingPin) => void;
@@ -102,54 +118,86 @@ interface Props {
 }
 
 export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname }: Props) {
-  const [spotsCount, setSpotsCount] = useState(0);
-  const [reportsCount, setReportsCount] = useState(0);
-  const [favsCount, setFavsCount] = useState(0);
-  const [totalViews, setTotalViews] = useState(0);
   const [bike, setBike] = useState<Vehicle | null>(null);
-  const [activityEntries, setActivityEntries] = useState<ActivityLogEntry[]>([]);
+  const [footprints, setFootprints] = useState<Footprint[]>([]);
+  const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
+  const [activeSession, setActiveSession] = useState<ParkingSession | null>(null);
+  const [totalViews, setTotalViews] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [favModalOpen, setFavModalOpen] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
 
-  const loadStats = useCallback(async () => {
-    const [spots, reports, favs, recentActs, vehicle] = await Promise.all([
-      getAllUserSpots(),
-      getStat('reports'),
-      getAllFavorites(),
-      getRecentActivity(10),
+  const loadData = useCallback(async () => {
+    const [vehicle, fp, uloc, spots, session] = await Promise.all([
       getFirstVehicle(),
+      getFootprints(50),
+      getUniqueFootprintLocations(),
+      getAllUserSpots(),
+      getActiveParkingSession(),
     ]);
-    setSpotsCount(spots.length);
-    setReportsCount(reports);
-    setFavsCount(favs.length);
-    setActivityEntries(recentActs);
     setBike(vehicle);
+    setFootprints(fp);
+    setUniqueLocations(uloc);
+    setActiveSession(session);
 
     const spotIds = spots.map((s) => `user_${s.id}`);
     getMySpotsTotalViews(spotIds).then(setTotalViews).catch((e) => captureError(e, { context: 'rider_total_views' }));
   }, []);
 
-  useEffect(() => { loadStats(); }, [loadStats, favModalOpen, spotsModalOpen]);
+  useEffect(() => { loadData(); }, [loadData, favModalOpen, spotsModalOpen]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadStats();
+    await loadData();
     setRefreshing(false);
-  }, [loadStats]);
+  }, [loadData]);
 
-  // バイク情報のサマリーテキスト
+  // 「出発した」→ endParking
+  const handleEndParking = useCallback(async () => {
+    if (!activeSession) return;
+    await endParking(activeSession.id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setActiveSession(null);
+    loadData();
+  }, [activeSession, loadData]);
+
+  // 地図のリージョンを足跡から計算
+  const mapRegion = useMemo<Region>(() => {
+    if (uniqueLocations.length === 0) return TOKYO_REGION;
+    if (uniqueLocations.length === 1) {
+      return {
+        latitude: uniqueLocations[0].latitude,
+        longitude: uniqueLocations[0].longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+    }
+    const lats = uniqueLocations.map((f) => f.latitude);
+    const lngs = uniqueLocations.map((f) => f.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.02),
+      longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.02),
+    };
+  }, [uniqueLocations]);
+
+  // バイク情報
   const bikeLabel = bike
     ? [bike.name || bike.manufacturer, bike.year ? `${bike.year}` : null].filter(Boolean).join(' · ')
     : null;
   const ccLabel = bike?.cc !== undefined ? CC_LABEL[String(bike.cc)] : null;
 
-  // インパクトメッセージの出し分け
+  // インパクトメッセージ
   const impactMessage = (() => {
-    if (totalViews > 0) return `あなたの発見が ${totalViews}人 のライダーに届いています`;
-    if (spotsCount > 0) return 'あなたが登録したスポット、もうすぐ誰かに届きます';
-    if (reportsCount > 0) return `仲間の地図を ${reportsCount}回 最新に保ちました`;
-    return '最初の一歩を踏み出そう — マップで + をタップ';
+    const count = uniqueLocations.length;
+    if (count === 0) return '最初の足跡を刻もう — スポットに行って記録するだけ';
+    if (totalViews > 0) return `${count}か所の足跡が ${totalViews}人 のライダーに届いた`;
+    return `${count}か所に足跡を残した`;
   })();
 
   return (
@@ -194,7 +242,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
             </View>
           )}
 
-          {/* マイバイク編集リンク */}
           {onOpenMyBike && (
             <TouchableOpacity
               style={s.editBikeBtn}
@@ -211,56 +258,105 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
 
         {/* ── 2. インパクトメッセージ ──────────────── */}
         <View style={s.impactRow}>
-          <View style={s.impactDot} />
+          <Ionicons name="footsteps" size={16} color={C.accent} />
           <Text style={s.impactText}>{impactMessage}</Text>
         </View>
 
-        {/* ── 3. 数字サマリー（横3列） ────────────── */}
-        <View style={s.statsRow}>
-          <TouchableOpacity
-            style={s.statItem}
-            onPress={() => { setSpotsModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            activeOpacity={0.7}
-          >
-            <Text style={s.statValue}>{spotsCount}</Text>
-            <Text style={s.statLabel}>発見</Text>
-          </TouchableOpacity>
-          <View style={s.statDivider} />
-          <View style={s.statItem}>
-            <Text style={s.statValue}>{reportsCount}</Text>
-            <Text style={s.statLabel}>足跡</Text>
+        {/* ── 2.5 駐車中カード ──────────────────── */}
+        {activeSession && (
+          <View style={s.parkingCard}>
+            <View style={s.parkingCardLeft}>
+              <View style={s.parkingPulse}>
+                <Ionicons name="location" size={18} color={C.green} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.parkingLabel}>駐車中</Text>
+                <Text style={s.parkingSpotName} numberOfLines={1}>{activeSession.spotName}</Text>
+                <Text style={s.parkingElapsed}>{formatElapsed(activeSession.startedAt)}経過</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={s.parkingEndBtn}
+              onPress={handleEndParking}
+              activeOpacity={0.7}
+            >
+              <Text style={s.parkingEndText}>出発した</Text>
+            </TouchableOpacity>
           </View>
-          <View style={s.statDivider} />
-          <TouchableOpacity
-            style={s.statItem}
-            onPress={() => { setFavModalOpen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            activeOpacity={0.7}
+        )}
+
+        {/* ── 3. 足跡マップ ───────────────────────── */}
+        <View style={s.mapContainer}>
+          <MapView
+            style={s.map}
+            region={mapRegion}
+            customMapStyle={DARK_MAP_STYLE}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            pointerEvents="none"
           >
-            <Text style={s.statValue}>{favsCount}</Text>
-            <Text style={s.statLabel}>保存</Text>
-          </TouchableOpacity>
+            {uniqueLocations.map((fp) => {
+              const style = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
+              return (
+                <Marker
+                  key={fp.id}
+                  coordinate={{ latitude: fp.latitude, longitude: fp.longitude }}
+                  tracksViewChanges={false}
+                >
+                  <View style={[s.markerDot, { backgroundColor: style.color }]}>
+                    <Ionicons name={style.icon} size={12} color="#fff" />
+                  </View>
+                </Marker>
+              );
+            })}
+          </MapView>
+
+          {uniqueLocations.length === 0 && (
+            <View style={s.mapEmptyOverlay}>
+              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
+              <Text style={s.mapEmptyText}>まだ足跡がない</Text>
+            </View>
+          )}
+
+          {/* 足跡カウント */}
+          {uniqueLocations.length > 0 && (
+            <View style={s.mapBadge}>
+              <Text style={s.mapBadgeText}>{uniqueLocations.length}か所</Text>
+            </View>
+          )}
         </View>
 
-        {/* ── 4. 活動タイムライン ─────────────────── */}
-        <Text style={s.sectionTitle}>最近の活動</Text>
-        {activityEntries.length === 0 ? (
+        {/* ── 4. 日記タイムライン ─────────────────── */}
+        <Text style={s.sectionTitle}>足跡日記</Text>
+        {footprints.length === 0 ? (
           <View style={s.emptyActivity}>
-            <Ionicons name="flag" size={24} color={C.accent} />
-            <Text style={s.emptyText}>マップでスポットを共有して{'\n'}あなたの活動を始めよう</Text>
+            <Ionicons name="footsteps" size={24} color={C.accent} />
+            <Text style={s.emptyText}>スポットに行って足跡を残そう{'\n'}あなたの軌跡がここに刻まれます</Text>
           </View>
         ) : (
-          activityEntries.map((entry, i) => {
-            const key = entry.type === 'report' ? getReportSubtype(entry.label) : entry.type;
-            const meta = ACTIVITY_ICON[key] ?? ACTIVITY_ICON.report;
+          footprints.map((fp, i) => {
+            const showDate = i === 0 || !isSameDay(footprints[i - 1].createdAt, fp.createdAt);
+            const style = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
             return (
-              <View key={entry.id} style={s.activityItem}>
-                <View style={[s.activityDot, { backgroundColor: meta.color }]}>
-                  <Ionicons name={meta.icon} size={14} color="#fff" />
-                </View>
-                {i < activityEntries.length - 1 && <View style={s.activityLine} />}
-                <View style={{ flex: 1 }}>
-                  <Text style={s.activityText}>{entry.label}</Text>
-                  <Text style={s.activityTime}>{formatRelative(entry.createdAt)}</Text>
+              <View key={fp.id}>
+                {showDate && (
+                  <Text style={s.diaryDate}>{formatDiaryDate(fp.createdAt)}</Text>
+                )}
+                <View style={s.diaryItem}>
+                  <View style={[s.diaryDot, { backgroundColor: style.color }]}>
+                    <Ionicons name={style.icon} size={12} color="#fff" />
+                  </View>
+                  {i < footprints.length - 1 && isSameDay(fp.createdAt, footprints[i + 1]?.createdAt) && (
+                    <View style={s.diaryLine} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.diaryText}>
+                      {fp.spotName}{style.label}
+                    </Text>
+                    <Text style={s.diaryTime}>{formatTime(fp.createdAt)}</Text>
+                  </View>
                 </View>
               </View>
             );
@@ -273,19 +369,19 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
       {/* ── モーダル ─────────────────────────────── */}
       <FavoritesListModal
         visible={favModalOpen}
-        onClose={() => { setFavModalOpen(false); loadStats(); }}
+        onClose={() => { setFavModalOpen(false); loadData(); }}
         onGoToSpot={onGoToSpot}
       />
       <SpotsListModal
         visible={spotsModalOpen}
-        onClose={() => { setSpotsModalOpen(false); loadStats(); onDataChanged?.(); }}
+        onClose={() => { setSpotsModalOpen(false); loadData(); onDataChanged?.(); }}
         onGoToSpot={onGoToSpot}
       />
     </SafeAreaView>
   );
 }
 
-// ─── Heroカード内コンテンツ（写真あり/なしで共有） ──────
+// ─── Heroカード内コンテンツ ──────────────────────────
 function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChangeNickname }: {
   nickname?: string; bikeLabel: string | null; ccLabel: string | null;
   tagline?: string; hasPhoto?: boolean; onChangeNickname?: (name: string) => void;
@@ -335,181 +431,124 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
-  heroBg: {
-    width: '100%',
-    height: 220,
-  },
-  heroBgImage: {
-    borderRadius: 20,
-  },
-  heroOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 20,
-  },
+  heroBg: { width: '100%', height: 220 },
+  heroBgImage: { borderRadius: 20 },
+  heroOverlay: { flex: 1, justifyContent: 'flex-end', padding: 20 },
   heroNoBg: {
     height: 200,
     justifyContent: 'flex-end',
     padding: 20,
     backgroundColor: C.card,
   },
-  heroInner: {
-    alignItems: 'center',
-    gap: 4,
-  },
+  heroInner: { alignItems: 'center', gap: 4 },
   avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 64, height: 64, borderRadius: 32,
     backgroundColor: 'rgba(255,107,0,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,107,0,0.3)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,107,0,0.3)',
     marginBottom: 6,
   },
-  heroName: {
-    color: C.text,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  heroBike: {
-    color: C.sub,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  heroTagline: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
+  heroName: { color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  heroBike: { color: C.sub, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  heroTagline: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontStyle: 'italic', marginTop: 4 },
   editBikeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: C.border,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
   },
-  editBikeText: {
-    color: C.sub,
-    fontSize: 12,
-    fontWeight: '500',
-  },
+  editBikeText: { color: C.sub, fontSize: 12, fontWeight: '500' },
 
   // ── Impact Message ──
   impactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 16, marginTop: 20, marginBottom: 16,
+    paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: 'rgba(255,107,0,0.08)',
     borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,107,0,0.2)',
-    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,107,0,0.2)',
   },
-  impactDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.accent,
-  },
-  impactText: {
-    color: C.accent,
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
-    lineHeight: 20,
-  },
+  impactText: { color: C.accent, fontSize: 14, fontWeight: '700', flex: 1, lineHeight: 20 },
 
-  // ── Stats Row ──
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 24,
+  // ── Parking Active Card ──
+  parkingCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 16, marginBottom: 16,
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: 'rgba(48,209,88,0.10)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(48,209,88,0.3)',
+  },
+  parkingCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  parkingPulse: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(48,209,88,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  parkingLabel: { color: '#30D158', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  parkingSpotName: { color: '#F2F2F7', fontSize: 15, fontWeight: '600', marginTop: 1 },
+  parkingElapsed: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
+  parkingEndBtn: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 10,
+  },
+  parkingEndText: { color: '#F2F2F7', fontSize: 13, fontWeight: '600' },
+
+  // ── Footprint Map ──
+  mapContainer: {
+    marginHorizontal: 16, marginBottom: 24,
+    borderRadius: 16, overflow: 'hidden',
+    height: 200,
     backgroundColor: C.card,
-    borderRadius: 16,
-    paddingVertical: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
   },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
+  map: { flex: 1 },
+  mapEmptyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  statValue: {
-    color: C.text,
-    fontSize: 26,
-    fontWeight: '800',
+  mapEmptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8 },
+  mapBadge: {
+    position: 'absolute', bottom: 10, right: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 10,
   },
-  statLabel: {
-    color: C.sub,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: C.border,
+  mapBadgeText: { color: C.text, fontSize: 12, fontWeight: '700' },
+  markerDot: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
   },
 
   // ── Section ──
   sectionTitle: {
-    color: C.sub,
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-    marginLeft: 18,
+    color: C.sub, fontSize: 12, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.5,
+    marginBottom: 10, marginLeft: 18,
   },
 
-  // ── Activity ──
-  emptyActivity: {
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 32,
+  // ── Diary Timeline ──
+  emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
+  emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  diaryDate: {
+    color: C.text, fontSize: 16, fontWeight: '700',
+    marginLeft: 18, marginTop: 16, marginBottom: 8,
   },
-  emptyText: {
-    color: C.sub,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
+  diaryItem: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    marginBottom: 14, marginHorizontal: 16,
   },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 16,
-    marginHorizontal: 16,
+  diaryDot: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
   },
-  activityDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityLine: {
-    position: 'absolute',
-    left: 29,
-    top: 30,
-    width: 2,
-    height: 20,
+  diaryLine: {
+    position: 'absolute', left: 29, top: 30,
+    width: 2, height: 18,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  activityText: { color: C.text, fontSize: 14, lineHeight: 20 },
-  activityTime: { color: C.sub, fontSize: 11, marginTop: 2 },
+  diaryText: { color: C.text, fontSize: 14, lineHeight: 20 },
+  diaryTime: { color: C.sub, fontSize: 11, marginTop: 2 },
 });

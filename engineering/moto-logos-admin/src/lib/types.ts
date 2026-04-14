@@ -155,6 +155,10 @@ export interface SpotResponse {
   viewCount: number;
   isFree: boolean;
   pricePerHour?: number;
+  priceInfo?: string;
+  openHours?: string;
+  parkingCapacity?: number;
+  payment?: { cash: boolean; icCard: boolean; qrCode: boolean };
   updatedAt: string;
   createdAt: string;
 }

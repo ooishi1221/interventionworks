@@ -72,6 +72,8 @@ export interface FirestoreSpot {
   isFree:            boolean | null;
   /** 料金（円/時間）（任意） */
   pricePerHour?:     number;
+  /** 料金テキスト（自由記述。例:「100円/30分」「1日最大800円」）*/
+  priceInfo?:        string;
   /** 営業時間（任意） */
   openHours?:        string;
   /**

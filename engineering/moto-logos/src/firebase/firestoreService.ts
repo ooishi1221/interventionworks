@@ -112,7 +112,11 @@ function docToPin(d: { id: string; data: () => any }): ParkingPin {
     source:       data.source as 'seed' | 'user',
     address:      data.address,
     pricePerHour: data.pricePerHour,
+    priceInfo:    data.priceInfo,
     openHours:    data.openHours,
+    paymentCash:  data.payment?.cash,
+    paymentIC:    data.payment?.icCard,
+    paymentQR:    data.payment?.qrCode,
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
   };
 }

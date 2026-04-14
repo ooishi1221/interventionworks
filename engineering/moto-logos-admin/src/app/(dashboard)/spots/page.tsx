@@ -16,6 +16,203 @@ const VERIFICATION_BADGE: Record<VerificationLevel, { label: string; className: 
   community: { label: 'Community', className: 'bg-text-secondary/20 text-text-secondary' },
 };
 
+// ─── スポット詳細編集モーダル ───────────────────────
+function SpotDetailModal({ spotId, onClose, onSaved }: { spotId: string; onClose: () => void; onSaved: () => void }) {
+  const [detail, setDetail] = useState<SpotResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    priceInfo: '',
+    openHours: '',
+    pricePerHour: '',
+    parkingCapacity: '',
+    isFree: false,
+    paymentCash: false,
+    paymentIC: false,
+    paymentQR: false,
+  });
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [spotRes, reviewsRes] = await Promise.all([
+        fetch(`/api/spots/${spotId}`),
+        fetch(`/api/spots/${spotId}/reviews`).catch(() => null),
+      ]);
+      const spot = await spotRes.json();
+      setDetail(spot);
+      setForm({
+        priceInfo: spot.priceInfo ?? '',
+        openHours: spot.openHours ?? '',
+        pricePerHour: spot.pricePerHour?.toString() ?? '',
+        parkingCapacity: spot.parkingCapacity?.toString() ?? '',
+        isFree: !!spot.isFree,
+        paymentCash: spot.payment?.cash ?? false,
+        paymentIC: spot.payment?.icCard ?? false,
+        paymentQR: spot.payment?.qrCode ?? false,
+      });
+      if (reviewsRes?.ok) {
+        const reviewData = await reviewsRes.json();
+        const urls = (reviewData.reviews ?? [])
+          .flatMap((r: { photoUrls?: string[] }) => r.photoUrls ?? [])
+          .slice(0, 8);
+        setPhotos(urls);
+      }
+      setLoading(false);
+    })();
+  }, [spotId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const body: Record<string, unknown> = {
+      priceInfo: form.priceInfo || null,
+      openHours: form.openHours || null,
+      pricePerHour: form.pricePerHour ? Number(form.pricePerHour) : null,
+      parkingCapacity: form.parkingCapacity ? Number(form.parkingCapacity) : null,
+      isFree: form.isFree,
+      payment: { cash: form.paymentCash, icCard: form.paymentIC, qrCode: form.paymentQR },
+    };
+    const res = await fetch(`/api/spots/${spotId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setSaving(false);
+    if (res.ok) {
+      onSaved();
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {loading ? (
+          <div className="p-8 text-center text-text-secondary">読み込み中...</div>
+        ) : detail && (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">{detail.name}</h2>
+              <button onClick={onClose} className="text-text-secondary hover:text-foreground text-xl">&times;</button>
+            </div>
+            {detail.address && <p className="text-sm text-text-secondary mb-4">{detail.address}</p>}
+
+            {/* 写真ギャラリー */}
+            {photos.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-text-secondary mb-2">看板・入口写真</label>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {photos.map((url, i) => (
+                    <img key={i} src={url} alt="" className="w-24 h-18 object-cover rounded-lg border border-border flex-shrink-0" />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* フォーム */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">料金テキスト</label>
+                <input
+                  type="text"
+                  value={form.priceInfo}
+                  onChange={(e) => setForm((f) => ({ ...f, priceInfo: e.target.value }))}
+                  placeholder="例: 100円/30分、1日最大800円"
+                  className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-text-secondary/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">料金（円/時間）</label>
+                  <input
+                    type="number"
+                    value={form.pricePerHour}
+                    onChange={(e) => setForm((f) => ({ ...f, pricePerHour: e.target.value }))}
+                    placeholder="200"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-text-secondary/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">収容台数</label>
+                  <input
+                    type="number"
+                    value={form.parkingCapacity}
+                    onChange={(e) => setForm((f) => ({ ...f, parkingCapacity: e.target.value }))}
+                    placeholder="20"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-text-secondary/50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">営業時間</label>
+                <input
+                  type="text"
+                  value={form.openHours}
+                  onChange={(e) => setForm((f) => ({ ...f, openHours: e.target.value }))}
+                  placeholder="例: 24時間、8:00-22:00"
+                  className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-text-secondary/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">無料</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.isFree}
+                    onChange={(e) => setForm((f) => ({ ...f, isFree: e.target.checked }))}
+                    className="accent-accent w-4 h-4"
+                  />
+                  <span className="text-sm text-foreground">無料で駐輪可能</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-2">決済手段</label>
+                <div className="flex gap-4">
+                  {([
+                    { key: 'paymentCash' as const, label: '現金' },
+                    { key: 'paymentIC' as const, label: 'ICカード' },
+                    { key: 'paymentQR' as const, label: 'QR決済' },
+                  ]).map((m) => (
+                    <label key={m.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form[m.key]}
+                        onChange={(e) => setForm((f) => ({ ...f, [m.key]: e.target.checked }))}
+                        className="accent-accent w-4 h-4"
+                      />
+                      <span className="text-sm text-foreground">{m.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+              >
+                {saving ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 bg-card border border-border rounded-lg text-sm text-text-secondary hover:text-foreground transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SpotsPage() {
   const { user } = useAuth();
   const [spots, setSpots] = useState<SpotResponse[]>([]);
@@ -23,6 +220,7 @@ export default function SpotsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -287,12 +485,18 @@ export default function SpotsPage() {
                       ) : (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setEditingId(spot.id)}
+                            onClick={() => setDetailId(spot.id)}
                             className="px-2 py-1 text-xs text-accent hover:underline"
                           >
-                            編集
+                            詳細
                           </button>
-                          <a
+                          <button
+                            onClick={() => setEditingId(spot.id)}
+                            className="px-2 py-1 text-xs text-text-secondary hover:underline"
+                          >
+                            状態
+                          </button>
+                          <
                             href={`/audit-log?targetId=${spot.id}&targetType=spot`}
                             className="px-2 py-1 text-xs text-text-secondary hover:text-foreground hover:underline"
                           >
@@ -322,6 +526,15 @@ export default function SpotsPage() {
             さらに読み込む
           </button>
         </div>
+      )}
+
+      {/* 詳細編集モーダル */}
+      {detailId && (
+        <SpotDetailModal
+          spotId={detailId}
+          onClose={() => setDetailId(null)}
+          onSaved={() => fetchSpots()}
+        />
       )}
     </div>
   );

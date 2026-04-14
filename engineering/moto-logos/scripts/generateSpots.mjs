@@ -241,6 +241,38 @@ function randomMaxCC() {
   return 50;
 }
 
+// 料金テキスト生成
+function randomPriceInfo(pricePerHour) {
+  const templates = [
+    `${pricePerHour}円/時間`,
+    `最初の1時間${pricePerHour}円`,
+    `${pricePerHour}円/60分、以降${Math.round(pricePerHour * 0.5)}円/30分`,
+    `${pricePerHour}円/h、1日最大${pricePerHour * 6}円`,
+    `30分${Math.round(pricePerHour / 2)}円`,
+  ];
+  return pick(templates);
+}
+
+// 営業時間生成
+function randomOpenHours() {
+  const templates = [
+    '24時間', '24時間', '24時間',  // 50%が24時間
+    '6:00-23:00', '7:00-22:00', '8:00-22:00',
+    '5:00-翌1:00', '6:00-翌0:00',
+  ];
+  return pick(templates);
+}
+
+// 決済手段生成
+function randomPayment(isFree) {
+  if (isFree) return { cash: false, icCard: false, qrCode: false };
+  const r = Math.random();
+  if (r < 0.3) return { cash: true, icCard: false, qrCode: false }; // 現金のみ
+  if (r < 0.6) return { cash: true, icCard: true, qrCode: false }; // 現金+IC
+  if (r < 0.85) return { cash: true, icCard: true, qrCode: true }; // 全部
+  return { cash: false, icCard: true, qrCode: true }; // キャッシュレスのみ
+}
+
 // ─── メイン生成 ──────────────────────────────────────
 const spots = [];
 let totalCount = 0;
@@ -256,6 +288,8 @@ for (const [pref, area, lat, lon, count] of AREAS) {
     const maxCC = randomMaxCC();
     const isFree = Math.random() < 0.25; // 25% 無料
     const capacity = Math.round(rand(10, 200));
+    const pricePerHour = isFree ? undefined : pick([100, 150, 200, 250, 300, 500]);
+    const payment = randomPayment(isFree);
 
     spots.push({
       id: generateId(pref, area, i + 1),
@@ -266,7 +300,9 @@ for (const [pref, area, lat, lon, count] of AREAS) {
       maxCC,
       isFree,
       capacity,
-      ...(!isFree && { pricePerHour: pick([100, 150, 200, 250, 300, 500]) }),
+      ...(pricePerHour && { pricePerHour, priceInfo: randomPriceInfo(pricePerHour) }),
+      openHours: randomOpenHours(),
+      payment,
       source: 'seed',
     });
   }

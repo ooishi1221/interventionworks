@@ -776,10 +776,12 @@ function FreshnessBadge({ updatedAt }: { updatedAt?: string }) {
 
 // ─── 精算・料金セクション ──────────────────────────────
 function PaymentSection({ spot }: { spot: ParkingPin }) {
-  const hasPrice = spot.isFree === false;
-  const hasPriceInfo = spot.pricePerHour != null;
+  const hasPriceText = !!spot.priceInfo;
+  const hasPriceNum = spot.pricePerHour != null;
   const hasHours = !!spot.openHours;
-  if (!hasPrice && !hasPriceInfo && !hasHours) {
+  const hasPayment = spot.paymentCash || spot.paymentIC || spot.paymentQR;
+
+  if (!hasPriceText && !hasPriceNum && !hasHours && !hasPayment && spot.isFree !== false) {
     if (spot.isFree === true) {
       return (
         <View style={[styles.metaRow, { marginTop: 10 }]}>
@@ -790,23 +792,52 @@ function PaymentSection({ spot }: { spot: ParkingPin }) {
     }
     return null;
   }
+
+  const priceDisplay = hasPriceText
+    ? spot.priceInfo
+    : hasPriceNum
+      ? `¥${spot.pricePerHour?.toLocaleString()} / 時間`
+      : spot.isFree === false ? '有料（料金不明）' : null;
+
+  const paymentMethods: { label: string; icon: keyof typeof Ionicons.glyphMap; active: boolean }[] = [
+    { label: '現金', icon: 'cash-outline', active: !!spot.paymentCash },
+    { label: 'IC', icon: 'card-outline', active: !!spot.paymentIC },
+    { label: 'QR', icon: 'qr-code-outline', active: !!spot.paymentQR },
+  ];
+
   return (
     <View style={styles.paymentCard}>
-      {hasPriceInfo && (
+      {priceDisplay && (
         <View style={styles.paymentRow}>
-          <Ionicons name="time-outline" size={15} color={C.sub} />
+          <Ionicons name="cash-outline" size={15} color={C.orange} />
           <View style={{ flex: 1 }}>
             <Text style={styles.paymentLabel}>料金</Text>
-            <Text style={styles.paymentValue}>¥{spot.pricePerHour?.toLocaleString()} / 時間</Text>
+            <Text style={styles.paymentValue}>{priceDisplay}</Text>
           </View>
         </View>
       )}
       {hasHours && (
-        <View style={[styles.paymentRow, hasPriceInfo && { marginTop: 8 }]}>
-          <Ionicons name="sunny-outline" size={15} color={C.sub} />
+        <View style={[styles.paymentRow, priceDisplay ? { marginTop: 8 } : undefined]}>
+          <Ionicons name="time-outline" size={15} color={C.blue} />
           <View style={{ flex: 1 }}>
             <Text style={styles.paymentLabel}>営業時間</Text>
             <Text style={styles.paymentValue}>{spot.openHours}</Text>
+          </View>
+        </View>
+      )}
+      {hasPayment && (
+        <View style={[styles.paymentRow, (priceDisplay || hasHours) ? { marginTop: 8 } : undefined]}>
+          <Ionicons name="wallet-outline" size={15} color={C.purple} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.paymentLabel}>決済手段</Text>
+            <View style={styles.paymentChips}>
+              {paymentMethods.filter((m) => m.active).map((m) => (
+                <View key={m.label} style={styles.paymentChip}>
+                  <Ionicons name={m.icon} size={12} color={C.text} />
+                  <Text style={styles.paymentChipText}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
       )}
@@ -909,6 +940,9 @@ const styles = StyleSheet.create({
   paymentRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   paymentLabel:{ color: C.sub, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   paymentValue:{ color: C.text, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  paymentChips:{ flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
+  paymentChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  paymentChipText: { color: C.text, fontSize: 12, fontWeight: '500' },
 
   // Gallery
   gallerySection: { marginTop: 12 },
