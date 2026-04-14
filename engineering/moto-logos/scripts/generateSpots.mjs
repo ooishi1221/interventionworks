@@ -303,6 +303,11 @@ for (const [pref, area, lat, lon, count] of AREAS) {
       ...(pricePerHour && { pricePerHour, priceInfo: randomPriceInfo(pricePerHour) }),
       openHours: randomOpenHours(),
       payment,
+      // 焚き付け: 40%のスポットに最近の到着データを仕込む
+      ...(Math.random() < 0.4 && {
+        currentParkedAt: new Date(Date.now() - Math.round(rand(5 * 60_000, 20 * 3600_000))).toISOString(),
+        currentParked: Math.round(rand(1, 4)),
+      }),
       source: 'seed',
     });
   }

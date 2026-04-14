@@ -134,6 +134,10 @@ for (let i = 0; i < spots.length; i += BATCH_SIZE) {
       ...(s.pricePerHour != null && { pricePerHour: s.pricePerHour }),
       ...(s.priceInfo    && { priceInfo: s.priceInfo }),
       ...(s.openHours    && { openHours: s.openHours }),
+      ...(s.currentParkedAt && {
+        currentParked:   s.currentParked ?? 1,
+        currentParkedAt: Timestamp.fromDate(new Date(s.currentParkedAt)),
+      }),
       viewCount:         0,
       goodCount:         0,
       badReportCount:    0,
