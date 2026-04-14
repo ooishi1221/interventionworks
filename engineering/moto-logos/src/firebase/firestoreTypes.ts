@@ -14,9 +14,6 @@ export type SpotStatus = 'active' | 'pending' | 'closed';
 /** 情報の信頼レベル */
 export type VerificationLevel = 'official' | 'trusted' | 'community';
 
-/** ユーザーランク（信頼スコアによる昇格） */
-export type UserRank = 'novice' | 'rider' | 'patrol';
-
 /** Good/Bad 投票タイプ */
 export type ValidationType = 'good' | 'bad';
 
@@ -123,19 +120,6 @@ export interface FirestoreSpot {
 export interface FirestoreUser {
   /** 表示名 */
   displayName:  string;
-  /**
-   * 信頼スコア（初期値: 100）
-   *  Good 投稿への反応で +10、Bad で -20。
-   *  スコアが 0 以下になると投稿制限（novice ロック）。
-   */
-  trustScore:   number;
-  /**
-   * ランク
-   *  novice  → スコア 0〜49（投稿制限あり）
-   *  rider   → スコア 50〜199（通常ユーザー）
-   *  patrol  → スコア 200以上（パトロール隊：投稿即時反映）
-   */
-  rank:         UserRank;
   /** プロフィール画像URL（Firebase Storage） */
   photoUrl?:    string;
   /** 作成日時 */

@@ -24,7 +24,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './config';
 import { COLLECTIONS } from './firestoreTypes';
-import type { SpotCapacity, UserRank } from './firestoreTypes';
+import type { SpotCapacity } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 import { isNgWord } from '../utils/ng-filter';
@@ -41,30 +41,20 @@ import { uploadReviewPhoto } from '../utils/image-upload';
 export async function ensureUserDocument(
   userId: string,
   displayName: string
-): Promise<{ rank: UserRank; trustScore: number }> {
+): Promise<void> {
   const { getDoc } = await import('firebase/firestore');
   const ref = doc(db, COLLECTIONS.USERS, userId);
   const snap = await getDoc(ref);
 
-  if (snap.exists()) {
-    const data = snap.data();
-    return {
-      rank: (data.rank as UserRank) ?? 'rider',
-      trustScore: (data.trustScore as number) ?? 100,
-    };
-  }
+  if (snap.exists()) return;
 
   // 新規ユーザー作成
   const now = Timestamp.now();
-  const profile = {
+  await setDoc(ref, {
     displayName,
-    trustScore: 100,
-    rank: 'rider' as UserRank,
     createdAt: now,
     updatedAt: now,
-  };
-  await setDoc(ref, profile);
-  return { rank: profile.rank, trustScore: profile.trustScore };
+  });
 }
 
 // ─────────────────────────────────────────────────────
@@ -212,7 +202,6 @@ export async function addUserSpotToFirestore(
     address?: string; maxCC: MaxCC; isFree: boolean | null;
     capacity?: number; pricePerHour?: number; openHours?: string;
   },
-  userRank: UserRank = 'novice',
 ): Promise<void> {
   // NG ワードチェック（クライアント側即時フィードバック）
   if (isNgWord(spot.name)) {
@@ -221,7 +210,6 @@ export async function addUserSpotToFirestore(
 
   const now = Timestamp.now();
   const geohash = encodeGeohash(spot.latitude, spot.longitude, 9);
-  const status = userRank === 'novice' ? 'pending' : 'active';
   const data = stripUndef({
     name:       spot.name,
     coordinate: new GeoPoint(spot.latitude, spot.longitude),
@@ -239,7 +227,7 @@ export async function addUserSpotToFirestore(
     ...(spot.pricePerHour != null && { pricePerHour:    spot.pricePerHour }),
     ...(spot.openHours    != null && { openHours:       spot.openHours }),
     viewCount: 0, goodCount: 0, badReportCount: 0,
-    status, verificationLevel: 'community', source: 'user',
+    status: 'active', verificationLevel: 'community', source: 'user',
     updatedAt: now, lastVerifiedAt: now, createdAt: now,
   });
   await setDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`), data);

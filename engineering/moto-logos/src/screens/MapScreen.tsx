@@ -24,7 +24,7 @@ import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
 import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
-import { insertUserSpot, getUserRank, getFirstVehicle } from '../db/database';
+import { insertUserSpot, getFirstVehicle } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { captureError } from '../utils/sentry';
@@ -174,7 +174,7 @@ function TutorialFeedBanner() {
     >
       <Ionicons name="thumbs-down" size={14} color="#FF9F0A" />
       <Text style={styles.tutorialFeedText}>
-        東京駅八重洲口バイク駐車場「満車」と報告されました
+        東京駅八重洲口バイク駐車場「満車」の足跡が届きました
       </Text>
       <Text style={styles.tutorialFeedTime}>たった今</Text>
     </RNAnimated.View>
@@ -544,8 +544,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         isFree: null as boolean | null,
       };
       const localId = await insertUserSpot(spotData);
-      const rank = await getUserRank();
-      addUserSpotToFirestore(localId, spotData, rank).catch((e) => {
+      addUserSpotToFirestore(localId, spotData).catch((e) => {
         captureError(e, { context: 'quickReport_firestore' });
       });
 

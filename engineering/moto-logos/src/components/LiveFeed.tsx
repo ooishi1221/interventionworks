@@ -28,16 +28,16 @@ interface FeedItem {
 }
 
 const DUMMY_FEED: FeedItem[] = [
-  { id: '1', type: 'register',  message: 'CBR650Rのライダーが渋谷駅前を登録',          time: '2分前' },
-  { id: '2', type: 'good',      message: 'PCX150で北千住駅東口「停められた」',          time: '5分前' },
-  { id: '3', type: 'register',  message: 'MT-07のライダーが新宿西口を登録',            time: '8分前' },
-  { id: '4', type: 'full',      message: 'Ninja400で赤羽駅東口「満車」と報告',         time: '12分前' },
-  { id: '5', type: 'good',      message: 'レブル250で池袋サンシャイン前「停められた」',    time: '15分前' },
-  { id: '6', type: 'closed',    message: '上野駅前バイク駐車場「閉鎖」と報告',           time: '18分前' },
-  { id: '7', type: 'good',      message: 'YZF-R25で秋葉原UDX前「停められた」',         time: '22分前' },
-  { id: '8', type: 'register',  message: 'GB350のライダーが横浜みなとみらいを登録',       time: '25分前' },
-  { id: '9', type: 'wrongPrice', message: '品川駅東口「料金が違う」と報告',              time: '28分前' },
-  { id: '10', type: 'wrongCC',   message: '六本木交差点「CC制限が違う」と報告',          time: '32分前' },
+  { id: '1', type: 'register',  message: 'CBR650Rのライダーが渋谷駅前を発見',          time: '2分前' },
+  { id: '2', type: 'good',      message: 'PCX150で北千住駅東口に停めた',               time: '5分前' },
+  { id: '3', type: 'register',  message: 'MT-07のライダーが新宿西口を発見',            time: '8分前' },
+  { id: '4', type: 'full',      message: 'Ninja400で赤羽駅東口「満車」',               time: '12分前' },
+  { id: '5', type: 'good',      message: 'レブル250で池袋サンシャイン前に停めた',        time: '15分前' },
+  { id: '6', type: 'closed',    message: '上野駅前バイク駐車場「閉鎖」',                time: '18分前' },
+  { id: '7', type: 'good',      message: 'YZF-R25で秋葉原UDX前に停めた',              time: '22分前' },
+  { id: '8', type: 'register',  message: 'GB350のライダーが横浜みなとみらいを発見',       time: '25分前' },
+  { id: '9', type: 'wrongPrice', message: '品川駅東口「料金が違った」',                  time: '28分前' },
+  { id: '10', type: 'wrongCC',   message: '六本木交差点「CC制限が違った」',              time: '32分前' },
 ];
 
 const SLIDE_DURATION = 500;

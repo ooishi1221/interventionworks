@@ -327,13 +327,13 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
         await reportSpotClosed(spotId).catch((e) => captureError(e, { context: 'report_closed' }));
       }
 
-      // レビューとして保存（score: 1=停められた, 0=停められなかった）
+      // 足跡として保存（score: 1=停めた, 0=停められなかった）
       const bike = await getFirstVehicle();
       await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined, undefined, bike?.name);
 
       // ローカル記録
       AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
-      logActivityLocal('report', `${spot.name}を${matched ? '停められた' : '停められなかった'}報告`);
+      logActivityLocal('report', `${spot.name}に${matched ? '停めた' : '停められなかった'}`);
       incrementStat('reports');
 
       Haptics.notificationAsync(matched
@@ -362,7 +362,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
 
   const openReportModal = () => {
     if (alreadyVoted) {
-      Alert.alert('報告済み', 'このスポットは既に報告済みです');
+      Alert.alert('記録済み', 'このスポットは既に記録済みです');
       return;
     }
     resetReportModal();
@@ -401,7 +401,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
             {/* ステップ1: 停められた？ */}
             {reportStep === 'ask' && (
               <View style={styles.reportCenter}>
-                <Text style={styles.reportQuestion}>停められた？</Text>
+                <Text style={styles.reportQuestion}>ここに停めた？</Text>
                 <Text style={styles.reportHint}>{spot.name}</Text>
                 <View style={{ height: 24 }} />
                 <View style={styles.reportChoiceRow}>
@@ -411,7 +411,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-up" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>停められた</Text>
+                    <Text style={styles.reportChoiceText}>停めた</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.reportUnmatchedBtn}
@@ -419,7 +419,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="thumbs-down" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>ダメだった</Text>
+                    <Text style={styles.reportChoiceText}>停められなかった</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.reportCancelLink} onPress={() => { setReportModalOpen(false); resetReportModal(); }}>
@@ -433,7 +433,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               <View style={styles.reportFormContent}>
                 <View style={styles.reportMatchedBadge}>
                   <Ionicons name="thumbs-up" size={20} color={C.green} />
-                  <Text style={[styles.reportBadgeText, { color: C.green }]}>停められた！</Text>
+                  <Text style={[styles.reportBadgeText, { color: C.green }]}>ここに停めた！</Text>
                 </View>
                 <Text style={styles.reportFormHint}>ひとことや写真を残せます（任意）</Text>
                 <TextInput
@@ -524,7 +524,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                 >
                   {reportSubmitting
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.reportSubmitText}>報告する</Text>}
+                    : <Text style={styles.reportSubmitText}>記録する</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
                   <Text style={styles.reportCancelText}>戻る</Text>
@@ -695,7 +695,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
                     pointerEvents="none"
                   />
                 )}
-                <Text style={styles.sectionLabel}>みんなの報告</Text>
+                <Text style={styles.sectionLabel}>みんなの足跡</Text>
                 {reports.map((r) => (
                   <ReportCard key={r.firestoreId ?? String(r.id)} report={r} onPhotoTap={setFullPhoto} />
                 ))}
@@ -734,7 +734,7 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
               activeOpacity={0.8}
             >
               <Ionicons name="chatbubble-ellipses" size={17} color="#fff" />
-              <Text style={styles.footerReportText}>{alreadyVoted ? '報告済み' : '報告する'}</Text>
+              <Text style={styles.footerReportText}>{alreadyVoted ? '記録済み' : '足跡を残す'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.footerShareBtn}
@@ -838,7 +838,7 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         {isMatched && (
           <View style={styles.reportCardBadge}>
             <Ionicons name="thumbs-up" size={13} color={C.green} />
-            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>停められた</Text>
+            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>停めた</Text>
           </View>
         )}
         {isUnmatched && (
@@ -852,13 +852,13 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         {isLegacy && (
           <View style={styles.reportCardBadge}>
             <Ionicons name="chatbubble-outline" size={13} color={C.sub} />
-            <Text style={[styles.reportCardBadgeText, { color: C.sub }]}>口コミ</Text>
+            <Text style={[styles.reportCardBadgeText, { color: C.sub }]}>メモ</Text>
           </View>
         )}
         <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
       </View>
       {report.vehicleName ? (
-        <Text style={styles.reportCardVehicle}>{report.vehicleName} で報告</Text>
+        <Text style={styles.reportCardVehicle}>{report.vehicleName} で記録</Text>
       ) : null}
       {cleanComment ? (
         <Text style={styles.reportCardComment}>{cleanComment}</Text>

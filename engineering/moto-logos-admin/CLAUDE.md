@@ -2,8 +2,25 @@
 
 ## 概要
 
-**目的:** Moto-Logos アプリのスポット・ユーザー・レビューを管理する内部ツール
+**目的:** Moto-Logos アプリのスポット・ユーザー・足跡データを管理する内部ツール
 **URL:** https://moto-logos-admin.vercel.app
+
+## コンセプト転換に伴う方針（2026-04-14）
+
+### 削除予定
+- **ゲーミフィケーションページ** (`/gamification`) — ランキング・ポイント・バッジは「存在証明」と矛盾するため削除
+- **ポイントルールAPI** (`/api/settings/point-rules`) — 同上
+- **バッジ定義API** (`/api/settings/badges`) — 同上
+- **ランキングAPI** (`/api/users/ranking`) — 同上
+- **Firestore コレクション**: `badge_definitions`, `settings/point_rules` — 同上
+
+### 変更予定
+- ユーザー管理: trustScore・rank の手動調整機能を廃止（ランクシステム自体が廃止）
+- KPI: 「投稿率」→「足跡率」等の用語変更
+- 鮮度アラート: 「未更新スポット」→「足跡が途絶えた場所」
+
+### 維持
+- モデレーション・通報管理・セキュリティ・重複検出・監査ログはそのまま維持
 
 ## 技術スタック
 
@@ -64,7 +81,7 @@ Firebase Auth Custom Claims でロールを管理。
 | 重複検出 | `/duplicates` | 重複候補スポット一覧（50m以内 + 名称類似）+ マージ機能 |
 | セキュリティ | `/security` | 異常検知・複数アカウント・写真確認キュー・BAN解除申請（4タブ） |
 | 通知管理 | `/notifications` | お知らせ投稿・一覧・編集・削除・並び替え + 一斉通知・エリア別セグメント通知 |
-| ゲーミフィケーション | `/gamification` | 貢献者ランキング・ポイント付与ルール・バッジ定義管理（3タブ） |
+| ~~ゲーミフィケーション~~ | ~~`/gamification`~~ | ~~貢献者ランキング・ポイント付与ルール・バッジ定義管理（3タブ）~~ → **削除予定** |
 | 監査ログ | `/audit-log` | 管理操作の完全な監査証跡（targetId フィルタ対応） |
 | ロール管理 | `/roles` | 管理者ロールの付与・変更（super_admin専用） |
 
@@ -94,9 +111,9 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/moderation/multi-account` | 複数アカウント検知（レビュー対象重複分析） |
 | `/api/moderation/photos` | 写真付きレビューの目視確認キュー |
 | `/api/moderation/appeals` | BAN解除申請（POST: 申請 / GET: 一覧 / PATCH: 承認・却下） |
-| `/api/users/ranking` | 週間/月間貢献者ランキング（レビュー+スポットでスコアリング） |
-| `/api/settings/point-rules` | 貢献ポイント付与ルール管理（GET/PUT） |
-| `/api/settings/badges` | バッジ定義管理（GET/POST/DELETE） |
+| ~~`/api/users/ranking`~~ | ~~週間/月間貢献者ランキング~~ → **削除予定** |
+| ~~`/api/settings/point-rules`~~ | ~~貢献ポイント付与ルール管理~~ → **削除予定** |
+| ~~`/api/settings/badges`~~ | ~~バッジ定義管理~~ → **削除予定** |
 | `/api/announcements` | お知らせ管理（GET: 一覧（sortOrder対応） / POST: 投稿 → アプリ内表示） |
 | `/api/announcements/[id]` | お知らせ個別操作（PUT: 編集 / DELETE: 削除） |
 | `/api/inquiries` | お問い合わせ一覧（GET: アプリから送信された問い合わせ） |
@@ -115,5 +132,5 @@ Firebase Auth Custom Claims でロールを管理。
 - `push_tokens` — Expo Push トークン（deviceId をキー）
 - `announcements` — アプリ内お知らせ（title, body, sortOrder, createdAt）
 - `inquiries` — お問い合わせ（userId, category, message, status）
-- `badge_definitions` — バッジ定義（name, icon, condition, sortOrder）
-- `settings/point_rules` — 貢献ポイント付与ルール設定ドキュメント
+- ~~`badge_definitions`~~ — ~~バッジ定義~~ → **削除予定**
+- ~~`settings/point_rules`~~ — ~~貢献ポイント付与ルール~~ → **削除予定**

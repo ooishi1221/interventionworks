@@ -418,18 +418,6 @@ export async function getStat(key: string): Promise<number> {
   return row?.value ?? 0;
 }
 
-export async function getUserRank(): Promise<'novice' | 'rider' | 'patrol'> {
-  const db = getDatabase();
-  const [spotsRow, reportsVal] = await Promise.all([
-    db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM user_spots;'),
-    getStat('reports'),
-  ]);
-  const total = (spotsRow?.count ?? 0) + reportsVal;
-  if (total >= 20) return 'patrol';
-  if (total >= 5) return 'rider';
-  return 'novice';
-}
-
 export async function getFavoriteCount(): Promise<number> {
   const db = getDatabase();
   const row = await db.getFirstAsync<{ count: number }>(

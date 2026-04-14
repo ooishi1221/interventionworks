@@ -62,18 +62,18 @@ const ACTIVITY_ICON: Record<string, { icon: keyof typeof Ionicons.glyphMap; colo
   review:   { icon: 'chatbubble',         color: C.blue },
   report:   { icon: 'checkmark-circle',   color: C.green },
   favorite: { icon: 'heart',             color: C.pink },
-  // 報告サブタイプ別カラー
-  report_good:   { icon: 'thumbs-up',          color: '#30D158' },  // 停められた
+  // 足跡サブタイプ別カラー
+  report_good:   { icon: 'thumbs-up',          color: '#30D158' },  // 停めた
   report_full:   { icon: 'alert-circle',       color: '#FF453A' },  // 満車
   report_closed: { icon: 'close-circle',       color: '#636366' },  // 閉鎖
-  report_price:  { icon: 'cash-outline',       color: '#FFD60A' },  // 料金違う
-  report_cc:     { icon: 'speedometer-outline', color: '#FF9F0A' },  // CC制限違う
-  report_bad:    { icon: 'thumbs-down',        color: '#FF9F0A' },  // その他ダメだった
+  report_price:  { icon: 'cash-outline',       color: '#FFD60A' },  // 料金違った
+  report_cc:     { icon: 'speedometer-outline', color: '#FF9F0A' },  // CC制限違った
+  report_bad:    { icon: 'thumbs-down',        color: '#FF9F0A' },  // 停められなかった
 };
 
 /** report ラベルからサブタイプを判定 */
 function getReportSubtype(label: string): string {
-  if (label.includes('停められた')) return 'report_good';
+  if (label.includes('停めた') && !label.includes('停められなかった')) return 'report_good';
   if (label.includes('full') || label.includes('満車')) return 'report_full';
   if (label.includes('closed') || label.includes('閉鎖')) return 'report_closed';
   if (label.includes('wrong_price') || label.includes('料金')) return 'report_price';
@@ -228,7 +228,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
           <View style={s.statDivider} />
           <View style={s.statItem}>
             <Text style={s.statValue}>{reportsCount}</Text>
-            <Text style={s.statLabel}>報告</Text>
+            <Text style={s.statLabel}>足跡</Text>
           </View>
           <View style={s.statDivider} />
           <TouchableOpacity

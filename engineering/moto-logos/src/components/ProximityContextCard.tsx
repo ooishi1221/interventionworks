@@ -1,8 +1,8 @@
 /**
- * ProximityContextCard — 現在地ベースの自動アクション提示カード (#90)
+ * ProximityContextCard — 現在地ベースの足跡カード (#90)
  *
- * ニアバイ（≤50m）: 「停められた👍 / ダメだった👎」→ 1タップ報告
- * スポットなし:     「登録する / 他を探す」
+ * ニアバイ（≤50m）: 「ここに停めた？ / 停められなかった？」→ 足跡を残す
+ * スポットなし:     「新しい場所を見つけた？ / 他を探す」
  * 通常:            非表示
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -216,7 +216,7 @@ export function ProximityContextCard({
       await addReview(spotId, userId, 1, undefined, undefined, undefined, bike?.name);
       await AsyncStorage.setItem(`vote_${spotId}`, 'matched');
       await markReported(spotId);
-      logActivityLocal('report', `${nearbySpot.spot.name}を停められた報告`);
+      logActivityLocal('report', `${nearbySpot.spot.name}に停めた`);
       incrementStat('reports');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
@@ -312,7 +312,7 @@ export function ProximityContextCard({
       await addReview(spotId, userId, 0, `[${correction}]`, undefined, undefined, bike?.name);
       await AsyncStorage.setItem(`vote_${spotId}`, correction);
       await markReported(spotId);
-      logActivityLocal('report', `${nearbySpot.spot.name}を${correction}報告`);
+      logActivityLocal('report', `${nearbySpot.spot.name}で${correction}`);
       incrementStat('reports');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       onSpotUpdated?.();
@@ -377,7 +377,7 @@ export function ProximityContextCard({
                 disabled={submitting}
               >
                 <Ionicons name="thumbs-up" size={22} color="#fff" />
-                <Text style={styles.actionText}>停められた</Text>
+                <Text style={styles.actionText}>停めた</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 ref={badBtnRef}
@@ -387,7 +387,7 @@ export function ProximityContextCard({
                 disabled={submitting}
               >
                 <Ionicons name="thumbs-down" size={22} color="#fff" />
-                <Text style={styles.actionText}>ダメだった</Text>
+                <Text style={styles.actionText}>停められなかった</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -396,7 +396,7 @@ export function ProximityContextCard({
         {/* ── ニアバイ: 理由選択 ──────────────────────── */}
         {effectiveState.kind === 'nearby' && phase === 'corrections' && (
           <>
-            <Text style={styles.correctionTitle}>何がダメだった？</Text>
+            <Text style={styles.correctionTitle}>何があった？</Text>
             <View ref={reasonsRef} style={styles.correctionGrid}>
               {CORRECTION_OPTIONS.map((opt) => (
                 <TouchableOpacity
@@ -422,7 +422,7 @@ export function ProximityContextCard({
           <View>
             <View style={styles.thanksWrap}>
               <Ionicons name="checkmark-circle" size={28} color={C.green} />
-              <Text style={styles.thanksText}>ありがとう！</Text>
+              <Text style={styles.thanksText}>足跡を残しました！</Text>
             </View>
             {tutorial.active && (
               <Text style={{ color: '#FF9F0A', fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 8 }}>
@@ -436,7 +436,7 @@ export function ProximityContextCard({
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera" size={22} color="#fff" />
-                <Text style={styles.actionText}>写真も投稿する</Text>
+                <Text style={styles.actionText}>写真もメモする</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.skipBtn]}
@@ -478,7 +478,7 @@ export function ProximityContextCard({
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera-outline" size={22} color="#fff" />
-                <Text style={styles.actionText}>登録する</Text>
+                <Text style={styles.actionText}>見つけた</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.searchBtn]}

@@ -8,15 +8,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ensureUserDocument } from '../firebase/firestoreService';
-import type { UserRank } from '../firebase/firestoreTypes';
 
 interface UserState {
   /** Firestore ドキュメントID（= deviceId） */
   userId: string;
-  /** 現在のランク */
-  rank: UserRank;
-  /** 信頼スコア */
-  trustScore: number;
 }
 
 const UserContext = createContext<UserState | null>(null);
@@ -43,12 +38,8 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
       }
 
       // 2) Firestore users ドキュメントを作成 or 取得
-      const profile = await ensureUserDocument(deviceId, nickname || 'ライダー');
-      setUser({
-        userId: deviceId,
-        rank: profile.rank,
-        trustScore: profile.trustScore,
-      });
+      await ensureUserDocument(deviceId, nickname || 'ライダー');
+      setUser({ userId: deviceId });
     })();
   }, [nickname]);
 

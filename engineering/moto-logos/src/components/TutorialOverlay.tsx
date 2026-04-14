@@ -169,7 +169,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
             <Ionicons name="flame" size={48} color="#FF9F0A" />
             <View style={{ height: 20 }} />
             <Text style={styles.heroText}>
-              あなたの一報が{'\n'}マップに命を灯す。
+              あなたの足跡が{'\n'}次のライダーの道になる。
             </Text>
             <View style={{ height: 48 }} />
             <View style={styles.primaryBtnGreen}>

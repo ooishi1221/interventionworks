@@ -66,7 +66,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'explore-detail-freshness',
     phase: 'explore',
-    instruction: 'ライダーが報告をすると\n情報の鮮度が上がります',
+    instruction: 'ライダーの足跡で\n情報の鮮度が上がります',
     target: 'detail-freshness',
     waitFor: 'tap-anywhere',
   },
@@ -122,7 +122,7 @@ export const STEPS: StepDef[] = [
     autoDelay: 500,
   },
 
-  // ── Scene: 報告する ───────────────────────────────
+  // ── Scene: 足跡を残す ───────────────────────────────
   {
     id: 'scene-report',
     phase: 'report',
@@ -133,7 +133,7 @@ export const STEPS: StepDef[] = [
     sceneIcon: 'flag-outline',
   },
 
-  // ── Phase: Report（報告する） ─────────────────────
+  // ── Phase: Report（足跡を残す） ─────────────────────
   {
     id: 'report-intro',
     phase: 'report',
@@ -144,7 +144,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'report-good',
     phase: 'report',
-    instruction: '停められた👍をタップしてみましょう',
+    instruction: '「停めた」をタップしてみましょう',
     target: 'report-good-btn',
     waitFor: 'tap-target',
   },
@@ -158,14 +158,14 @@ export const STEPS: StepDef[] = [
   {
     id: 'report-good-done',
     phase: 'report',
-    instruction: '簡単ですよね',
+    instruction: 'これだけで足跡が残ります',
     target: null,
     waitFor: 'tap-anywhere',
   },
   {
     id: 'report-bad-intro',
     phase: 'report',
-    instruction: 'ダメだった場合は👎をタップします',
+    instruction: '停められなかった場合は👎をタップします',
     target: 'report-bad-btn',
     waitFor: 'tap-target',
   },
@@ -179,7 +179,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'report-bad-done',
     phase: 'report',
-    instruction: 'このようにライダー全員に通知されます\n次のライダーが助かります！',
+    instruction: 'あなたの足跡がライダー全員に届きます\n次に来る仲間が助かります！',
     target: 'feed-notification',
     waitFor: 'tap-anywhere',
   },
