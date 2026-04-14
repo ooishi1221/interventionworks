@@ -33,7 +33,8 @@ import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
 import { useArrivalDetection } from '../hooks/useArrivalDetection';
 import { ProximityContextCard } from '../components/ProximityContextCard';
-import { NearbySpotsList } from '../components/NearbySpotsList';
+import { NearbySpotsList, AreaSummary } from '../components/NearbySpotsList';
+import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
@@ -239,10 +240,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const { setDestination } = useArrivalDetection();
 
   // ── 検索 ──────────────────────────────────────────────
-  const [searchVisible, setSearchVisible]     = useState(false); // ラジアルから開閉
+  const [searchVisible, setSearchVisible]     = useState(false);
   const [searchText, setSearchText]           = useState('');
   const [searching, setSearching]             = useState(false);
   const [searchResultMsg, setSearchResultMsg] = useState<string | null>(null);
+  const [areaSummary, setAreaSummary]         = useState<AreaSummary | null>(null);
 
   // ── ライブフィード設定 ──────────────────────────────
   const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
@@ -477,6 +479,34 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
     setSearching(false);
   };
+
+  // ── SearchOverlay からの検索結果ハンドラ ──────────────
+  const handleSearchResult = useCallback(async (result: SearchResult) => {
+    setSearchVisible(false);
+    setSearching(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const searchRegion: Region = {
+      latitude: result.latitude,
+      longitude: result.longitude,
+      latitudeDelta: 0.06,
+      longitudeDelta: 0.06,
+    };
+    mapRef.current?.animateToRegion(searchRegion, 800);
+
+    const freshSpots = await fetchSpotsForRegion(searchRegion);
+    const filtered = filterByCC(freshSpots, userCC);
+    const NEARBY_RADIUS = 3000;
+    const nearbyCount = filtered
+      .filter(s => haversineMeters(result.latitude, result.longitude, s.latitude, s.longitude) <= NEARBY_RADIUS)
+      .length;
+
+    setAreaSummary({
+      areaName: result.areaName,
+      spotCount: nearbyCount,
+    });
+    setSearching(false);
+  }, [userCC]);
 
   // ── 最後に変化完了した region を保持（再検索ボタン用）
   const currentRegionRef = useRef<Region>(JAPAN_CENTER);
@@ -825,13 +855,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         ))}
       </ClusteredMapView>
 
-      {/* ── 暗幕オーバーレイ（検索フォーカス中） ──────── */}
-      {searchFocused && (
-        <RNAnimated.View
-          style={[styles.dimOverlay, { opacity: overlayOpacity }]}
-          pointerEvents="none"
-        />
-      )}
+      {/* 暗幕は SearchOverlay が担当 */}
 
       {/* ── トースト ─────────────────────────────────── */}
       {searchResultMsg && (
@@ -848,13 +872,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── ライブフィード（上部） ────────────────────── */}
-      {!selected && !searchFocused && liveFeedEnabled && <LiveFeed />}
+      {!selected && !searchVisible && liveFeedEnabled && <LiveFeed />}
 
       {/* ── チュートリアル: ダメだった報告後のフィード通知（ピカピカ） */}
       {tutorial.isStep('report-bad-done') && <TutorialFeedBanner />}
 
       {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
-      {!selected && !searchFocused && (
+      {!selected && !searchVisible && (
         <NearbySpotsList
           alternatives={
             tutorial.active && tutorial.phase === 'explore'
@@ -869,16 +893,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             }, 800);
             setTimeout(() => setSelected(spot), 900);
           }}
-          onSearchPress={() => {
-            setSearchVisible(true);
-            setSearchText('');
-            setTimeout(() => searchInputRef.current?.focus(), 200);
+          onSearchPress={() => setSearchVisible(true)}
+          areaSummary={areaSummary}
+          onClearSearch={() => {
+            setAreaSummary(null);
+            goToCurrentLocation();
           }}
         />
       )}
 
       {/* ── 近接コンテキストカード (#90) ─────────────────── */}
-      {!selected && !searchFocused && (
+      {!selected && !searchVisible && (
         <ProximityContextCard
           proximityState={proximityState}
           getNearbyAlternatives={getNearbyAlternatives}
@@ -888,7 +913,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── カメラピル（下部: パシャで登録） ──────────────── */}
-      {!searchFocused && !selected && (
+      {!searchVisible && !selected && (
         <TouchableOpacity
           ref={cameraBtnRef}
           style={styles.cameraPill}
@@ -909,7 +934,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── DEV: 温度テストボタン ───────────────────── */}
-      {__DEV__ && !searchFocused && !selected && (
+      {__DEV__ && !searchVisible && !selected && (
         <TouchableOpacity
           style={{ position: 'absolute', bottom: 120, left: 16, backgroundColor: '#FF6B00', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, zIndex: 9999, elevation: 9999 }}
           onPress={async () => {
@@ -924,53 +949,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </TouchableOpacity>
       )}
 
-      {/* ── 下部: 検索バー（ラジアルから開閉、キーボード追従） */}
-      {searchVisible && (
-      <RNAnimated.View style={[styles.searchRow, { bottom: RNAnimated.add(BOTTOM_BASE, kbOffset) }]}>
-        <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
-          <Ionicons name="search" size={16} color={searchFocused ? '#E5E5EA' : SYS_GRAY} />
-          <TextInput
-            ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder="住所・地名で検索"
-            placeholderTextColor={SYS_GRAY}
-            value={searchText}
-            onChangeText={setSearchText}
-            returnKeyType="search"
-            onSubmitEditing={handleSearch}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            autoCorrect={false}
-            accessibilityLabel="住所・地名で検索"
-            accessibilityRole="search"
-            accessibilityHint="住所や地名を入力してスポットを検索します"
-          />
-          {searching ? (
-            <ActivityIndicator size="small" color={SYS_BLUE} />
-          ) : searchText.length > 0 ? (
-            <TouchableOpacity
-              onPress={() => setSearchText('')}
-              style={styles.clearBtn}
-              accessibilityLabel="検索テキストをクリア"
-              accessibilityRole="button"
-            >
-              <Ionicons name="close-circle" size={20} color={SYS_GRAY} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-        {searchFocused && (
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={dismissSearch}
-            activeOpacity={0.7}
-            accessibilityLabel="検索を閉じる"
-            accessibilityRole="button"
-          >
-            <Text style={styles.cancelText}>閉じる</Text>
-          </TouchableOpacity>
-        )}
-      </RNAnimated.View>
-      )}
+      {/* ── 検索オーバーレイ（未来検索） ────────────────── */}
+      <SearchOverlay
+        visible={searchVisible}
+        onDismiss={() => setSearchVisible(false)}
+        onSearchResult={handleSearchResult}
+      />
 
       {/* ── 登録中インジケーター ───────────────────── */}
       {reportLoading && (

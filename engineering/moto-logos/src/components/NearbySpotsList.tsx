@@ -28,14 +28,21 @@ function fmtDist(m: number): string {
   return `${(m / 1000).toFixed(1)}km`;
 }
 
+export interface AreaSummary {
+  areaName: string;
+  spotCount: number;
+}
+
 interface Props {
   alternatives: NearbySpotInfo[];
   onSpotPress?: (spot: ParkingPin) => void;
   onLocationPress?: () => void;
   onSearchPress?: () => void;
+  areaSummary?: AreaSummary | null;
+  onClearSearch?: () => void;
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -103,64 +110,90 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
           <Ionicons name="locate" size={16} color={C.blue} />
         </TouchableOpacity>
 
-        {/* ── ヘッダー行（タップで展開/折りたたみ） ────── */}
-        <TouchableOpacity
-          style={styles.headerTap}
-          onPress={toggle}
-          activeOpacity={0.7}
-        >
-          {/* 折りたたみ時: 最寄り1件のみ明確表示 */}
-          <Animated.View style={[styles.inlineRow, { opacity: inlineOpacity }]}>
-            <TouchableOpacity
-              onPress={() => {
-                if (tutorial.isStep('explore-pillbar')) {
-                  tutorial.advanceTutorial(); // → explore-detail
-                }
-                onSpotPress?.(items[0].spot);
-              }}
-              activeOpacity={0.7}
-              style={styles.inlineItem}
-            >
-              <Text style={styles.inlineRank}>1</Text>
-              <Text style={styles.inlineName} numberOfLines={1}>
-                {items[0].spot.name}
-              </Text>
-              <Text style={styles.inlineDist}>{fmtDist(items[0].distanceM)}</Text>
-            </TouchableOpacity>
-            {items.length > 1 && (
-              <Text style={styles.inlineMore}>他{items.length - 1}件 ▾</Text>
-            )}
-          </Animated.View>
-
-          {/* 展開時ヘッダー */}
-          {expanded && (
-            <View style={styles.expandedHeader}>
-              <Text style={styles.expandedTitle}>近くのスポット</Text>
-              <Ionicons name="chevron-up" size={14} color={C.sub} />
+        {/* ── ヘッダー行 ────── */}
+        {areaSummary ? (
+          /* エリアサマリーモード（検索結果表示中） */
+          <View style={styles.headerTap}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryArea} numberOfLines={1}>{areaSummary.areaName}</Text>
+              <Text style={styles.summarySep}>—</Text>
+              <Text style={styles.summaryCount}>{areaSummary.spotCount}スポット</Text>
             </View>
-          )}
-        </TouchableOpacity>
+          </View>
+        ) : (
+          /* 通常モード（最寄りスポット表示） */
+          <TouchableOpacity
+            style={styles.headerTap}
+            onPress={toggle}
+            activeOpacity={0.7}
+          >
+            {/* 折りたたみ時: 最寄り1件のみ明確表示 */}
+            <Animated.View style={[styles.inlineRow, { opacity: inlineOpacity }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (tutorial.isStep('explore-pillbar')) {
+                    tutorial.advanceTutorial(); // → explore-detail
+                  }
+                  onSpotPress?.(items[0].spot);
+                }}
+                activeOpacity={0.7}
+                style={styles.inlineItem}
+              >
+                <Text style={styles.inlineRank}>1</Text>
+                <Text style={styles.inlineName} numberOfLines={1}>
+                  {items[0].spot.name}
+                </Text>
+                <Text style={styles.inlineDist}>{fmtDist(items[0].distanceM)}</Text>
+              </TouchableOpacity>
+              {items.length > 1 && (
+                <Text style={styles.inlineMore}>他{items.length - 1}件 ▾</Text>
+              )}
+            </Animated.View>
 
-        {/* ── 検索ボタン ──────────────────────────────── */}
-        <TouchableOpacity
-          ref={searchBtnRef}
-          style={styles.searchBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            if (tutorial.isStep('explore-search')) {
-              tutorial.advanceTutorial(); // → explore-search-done
-            }
-            onSearchPress?.();
-          }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Ionicons name="search" size={15} color={C.text} />
-        </TouchableOpacity>
+            {/* 展開時ヘッダー */}
+            {expanded && (
+              <View style={styles.expandedHeader}>
+                <Text style={styles.expandedTitle}>近くのスポット</Text>
+                <Ionicons name="chevron-up" size={14} color={C.sub} />
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* ── 右端ボタン（検索 or クリア） ────────────── */}
+        {areaSummary ? (
+          <TouchableOpacity
+            style={styles.searchBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onClearSearch?.();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="close" size={15} color={C.sub} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            ref={searchBtnRef}
+            style={styles.searchBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (tutorial.isStep('explore-search')) {
+                tutorial.advanceTutorial(); // → explore-search-done
+              }
+              onSearchPress?.();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="search" size={15} color={C.text} />
+          </TouchableOpacity>
+        )}
       </Animated.View>
 
-      {/* ── 展開リスト ────────────────────────────────── */}
-      <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
+      {/* ── 展開リスト（サマリーモード中は非表示） ──────── */}
+      {!areaSummary && <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
         {items.map((item, i) => (
           <TouchableOpacity
             key={item.spot.id}
@@ -173,7 +206,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
             <Text style={styles.expandedDist}>{fmtDist(item.distanceM)}</Text>
           </TouchableOpacity>
         ))}
-      </Animated.View>
+      </Animated.View>}
     </View>
   );
 }
@@ -265,6 +298,29 @@ const styles = StyleSheet.create({
     color: C.sub,
     fontSize: 11,
     marginLeft: 6,
+  },
+
+  // ── エリアサマリーモード ─────────────────────────────
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  summaryArea: {
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  summarySep: {
+    color: C.sub,
+    fontSize: 12,
+  },
+  summaryCount: {
+    color: C.sub,
+    fontSize: 12,
+    fontWeight: '500',
   },
 
   // ── 展開時ヘッダー ────────────────────────────────
