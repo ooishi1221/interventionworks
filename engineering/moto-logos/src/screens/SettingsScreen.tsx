@@ -237,8 +237,12 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
           </TouchableOpacity>
         </View>
 
-        {/* バージョン */}
+        {/* バージョン & クレジット */}
         <Text style={s.version}>Moto-Logos v{version}</Text>
+        <Text style={s.credit}>
+          スポットデータの一部は OpenStreetMap を利用しています{'\n'}
+          © OpenStreetMap contributors (ODbL)
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -257,4 +261,5 @@ const s = StyleSheet.create({
   rowLabel: { color: C.text, fontSize: 15 },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginLeft: 48 },
   version: { color: C.sub, fontSize: 12, textAlign: 'center', marginTop: 32 },
+  credit: { color: C.sub, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
 });
