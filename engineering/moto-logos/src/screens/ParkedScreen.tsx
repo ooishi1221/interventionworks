@@ -19,25 +19,13 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { MaxCC, UserSpot, ParkingPin } from '../types';
 import { insertUserSpot, getAllUserSpots, deleteUserSpot, updateUserSpot } from '../db/database';
 import { addUserSpotToFirestore, deleteUserSpotFromFirestore } from '../firebase/firestoreService';
 import { captureError } from '../utils/sentry';
 
-// ─── 色定数（Apple Maps 風ダーク） ─────────────────────
-const C = {
-  bg:     '#000000',
-  card:   '#1C1C1E',
-  border: 'rgba(255,255,255,0.10)',
-  text:   '#F2F2F7',
-  sub:    '#8E8E93',
-  blue:   '#0A84FF',
-  red:    '#FF453A',
-  green:  '#30D158',
-  purple: '#BF5AF2',
-  orange: '#FF9F0A',
-};
+const C = Colors;
 
 const MAX_CC_OPTIONS: { value: MaxCC; label: string }[] = [
   { value: null, label: '制限なし' },
@@ -210,7 +198,7 @@ export function ParkedScreen({ onSpotSaved, onGoToSpot }: ParkedScreenProps) {
     onGoToSpot(pin);
   };
 
-  const setF = (key: keyof SpotFormState, value: any) =>
+  const setF = <K extends keyof SpotFormState>(key: K, value: SpotFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   // ── 左スワイプ（赤・ゴミ箱） ─────────────────────────

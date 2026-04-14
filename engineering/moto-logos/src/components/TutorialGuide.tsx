@@ -91,7 +91,7 @@ export function TutorialGuide() {
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim }]}>
           <Animated.View style={{ alignItems: 'center', gap: 16, opacity: contentAnim }}>
-          <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as any} size={48} color="#FF9F0A" />
+          <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as keyof typeof Ionicons.glyphMap} size={48} color="#FF9F0A" />
           <Text style={styles.sceneTitle}>{currentStep.sceneTitle}</Text>
           <View style={styles.tapHintRow}>
             <Text style={styles.tapHint}>タップして次へ</Text>

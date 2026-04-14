@@ -272,7 +272,12 @@ export async function endParkingSession(sessionId: number) {
 
 export async function getAllUserSpots(): Promise<UserSpot[]> {
   const db = getDatabase();
-  const rows = await db.getAllAsync<any>('SELECT * FROM user_spots ORDER BY createdAt DESC;');
+  /** SQLite stores booleans as integers: 1=true, 0=false, -1=null */
+  interface UserSpotRow extends Omit<UserSpot, 'isFree' | 'maxCC'> {
+    isFree: number;
+    maxCC: number | null;
+  }
+  const rows = await db.getAllAsync<UserSpotRow>('SELECT * FROM user_spots ORDER BY createdAt DESC;');
   return rows.map((row) => ({
     ...row,
     isFree: row.isFree === -1 ? null : row.isFree === 1,

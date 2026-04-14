@@ -6,9 +6,11 @@ import { COLLECTIONS } from '@/lib/types';
 /**
  * GET /api/moderation/multi-account
  *
- * 複数アカウント検知。
- * push_tokens の deviceId が複数のユーザー（users コレクション）に紐付いている場合を検出。
- * また、同一 IP / 同一端末から複数の userId でレビューが投稿されていないかチェック。
+ * 複数アカウント検知 + BAN回避検知。
+ *
+ * 1) レビュー対象スポットの重複パターンから自作自演を検出
+ * 2) push_tokens の deviceId を使い、BANユーザーの端末が別アカウントで
+ *    活動していないかを検出（BAN回避検知）
  */
 export async function GET() {
   try {
@@ -20,12 +22,102 @@ export async function GET() {
       adminDb.collection(COLLECTIONS.PUSH_TOKENS).get(),
     ]);
 
-    // deviceId → token mapping
-    const tokenDevices = new Map<string, string>();
+    const userNames = new Map<string, string>();
+    const userBanStatus = new Map<string, string>();
+
+    for (const d of usersSnap.docs) {
+      const data = d.data();
+      userNames.set(d.id, data.displayName || d.id);
+      if (data.banStatus && data.banStatus !== 'active') {
+        userBanStatus.set(d.id, data.banStatus);
+      }
+    }
+
+    // ─────────────────────────────────────────────────
+    // BAN回避検知: deviceId → userId[] のマッピングを構築
+    // BANされたユーザーの deviceId が別アカウントにも紐付いていれば検出
+    // ─────────────────────────────────────────────────
+
+    interface BanEvasion {
+      bannedUserId: string;
+      bannedUserName: string;
+      banStatus: string;
+      evasionUserId: string;
+      evasionUserName: string;
+      deviceId: string;
+      reason: string;
+    }
+
+    const deviceToUsers = new Map<string, Set<string>>();
     for (const d of tokensSnap.docs) {
       const data = d.data();
-      tokenDevices.set(data.deviceId || d.id, data.token || '');
+      const deviceId = data.deviceId || d.id;
+      const userId = data.userId as string | undefined;
+      if (!userId) continue;
+      if (!deviceToUsers.has(deviceId)) deviceToUsers.set(deviceId, new Set());
+      deviceToUsers.get(deviceId)!.add(userId);
     }
+
+    // user_activity からも deviceId → userId のマッピングを収集
+    // （push_tokens に登録していなくてもアクティビティで紐付く場合がある）
+    const activitySnap = await adminDb
+      .collection(COLLECTIONS.USER_ACTIVITY)
+      .orderBy('date', 'desc')
+      .limit(2000)
+      .get();
+
+    for (const d of activitySnap.docs) {
+      const data = d.data();
+      const deviceId = data.deviceId as string | undefined;
+      const userId = data.userId as string | undefined;
+      if (!deviceId || !userId) continue;
+      if (!deviceToUsers.has(deviceId)) deviceToUsers.set(deviceId, new Set());
+      deviceToUsers.get(deviceId)!.add(userId);
+    }
+
+    const banEvasions: BanEvasion[] = [];
+    const checkedEvasion = new Set<string>();
+
+    for (const [deviceId, userIds] of deviceToUsers.entries()) {
+      if (userIds.size < 2) continue;
+
+      // このデバイスに紐付くBANユーザーを探す
+      const bannedOnDevice: string[] = [];
+      const activeOnDevice: string[] = [];
+
+      for (const uid of userIds) {
+        if (userBanStatus.has(uid)) {
+          bannedOnDevice.push(uid);
+        } else {
+          activeOnDevice.push(uid);
+        }
+      }
+
+      // BANユーザーの端末で別のアクティブアカウントが存在する場合
+      for (const bannedUid of bannedOnDevice) {
+        for (const activeUid of activeOnDevice) {
+          const key = [bannedUid, activeUid].sort().join('_');
+          if (checkedEvasion.has(key)) continue;
+          checkedEvasion.add(key);
+
+          banEvasions.push({
+            bannedUserId: bannedUid,
+            bannedUserName: userNames.get(bannedUid) || bannedUid.slice(0, 8),
+            banStatus: userBanStatus.get(bannedUid) || 'unknown',
+            evasionUserId: activeUid,
+            evasionUserName: userNames.get(activeUid) || activeUid.slice(0, 8),
+            deviceId: deviceId.slice(0, 12) + '...',
+            reason: `BAN済みユーザー「${userNames.get(bannedUid) || bannedUid.slice(0, 8)}」(${userBanStatus.get(bannedUid)})と同一端末で活動`,
+          });
+        }
+      }
+    }
+
+    banEvasions.sort((a, b) => a.bannedUserId.localeCompare(b.bannedUserId));
+
+    // ─────────────────────────────────────────────────
+    // 複数アカウント検知: レビュー対象の重複パターン分析
+    // ─────────────────────────────────────────────────
 
     // 直近のレビューからユーザーの投稿パターンを分析
     const recentReviews = await adminDb
@@ -34,25 +126,6 @@ export async function GET() {
       .limit(500)
       .get();
 
-    // spotId ごとに同一スポットに投票した userId のペアを検出
-    // 同一人物が別アカウントで自作自演 Good を水増しするパターン
-    const spotVoters = new Map<string, Set<string>>();
-    const userNames = new Map<string, string>();
-
-    for (const d of usersSnap.docs) {
-      userNames.set(d.id, d.data().displayName || d.id);
-    }
-
-    for (const d of recentReviews.docs) {
-      const data = d.data();
-      const spotId = data.spotId as string;
-      const userId = data.userId as string;
-      if (!spotVoters.has(spotId)) spotVoters.set(spotId, new Set());
-      spotVoters.get(spotId)!.add(userId);
-    }
-
-    // 同一スポットに短い userId prefix が一致するユーザーが複数いないか
-    // （UUID v4 の先頭8文字が一致 = 非常に稀 → 同一生成ロジックの疑い）
     interface SuspectPair {
       userIdA: string;
       nameA: string;
@@ -109,9 +182,12 @@ export async function GET() {
 
     return NextResponse.json({
       suspects,
+      banEvasions,
       total: suspects.length,
+      totalBanEvasions: banEvasions.length,
       analyzedUsers: userIds.length,
       analyzedReviews: recentReviews.size,
+      analyzedDevices: deviceToUsers.size,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal error';

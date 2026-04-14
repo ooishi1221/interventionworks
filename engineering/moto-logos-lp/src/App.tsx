@@ -1,10 +1,7 @@
 import Hero from './components/Hero'
-import Before from './components/Before'
-import Explore from './components/Explore'
-import Report from './components/Report'
-import Notify from './components/Notify'
-import Register from './components/Register'
-import Social from './components/Social'
+import Philosophy from './components/Philosophy'
+import CoreValues from './components/CoreValues'
+import Voices from './components/Voices'
 import HowTo from './components/HowTo'
 import Faq from './components/Faq'
 import FinalCta from './components/FinalCta'
@@ -16,12 +13,9 @@ function App() {
   return (
     <>
       <Hero />
-      <Before />
-      <Explore />
-      <Report />
-      <Notify />
-      <Register />
-      <Social />
+      <Philosophy />
+      <CoreValues />
+      <Voices />
       <HowTo />
       <Faq />
       <FinalCta />

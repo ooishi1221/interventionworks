@@ -17,21 +17,17 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { UserCC, Vehicle } from '../types';
-import { Spacing, FontSize } from '../constants/theme';
+import { Colors, Spacing, FontSize } from '../constants/theme';
 import { getFirstVehicle, insertVehicle, updateVehicle } from '../db/database';
 import { syncBikeToFirestore } from '../firebase/firestoreService';
 import { captureError } from '../utils/sentry';
+import { pickPhotoFromCamera } from '../utils/photoPicker';
 
-const C = {
-  bg: '#000000', card: '#1C1C1E', border: 'rgba(255,255,255,0.10)',
-  text: '#F2F2F7', sub: '#8E8E93', blue: '#0A84FF', orange: '#FF6B00',
-  green: '#30D158', purple: '#BF5AF2',
-};
+const C = { ...Colors, orange: Colors.accent };
 
 const CC_OPTIONS: { value: UserCC; label: string; color: string }[] = [
   { value: 50,   label: '原付',  color: '#8E8E93' },
@@ -74,19 +70,8 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
   }, []);
 
   const pickPhoto = async () => {
-    let result: ImagePicker.ImagePickerResult | null = null;
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status === 'granted') {
-        result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-      }
-    } catch {}
-    if (!result) {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
-      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-    }
-    if (!result.canceled && result.assets?.length) setPhotoUri(result.assets[0].uri);
+    const uri = await pickPhotoFromCamera();
+    if (uri) setPhotoUri(uri);
   };
 
   const handleSave = async () => {

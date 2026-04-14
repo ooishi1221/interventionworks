@@ -28,7 +28,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── CC 選択肢 ──────────────────────────────────────
-const CC_OPTIONS: { value: UserCC; label: string; color: string; icon: string }[] = [
+const CC_OPTIONS: { value: UserCC; label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
   { value: 50,   label: '50cc',  color: '#8E8E93', icon: 'moped' },
   { value: 125,  label: '125cc', color: '#30D158', icon: 'scooter' },
   { value: 400,  label: '400cc', color: '#0A84FF', icon: 'motorbike' },
@@ -136,7 +136,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
                     activeOpacity={0.7}
                   >
                     <MaterialCommunityIcons
-                      name={opt.icon as any}
+                      name={opt.icon}
                       size={20}
                       color={selected ? opt.color : '#8E8E93'}
                     />

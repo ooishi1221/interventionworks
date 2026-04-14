@@ -17,16 +17,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import { Spacing, FontSize } from '../constants/theme';
+import { Colors, Spacing, FontSize } from '../constants/theme';
 import { Review } from '../types';
 import { fetchMyReviews, deleteReviewFromFirestore } from '../firebase/firestoreService';
 import { useUser } from '../contexts/UserContext';
 
-const C = {
-  bg: '#000000', card: '#1C1C1E', border: 'rgba(255,255,255,0.10)',
-  text: '#F2F2F7', sub: '#8E8E93', blue: '#0A84FF',
-  red: '#FF453A', yellow: '#FFD60A',
-};
+const C = Colors;
 
 interface ReviewWithSpot extends Review {
   spotName: string;

@@ -19,13 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
 import { useTutorial } from '../contexts/TutorialContext';
+import { Colors } from '../constants/theme';
 
-const C = {
-  text: '#F2F2F7',
-  sub: '#8E8E93',
-  accent: '#FF6B00',
-  blue: '#0A84FF',
-};
+const C = Colors;
 
 function fmtDist(m: number): string {
   if (m < 1000) return `${Math.round(m)}m`;

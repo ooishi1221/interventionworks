@@ -17,7 +17,6 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
@@ -28,6 +27,7 @@ import { insertUserSpot, getFirstVehicle } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { captureError } from '../utils/sentry';
+import { pickPhotoFromCamera } from '../utils/photoPicker';
 import { useUser } from '../contexts/UserContext';
 import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
@@ -157,11 +157,12 @@ function TutorialFeedBanner() {
 
   return (
     <RNAnimated.View
-      ref={(ref: any) => {
+      ref={(ref: View | null) => {
         if (ref) setTimeout(() => {
-          ref.measureInWindow?.((x: number, y: number, w: number, h: number) => {
-            if (w > 0) tutorial.registerTarget('feed-notification', { x, y, w, h, borderRadius: 14 });
-          });
+          (ref as unknown as { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void })
+            .measureInWindow?.((x: number, y: number, w: number, h: number) => {
+              if (w > 0) tutorial.registerTarget('feed-notification', { x, y, w, h, borderRadius: 14 });
+            });
         }, 200);
       }}
       style={[styles.tutorialFeedBanner, {
@@ -501,33 +502,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const { latitude, longitude } = loc.coords;
 
       // 2. カメラ起動（使えない場合はライブラリから選択）
-      let result: ImagePicker.ImagePickerResult | null = null;
-      try {
-        const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
-        if (camStatus === 'granted') {
-          result = await ImagePicker.launchCameraAsync({
-            quality: 0.7,
-            allowsEditing: true,
-            aspect: [4, 3],
-          });
-        }
-      } catch {
-        // シミュレータ等でカメラ非対応 → ライブラリにフォールバック
-      }
-      if (!result) {
-        const { status: libStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (libStatus !== 'granted') {
-          Alert.alert('写真へのアクセスが必要です', '設定から許可してください。');
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          quality: 0.7,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      }
-      if (result.canceled || !result.assets?.length) return;
-      const photoUri = result.assets[0].uri;
+      const photoUri = await pickPhotoFromCamera();
+      if (!photoUri) return;
 
       // 3. 住所を自動取得
       setReportLoading(true);
@@ -581,9 +557,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSearchResultMsg('スポットを共有しました!');
       setTimeout(() => setSearchResultMsg(null), 3000);
-    } catch (e: any) {
+    } catch (e: unknown) {
       captureError(e, { context: 'quickReport' });
-      Alert.alert('エラー', `登録に失敗しました: ${e?.message ?? e}`);
+      const message = e instanceof Error ? e.message : String(e);
+      Alert.alert('エラー', `登録に失敗しました: ${message}`);
     }
     setReportLoading(false);
   };
@@ -761,6 +738,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             style={styles.deniedBannerInner}
             onPress={() => Linking.openSettings()}
             activeOpacity={0.8}
+            accessibilityLabel="位置情報が無効です。タップして設定を開く"
+            accessibilityRole="button"
+            accessibilityHint="端末の設定画面を開いて位置情報を許可します"
           >
             <Ionicons name="location-outline" size={16} color="#FF9F0A" />
             <Text style={styles.deniedBannerText}>位置情報が無効です — タップして設定を開く</Text>
@@ -821,6 +801,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             key={spot.id}
             coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
             onPress={() => setSelected(spot)}
+            accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
           >
             <SpotPin spot={spot} />
           </Marker>
@@ -902,6 +883,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             handleQuickReport();
           }}
           activeOpacity={0.8}
+          accessibilityLabel="写真で新しいスポットを登録"
+          accessibilityRole="button"
+          accessibilityHint="カメラを起動して写真1枚でスポットを登録します"
         >
           <Ionicons name="camera" size={20} color="#F2F2F7" />
         </TouchableOpacity>
@@ -924,17 +908,31 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             autoCorrect={false}
+            accessibilityLabel="住所・地名で検索"
+            accessibilityRole="search"
+            accessibilityHint="住所や地名を入力してスポットを検索します"
           />
           {searching ? (
             <ActivityIndicator size="small" color={SYS_BLUE} />
           ) : searchText.length > 0 ? (
-            <TouchableOpacity onPress={() => setSearchText('')} style={styles.clearBtn}>
+            <TouchableOpacity
+              onPress={() => setSearchText('')}
+              style={styles.clearBtn}
+              accessibilityLabel="検索テキストをクリア"
+              accessibilityRole="button"
+            >
               <Ionicons name="close-circle" size={20} color={SYS_GRAY} />
             </TouchableOpacity>
           ) : null}
         </View>
         {searchFocused && (
-          <TouchableOpacity style={styles.cancelBtn} onPress={dismissSearch} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={dismissSearch}
+            activeOpacity={0.7}
+            accessibilityLabel="検索を閉じる"
+            accessibilityRole="button"
+          >
             <Text style={styles.cancelText}>閉じる</Text>
           </TouchableOpacity>
         )}

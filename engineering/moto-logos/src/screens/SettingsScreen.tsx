@@ -18,13 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { migrateSeedSpots } from '../firebase/migration';
+import { Colors } from '../constants/theme';
 
-const C = {
-  bg: '#000000', surface: '#1C1C1E', card: '#2C2C2E',
-  border: 'rgba(255,255,255,0.10)', text: '#F2F2F7',
-  sub: '#8E8E93', blue: '#0A84FF', accent: '#FF6B00',
-  red: '#FF453A',
-};
+const C = { ...Colors, card: Colors.cardElevated };
 
 interface Props {
   onBack?: () => void;

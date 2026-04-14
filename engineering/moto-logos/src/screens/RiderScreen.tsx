@@ -33,28 +33,17 @@ import {
   type Footprint,
   type ParkingSession,
 } from '../db/database';
-import { getMySpotsTotalViews } from '../firebase/firestoreService';
+import { getMySpotsTotalViews, reportDeparted } from '../firebase/firestoreService';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle } from '../types';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
+import { Colors } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-const C = {
-  bg:     '#000000',
-  card:   '#1C1C1E',
-  border: 'rgba(255,255,255,0.10)',
-  text:   '#F2F2F7',
-  sub:    '#8E8E93',
-  blue:   '#0A84FF',
-  green:  '#30D158',
-  orange: '#FF9F0A',
-  purple: '#BF5AF2',
-  pink:   '#FF375F',
-  accent: '#FF6B00',
-};
+const C = Colors;
 
 const CC_LABEL: Record<string, string> = {
   '50': '原付',
@@ -70,7 +59,7 @@ const FOOTPRINT_STYLE: Record<string, { icon: keyof typeof Ionicons.glyphMap; co
   closed: { icon: 'close-circle', color: '#636366', label: 'は閉鎖していた' },
   wrong_price: { icon: 'cash-outline', color: '#FFD60A', label: 'で料金が違った' },
   wrong_cc:    { icon: 'speedometer-outline', color: C.orange, label: 'でCC制限が違った' },
-  failed: { icon: 'footsteps-outline' as any, color: C.orange, label: 'で停められなかった' },
+  failed: { icon: 'footsteps-outline', color: C.orange, label: 'で停められなかった' },
 };
 
 // ─── 日付フォーマット ────────────────────────────────
@@ -156,6 +145,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const handleEndParking = useCallback(async () => {
     if (!activeSession) return;
     await endParking(activeSession.id);
+    reportDeparted(activeSession.spotId); // リアルタイム空き状況 (#79)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setActiveSession(null);
     loadData();
@@ -209,7 +199,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
       >
 
         {/* ── 1. ライダーカード（Hero） ─────────────── */}
-        <View style={s.heroCard}>
+        <View style={s.heroCard} accessibilityRole="summary" accessibilityLabel="ライダープロフィールカード">
           {bike?.photoUrl ? (
             <ImageBackground
               source={{ uri: bike.photoUrl }}
@@ -247,6 +237,9 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
               style={s.editBikeBtn}
               onPress={() => { onOpenMyBike(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               activeOpacity={0.7}
+              accessibilityLabel={bike ? 'マイバイク編集' : '愛車を登録しよう'}
+              accessibilityRole="button"
+              accessibilityHint="マイバイクの情報を編集する画面を開きます"
             >
               <Ionicons name="create-outline" size={14} color={C.sub} />
               <Text style={s.editBikeText}>
@@ -279,6 +272,9 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
               style={s.parkingEndBtn}
               onPress={handleEndParking}
               activeOpacity={0.7}
+              accessibilityLabel="出発した"
+              accessibilityRole="button"
+              accessibilityHint="駐車を終了して出発を記録します"
             >
               <Text style={s.parkingEndText}>出発した</Text>
             </TouchableOpacity>
@@ -286,7 +282,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
         )}
 
         {/* ── 3. 足跡マップ ───────────────────────── */}
-        <View style={s.mapContainer}>
+        <View style={s.mapContainer} accessibilityLabel={`足跡マップ。${uniqueLocations.length}か所に足跡あり`} accessibilityRole="image">
           <MapView
             style={s.map}
             region={mapRegion}
@@ -344,7 +340,12 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
                 {showDate && (
                   <Text style={s.diaryDate}>{formatDiaryDate(fp.createdAt)}</Text>
                 )}
-                <View style={s.diaryItem}>
+                <View
+                  style={s.diaryItem}
+                  accessible
+                  accessibilityLabel={`${formatTime(fp.createdAt)}、${fp.spotName}${style.label}`}
+                  accessibilityRole="text"
+                >
                   <View style={[s.diaryDot, { backgroundColor: style.color }]}>
                     <Ionicons name={style.icon} size={12} color="#fff" />
                   </View>
@@ -404,6 +405,9 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
           ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
         }}
         activeOpacity={0.7}
+        accessibilityLabel={`ニックネーム: ${nickname || 'ライダー'}。タップして変更`}
+        accessibilityRole="button"
+        accessibilityHint="ニックネームを変更するダイアログを開きます"
       >
         <Text style={s.heroName}>{nickname || 'ライダー'}</Text>
       </TouchableOpacity>

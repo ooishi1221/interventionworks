@@ -30,11 +30,11 @@ import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
 import { Asset } from 'expo-asset';
 import { useTutorial } from '../contexts/TutorialContext';
-import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review } from '../types';
+import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
 import {
   addFavorite,
   removeFavorite,
@@ -50,30 +50,17 @@ import {
   reportSpotFull,
   reportSpotClosed,
   incrementViewCount,
+  fetchSpotsInRegion,
 } from '../firebase/firestoreService';
 import { getFirstVehicle } from '../db/database';
-import { Spacing, FontSize, BorderRadius } from '../constants/theme';
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-// ─── カラー定数 ────────────────────────────────────────
-const C = {
-  bg:       '#000000',
-  sheet:    '#1C1C1E',
-  card:     '#2C2C2E',
-  border:   'rgba(255,255,255,0.10)',
-  text:     '#F2F2F7',
-  sub:      '#8E8E93',
-  blue:     '#0A84FF',
-  green:    '#30D158',
-  red:      '#FF453A',
-  orange:   '#FF9F0A',
-  purple:   '#BF5AF2',
-  pink:     '#FF375F',
-  hairline: 'rgba(255,255,255,0.08)',
-};
+// ─── カラー定数（card = cardElevated: #2C2C2E） ───────
+const C = { ...Colors, card: Colors.cardElevated };
 
 // ─── ヘルパー ─────────────────────────────────────────
 function ccLabel(maxCC: number | null): string {
@@ -112,10 +99,33 @@ interface Props {
   spot: ParkingPin;
   onClose: () => void;
   onSetDestination?: (spot: ParkingPin) => void;
+  onSpotSelect?: (spot: ParkingPin) => void;
+}
+
+// ─── haversine距離計算 ─────────────────────────────────
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function fmtDist(m: number): string {
+  if (m < 1000) return `${Math.round(m)}m先`;
+  return `${(m / 1000).toFixed(1)}km先`;
+}
+
+interface NearbySpot {
+  spot: ParkingPin;
+  distanceM: number;
 }
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -206,6 +216,10 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
   // Fullscreen photo
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
 
+  // 周辺スポット（案内開始後に表示）
+  const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+
   // ── 初期ロード ───────────────────────────────────────
   const loadAll = useCallback(async () => {
     const src = spot.source as 'seed' | 'user';
@@ -290,21 +304,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
     ]);
   };
 
-  // ── 報告: 写真ピッカー（カメラ非対応時はライブラリ） ───
+  // ── 報告: 写真ピッカー（カメラ） ──────────────────────
   const pickReportPhoto = async () => {
-    let result: ImagePicker.ImagePickerResult | null = null;
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status === 'granted') {
-        result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-      }
-    } catch (e) { captureError(e, { context: 'report_camera_launch' }); }
-    if (!result) {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('写真へのアクセスが必要です'); return; }
-      result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-    }
-    if (!result.canceled && result.assets?.length) setReportPhoto(result.assets[0].uri);
+    const uri = await pickPhotoFromCamera();
+    if (uri) setReportPhoto(uri);
+  };
+
+  // ── 報告: 写真ピッカー（アルバム） ────────────────────
+  const pickReportPhotoFromAlbum = async () => {
+    const uri = await pickPhotoFromLibrary();
+    if (uri) setReportPhoto(uri);
   };
 
   // ── 報告: 送信 ────────────────────────────────────────
@@ -348,9 +357,10 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
       setReportModalOpen(false);
       resetReportModal();
       await loadAll();
-    } catch (e: any) {
+    } catch (e: unknown) {
       captureError(e, { context: 'submitReport' });
-      Alert.alert('送信に失敗しました', e?.message ?? String(e));
+      const message = e instanceof Error ? e.message : String(e);
+      Alert.alert('送信に失敗しました', message);
     }
     setReportSubmitting(false);
   };
@@ -384,7 +394,12 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
         <Modal transparent animationType="fade" visible onRequestClose={() => setFullPhoto(null)}>
           <TouchableOpacity style={styles.fullscreenBg} activeOpacity={1} onPress={() => setFullPhoto(null)}>
             <Image source={{ uri: fullPhoto }} style={styles.fullscreenImage} resizeMode="contain" />
-            <TouchableOpacity style={styles.fullscreenClose} onPress={() => setFullPhoto(null)}>
+            <TouchableOpacity
+              style={styles.fullscreenClose}
+              onPress={() => setFullPhoto(null)}
+              accessibilityLabel="写真を閉じる"
+              accessibilityRole="button"
+            >
               <Ionicons name="close-circle" size={36} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </TouchableOpacity>
@@ -412,6 +427,9 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                     style={styles.reportMatchedBtn}
                     onPress={() => setReportStep('matched')}
                     activeOpacity={0.8}
+                    accessibilityLabel="停めた"
+                    accessibilityRole="button"
+                    accessibilityHint="ここに駐車できたことを記録します"
                   >
                     <Ionicons name="thumbs-up" size={28} color="#fff" />
                     <Text style={styles.reportChoiceText}>停めた</Text>
@@ -420,6 +438,9 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                     style={styles.reportUnmatchedBtn}
                     onPress={() => setReportStep('unmatched')}
                     activeOpacity={0.8}
+                    accessibilityLabel="停められなかった"
+                    accessibilityRole="button"
+                    accessibilityHint="駐車できなかったことを記録します"
                   >
                     <Ionicons name="thumbs-down" size={28} color="#fff" />
                     <Text style={styles.reportChoiceText}>停められなかった</Text>
@@ -456,10 +477,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                    <Ionicons name="camera-outline" size={18} color={C.blue} />
-                    <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
-                  </TouchableOpacity>
+                  <View style={styles.reportPhotoBtnRow}>
+                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
+                      <Ionicons name="camera-outline" size={18} color={C.blue} />
+                      <Text style={styles.reportPhotoBtnText}>撮影する</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhotoFromAlbum}>
+                      <Ionicons name="images-outline" size={18} color={C.blue} />
+                      <Text style={styles.reportPhotoBtnText}>アルバムから</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 <TouchableOpacity
                   style={[styles.reportSubmitBtn, { backgroundColor: C.green }]}
@@ -514,10 +541,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                    <Ionicons name="camera-outline" size={18} color={C.blue} />
-                    <Text style={styles.reportPhotoBtnText}>写真を追加</Text>
-                  </TouchableOpacity>
+                  <View style={styles.reportPhotoBtnRow}>
+                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
+                      <Ionicons name="camera-outline" size={18} color={C.blue} />
+                      <Text style={styles.reportPhotoBtnText}>撮影する</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhotoFromAlbum}>
+                      <Ionicons name="images-outline" size={18} color={C.blue} />
+                      <Text style={styles.reportPhotoBtnText}>アルバムから</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 <TouchableOpacity
                   style={[styles.reportSubmitBtn, { backgroundColor: C.orange }, !correction && { opacity: 0.4 }]}
@@ -555,11 +588,24 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
           >
             {/* ヘッダー */}
             <View style={styles.titleRow}>
-              <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={onClose}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="詳細シートを閉じる"
+                accessibilityRole="button"
+              >
                 <Ionicons name="close-circle" size={28} color={C.sub} />
               </TouchableOpacity>
               <Text style={styles.spotName} numberOfLines={2}>{spot.name}</Text>
-              <TouchableOpacity style={styles.favBtn} onPress={toggleFav} disabled={favLoading}>
+              <TouchableOpacity
+                style={styles.favBtn}
+                onPress={toggleFav}
+                disabled={favLoading}
+                accessibilityLabel={isFav ? 'お気に入りから削除' : 'お気に入りに追加'}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isFav }}
+              >
                 <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={26} color={C.pink} />
               </TouchableOpacity>
             </View>
@@ -614,6 +660,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
+              {(spot.currentParked ?? 0) > 0 && (
+                <View style={[styles.badge, { backgroundColor: C.green }]}>
+                  <Text style={styles.badgeText}>今{spot.currentParked}台が駐車中</Text>
+                </View>
+              )}
               <View ref={freshnessRef} style={{ position: 'relative' }}>
                 {tutorial.isStep('explore-detail-freshness') && (
                   <Animated.View
@@ -650,7 +701,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                   contentContainerStyle={styles.galleryList}
                   renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => setFullPhoto(item.photoUri!)} activeOpacity={0.85}>
-                      <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
+                      <View>
+                        <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
+                        {item.photoTag && (
+                          <View style={styles.photoTagBadge}>
+                            <Text style={styles.photoTagText}>
+                              {item.photoTag === 'sign' ? '\uD83D\uDCCB 看板' : item.photoTag === 'entrance' ? '\uD83D\uDEAA 入口' : '\uD83D\uDCF8'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </TouchableOpacity>
                   )}
                 />
@@ -727,6 +787,9 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                 handleNav();
               }}
               activeOpacity={0.85}
+              accessibilityLabel="案内開始"
+              accessibilityRole="button"
+              accessibilityHint="ナビアプリでこのスポットへの案内を開始します"
             >
               <Ionicons name="navigate" size={17} color="#fff" />
               <Text style={styles.footerNavText}>案内開始</Text>
@@ -735,6 +798,10 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
               style={[styles.footerReportBtn, alreadyVoted && { opacity: 0.5 }]}
               onPress={openReportModal}
               activeOpacity={0.8}
+              accessibilityLabel={alreadyVoted ? '記録済み' : '足跡を残す'}
+              accessibilityRole="button"
+              accessibilityHint="このスポットに停められたか記録します"
+              accessibilityState={{ disabled: alreadyVoted }}
             >
               <Ionicons name="chatbubble-ellipses" size={17} color="#fff" />
               <Text style={styles.footerReportText}>{alreadyVoted ? '記録済み' : '足跡を残す'}</Text>
@@ -746,6 +813,9 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
                 const url = `https://maps.google.com/maps?q=${spot.latitude},${spot.longitude}`;
                 Share.share({ message: `${spot.name}\n${spot.address ?? ''}\n${url}\n\n— Moto-Logos で共有` });
               }}
+              accessibilityLabel="このスポットを共有"
+              accessibilityRole="button"
+              accessibilityHint="スポット情報をメッセージやSNSで共有します"
             >
               <Ionicons name="share-outline" size={20} color={C.blue} />
             </TouchableOpacity>
@@ -948,6 +1018,8 @@ const styles = StyleSheet.create({
   gallerySection: { marginTop: 12 },
   galleryList:    { gap: 8, paddingRight: 4 },
   galleryThumb:   { width: 130, height: 96, borderRadius: 12, backgroundColor: C.card },
+  photoTagBadge:  { position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  photoTagText:   { color: '#fff', fontSize: 10, fontWeight: '600' },
   noPhotoHint:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingVertical: 8 },
   noPhotoText:    { color: C.sub, fontSize: 12 },
 
@@ -1027,8 +1099,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: C.border, backgroundColor: 'rgba(255,255,255,0.04)',
   },
   correctionLabel: { color: C.sub, fontSize: 13, fontWeight: '600' },
+  reportPhotoBtnRow: {
+    flexDirection: 'row', gap: 8,
+  },
   reportPhotoBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(10,132,255,0.35)',
   },
   reportPhotoBtnText: { color: C.blue, fontSize: 13, fontWeight: '500' },

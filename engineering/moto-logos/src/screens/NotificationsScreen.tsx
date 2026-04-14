@@ -26,12 +26,9 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { Colors } from '../constants/theme';
 
-const C = {
-  bg: '#000000', surface: '#1C1C1E', card: '#2C2C2E',
-  border: 'rgba(255,255,255,0.10)', text: '#F2F2F7',
-  sub: '#8E8E93', blue: '#0A84FF', accent: '#FF6B00',
-};
+const C = { ...Colors, card: Colors.cardElevated };
 
 const READ_KEY = 'moto_logos_read_announcements';
 

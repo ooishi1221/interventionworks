@@ -2,29 +2,25 @@ export default function HowTo() {
   const steps = [
     {
       num: '1',
-      title: 'アプリをダウンロード',
-      text: 'App Store / Google Play から無料でインストール。アカウント登録不要ですぐ使える。',
+      title: 'アプリを入れる',
+      text: '無料。アカウント登録なしで、すぐ使える。',
     },
     {
       num: '2',
-      title: 'ガイドツアーで体験',
-      text: '探す・報告する・登録する。全部の操作をチュートリアルで体験。誰でもすぐに使いこなせる。',
+      title: '地図を見る',
+      text: 'ライダーたちの足跡が、そこにある。鮮度バッジで「いつの情報か」が一目でわかる。',
     },
     {
       num: '3',
-      title: '走り出す',
-      text: 'あとは走るだけ。停めたら報告、困ったら検索。あなたの一報がマップに命を灯す。',
+      title: '自分のメモを残す',
+      text: '停めたら写真1枚。それが誰かの安心になる。',
     },
   ]
 
   return (
-    <section className="section howto surface-bg">
+    <section className="section howto">
       <div className="container">
-        <h2 className="section-title">はじめての方も安心。</h2>
-        <p className="section-sub">
-          アプリを開くと、インタラクティブなガイドツアーが始まります。<br />
-          実際に画面をタップしながら操作を覚えられるので、誰でもすぐに使えます。
-        </p>
+        <h2 className="section-title">はじめかた</h2>
         <div className="howto-steps">
           {steps.map((s) => (
             <div key={s.num} className="howto-step">

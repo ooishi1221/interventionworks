@@ -16,14 +16,16 @@ import { Asset } from 'expo-asset';
 const THIRD_PARTY_CONSENT_KEY = 'moto_logos_third_party_consent';
 const CONTACT_EMAIL = process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'yuji.ooishi@intervention.jp';
 
+import { Colors } from '../constants/theme';
+
 const C = {
-  bg: '#0D0D0D',
-  surface: '#1A1A1A',
-  card: '#242424',
-  accent: '#FF6B00',
-  text: '#F5F5F5',
-  sub: '#A0A0A0',
-  border: '#333333',
+  bg: Colors.legalBg,
+  surface: Colors.legalSurface,
+  card: Colors.legalCard,
+  accent: Colors.accent,
+  text: Colors.legalText,
+  sub: Colors.legalSub,
+  border: Colors.legalBorder,
 };
 
 type DocType = 'terms' | 'privacy' | 'moderation';
@@ -62,7 +64,7 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
     try {
       const docs: Record<string, string> = {};
       // Markdown ファイルを読み込む
-      const files: Record<DocType, any> = {
+      const files: Record<DocType, number> = {
         terms: require('../../assets/legal/terms-of-service.md'),
         privacy: require('../../assets/legal/privacy-policy.md'),
         moderation: require('../../assets/legal/moderation-policy.md'),

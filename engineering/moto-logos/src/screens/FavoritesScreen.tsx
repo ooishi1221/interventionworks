@@ -26,19 +26,7 @@ import {
 import { ADACHI_PARKING } from '../data/adachi-parking';
 import { captureError } from '../utils/sentry';
 
-// ─── 色定数 ─────────────────────────────────────────────
-const C = {
-  bg:     '#000000',
-  card:   '#1C1C1E',
-  border: 'rgba(255,255,255,0.10)',
-  text:   '#F2F2F7',
-  sub:    '#8E8E93',
-  blue:   '#0A84FF',
-  pink:   '#FF375F',
-  red:    '#FF453A',
-  green:  '#30D158',
-  purple: '#BF5AF2',
-};
+const C = Colors;
 
 interface Props {
   onGoToMap: () => void;

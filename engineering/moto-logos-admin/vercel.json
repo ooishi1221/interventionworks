@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/stale-spots",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/send-scheduled",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -19,12 +19,13 @@ import {
   limit,
   Timestamp,
   GeoPoint,
+  type DocumentData,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './config';
 import { COLLECTIONS } from './firestoreTypes';
-import type { SpotCapacity } from './firestoreTypes';
+import type { SpotCapacity, PhotoTag, HazardType, TheftAlertStatus } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 import { isNgWord } from '../utils/ng-filter';
@@ -99,8 +100,23 @@ function stripUndef<T extends object>(obj: T): T {
   ) as T;
 }
 
-function docToPin(d: { id: string; data: () => any }): ParkingPin {
+/** 24時間（ミリ秒） — currentParked の自動期限切れ閾値 */
+const PARKED_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+function docToPin(d: { id: string; data: () => Record<string, unknown> }): ParkingPin {
   const data = d.data();
+
+  // currentParked: 24h以上更新がなければ 0 とみなす
+  let currentParked: number | undefined;
+  const rawParked = (data.currentParked as number | undefined) ?? 0;
+  if (rawParked > 0) {
+    const parkedAt = data.currentParkedAt as Timestamp | undefined;
+    if (parkedAt && Date.now() - parkedAt.toDate().getTime() < PARKED_EXPIRY_MS) {
+      currentParked = rawParked;
+    }
+    // 24h超過 → undefined（0扱い）
+  }
+
   return {
     id:           d.id,
     name:         data.name,
@@ -118,6 +134,8 @@ function docToPin(d: { id: string; data: () => any }): ParkingPin {
     paymentIC:    data.payment?.icCard,
     paymentQR:    data.payment?.qrCode,
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
+    currentParked,
+    isGuerrilla:  (data.isGuerrilla as boolean | undefined) ?? undefined,
   };
 }
 
@@ -320,6 +338,39 @@ export async function reportSpotClosed(spotId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────
+// リアルタイム空き状況 — 「今ここに停めた / 出た」(#79)
+// ─────────────────────────────────────────────────────
+
+/**
+ * 「停めた」→ currentParked を +1 し、タイムスタンプを更新。
+ * カウンターは概算で構わない。
+ */
+export async function reportParked(spotId: string): Promise<void> {
+  const { updateDoc, increment } = await import('firebase/firestore');
+  try {
+    await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
+      currentParked: increment(1),
+      currentParkedAt: Timestamp.now(),
+    });
+  } catch (e) { console.warn('[Firestore] reportParked failed:', e); }
+}
+
+/**
+ * 「出発した」→ currentParked を -1（最小 0）。
+ * Firestore の increment(-1) は 0 以下になり得るため、
+ * 読み取り側（docToPin）で 0 未満をカットしている。
+ */
+export async function reportDeparted(spotId: string): Promise<void> {
+  const { updateDoc, increment } = await import('firebase/firestore');
+  try {
+    await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
+      currentParked: increment(-1),
+      currentParkedAt: Timestamp.now(),
+    });
+  } catch (e) { console.warn('[Firestore] reportDeparted failed:', e); }
+}
+
+// ─────────────────────────────────────────────────────
 // レビュー（変更なし — spotId 単位クエリのため geohash 不要）
 // ─────────────────────────────────────────────────────
 
@@ -345,6 +396,7 @@ export async function fetchReviews(
       comment:     (data.comment as string) ?? null,
       photoUri:    (data.photoUrls as string[])?.[0] ?? null,
       vehicleName: (data.vehicleName as string) ?? null,
+      photoTag:    (data.photoTag as string | undefined) as Review['photoTag'] ?? null,
       createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
     };
   });
@@ -372,6 +424,7 @@ export async function addReview(
   photoUri?: string,
   onUploadProgress?: (progress: number) => void,
   vehicleName?: string,
+  photoTag?: PhotoTag,
 ): Promise<void> {
   // NG ワードチェック（クライアント側即時フィードバック）
   if (comment && isNgWord(comment)) {
@@ -393,6 +446,7 @@ export async function addReview(
     ...(comment  != null && comment !== '' && { comment }),
     ...(vehicleName && { vehicleName }),
     photoUrls,
+    ...(photoTag && { photoTag }),
     goodCount: 0,
     badCount:  0,
     createdAt: now,

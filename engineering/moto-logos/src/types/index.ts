@@ -21,6 +21,10 @@ export interface ParkingPin {
   paymentIC?: boolean;
   paymentQR?: boolean;
   updatedAt?: string; // ISO8601
+  /** リアルタイム駐車中台数（概算） */
+  currentParked?: number;
+  /** ゲリラスポット（公式DBにない隠れ駐輪場） */
+  isGuerrilla?: boolean;
 }
 
 export interface UserSpot {
@@ -59,6 +63,8 @@ export interface Review {
   photoUri: string | null;
   /** 報告時のバイク車種名（例: 「CBR650R」） */
   vehicleName?: string | null;
+  /** 写真タグ（看板 / 入口 / その他） */
+  photoTag?: 'sign' | 'entrance' | 'general' | null;
   createdAt: string;
 }
 

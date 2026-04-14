@@ -79,6 +79,8 @@ export interface FirestoreUser {
 // reviews コレクション
 // ─────────────────────────────────────────────────────
 
+export type PhotoModerationStatus = 'pending' | 'approved' | 'rejected';
+
 export interface FirestoreReview {
   spotId: string;
   userId: string;
@@ -87,6 +89,10 @@ export interface FirestoreReview {
   photoUrls: string[];
   goodCount: number;
   badCount: number;
+  /** 写真モデレーションステータス（photoUrls が空でないレビューのみ） */
+  photoModeration?: PhotoModerationStatus;
+  photoModeratedAt?: FirebaseFirestore.Timestamp;
+  photoModeratedBy?: string;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
@@ -137,6 +143,8 @@ export const COLLECTIONS = {
   MODERATION_LOGS: 'moderation_logs',
   USER_ACTIVITY: 'user_activity',
   PUSH_TOKENS: 'push_tokens',
+  NOTIFICATION_TEMPLATES: 'notification_templates',
+  SCHEDULED_NOTIFICATIONS: 'scheduled_notifications',
 } as const;
 
 // ─────────────────────────────────────────────────────

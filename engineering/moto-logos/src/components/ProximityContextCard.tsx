@@ -17,14 +17,16 @@ import {
   Dimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
+import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
+import type { PhotoTag } from '../firebase/firestoreTypes';
 import {
   reportSpotGood,
   reportSpotFull,
   reportSpotClosed,
+  reportParked,
   addReview,
 } from '../firebase/firestoreService';
 import { incrementStat, logActivityLocal, getFirstVehicle, addFootprint, startParking } from '../db/database';
@@ -37,19 +39,9 @@ import {
   markReported,
 } from '../hooks/useProximityState';
 
-// ── カラー ────────────────────────────────────────────
-const C = {
-  sheet: '#1C1C1E',
-  card: '#2C2C2E',
-  border: 'rgba(255,255,255,0.10)',
-  text: '#F2F2F7',
-  sub: '#8E8E93',
-  blue: '#0A84FF',
-  green: '#30D158',
-  red: '#FF453A',
-  orange: '#FF9F0A',
-  accent: '#FF6B00',
-};
+// ── カラー（card = cardElevated: #2C2C2E） ──────────
+import { Colors } from '../constants/theme';
+const C = { ...Colors, card: Colors.cardElevated };
 
 type CorrectionType = 'full' | 'closed' | 'wrong_price' | 'wrong_cc' | 'other';
 
@@ -59,6 +51,12 @@ const CORRECTION_OPTIONS: { id: CorrectionType; label: string; icon: keyof typeo
   { id: 'wrong_price', label: '料金違う',   icon: 'cash-outline' },
   { id: 'wrong_cc',    label: 'CC制限違う', icon: 'speedometer-outline' },
   { id: 'other',       label: 'その他',     icon: 'ellipsis-horizontal' },
+];
+
+const PHOTO_TAG_OPTIONS: { id: PhotoTag; label: string; emoji: string }[] = [
+  { id: 'sign',     label: '看板',  emoji: '\uD83D\uDCCB' },
+  { id: 'entrance', label: '入口',  emoji: '\uD83D\uDEAA' },
+  { id: 'general',  label: 'その他', emoji: '\uD83D\uDCF8' },
 ];
 
 // ── Props ─────────────────────────────────────────────
@@ -115,9 +113,11 @@ export function ProximityContextCard({
 
   // カード内部状態
   const [phase, setPhase] = useState<
-    'initial' | 'photo' | 'corrections' | 'thanks' | 'alternatives'
+    'initial' | 'photo' | 'tagging' | 'corrections' | 'thanks' | 'alternatives'
   >('initial');
   const [submitting, setSubmitting] = useState(false);
+  // 撮影済み写真URI（タグ選択待ち）
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
   // 表示中のスポット（nearby の場合）
   const nearbySpot = effectiveState.kind === 'nearby' ? effectiveState.nearest : null;
@@ -227,6 +227,7 @@ export function ProximityContextCard({
       incrementStat('reports');
       addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'parked');
       startParking(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, bike?.id);
+      reportParked(spotId); // リアルタイム空き状況 (#79)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
       setPhase('photo');
@@ -237,7 +238,24 @@ export function ProximityContextCard({
     setSubmitting(false);
   }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
 
-  // ── 看板メモ（写真撮影） ────────────────────────────
+  // ── 写真選択の共通処理 ──────────────────────────────
+  const uploadPhotoAndFinish = useCallback(async (photoUri: string | null, tag?: PhotoTag) => {
+    if (!photoUri || !reportedSpotId) { setPhase('thanks'); return; }
+    let userId = user?.userId;
+    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
+    if (!userId) { setPhase('thanks'); return; }
+
+    try {
+      const bike = await getFirstVehicle();
+      await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name, tag);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      captureError(e, { context: 'proximity_snap_photo' });
+    }
+    setPhase('thanks');
+  }, [reportedSpotId, user]);
+
+  // ── 看板メモ（カメラ撮影） ────────────────────────────
   const handleSnapPhoto = useCallback(async () => {
     // チュートリアル: ダミー画像で投稿完了演出
     if (tutorial.isStep('report-good-thanks')) {
@@ -246,37 +264,49 @@ export function ProximityContextCard({
       tutorial.advanceTutorial(); // → report-good-done
       return;
     }
-    if (!reportedSpotId) return;
-    let userId = user?.userId;
-    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
-    if (!userId) return;
-
     try {
-      let result: ImagePicker.ImagePickerResult | null = null;
-      try {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status === 'granted') {
-          result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: false });
-        }
-      } catch {}
-      // カメラ非対応時はライブラリから
-      if (!result) {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { setPhase('thanks'); return; }
-        result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: false });
+      const uri = await pickPhotoFromCamera();
+      if (uri) {
+        setPendingPhotoUri(uri);
+        setPhase('tagging');
+      } else {
+        setPhase('thanks');
       }
-      if (result.canceled) { setPhase('thanks'); return; }
-
-      if (!result.assets?.length) { setPhase('thanks'); return; }
-      const photoUri = result.assets[0].uri;
-      const bike = await getFirstVehicle();
-      await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       captureError(e, { context: 'proximity_snap_photo' });
+      setPhase('thanks');
     }
-    setPhase('thanks');
   }, [reportedSpotId, user, tutorial]);
+
+  // ── 看板メモ（アルバムから選択） ──────────────────────
+  const handlePickFromAlbum = useCallback(async () => {
+    // チュートリアル: ダミー画像で投稿完了演出
+    if (tutorial.isStep('report-good-thanks')) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPhase('thanks');
+      tutorial.advanceTutorial(); // → report-good-done
+      return;
+    }
+    try {
+      const uri = await pickPhotoFromLibrary();
+      if (uri) {
+        setPendingPhotoUri(uri);
+        setPhase('tagging');
+      } else {
+        setPhase('thanks');
+      }
+    } catch (e) {
+      captureError(e, { context: 'proximity_pick_album' });
+      setPhase('thanks');
+    }
+  }, [reportedSpotId, user, tutorial]);
+
+  // ── タグ選択 → アップロード ────────────────────────────
+  const handleTagSelect = useCallback(async (tag: PhotoTag) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await uploadPhotoAndFinish(pendingPhotoUri, tag);
+    setPendingPhotoUri(null);
+  }, [pendingPhotoUri, uploadPhotoAndFinish]);
 
   // ── 写真スキップ → 足跡完了 ──────────────────────────
   const skipPhoto = useCallback(() => {
@@ -411,6 +441,9 @@ export function ProximityContextCard({
                 onPress={handleGood}
                 activeOpacity={0.8}
                 disabled={submitting}
+                accessibilityLabel="停めた"
+                accessibilityRole="button"
+                accessibilityHint="ここに駐車できたことを記録します"
               >
                 <Ionicons name="thumbs-up" size={22} color="#fff" />
                 <Text style={styles.actionText}>停めた</Text>
@@ -421,6 +454,9 @@ export function ProximityContextCard({
                 onPress={handleBad}
                 activeOpacity={0.8}
                 disabled={submitting}
+                accessibilityLabel="停められなかった"
+                accessibilityRole="button"
+                accessibilityHint="駐車できなかったことを記録します"
               >
                 <Ionicons name="thumbs-down" size={22} color="#fff" />
                 <Text style={styles.actionText}>停められなかった</Text>
@@ -470,33 +506,64 @@ export function ProximityContextCard({
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera" size={22} color="#fff" />
-                <Text style={styles.actionText}>📸 パシャ</Text>
+                <Text style={styles.actionText}>パシャ</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionBtn, styles.skipBtn]}
-                onPress={skipPhoto}
+                style={[styles.actionBtn, styles.albumBtn]}
+                onPress={handlePickFromAlbum}
                 activeOpacity={0.8}
               >
-                {tutorial.active && (
-                  <Animated.View
-                    style={{
-                      ...StyleSheet.absoluteFillObject,
-                      borderRadius: 14,
-                      borderWidth: 3,
-                      borderColor: okGlowAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
-                      }),
-                      shadowColor: '#FF9F0A',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowRadius: 14,
-                      shadowOpacity: okGlowAnim,
-                    }}
-                    pointerEvents="none"
-                  />
-                )}
-                <Text style={[styles.skipText, tutorial.active && { color: '#FF9F0A', fontWeight: '700' }]}>OK</Text>
+                <Ionicons name="images" size={22} color="#fff" />
+                <Text style={styles.actionText}>アルバム</Text>
               </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.photoSkipLink}
+              onPress={skipPhoto}
+              activeOpacity={0.8}
+            >
+              {tutorial.active && (
+                <Animated.View
+                  style={{
+                    ...StyleSheet.absoluteFillObject,
+                    borderRadius: 14,
+                    borderWidth: 3,
+                    borderColor: okGlowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
+                    }),
+                    shadowColor: '#FF9F0A',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowRadius: 14,
+                    shadowOpacity: okGlowAnim,
+                  }}
+                  pointerEvents="none"
+                />
+              )}
+              <Text style={[styles.photoSkipText, tutorial.active && { color: '#FF9F0A', fontWeight: '700' }]}>
+                {tutorial.active ? 'OK' : 'スキップ'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── 写真タグ選択（撮影後） ────────────────────── */}
+        {phase === 'tagging' && (
+          <View>
+            <Text style={styles.photoPromptText}>何の写真？</Text>
+            <View style={styles.tagRow}>
+              {PHOTO_TAG_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={styles.tagBtn}
+                  onPress={() => handleTagSelect(opt.id)}
+                  activeOpacity={0.7}
+                  disabled={submitting}
+                >
+                  <Text style={styles.tagEmoji}>{opt.emoji}</Text>
+                  <Text style={styles.tagLabel}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         )}
@@ -646,8 +713,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#48484A',
   },
   snapBtn: {
-    flex: 2,
+    flex: 1,
     backgroundColor: C.blue,
+  },
+  albumBtn: {
+    flex: 1,
+    backgroundColor: '#48484A',
+  },
+  photoSkipLink: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    marginTop: 6,
+  },
+  photoSkipText: {
+    color: C.sub,
+    fontSize: 14,
+    fontWeight: '600',
   },
   skipBtn: {
     flex: 1,
@@ -693,6 +774,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 14,
+  },
+
+  // ── 写真タグ選択 ──────────────────────────────────
+  tagRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  tagBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#3A3A3C',
+  },
+  tagEmoji: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  tagLabel: {
+    color: '#F5F5F5',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   // ── 理由スキップリンク ────────────────────────────

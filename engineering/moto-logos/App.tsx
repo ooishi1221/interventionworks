@@ -28,6 +28,7 @@ import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
 import { initSentry, setSentryUser, sentryWrap, captureError } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
+import { useImpactNotification } from './src/hooks/useImpactNotification';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
 import { LogBox } from 'react-native';
@@ -165,6 +166,8 @@ function App() {
     setTutorialVisible(true);
   }, []);
 
+  // ── デジタルヤエー: 足跡の影響通知 (#104) ────────────
+  useImpactNotification();
 
   /** タブ押下ハンドラ
    *  - マップ2度押し → 現在地リセット
