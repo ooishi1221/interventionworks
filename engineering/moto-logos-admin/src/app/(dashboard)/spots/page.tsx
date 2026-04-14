@@ -496,7 +496,7 @@ export default function SpotsPage() {
                           >
                             状態
                           </button>
-                          <
+                          <a
                             href={`/audit-log?targetId=${spot.id}&targetType=spot`}
                             className="px-2 py-1 text-xs text-text-secondary hover:text-foreground hover:underline"
                           >
