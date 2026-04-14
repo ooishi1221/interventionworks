@@ -111,6 +111,30 @@ const REAL_SPOTS = [
   { id: 'real_karuizawa_001', name: '軽井沢駅北口バイク駐車場', latitude: 36.3487, longitude: 138.6365, address: '長野県北佐久郡軽井沢町軽井沢', maxCC: null, isFree: true, capacity: 20 },
   { id: 'real_suwa_001', name: '諏訪湖畔公園バイク駐車場', latitude: 36.0460, longitude: 138.1100, address: '長野県諏訪市湖岸通り', maxCC: null, isFree: true, capacity: 15 },
   { id: 'real_hakuba_001', name: '白馬駅前バイク駐車場', latitude: 36.6980, longitude: 137.8622, address: '長野県北安曇郡白馬村北城', maxCC: null, isFree: true, capacity: 10 },
+  // ── JMPSA公開データ: 渋谷区 ──────────────────
+  { id: 'jmpsa_shibuya_001', name: '天神橋自動二輪車等駐車場', latitude: 35.6740, longitude: 139.6880, address: '東京都渋谷区代々木3-25', maxCC: null, isFree: false, priceInfo: '最初の1時間無料、3時間ごとに100円', openHours: '24時間' },
+  { id: 'jmpsa_shibuya_002', name: 'エコステーション21 代々木八幡駅北バイク駐車場', latitude: 35.6666, longitude: 139.6830, address: '東京都渋谷区元代々木町4', maxCC: null, isFree: false, priceInfo: '100円/3時間（最初の1時間無料）', openHours: '24時間' },
+  { id: 'jmpsa_shibuya_003', name: 'サイカパーク 富ヶ谷遊歩道バイク駐車場', latitude: 35.6660, longitude: 139.6870, address: '東京都渋谷区富ヶ谷1-12-13', maxCC: null, isFree: false, priceInfo: '最初の30分無料、以後100円/3時間', openHours: '24時間' },
+  { id: 'jmpsa_shibuya_004', name: '上原一丁目駐車場', latitude: 35.6653, longitude: 139.6803, address: '東京都渋谷区上原1-1', maxCC: null, isFree: false, priceInfo: '60分100円、24時間最大600円', openHours: '24時間' },
+  // ── JMPSA公開データ: 新宿区 ──────────────────
+  { id: 'jmpsa_shinjuku_001', name: '西新宿第四駐車場（オートバイ）', latitude: 35.6895, longitude: 139.6920, address: '東京都新宿区西新宿2-4', maxCC: null, isFree: false, priceInfo: '30分100円、24時間最大800円', openHours: '24時間' },
+  { id: 'jmpsa_shinjuku_002', name: '都庁オートバイ専用駐車場', latitude: 35.6896, longitude: 139.6917, address: '東京都新宿区西新宿2-5', maxCC: null, isFree: false, priceInfo: '最初の1時間無料、以後60分100円、最大800円', openHours: '年中無休（年末年始除く）' },
+  // ── JMPSA公開データ: 千代田区 ────────────────
+  { id: 'jmpsa_chiyoda_001', name: 'パレスサイドビル駐車場', latitude: 35.6907, longitude: 139.7580, address: '東京都千代田区一ツ橋1-1-1', maxCC: null, isFree: false, priceInfo: '100円/50分、1日最大1,000円', openHours: '24時間' },
+  { id: 'jmpsa_chiyoda_002', name: 'エースパーク美土代町第1バイク駐車場', latitude: 35.6923, longitude: 139.7660, address: '東京都千代田区美土代町11-11', maxCC: null, isFree: false, priceInfo: '60分200円、24時間最大800円', openHours: '24時間' },
+  { id: 'jmpsa_chiyoda_003', name: '千代田第一神田神保町駐車場', latitude: 35.6955, longitude: 139.7573, address: '東京都千代田区神田神保町1-12', maxCC: null, isFree: false, priceInfo: '200円/60分（8-22時）、100円/60分（22-8時）', openHours: '24時間' },
+  { id: 'jmpsa_chiyoda_004', name: '千代田第6内神田3丁目駐車場', latitude: 35.6945, longitude: 139.7700, address: '東京都千代田区内神田3-8-4', maxCC: null, isFree: false, priceInfo: '200円/60分、24時間最大700円', openHours: '24時間' },
+  // ── JMPSA公開データ: 豊島区（池袋） ─────────
+  { id: 'jmpsa_toshima_001', name: '東池袋オートバイ専用駐車場', latitude: 35.7290, longitude: 139.7175, address: '東京都豊島区東池袋1-29先', maxCC: null, isFree: false, priceInfo: '30分100円、10時間最大1,000円', openHours: '24時間' },
+  { id: 'jmpsa_toshima_002', name: 'エコステーション21 サンシャインシティ西駐輪場', latitude: 35.7285, longitude: 139.7190, address: '東京都豊島区東池袋3-3', maxCC: null, isFree: false, priceInfo: '3時間300円', openHours: '24時間' },
+  { id: 'jmpsa_toshima_003', name: '池袋東口公共地下駐車場', latitude: 35.7295, longitude: 139.7130, address: '東京都豊島区南池袋1-29-1', maxCC: null, isFree: false, priceInfo: '320円/時間（2時間まで）、300円/時間（2時間超）', openHours: '24時間' },
+  { id: 'jmpsa_toshima_004', name: '六ツ又陸橋オートバイ専用駐車場', latitude: 35.7270, longitude: 139.7200, address: '東京都豊島区東池袋3-8先', maxCC: null, isFree: false, priceInfo: '60分100円、24時間最大800円', openHours: '24時間' },
+  { id: 'jmpsa_toshima_005', name: '池袋北口バイク駐輪場', latitude: 35.7310, longitude: 139.7105, address: '東京都豊島区西池袋1-30', maxCC: null, isFree: false, priceInfo: '60分200円、最大6時間600円', openHours: '24時間' },
+  // ── JMPSA公開データ: 港区 ────────────────────
+  { id: 'jmpsa_minato_001', name: '一ノ橋オートバイ専用駐車場', latitude: 35.6540, longitude: 139.7392, address: '東京都港区東麻布3-8先', maxCC: null, isFree: false, priceInfo: '60分200円、12時間最大1,000円', openHours: '24時間' },
+  // ── JMPSA公開データ: 中央区 ──────────────────
+  { id: 'jmpsa_chuo_001', name: '日本橋兜町駐車場', latitude: 35.6798, longitude: 139.7792, address: '東京都中央区日本橋兜町1-13先', maxCC: null, isFree: false, priceInfo: '100円/1時間', openHours: '24時間' },
+  { id: 'jmpsa_chuo_002', name: '新富一丁目オートバイ駐車場', latitude: 35.6710, longitude: 139.7750, address: '東京都中央区新富1-13先', maxCC: null, isFree: false, priceInfo: '60分100円、24時間最大800円', openHours: '24時間' },
 ];
 
 // ─── メイン ──────────────────────────────────────────
@@ -150,6 +174,13 @@ for (let i = 0; i < REAL_SPOTS.length; i += BATCH_SIZE) {
   const chunk = REAL_SPOTS.slice(i, i + BATCH_SIZE);
   for (const s of chunk) {
     const ref = db.collection('spots').doc(s.id);
+    // 焚き付け: 40%のスポットにランダムな到着データを仕込む
+    const hasTemp = Math.random() < 0.4;
+    const tempData = hasTemp ? {
+      currentParked: Math.ceil(Math.random() * 3),
+      currentParkedAt: Timestamp.fromMillis(Date.now() - Math.round(Math.random() * 20 * 3600_000)),
+    } : {};
+
     batch.set(ref, {
       name: s.name,
       coordinate: new GeoPoint(s.latitude, s.longitude),
@@ -160,7 +191,9 @@ for (let i = 0; i < REAL_SPOTS.length; i += BATCH_SIZE) {
       payment: { cash: true, icCard: false, qrCode: false },
       isFree: s.isFree ?? false,
       ...(s.pricePerHour != null && { pricePerHour: s.pricePerHour }),
+      ...(s.priceInfo && { priceInfo: s.priceInfo }),
       ...(s.openHours && { openHours: s.openHours }),
+      ...tempData,
       viewCount: 0, goodCount: 0, badReportCount: 0,
       status: 'active', verificationLevel: 'community', source: 'seed',
       updatedAt: now, lastVerifiedAt: now, createdAt: now,
