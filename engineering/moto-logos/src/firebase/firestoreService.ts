@@ -135,6 +135,7 @@ function docToPin(d: { id: string; data: () => Record<string, unknown> }): Parki
     paymentQR:    data.payment?.qrCode,
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
     currentParked,
+    lastArrivedAt: (data.currentParkedAt as Timestamp | undefined)?.toDate().toISOString(),
     isGuerrilla:  (data.isGuerrilla as boolean | undefined) ?? undefined,
   };
 }

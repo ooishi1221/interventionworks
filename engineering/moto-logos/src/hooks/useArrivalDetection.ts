@@ -14,7 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { ParkingPin } from '../types';
-import { fetchReviews } from '../firebase/firestoreService';
+import { fetchReviews, reportParked } from '../firebase/firestoreService';
+import { addFootprint, startParking, getFirstVehicle } from '../db/database';
 import { captureError } from '../utils/sentry';
 
 const STORAGE_KEY = 'moto_logos_destination';
@@ -111,7 +112,17 @@ export function useArrivalDetection() {
 
           if (dist <= ARRIVAL_THRESHOLD_M) {
             arrivedRef.current = true;
-            await sendArrivalNotification(destination.spot);
+            const spot = destination.spot;
+
+            // ── 自動で温度UP + 足跡記録（ボタン不要）──
+            reportParked(spot.id).catch((e) => captureError(e, { context: 'auto_report_parked' }));
+            addFootprint(spot.id, spot.name, spot.latitude, spot.longitude, 'parked')
+              .catch((e) => captureError(e, { context: 'auto_footprint' }));
+            getFirstVehicle().then((bike) =>
+              startParking(spot.id, spot.name, spot.latitude, spot.longitude, bike?.id)
+            ).catch((e) => captureError(e, { context: 'auto_parking_session' }));
+
+            await sendArrivalNotification(spot);
             // 到着したら行き先をクリア
             await AsyncStorage.removeItem(STORAGE_KEY);
             setDestinationState(null);
@@ -138,25 +149,26 @@ export function useArrivalDetection() {
 }
 
 /**
- * 到着時のローカル通知を送信。スポットの写真有無で出し分ける。
+ * 到着時のローカル通知を送信。
+ * 到着=停めたで自動記録済み。通知は「看板メモ」の促しのみ。
  */
 async function sendArrivalNotification(spot: ParkingPin): Promise<void> {
   try {
-    // レビューに写真があるかチェック
+    // 看板写真があるかチェック → あれば軽い通知、なければ写真を促す
     let hasPhoto = false;
     try {
       const reviews = await fetchReviews(spot.id);
       hasPhoto = reviews.some((r) => r.photoUri);
     } catch {
-      // レビュー取得失敗時は写真なし扱い
+      // 取得失敗時は写真なし扱い
     }
 
     const title = hasPhoto
-      ? `${spot.name}、停められた？`
+      ? `${spot.name}に到着`
       : `📸 ${spot.name}の看板、メモしとく？`;
 
     const body = hasPhoto
-      ? 'タップして足跡を残そう'
+      ? '足跡が刻まれました'
       : '次のライダーの道しるべになります';
 
     await Notifications.scheduleNotificationAsync({
@@ -166,7 +178,7 @@ async function sendArrivalNotification(spot: ParkingPin): Promise<void> {
         sound: 'default',
         data: { type: 'arrival', spotId: spot.id },
       },
-      trigger: null, // 即時送信
+      trigger: null,
     });
   } catch (e) {
     captureError(e, { context: 'arrival_notification' });

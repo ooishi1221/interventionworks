@@ -44,26 +44,35 @@ const JAPAN_CENTER: Region = {
   longitudeDelta: 12,
 };
 
-const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#636366';
 
-/** 鮮度ベースのピンカラー（CLAUDE.md §鮮度可視化） */
+// ─── 駐車温度システム ────────────────────────────────
+// ライダーが到着するとスポットが「温まる」。時間とともに冷める。
+const TEMP_HOT_MS  = 1 * 60 * 60 * 1000;  // 1時間以内 = hot
+const TEMP_WARM_MS = 6 * 60 * 60 * 1000;  // 6時間以内 = warm
+
+type SpotTemperature = 'hot' | 'warm' | 'cold';
+
+const TEMP_COLOR: Record<SpotTemperature, string> = {
+  hot:  '#FF6B00', // アクセントオレンジ — 焚き火
+  warm: '#FF9F0A', // アンバー
+  cold: '#48484A', // ダークグレー
+};
+
+function spotTemperature(spot: ParkingPin): SpotTemperature {
+  if (!spot.lastArrivedAt) return 'cold';
+  const age = Date.now() - new Date(spot.lastArrivedAt).getTime();
+  if (age < TEMP_HOT_MS)  return 'hot';
+  if (age < TEMP_WARM_MS) return 'warm';
+  return 'cold';
+}
+
 function markerColor(spot: ParkingPin): string {
-  if (spot.source === 'user') return '#BF5AF2'; // ユーザー投稿は常に紫
-
-  if (spot.updatedAt) {
-    const ageMs = Date.now() - new Date(spot.updatedAt).getTime();
-    const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
-    if (ageMs < ONE_MONTH)     return '#0A84FF'; // 青: 1ヶ月以内（信頼）
-    if (ageMs < ONE_MONTH * 3) return '#FFD60A'; // 黄: 3ヶ月以内（注意）
-    if (ageMs >= ONE_MONTH * 6) return '#FF453A'; // 赤: 6ヶ月以上（要確認）
-  }
-
-  // updatedAt なし or 3-6ヶ月: デフォルトカラー（排気量ベース）
-  if (spot.maxCC === null)    return SYS_BLUE;
-  if (spot.maxCC >= 250)     return '#30D158';
-  if (spot.maxCC >= 125)     return SYS_BLUE;
-  return '#8E8E93';
+  const temp = spotTemperature(spot);
+  if (temp !== 'cold') return TEMP_COLOR[temp];
+  // cold: 従来の鮮度ベースカラー
+  if (spot.source === 'user') return '#BF5AF2';
+  return SYS_GRAY;
 }
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -77,55 +86,55 @@ function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ── 24h以内更新のピンに脈動アニメーション ────────────
-const FRESH_MS = 24 * 60 * 60 * 1000; // 24時間
-
-function isFresh(spot: ParkingPin): boolean {
-  if (!spot.updatedAt) return false;
-  return Date.now() - new Date(spot.updatedAt).getTime() < FRESH_MS;
-}
-
+// ─── 温度ピン ─────────────────────────────────────────
 function SpotPin({ spot }: { spot: ParkingPin }) {
-  const fresh = isFresh(spot);
+  const temp = spotTemperature(spot);
+  const isHot = temp === 'hot';
   const pulse = useRef(new RNAnimated.Value(1)).current;
   const entrance = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
-    // マウント時バウンスイン
     RNAnimated.spring(entrance, { toValue: 1, tension: 200, friction: 8, useNativeDriver: true }).start();
   }, []);
 
+  // hot ピンは呼吸するように脈動
   useEffect(() => {
-    if (!fresh) return;
+    if (!isHot) { pulse.setValue(1); return; }
     const anim = RNAnimated.loop(
       RNAnimated.sequence([
-        RNAnimated.timing(pulse, { toValue: 1.6, duration: 1200, useNativeDriver: true }),
-        RNAnimated.timing(pulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        RNAnimated.timing(pulse, { toValue: 1.15, duration: 1500, useNativeDriver: true }),
+        RNAnimated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ])
     );
     anim.start();
     return () => anim.stop();
-  }, [fresh]);
+  }, [isHot]);
 
   const color = markerColor(spot);
   const scale = entrance.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] });
 
   return (
     <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 44, height: 44, transform: [{ scale }], opacity: entrance }}>
-      {fresh && (
+      {/* hot/warm: 温度オーラ */}
+      {temp !== 'cold' && (
         <RNAnimated.View
           style={{
             position: 'absolute',
-            width: 32, height: 32, borderRadius: 16,
+            width: 36, height: 36, borderRadius: 18,
             backgroundColor: color,
-            opacity: 0.25,
-            transform: [{ scale: pulse }],
+            opacity: isHot ? 0.35 : 0.15,
+            transform: [{ scale: isHot ? pulse : entrance }],
           }}
         />
       )}
-      <View style={[styles.pin, { backgroundColor: color }]}>
-        <Text style={styles.pinText}>{spot.source === 'user' ? '★' : 'P'}</Text>
-      </View>
+      <RNAnimated.View style={[
+        styles.pin,
+        { backgroundColor: color, transform: [{ scale: isHot ? pulse : entrance }] },
+      ]}>
+        <Text style={styles.pinText}>
+          {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : spot.source === 'user' ? '★' : 'P'}
+        </Text>
+      </RNAnimated.View>
     </RNAnimated.View>
   );
 }

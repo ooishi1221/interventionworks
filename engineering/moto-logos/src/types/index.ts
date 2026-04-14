@@ -23,6 +23,8 @@ export interface ParkingPin {
   updatedAt?: string; // ISO8601
   /** リアルタイム駐車中台数（概算） */
   currentParked?: number;
+  /** 最後にライダーが到着した日時（温度計算用） */
+  lastArrivedAt?: string; // ISO8601
   /** ゲリラスポット（公式DBにない隠れ駐輪場） */
   isGuerrilla?: boolean;
 }
