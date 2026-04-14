@@ -31,6 +31,7 @@ import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
+import { useArrivalDetection } from '../hooks/useArrivalDetection';
 import { ProximityContextCard } from '../components/ProximityContextCard';
 import { NearbySpotsList } from '../components/NearbySpotsList';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -215,6 +216,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     spots: allSpotsRaw,
     enabled: proximityEnabled,
   });
+
+  // ── 到着検知 ────────────────────────────────────────────
+  const { setDestination } = useArrivalDetection();
 
   // ── 検索 ──────────────────────────────────────────────
   const [searchVisible, setSearchVisible]     = useState(false); // ラジアルから開閉
@@ -958,6 +962,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <SpotDetailSheet
             spot={selected}
             onClose={() => setSelected(null)}
+            onSetDestination={setDestination}
           />
         </View>
       )}

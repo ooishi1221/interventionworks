@@ -111,10 +111,11 @@ const CORRECTION_OPTIONS: { id: CorrectionType; label: string; icon: keyof typeo
 interface Props {
   spot: ParkingPin;
   onClose: () => void;
+  onSetDestination?: (spot: ParkingPin) => void;
 }
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSetDestination }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -275,6 +276,8 @@ export function SpotDetailSheet({ spot, onClose }: Props) {
   };
 
   const handleNav = () => {
+    // 「ここ行く」→ 到着検知の起点
+    onSetDestination?.(spot);
     Alert.alert('案内開始', spot.name, [
       { text: 'Googleマップ',   onPress: openGoogleMaps },
       { text: 'Yahoo!カーナビ', onPress: openYahooNavi },
