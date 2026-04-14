@@ -22,7 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
-import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
+import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity, reportParked } from '../firebase/firestoreService';
 import { insertUserSpot, getFirstVehicle } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
@@ -44,33 +44,40 @@ const JAPAN_CENTER: Region = {
   longitudeDelta: 12,
 };
 
+const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#636366';
 
-// ─── 駐車温度システム ────────────────────────────────
+// ─── 駐車温度システム（5段階） ──────────────────────
 // ライダーが到着するとスポットが「温まる」。時間とともに冷める。
-const TEMP_HOT_MS  = 1 * 60 * 60 * 1000;  // 1時間以内 = hot
-const TEMP_WARM_MS = 6 * 60 * 60 * 1000;  // 6時間以内 = warm
+type SpotTemperature = 'blazing' | 'hot' | 'warm' | 'cool' | 'cold';
 
-type SpotTemperature = 'hot' | 'warm' | 'cold';
+const TEMP_THRESHOLDS: { temp: SpotTemperature; maxMs: number }[] = [
+  { temp: 'blazing', maxMs: 30 * 60 * 1000 },     // 30分以内
+  { temp: 'hot',     maxMs: 2 * 60 * 60 * 1000 },  // 2時間以内
+  { temp: 'warm',    maxMs: 6 * 60 * 60 * 1000 },  // 6時間以内
+  { temp: 'cool',    maxMs: 24 * 60 * 60 * 1000 }, // 24時間以内
+];
 
-const TEMP_COLOR: Record<SpotTemperature, string> = {
-  hot:  '#FF6B00', // アクセントオレンジ — 焚き火
-  warm: '#FF9F0A', // アンバー
-  cold: '#48484A', // ダークグレー
+const TEMP_STYLE: Record<SpotTemperature, { color: string; pulseScale: number; auraDuration: number }> = {
+  blazing: { color: '#FF3B30', pulseScale: 1.4, auraDuration: 800 },   // 赤 — 激アツ
+  hot:     { color: '#FF6B00', pulseScale: 1.25, auraDuration: 1200 }, // オレンジ
+  warm:    { color: '#FF9F0A', pulseScale: 1.1, auraDuration: 2000 },  // アンバー
+  cool:    { color: '#64D2FF', pulseScale: 1.0, auraDuration: 0 },    // 水色（静止）
+  cold:    { color: '#48484A', pulseScale: 1.0, auraDuration: 0 },    // グレー
 };
 
 function spotTemperature(spot: ParkingPin): SpotTemperature {
   if (!spot.lastArrivedAt) return 'cold';
   const age = Date.now() - new Date(spot.lastArrivedAt).getTime();
-  if (age < TEMP_HOT_MS)  return 'hot';
-  if (age < TEMP_WARM_MS) return 'warm';
+  for (const t of TEMP_THRESHOLDS) {
+    if (age < t.maxMs) return t.temp;
+  }
   return 'cold';
 }
 
 function markerColor(spot: ParkingPin): string {
   const temp = spotTemperature(spot);
-  if (temp !== 'cold') return TEMP_COLOR[temp];
-  // cold: 従来の鮮度ベースカラー
+  if (temp !== 'cold') return TEMP_STYLE[temp].color;
   if (spot.source === 'user') return '#BF5AF2';
   return SYS_GRAY;
 }
@@ -89,7 +96,8 @@ function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number)
 // ─── 温度ピン ─────────────────────────────────────────
 function SpotPin({ spot }: { spot: ParkingPin }) {
   const temp = spotTemperature(spot);
-  const isHot = temp === 'hot';
+  const style = TEMP_STYLE[temp];
+  const hasPulse = style.auraDuration > 0;
   const pulse = useRef(new RNAnimated.Value(1)).current;
   const entrance = useRef(new RNAnimated.Value(0)).current;
 
@@ -97,39 +105,39 @@ function SpotPin({ spot }: { spot: ParkingPin }) {
     RNAnimated.spring(entrance, { toValue: 1, tension: 200, friction: 8, useNativeDriver: true }).start();
   }, []);
 
-  // hot ピンは呼吸するように脈動
+  // 温度に応じた脈動（blazing=激しく、hot=中、warm=穏やか、cool/cold=なし）
   useEffect(() => {
-    if (!isHot) { pulse.setValue(1); return; }
+    if (!hasPulse) { pulse.setValue(1); return; }
     const anim = RNAnimated.loop(
       RNAnimated.sequence([
-        RNAnimated.timing(pulse, { toValue: 1.15, duration: 1500, useNativeDriver: true }),
-        RNAnimated.timing(pulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        RNAnimated.timing(pulse, { toValue: style.pulseScale, duration: style.auraDuration, useNativeDriver: true }),
+        RNAnimated.timing(pulse, { toValue: 1, duration: style.auraDuration, useNativeDriver: true }),
       ])
     );
     anim.start();
     return () => anim.stop();
-  }, [isHot]);
+  }, [hasPulse, style.pulseScale, style.auraDuration]);
 
   const color = markerColor(spot);
-  const scale = entrance.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] });
+  const auraSize = temp === 'blazing' ? 44 : 36;
 
   return (
-    <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 44, height: 44, transform: [{ scale }], opacity: entrance }}>
-      {/* hot/warm: 温度オーラ */}
+    <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48, transform: [{ scale: entrance }], opacity: entrance }}>
+      {/* 温度オーラ（cold以外） */}
       {temp !== 'cold' && (
         <RNAnimated.View
           style={{
             position: 'absolute',
-            width: 36, height: 36, borderRadius: 18,
+            width: auraSize, height: auraSize, borderRadius: auraSize / 2,
             backgroundColor: color,
-            opacity: isHot ? 0.35 : 0.15,
-            transform: [{ scale: isHot ? pulse : entrance }],
+            opacity: temp === 'blazing' ? 0.45 : temp === 'hot' ? 0.3 : 0.15,
+            transform: [{ scale: hasPulse ? pulse : entrance }],
           }}
         />
       )}
       <RNAnimated.View style={[
         styles.pin,
-        { backgroundColor: color, transform: [{ scale: isHot ? pulse : entrance }] },
+        { backgroundColor: color, transform: [{ scale: hasPulse ? pulse : entrance }] },
       ]}>
         <Text style={styles.pinText}>
           {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : spot.source === 'user' ? '★' : 'P'}
@@ -897,6 +905,22 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           accessibilityHint="カメラを起動して写真1枚でスポットを登録します"
         >
           <Ionicons name="camera" size={20} color="#F2F2F7" />
+        </TouchableOpacity>
+      )}
+
+      {/* ── DEV: 温度テストボタン ───────────────────── */}
+      {__DEV__ && !searchFocused && !selected && (
+        <TouchableOpacity
+          style={{ position: 'absolute', bottom: 120, left: 16, backgroundColor: '#FF6B00', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, zIndex: 9999, elevation: 9999 }}
+          onPress={async () => {
+            const targets = allSpots.slice(0, 5);
+            for (const s of targets) {
+              await reportParked(s.id);
+            }
+            Alert.alert('温度テスト', `${targets.length}件のスポットをhotにしました。マップを再読み込みしてください。`);
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>🔥 温度テスト</Text>
         </TouchableOpacity>
       )}
 
