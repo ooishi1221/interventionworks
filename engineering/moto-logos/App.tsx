@@ -338,7 +338,7 @@ function App() {
             onFinish={finishTutorial}
             userCC={userCC}
             onChangeCC={(cc) => setUserCC(cc)}
-            onSetNickname={saveNickname}
+
           />
         </TutorialProvider>
         </GestureHandlerRootView>

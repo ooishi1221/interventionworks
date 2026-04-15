@@ -7,14 +7,13 @@
  * 中間のインタラクティブステップ（探す・報告・登録）は
  * TutorialGuide + TutorialContext が処理する。
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  TextInput,
   Dimensions,
   Animated,
   Platform,
@@ -40,12 +39,10 @@ interface Props {
   onFinish: () => void;
   userCC: UserCC;
   onChangeCC: (cc: UserCC) => void;
-  onSetNickname: (name: string) => void;
 }
 
-export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNickname }: Props) {
+export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props) {
   const tutorial = useTutorial();
-  const [nickname, setNickname] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
 
@@ -72,7 +69,6 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
   if (!showOverlay) return null;
 
   const handleSetupComplete = () => {
-    if (nickname.trim()) onSetNickname(nickname.trim());
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // フェードアウト→次のステップ（TutorialGuideに引き継ぎ）
     Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
@@ -111,17 +107,6 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC, onSetNi
             </Text>
 
             <View style={{ height: 28 }} />
-
-            <TextInput
-              style={styles.nicknameInput}
-              placeholder="ニックネーム（後から変更可）"
-              placeholderTextColor="#636366"
-              value={nickname}
-              onChangeText={setNickname}
-              maxLength={20}
-            />
-
-            <View style={{ height: 24 }} />
 
             <Text style={styles.ccLabel}>探したい排気量のバイクは？</Text>
             <View style={{ height: 10 }} />
@@ -203,19 +188,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   heroText: { color: '#F2F2F7', fontSize: 22, fontWeight: '700', textAlign: 'center', lineHeight: 34 },
-  nicknameInput: {
-    width: SCREEN_W * 0.75,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    color: '#F2F2F7',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(10,132,255,0.3)',
-  },
   ccLabel: { color: '#8E8E93', fontSize: 14, fontWeight: '600' },
   ccRow: { flexDirection: 'row', gap: 8 },
   ccChip: {

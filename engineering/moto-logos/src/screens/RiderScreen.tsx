@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   Alert,
   ImageBackground,
+  TextInput,
   Dimensions,
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
@@ -395,6 +396,16 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
   nickname?: string; bikeLabel: string | null; ccLabel: string | null;
   tagline?: string; hasPhoto?: boolean; onChangeNickname?: (name: string) => void;
 }) {
+  const [editing, setEditing] = useState(!nickname);
+  const [draft, setDraft] = useState('');
+
+  const submitNickname = useCallback(() => {
+    if (draft.trim() && onChangeNickname) {
+      onChangeNickname(draft.trim());
+    }
+    setEditing(false);
+  }, [draft, onChangeNickname]);
+
   return (
     <View style={s.heroInner}>
       {!hasPhoto && (
@@ -402,23 +413,38 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
           <MaterialCommunityIcons name="motorbike" size={32} color={C.accent} />
         </View>
       )}
-      <TouchableOpacity
-        onPress={() => {
-          Alert.prompt?.(
-            'ニックネーム変更',
-            '新しいニックネームを入力',
-            (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
-            'plain-text',
-            nickname ?? '',
-          ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
-        }}
-        activeOpacity={0.7}
-        accessibilityLabel={`ニックネーム: ${nickname || 'ライダー'}。タップして変更`}
-        accessibilityRole="button"
-        accessibilityHint="ニックネームを変更するダイアログを開きます"
-      >
-        <Text style={s.heroName}>{nickname || 'ライダー'}</Text>
-      </TouchableOpacity>
+      {editing && !nickname ? (
+        <TextInput
+          style={s.nicknameInput}
+          placeholder="名前つけとく？"
+          placeholderTextColor={C.sub}
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={submitNickname}
+          onBlur={submitNickname}
+          maxLength={20}
+          returnKeyType="done"
+          autoFocus
+        />
+      ) : (
+        <TouchableOpacity
+          onPress={() => {
+            Alert.prompt?.(
+              'ニックネーム変更',
+              '新しいニックネームを入力',
+              (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
+              'plain-text',
+              nickname ?? '',
+            ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
+          }}
+          activeOpacity={0.7}
+          accessibilityLabel={`ニックネーム: ${nickname || 'ライダー'}。タップして変更`}
+          accessibilityRole="button"
+          accessibilityHint="ニックネームを変更するダイアログを開きます"
+        >
+          <Text style={s.heroName}>{nickname || 'ライダー'}</Text>
+        </TouchableOpacity>
+      )}
       {bikeLabel && (
         <Text style={s.heroBike}>
           {bikeLabel}{ccLabel ? ` · ${ccLabel}` : ''}
@@ -461,6 +487,11 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   heroName: { color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  nicknameInput: {
+    color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5,
+    textAlign: 'center', borderBottomWidth: 1, borderBottomColor: C.accent,
+    paddingVertical: 4, minWidth: 160,
+  },
   heroBike: { color: C.sub, fontSize: 14, fontWeight: '600', marginTop: 2 },
   heroTagline: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontStyle: 'italic', marginTop: 4 },
   editBikeBtn: {
