@@ -31,6 +31,7 @@ import { setupNotificationHandler, registerForPushNotifications } from './src/ut
 import { useImpactNotification } from './src/hooks/useImpactNotification';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
+import { getFirstVehicle } from './src/db/database';
 import { LogBox } from 'react-native';
 import { Text as RNText } from 'react-native';
 
@@ -98,6 +99,7 @@ function App() {
   const { status, error } = useDatabase();
   const [tab, setTab]               = useState<Tab>('map');
   const [userCC, setUserCC]         = useState<UserCC>(125); // デフォルト: 原付二種
+  const [ccFilterEnabled, setCcFilterEnabled] = useState(true); // デフォルトON
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const [settingsSub, setSettingsSub] = useState<'main' | 'inquiry' | 'legal'>('main');
@@ -126,6 +128,22 @@ function App() {
     setNickname(name);
     setSentryUser(name);
     AsyncStorage.setItem('moto_logos_nickname', name);
+  }, []);
+
+  // ── 保存済みバイクからCC読み込み + フィルタ状態復元 ──
+  useEffect(() => {
+    if (status !== 'ready') return;
+    getFirstVehicle().then((v) => {
+      if (v?.cc !== undefined) setUserCC(v.cc);
+    }).catch(() => {});
+    AsyncStorage.getItem('moto_logos_cc_filter').then((v) => {
+      if (v !== null) setCcFilterEnabled(v !== 'false');
+    });
+  }, [status]);
+
+  const toggleCcFilter = useCallback((enabled: boolean) => {
+    setCcFilterEnabled(enabled);
+    AsyncStorage.setItem('moto_logos_cc_filter', String(enabled));
   }, []);
 
   // ── 利用規約同意 ───────────────────────────────────
@@ -243,10 +261,11 @@ function App() {
                 ref={mapScreenRef}
                 userCC={userCC}
                 onChangeCC={(cc) => setUserCC(cc)}
+                ccFilterEnabled={ccFilterEnabled}
+                onToggleCcFilter={toggleCcFilter}
                 focusSpot={focusSpot}
                 onFocusConsumed={() => setFocusSpot(null)}
                 refreshTrigger={mapRefreshTrigger}
-
               />
             </View>
             {tab === 'rider' && (

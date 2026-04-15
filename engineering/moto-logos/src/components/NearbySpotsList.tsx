@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { ParkingPin } from '../types';
+import { ParkingPin, UserCC } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
 import { useTutorial } from '../contexts/TutorialContext';
 import { Colors } from '../constants/theme';
@@ -41,6 +41,9 @@ interface Props {
   onSearchPress?: () => void;
   areaSummary?: AreaSummary | null;
   onClearSearch?: () => void;
+  ccFilterEnabled?: boolean;
+  userCC?: UserCC;
+  onToggleCcFilter?: (enabled: boolean) => void;
 }
 
 function TempDot({ spot }: { spot: ParkingPin }) {
@@ -49,7 +52,14 @@ function TempDot({ spot }: { spot: ParkingPin }) {
   return <View style={[styles.tempDot, { backgroundColor: color }]} />;
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch }: Props) {
+function ccDisplayLabel(cc: UserCC): string {
+  if (cc === 50) return '50cc';
+  if (cc === 125) return '125cc';
+  if (cc === 400) return '400cc';
+  return '大型';
+}
+
+export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -116,6 +126,23 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
         >
           <Ionicons name="locate" size={16} color={C.blue} />
         </TouchableOpacity>
+
+        {/* ── CCフィルタトグル ─────────────────────────── */}
+        {userCC !== undefined && onToggleCcFilter && (
+          <TouchableOpacity
+            style={[styles.ccFilterBtn, ccFilterEnabled && styles.ccFilterBtnActive]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggleCcFilter(!ccFilterEnabled);
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          >
+            <Text style={[styles.ccFilterText, ccFilterEnabled && styles.ccFilterTextActive]}>
+              {ccDisplayLabel(userCC)}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* ── ヘッダー行 ────── */}
         {areaSummary ? (
@@ -392,5 +419,29 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+
+  // ── CCフィルタトグル ──────────────────────────────
+  ccFilterBtn: {
+    height: 26,
+    paddingHorizontal: 8,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  ccFilterBtnActive: {
+    backgroundColor: 'rgba(10,132,255,0.18)',
+    borderColor: 'rgba(10,132,255,0.4)',
+  },
+  ccFilterText: {
+    color: C.sub,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  ccFilterTextActive: {
+    color: C.blue,
   },
 });

@@ -183,13 +183,15 @@ export interface MapScreenHandle {
 interface Props {
   userCC: UserCC;
   onChangeCC?: (cc: UserCC) => void;
+  ccFilterEnabled?: boolean;
+  onToggleCcFilter?: (enabled: boolean) => void;
   focusSpot?: ParkingPin | null;
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, focusSpot, onFocusConsumed, refreshTrigger },
+  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger },
   ref
 ) {
   const user = useUser();
@@ -381,7 +383,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setLocationGranted(true);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     const { latitude, longitude } = loc.coords;
-    const all = filterByCC(allSpotsRaw, userCC);
+    const all = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
     if (all.length === 0) return;
     let nearest = all[0];
     let minDist = haversineMeters(latitude, longitude, nearest.latitude, nearest.longitude);
@@ -430,7 +432,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const freshSpots = await fetchSpotsForRegion(searchRegion);
 
       // 検索地点周辺のスポット件数を通知
-      const filtered = filterByCC(freshSpots, userCC);
+      const filtered = ccFilterEnabled ? filterByCC(freshSpots, userCC) : freshSpots;
       const nearby = filtered
         .map((s) => ({ spot: s, dist: haversineMeters(latitude, longitude, s.latitude, s.longitude) }))
         .sort((a, b) => a.dist - b.dist);
@@ -469,7 +471,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     mapRef.current?.animateToRegion(searchRegion, 800);
 
     const freshSpots = await fetchSpotsForRegion(searchRegion);
-    const filtered = filterByCC(freshSpots, userCC);
+    const filtered = ccFilterEnabled ? filterByCC(freshSpots, userCC) : freshSpots;
     const NEARBY_RADIUS = 3000;
     const nearbyCount = filtered
       .filter(s => haversineMeters(result.latitude, result.longitude, s.latitude, s.longitude) <= NEARBY_RADIUS)
@@ -586,7 +588,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setReportLoading(false);
   };
 
-  const allSpotsBase = filterByCC(allSpotsRaw, userCC);
+  const allSpotsBase = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
   // チュートリアル中はダミースポットを注入
   const allSpots = tutorial.active
     ? [tutorial.dummySpot, ...allSpotsBase]
@@ -873,6 +875,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             setAreaSummary(null);
             goToCurrentLocation();
           }}
+          ccFilterEnabled={ccFilterEnabled}
+          userCC={userCC}
+          onToggleCcFilter={onToggleCcFilter}
         />
       )}
 
