@@ -224,7 +224,7 @@ export function ProximityContextCard({
       incrementStat('reports');
       addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'parked');
       startParking(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, bike?.id);
-      reportParked(spotId); // リアルタイム空き状況 (#79)
+      reportParked(spotId).catch((e) => captureError(e, { context: 'proximity_report_parked', spotId })); // リアルタイム空き状況 (#79)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
       setPhase('thanks');

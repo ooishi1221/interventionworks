@@ -31,6 +31,7 @@ import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
 import { encodeGeohash, geohashQueryBounds } from '../utils/geohash';
 import { isNgWord } from '../utils/ng-filter';
 import { uploadReviewPhoto } from '../utils/image-upload';
+import { captureError } from '../utils/sentry';
 
 // ─────────────────────────────────────────────────────
 // ユーザードキュメント管理
@@ -194,16 +195,12 @@ export async function fetchSpotsInRegion(
       }
     }
 
-    // geohash 移行済みならそのまま返す
-    if (results.length > 0) return results;
+    return results;
   } catch (e) {
-    // geohash インデックス未作成の場合もフォールバック
-    console.warn('[firestoreService] geohash query failed, falling back:', e);
+    captureError(e, { context: 'geohash_query_failed' });
+    // geohash インデックス未作成時のみ全件取得にフォールバック
+    return fetchAllSpots();
   }
-
-  // ── フォールバック: geohash 未移行 → 全件取得（マイグレーション後は geohash クエリが使われる） ──
-  console.log('[firestoreService] geohash未検出 → 全件取得フォールバック');
-  return fetchAllSpots();
 }
 
 /**
@@ -284,7 +281,7 @@ export async function incrementViewCount(spotId: string): Promise<void> {
   const { updateDoc, increment } = await import('firebase/firestore');
   try {
     await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), { viewCount: increment(1) });
-  } catch (e) { console.warn('[Firestore] viewCount update failed:', e); }
+  } catch (e) { captureError(e, { context: 'viewCount_increment', spotId }); }
 }
 
 // ─────────────────────────────────────────────────────
@@ -349,12 +346,10 @@ export async function reportSpotClosed(spotId: string): Promise<void> {
  */
 export async function reportParked(spotId: string): Promise<void> {
   const { updateDoc, increment } = await import('firebase/firestore');
-  try {
-    await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
-      currentParked: increment(1),
-      currentParkedAt: Timestamp.now(),
-    });
-  } catch (e) { console.warn('[Firestore] reportParked failed:', e); }
+  await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
+    currentParked: increment(1),
+    currentParkedAt: Timestamp.now(),
+  });
 }
 
 /**
@@ -364,12 +359,10 @@ export async function reportParked(spotId: string): Promise<void> {
  */
 export async function reportDeparted(spotId: string): Promise<void> {
   const { updateDoc, increment } = await import('firebase/firestore');
-  try {
-    await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
-      currentParked: increment(-1),
-      currentParkedAt: Timestamp.now(),
-    });
-  } catch (e) { console.warn('[Firestore] reportDeparted failed:', e); }
+  await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
+    currentParked: increment(-1),
+    currentParkedAt: Timestamp.now(),
+  });
 }
 
 // ─────────────────────────────────────────────────────

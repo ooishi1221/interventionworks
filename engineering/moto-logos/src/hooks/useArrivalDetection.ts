@@ -116,8 +116,8 @@ export function useArrivalDetection() {
 
             // ── 古いセッションを自動終了してから新規開始 (#110) ──
             expireOldParkingSessions(2 * 60 * 60 * 1000).then((expired) => {
-              for (const s of expired) reportDeparted(s.spotId).catch(() => {});
-            }).catch(() => {});
+              for (const s of expired) reportDeparted(s.spotId).catch((e) => captureError(e, { context: 'auto_expire_departed', spotId: s.spotId }));
+            }).catch((e) => captureError(e, { context: 'expire_old_sessions' }));
 
             // ── 自動で温度UP + 足跡記録（ボタン不要）──
             reportParked(spot.id).catch((e) => captureError(e, { context: 'auto_report_parked' }));
@@ -164,8 +164,8 @@ async function sendArrivalNotification(spot: ParkingPin): Promise<void> {
     try {
       const reviews = await fetchReviews(spot.id);
       hasPhoto = reviews.some((r) => r.photoUri);
-    } catch {
-      // 取得失敗時は写真なし扱い
+    } catch (e) {
+      captureError(e, { context: 'fetch_reviews_for_notification', spotId: spot.id });
     }
 
     const title = hasPhoto

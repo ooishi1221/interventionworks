@@ -153,7 +153,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const handleEndParking = useCallback(async () => {
     if (!activeSession) return;
     await endParking(activeSession.id);
-    reportDeparted(activeSession.spotId); // リアルタイム空き状況 (#79)
+    reportDeparted(activeSession.spotId).catch((e) => captureError(e, { context: 'manual_depart', spotId: activeSession.spotId })); // リアルタイム空き状況 (#79)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setActiveSession(null);
     loadData();
