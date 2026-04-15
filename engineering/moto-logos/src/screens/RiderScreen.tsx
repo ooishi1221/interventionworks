@@ -30,6 +30,7 @@ import {
   getUniqueFootprintLocations,
   getActiveParkingSession,
   endParking,
+  expireOldParkingSessions,
   type Footprint,
   type ParkingSession,
 } from '../db/database';
@@ -117,6 +118,13 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
+    // 2h超過セッションを自動出発 (#110)
+    const AUTO_DEPART_MS = 2 * 60 * 60 * 1000;
+    const expired = await expireOldParkingSessions(AUTO_DEPART_MS);
+    for (const s of expired) {
+      reportDeparted(s.spotId).catch((e) => captureError(e, { context: 'auto_depart' }));
+    }
+
     const [vehicle, fp, uloc, spots, session] = await Promise.all([
       getFirstVehicle(),
       getFootprints(50),

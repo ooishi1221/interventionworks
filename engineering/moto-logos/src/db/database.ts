@@ -545,6 +545,23 @@ export async function getActiveParkingSession(): Promise<ParkingSession | null> 
   );
 }
 
+/** 指定時間を超過したアクティブセッションを終了し、終了したセッション一覧を返す */
+export async function expireOldParkingSessions(maxAgeMs: number): Promise<ParkingSession[]> {
+  const db = getDatabase();
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString().replace('T', ' ').slice(0, 19);
+  const expired = await db.getAllAsync<ParkingSession>(
+    'SELECT * FROM parking_history WHERE endedAt IS NULL AND startedAt < ?;',
+    [cutoff],
+  );
+  if (expired.length > 0) {
+    await db.runAsync(
+      `UPDATE parking_history SET endedAt = datetime('now', 'localtime') WHERE endedAt IS NULL AND startedAt < ?;`,
+      [cutoff],
+    );
+  }
+  return expired;
+}
+
 export async function getParkingHistory(limit = 50): Promise<ParkingSession[]> {
   const db = getDatabase();
   return db.getAllAsync<ParkingSession>(

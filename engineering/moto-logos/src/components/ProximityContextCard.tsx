@@ -183,7 +183,7 @@ export function ProximityContextCard({
   // thanks自動消滅（2秒）
   useEffect(() => {
     if (phase !== 'thanks') return;
-    const timer = setTimeout(() => setPhase('initial'), 2000);
+    const timer = setTimeout(() => setPhase('initial'), 3000);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -205,8 +205,9 @@ export function ProximityContextCard({
     // チュートリアル中: Firestore書き込みなしでadvance
     if (tutorial.isStep('report-good')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('photo');
-      tutorial.advanceTutorial(); // → report-good-thanks（オーバーレイなし）
+      setPhase('thanks');
+      tutorial.advanceTutorial(); // report-good → report-good-thanks
+      setTimeout(() => tutorial.advanceTutorial(), 100); // → report-good-done（写真ステップをスキップ）
       return;
     }
     if (!nearbySpot || submitting) return;
@@ -230,7 +231,7 @@ export function ProximityContextCard({
       reportParked(spotId); // リアルタイム空き状況 (#79)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
-      setPhase('photo');
+      setPhase('thanks');
       onSpotUpdated?.();
     } catch (e) {
       captureError(e, { context: 'proximity_report_good' });
@@ -568,14 +569,26 @@ export function ProximityContextCard({
           </View>
         )}
 
-        {/* ── 足跡完了（自動消滅） ──────────────────────── */}
+        {/* ── 足跡完了（自動消滅 + オプション写真追加） ─── */}
         {phase === 'thanks' && (
-          <TouchableOpacity onPress={dismissThanks} activeOpacity={0.8}>
-            <View style={styles.thanksWrap}>
-              <Ionicons name="checkmark-circle" size={28} color={C.green} />
-              <Text style={styles.thanksText}>足跡を残しました！</Text>
-            </View>
-          </TouchableOpacity>
+          <View>
+            <TouchableOpacity onPress={dismissThanks} activeOpacity={0.8}>
+              <View style={styles.thanksWrap}>
+                <Ionicons name="checkmark-circle" size={28} color={C.green} />
+                <Text style={styles.thanksText}>足跡が刻まれました</Text>
+              </View>
+            </TouchableOpacity>
+            {reportedSpotId && !tutorial.active && (
+              <TouchableOpacity
+                style={styles.addPhotoLink}
+                onPress={() => setPhase('photo')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="camera-outline" size={18} color={C.accent} />
+                <Text style={styles.addPhotoText}>写真を追加</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* ── スポットなし: 初期カード ─────────────────── */}
@@ -827,6 +840,19 @@ const styles = StyleSheet.create({
     color: C.green,
     fontSize: 16,
     fontWeight: '700',
+  },
+  addPhotoLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  addPhotoText: {
+    color: C.accent,
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // ── スポットなし ───────────────────────────────────
