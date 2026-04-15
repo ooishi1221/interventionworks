@@ -120,6 +120,20 @@ export function ProximityContextCard({
   // 表示中のスポット（nearby の場合）
   const nearbySpot = effectiveState.kind === 'nearby' ? effectiveState.nearest : null;
 
+  // 初回ヒント: 「停められなかった」の使い方を一度だけ表示
+  const [showBadHint, setShowBadHint] = useState(false);
+  useEffect(() => {
+    if (!visible || effectiveState.kind !== 'nearby' || isTutorialReport) return;
+    AsyncStorage.getItem('proximity_bad_hint_shown').then((v) => {
+      if (!v) setShowBadHint(true);
+    });
+  }, [visible, effectiveState.kind, isTutorialReport]);
+
+  const dismissBadHint = useCallback(() => {
+    setShowBadHint(false);
+    AsyncStorage.setItem('proximity_bad_hint_shown', '1');
+  }, []);
+
   // チュートリアルステップ変更時にカード状態をリセット
   useEffect(() => {
     if (!tutorial.active) return;
@@ -444,6 +458,13 @@ export function ProximityContextCard({
                 <Text style={styles.actionText}>停められなかった</Text>
               </TouchableOpacity>
             </View>
+            {showBadHint && phase === 'initial' && (
+              <TouchableOpacity onPress={dismissBadHint} activeOpacity={0.7}>
+                <Text style={styles.badHint}>
+                  停められなかったら 👎 で近くの別の場所を探せます
+                </Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
 
@@ -696,6 +717,12 @@ const styles = StyleSheet.create({
   },
   goodBtn: {
     backgroundColor: C.green,
+  },
+  badHint: {
+    color: C.sub,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
   },
   badBtn: {
     backgroundColor: '#48484A',
