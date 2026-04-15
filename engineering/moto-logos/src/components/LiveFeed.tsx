@@ -5,7 +5,7 @@
  * 緑=停められた / 赤=満車 / グレー=閉鎖 / 黄=料金 / オレンジ=CC制限 / 紫=新規登録
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -98,7 +98,7 @@ export function LiveFeed() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 52,
+    top: Platform.OS === 'ios' ? 52 : 116,
     left: 0,
     right: 0,
     zIndex: 15,

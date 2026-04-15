@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
-import { migrateSeedSpots } from '../firebase/migration';
+import { purgeTestData } from '../firebase/firestoreService';
 import { Colors } from '../constants/theme';
 
 const C = { ...Colors, card: Colors.cardElevated };
@@ -33,7 +33,7 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
   const [pushEnabled, setPushEnabled] = useState(true);
   const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
-  const [seeding, setSeeding] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('moto_logos_push_enabled').then((v) => setPushEnabled(v !== 'false'));
@@ -74,23 +74,24 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
     );
   };
 
-  const handleSeedData = () => {
+  const handlePurgeTestData = () => {
     Alert.alert(
-      'シードデータ投入',
-      '公共駐輪場データ（127件）をFirestoreにアップロードします。',
+      'テストデータ全削除',
+      '自分が作ったスポットとコメントをFirestoreから削除します。マップデータ（OSM/JMPSA/real）は残ります。',
       [
         { text: 'キャンセル', style: 'cancel' },
         {
-          text: '実行する',
+          text: '削除する',
+          style: 'destructive',
           onPress: async () => {
-            setSeeding(true);
+            setPurging(true);
             try {
-              const count = await migrateSeedSpots();
-              Alert.alert('完了', `${count}件のスポットをアップロードしました。マップに戻って確認してください。`);
+              const { spots, reviews } = await purgeTestData();
+              Alert.alert('完了', `スポット ${spots}件、コメント ${reviews}件を削除しました。`);
             } catch (e) {
-              Alert.alert('エラー', `アップロードに失敗しました: ${e}`);
+              Alert.alert('エラー', `削除に失敗しました: ${e}`);
             }
-            setSeeding(false);
+            setPurging(false);
           },
         },
       ],
@@ -220,11 +221,11 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
         {/* 開発者ツール */}
         <Text style={s.sectionTitle}>開発者ツール</Text>
         <View style={s.card}>
-          <TouchableOpacity style={s.row} onPress={handleSeedData} disabled={seeding}>
+          <TouchableOpacity style={s.row} onPress={handlePurgeTestData} disabled={purging}>
             <View style={s.rowLeft}>
-              <Ionicons name="cloud-upload-outline" size={20} color={seeding ? C.sub : C.accent} />
-              <Text style={[s.rowLabel, seeding && { color: C.sub }]}>
-                {seeding ? 'アップロード中...' : 'シードデータ投入（127件）'}
+              <Ionicons name="trash-outline" size={20} color={purging ? C.sub : '#FF453A'} />
+              <Text style={[s.rowLabel, { color: purging ? C.sub : '#FF453A' }]}>
+                {purging ? '削除中...' : 'テストデータ全削除'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -233,6 +234,19 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
             <View style={s.rowLeft}>
               <Ionicons name="refresh-outline" size={20} color={C.accent} />
               <Text style={s.rowLabel}>キャッシュクリア（初回体験リセット）</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={s.separator} />
+          <TouchableOpacity style={s.row} onPress={() => {
+            if (__DEV__) {
+              DevSettings.reload();
+            } else {
+              Updates.reloadAsync();
+            }
+          }}>
+            <View style={s.rowLeft}>
+              <Ionicons name="reload-outline" size={20} color={C.accent} />
+              <Text style={s.rowLabel}>アプリをリロード</Text>
             </View>
           </TouchableOpacity>
         </View>

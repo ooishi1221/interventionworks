@@ -17,6 +17,7 @@ import {
   where,
   orderBy,
   limit,
+  writeBatch,
   Timestamp,
   GeoPoint,
   type DocumentData,
@@ -546,4 +547,51 @@ export async function logActivity(): Promise<void> {
     // アクティビティ記録失敗はアプリ動作に影響させない
     console.warn('[logActivity]', e);
   }
+}
+
+// ─────────────────────────────────────────────────────
+// テストデータ全削除（開発者ツール用）
+// ─────────────────────────────────────────────────────
+
+/**
+ * 自分が作ったスポット（source: 'user'）と
+ * 自分が書いたレビューをFirestoreから一括削除する。
+ * マップデータ（osm_, jmpsa_, real_）は残す。
+ */
+export async function purgeTestData(): Promise<{ spots: number; reviews: number }> {
+  const deviceId = await getDeviceId();
+  let spotCount = 0;
+  let reviewCount = 0;
+
+  // --- ユーザー作成スポットを削除 ---
+  const spotsQ = query(
+    collection(db, COLLECTIONS.SPOTS),
+    where('source', '==', 'user'),
+  );
+  const spotsSnap = await getDocs(spotsQ);
+
+  for (let i = 0; i < spotsSnap.docs.length; i += 499) {
+    const batch = writeBatch(db);
+    const chunk = spotsSnap.docs.slice(i, i + 499);
+    for (const d of chunk) batch.delete(d.ref);
+    await batch.commit();
+    spotCount += chunk.length;
+  }
+
+  // --- 自分のレビューを削除 ---
+  const reviewsQ = query(
+    collection(db, COLLECTIONS.REVIEWS),
+    where('userId', '==', deviceId),
+  );
+  const reviewsSnap = await getDocs(reviewsQ);
+
+  for (let i = 0; i < reviewsSnap.docs.length; i += 499) {
+    const batch = writeBatch(db);
+    const chunk = reviewsSnap.docs.slice(i, i + 499);
+    for (const d of chunk) batch.delete(d.ref);
+    await batch.commit();
+    reviewCount += chunk.length;
+  }
+
+  return { spots: spotCount, reviews: reviewCount };
 }

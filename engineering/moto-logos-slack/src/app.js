@@ -3,7 +3,6 @@ import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { spawn, execFile } from "child_process";
-import { openSync } from "fs";
 import { writeFile, mkdir } from "fs/promises";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,50 +31,18 @@ const CHANNEL_DEV_LOG = "C0ASQ80PGJV";
 
 // --- Utilities ---
 
-// Strip ANSI escape sequences for clean Slack output
-function stripAnsi(str) {
-  return str
-    .replace(/\x1B\[[0-9;?]*[A-Za-z]/g, "")
-    .replace(/\x1B\][\s\S]*?(?:\x07|\x1B\\)/g, "")
-    .replace(/\x1B[P_^][\s\S]*?\x1B\\/g, "")
-    .replace(/\x1B[NO]./g, "")
-    .replace(/\x1B[()#][A-Z0-9]/g, "")
-    .replace(/\x1B[=><=<~{}|]/g, "")
-    .replace(/\x9B[0-9;?]*[A-Za-z]/g, "")
-    .replace(/\x1B./g, "")
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
-    .replace(/\n{3,}/g, "\n\n");
-}
-
 function truncate(text, max = 3000) {
   if (text.length <= max) return text;
   return text.slice(0, max) + "\n...(truncated)";
 }
 
-function isQuestion(text) {
-  const line = text.trim();
-  if (!line || line.length < 3) return false;
-  return (
-    /\?\s*$/.test(line) ||
-    /\(y\/n\)/i.test(line) ||
-    /\[y\/n\]/i.test(line) ||
-    /\[yes\/no\]/i.test(line) ||
-    /Allow .+\?/i.test(line) ||
-    /Do you want/i.test(line) ||
-    /確認してください|選択してください/.test(line)
-  );
-}
-
 // --- Terminal input injection (macOS) ---
-// Slackボタン押下 → クリップボードにコピー → VS Code をアクティブ化 → ペースト+Enter
 function typeIntoTerminal(text) {
-  // 1. クリップボードにコピー
   const pb = spawn("pbcopy");
   pb.stdin.write(text);
   pb.stdin.end();
 
   pb.on("close", () => {
-    // 2. VS Code をアクティブにして Cmd+V → Enter
     execFile("osascript",
       [
         "-e", 'tell application "Code" to activate',
@@ -92,21 +59,6 @@ function typeIntoTerminal(text) {
   });
 }
 
-// --- Active interactive session ---
-let session = null;
-
-function postToSlack(text, threadTs) {
-  return app.client.chat.postMessage({
-    channel: CHANNEL,
-    text,
-    thread_ts: threadTs,
-    ...BOT,
-  });
-}
-
-const PROGRESS_DELAY = 5_000;
-const HEARTBEAT_DELAY = 30_000;
-
 // Tool アイコン
 const TOOL_ICONS = {
   Read: "📖", Edit: "✏️", Write: "📝", Bash: "🔨",
@@ -114,8 +66,10 @@ const TOOL_ICONS = {
   WebFetch: "🌐", AskUserQuestion: "❓",
 };
 
+const HEARTBEAT_DELAY = 30_000;
+
 // --- Image download ---
-const IMAGES_DIR = "/tmp/slack_images";
+const IMAGES_DIR = join(PROJECT_ROOT, ".slack_images");
 
 async function downloadSlackFiles(files) {
   if (!files || files.length === 0) return [];
@@ -148,41 +102,71 @@ function buildPromptWithImages(text, imagePaths) {
   return `${text}\n\n以下の画像を確認してください:\n${listing}`;
 }
 
-function startSession(initialPrompt, threadTs) {
-  if (session) {
-    session.proc.kill();
-    clearTimeout(session.heartbeatTimer);
-    session = null;
+// --- Session state ---
+// セッションは会話コンテキストを追跡（常駐プロセスではない）
+// メッセージごとに claude -p --resume SESSION_ID で新プロセスを起動
+let session = null; // { sessionId, threadTs, channelId, busy, heartbeatTimer }
+let currentProc = null;
+
+function postToSlack(text, threadTs, channel = CHANNEL) {
+  return app.client.chat.postMessage({
+    channel,
+    text,
+    thread_ts: threadTs,
+    ...BOT,
+  });
+}
+
+async function runClaude(prompt, threadTs, channelId, resumeSessionId = null) {
+  if (session?.busy) {
+    postToSlack("⏳ 処理中です...", threadTs, channelId);
+    return;
   }
 
-  const devNull = openSync("/dev/null", "r");
-  const proc = spawn("claude", [
-    "-p", "--verbose", "--output-format", "stream-json",
-    initialPrompt,
-  ], {
+  session = {
+    sessionId: resumeSessionId,
+    threadTs,
+    channelId,
+    busy: true,
+    heartbeatTimer: null,
+  };
+
+  const args = ["-p", "--verbose", "--output-format", "stream-json"];
+  if (resumeSessionId) args.push("--resume", resumeSessionId);
+  args.push(prompt);
+
+  const proc = spawn("claude", args, {
     cwd: PROJECT_ROOT,
-    stdio: [devNull, "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe"],
     env: { ...process.env, NO_COLOR: "1" },
   });
+  proc.stdin.end();
+  currentProc = proc;
 
-  session = { proc, threadTs, lineBuf: "", heartbeatTimer: null };
+  let lineBuf = "";
+  let extractedSessionId = resumeSessionId;
 
   function resetHeartbeat() {
     if (!session) return;
     clearTimeout(session.heartbeatTimer);
     session.heartbeatTimer = setTimeout(() => {
-      if (session) {
-        postToSlack("... 作業中 ...", session.threadTs);
+      if (session?.busy) {
+        postToSlack("... 作業中 ...", threadTs, channelId);
         resetHeartbeat();
       }
     }, HEARTBEAT_DELAY);
   }
 
   function handleJsonLine(line) {
-    if (!session || !line.trim()) return;
+    if (!line.trim()) return;
     let ev;
     try { ev = JSON.parse(line); } catch { return; }
     resetHeartbeat();
+
+    // session_id を抽出
+    if (ev.session_id && !extractedSessionId) {
+      extractedSessionId = ev.session_id;
+    }
 
     // ツール使用開始
     if (ev.type === "assistant" && ev.message?.content) {
@@ -203,10 +187,10 @@ function startSession(initialPrompt, threadTs) {
           } else if (block.name === "Glob" && block.input?.pattern) {
             detail = block.input.pattern;
           }
-          postToSlack(`${icon} *${block.name}* ${detail}`, session.threadTs);
+          postToSlack(`${icon} *${block.name}* ${detail}`, threadTs, channelId);
         }
         if (block.type === "text" && block.text?.trim()) {
-          postToSlack(truncate(block.text.trim(), 2000), session.threadTs);
+          postToSlack(truncate(block.text.trim(), 2000), threadTs, channelId);
         }
       }
     }
@@ -215,36 +199,43 @@ function startSession(initialPrompt, threadTs) {
     if (ev.type === "result") {
       const text = ev.result || "";
       if (text.trim()) {
-        postToSlack(truncate(text.trim(), 3000), session.threadTs);
+        postToSlack(truncate(text.trim(), 3000), threadTs, channelId);
       }
       const cost = ev.total_cost_usd ? `$${ev.total_cost_usd.toFixed(4)}` : "";
       const dur = ev.duration_ms ? `${(ev.duration_ms / 1000).toFixed(1)}s` : "";
-      postToSlack(`✅ 完了 ${dur} ${cost}`, session.threadTs);
+      postToSlack(`✅ 完了 ${dur} ${cost}`, threadTs, channelId);
     }
   }
 
   proc.stdout.on("data", (chunk) => {
-    if (!session) return;
-    session.lineBuf += chunk.toString();
-    const lines = session.lineBuf.split("\n");
-    session.lineBuf = lines.pop() || "";
-    for (const line of lines) handleJsonLine(line);
+    lineBuf += chunk.toString();
+    const lines = lineBuf.split("\n");
+    lineBuf = lines.pop() || "";
+    for (const l of lines) handleJsonLine(l);
   });
 
   proc.stderr.on("data", (chunk) => {
     console.log(`[claude:stderr] ${chunk.toString().trimEnd()}`);
   });
 
-  proc.on("close", (code) => {
-    if (!session) return;
-    clearTimeout(session.heartbeatTimer);
-    if (session.lineBuf.trim()) handleJsonLine(session.lineBuf);
-    if (code !== 0) postToSlack(`⚠️ セッション終了 (exit ${code})`, threadTs);
-    console.log(`[claude] exited with code ${code}`);
-    session = null;
-  });
+  return new Promise((resolve) => {
+    proc.on("close", (code) => {
+      clearTimeout(session?.heartbeatTimer);
+      if (lineBuf.trim()) handleJsonLine(lineBuf);
+      if (code !== 0) postToSlack(`⚠️ エラー (exit ${code})`, threadTs, channelId);
+      console.log(`[claude] exited (code ${code}), sessionId: ${extractedSessionId}`);
+      currentProc = null;
 
-  console.log(`[session] started (stream-json): "${initialPrompt}"`);
+      session = {
+        sessionId: extractedSessionId,
+        threadTs,
+        channelId,
+        busy: false,
+        heartbeatTimer: null,
+      };
+      resolve(extractedSessionId);
+    });
+  });
 }
 
 // --- /claude command ---
@@ -253,7 +244,7 @@ app.command("/claude", async ({ command, ack, say }) => {
   const msg = command.text;
   console.log(`[Slack] /claude from ${command.user_name}: ${msg}`);
   const posted = await say({ text: `> ${msg}\nセッション開始...`, ...BOT });
-  startSession(msg, posted.ts);
+  runClaude(msg, posted.ts, CHANNEL);
 });
 
 // --- @mention ---
@@ -280,7 +271,7 @@ app.event("app_mention", async ({ event, say }) => {
     thread_ts: event.ts,
     ...BOT,
   });
-  startSession(prompt, posted.ts || event.ts);
+  runClaude(prompt, posted.ts || event.ts, event.channel);
 });
 
 // --- Button click handler ---
@@ -290,7 +281,6 @@ app.action(/^claude_choice_/, async ({ action, ack, body, client }) => {
   const userId = body.user?.id;
   console.log(`[Slack] button clicked: "${chosen}" by ${userId}`);
 
-  // メッセージを更新して選択結果を表示
   try {
     await client.chat.update({
       channel: body.channel?.id || CHANNEL,
@@ -307,13 +297,11 @@ app.action(/^claude_choice_/, async ({ action, ack, body, client }) => {
     console.error("[button] message update failed:", e.message);
   }
 
-  // アクティブセッションがあれば選択結果を stdin に転送
-  if (session) {
-    console.log(`[button→stdin] ${chosen}`);
-    session.proc.stdin.write(chosen + "\n");
-    postToSlack(`📨 "${chosen}" をセッションに送信しました`, session.threadTs);
+  if (session?.sessionId) {
+    console.log(`[button→resume] ${chosen}`);
+    postToSlack(`📨 "${chosen}" を送信しました`, session.threadTs, session.channelId);
+    runClaude(chosen, session.threadTs, session.channelId, session.sessionId);
   } else {
-    // セッションなし → ターミナルに直接入力を試みる
     console.log(`[button→terminal] ${chosen}`);
     typeIntoTerminal(chosen);
     await client.chat.postMessage({
@@ -324,9 +312,9 @@ app.action(/^claude_choice_/, async ({ action, ack, body, client }) => {
   }
 });
 
-// --- Thread reply → stdin ---
+// --- Thread reply → --resume ---
 app.event("message", async ({ event }) => {
-  if (!session) return;
+  if (!session?.sessionId) return;
   if (!event.thread_ts) return;
   if (event.thread_ts !== session.threadTs) return;
   if (event.bot_id) return;
@@ -336,14 +324,14 @@ app.event("message", async ({ event }) => {
   const text = event.text || "";
 
   if (imagePaths.length > 0) {
-    postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, session.threadTs);
+    postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, session.threadTs, session.channelId);
   }
 
   const reply = buildPromptWithImages(text, imagePaths);
   if (!reply) return;
 
-  console.log(`[Slack→stdin] ${reply}`);
-  session.proc.stdin.write(reply + "\n");
+  console.log(`[Slack→resume] ${reply}`);
+  runClaude(reply, session.threadTs, session.channelId, session.sessionId);
 });
 
 // --- DM ---
@@ -369,8 +357,9 @@ app.event("message", async ({ event, say }) => {
   const msg = buildPromptWithImages(text, imagePaths);
   console.log(`[Slack] DM: ${msg}`);
 
-  if (session) {
-    session.proc.stdin.write(msg + "\n");
+  // 既存セッションがDMチャンネルなら --resume で会話を続ける
+  if (session?.sessionId && session.channelId === event.channel) {
+    runClaude(msg, session.threadTs, event.channel, session.sessionId);
     return;
   }
 
@@ -379,7 +368,7 @@ app.event("message", async ({ event, say }) => {
     thread_ts: event.ts,
     ...BOT,
   });
-  startSession(msg, posted.ts || event.ts);
+  runClaude(msg, posted.ts || event.ts, event.channel);
 });
 
 // --- Channel image (no mention needed) ---
@@ -396,23 +385,23 @@ app.event("message", async ({ event }) => {
   const imagePaths = await downloadSlackFiles(event.files);
   if (imagePaths.length === 0) return;
 
-  postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, event.ts);
+  postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, event.ts, event.channel);
 });
 
 // --- Graceful shutdown ---
 process.on("SIGINT", () => {
-  if (session) session.proc.kill();
+  if (currentProc) currentProc.kill();
   app.stop().then(() => process.exit(0));
 });
 process.on("SIGTERM", () => {
-  if (session) session.proc.kill();
+  if (currentProc) currentProc.kill();
   app.stop().then(() => process.exit(0));
 });
 
 // --- Start ---
 (async () => {
   await app.start();
-  console.log("Slack <-> Claude Code bridge running");
+  console.log("Slack <-> Claude Code bridge running (resume mode)");
   console.log(`   Channel: ${CHANNEL}`);
   console.log(`   Project: ${PROJECT_ROOT}`);
 })();

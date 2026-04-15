@@ -97,7 +97,7 @@ function SpotPin({ spot }: { spot: ParkingPin }) {
   const auraSize = temp === 'blazing' ? 44 : 36;
 
   return (
-    <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48, transform: [{ scale: entrance }], opacity: entrance }}>
+    <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48, overflow: 'hidden', transform: [{ scale: entrance }], opacity: entrance }}>
       {/* 温度オーラ（cold以外） */}
       {temp !== 'cold' && (
         <RNAnimated.View
