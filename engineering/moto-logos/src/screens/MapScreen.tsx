@@ -28,6 +28,7 @@ import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { captureError } from '../utils/sentry';
 import { pickPhotoFromCamera } from '../utils/photoPicker';
+import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
 import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
@@ -55,17 +56,6 @@ function markerColor(spot: ParkingPin): string {
   if (temp !== 'cold') return TEMP_STYLE[temp].color;
   if (spot.source === 'user') return '#BF5AF2';
   return SYS_GRAY;
-}
-
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // ─── 温度ピン ─────────────────────────────────────────

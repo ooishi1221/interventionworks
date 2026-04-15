@@ -12,24 +12,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { ParkingPin } from '../types';
+import { haversineMeters } from '../utils/distance';
 
 // ── 定数 ──────────────────────────────────────────────
 const NEARBY_THRESHOLD_M = 50;
 const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h
 const LOCATION_INTERVAL_MS = 5_000; // GPS ポーリング間隔
 const LOCATION_DISTANCE_M = 10; // 最小移動距離
-
-// ── haversine（MapScreen.tsx と同一ロジック） ─────────
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 // ── 型定義 ─────────────────────────────────────────────
 export interface NearbySpotInfo {
