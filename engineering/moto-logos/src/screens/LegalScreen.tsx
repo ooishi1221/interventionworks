@@ -12,6 +12,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Asset } from 'expo-asset';
+import { captureError } from '../utils/sentry';
 
 const THIRD_PARTY_CONSENT_KEY = 'moto_logos_third_party_consent';
 const CONTACT_EMAIL = process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'yuji.ooishi@intervention.jp';
@@ -49,6 +50,7 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
   const [activeDoc, setActiveDoc] = useState<DocType>(initialDoc ?? 'terms');
   const [content, setContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [agreed, setAgreed] = useState<Record<string, boolean>>({
     terms: false,
     privacy: false,
@@ -61,9 +63,10 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
   }, []);
 
   async function loadDocuments() {
+    setLoading(true);
+    setLoadError(false);
     try {
       const docs: Record<string, string> = {};
-      // Markdown ファイルを読み込む
       const files: Record<DocType, number> = {
         terms: require('../../assets/legal/terms-of-service.md'),
         privacy: require('../../assets/legal/privacy-policy.md'),
@@ -83,7 +86,8 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
       }
       setContent(docs);
     } catch (e) {
-      console.warn('[LegalScreen] failed to load docs:', e);
+      captureError(e, { context: 'legal_doc_load' });
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -159,10 +163,16 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
         {loading ? (
           <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} />
-        ) : content[activeDoc] ? (
-          renderMarkdownSimple(content[activeDoc])
+        ) : loadError || !content[activeDoc] ? (
+          <View style={{ alignItems: 'center', marginTop: 40, gap: 16 }}>
+            <Ionicons name="cloud-offline-outline" size={40} color={C.sub} />
+            <Text style={s.body}>ドキュメントを読み込めませんでした</Text>
+            <TouchableOpacity onPress={loadDocuments} style={s.retryBtn}>
+              <Text style={s.retryBtnText}>再読み込み</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <Text style={s.body}>ドキュメントを読み込めませんでした</Text>
+          renderMarkdownSimple(content[activeDoc])
         )}
       </ScrollView>
 
@@ -286,6 +296,15 @@ const s = StyleSheet.create({
   },
   acceptBtnDisabled: { opacity: 0.4 },
   acceptBtnText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  retryBtn: {
+    backgroundColor: C.card,
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  retryBtnText: { color: C.accent, fontSize: 15, fontWeight: '600' },
   contactLink: {
     color: C.sub,
     fontSize: 12,

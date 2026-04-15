@@ -11,6 +11,7 @@
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
@@ -78,9 +79,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   try {
-    // Expo Push Token を取得
+    // Expo Push Token を取得（projectId は app.json の EAS 設定から取得）
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: 'e0e8b07d-509a-4db3-9c39-c9360c774a18',
+      projectId,
     });
     const token = tokenData.data; // ExponentPushToken[xxx] 形式
 
@@ -90,7 +92,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     console.log('[PushNotifications] トークン登録完了:', token);
     return token;
   } catch (error) {
-    console.warn('[PushNotifications] トークン取得に失敗:', error);
+    captureError(error, { context: 'push_token_fetch' });
     return null;
   }
 }
@@ -103,7 +105,7 @@ async function savePushToken(token: string): Promise<void> {
   try {
     const deviceId = await getDeviceId();
     if (!deviceId) {
-      console.warn('[PushNotifications] デバイスIDが取得できませんでした');
+      captureError(new Error('デバイスIDが取得できませんでした'), { context: 'push_token_no_device_id' });
       return;
     }
 
