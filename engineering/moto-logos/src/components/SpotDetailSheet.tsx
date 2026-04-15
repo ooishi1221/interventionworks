@@ -56,6 +56,7 @@ import { getFirstVehicle } from '../db/database';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
+import { spotTemperature, temperatureLabel, lastArrivedText, TEMP_STYLE } from '../utils/temperature';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -686,9 +687,12 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
                     pointerEvents="none"
                   />
                 )}
-                <FreshnessBadge updatedAt={spot.updatedAt} />
+                <TemperatureBadge spot={spot} />
               </View>
             </View>
+
+            {/* 温度テキスト（足跡の鮮度） */}
+            <TemperatureText spot={spot} />
 
             {/* 写真ギャラリー */}
             {photos.length > 0 ? (
@@ -826,20 +830,29 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
   );
 }
 
-// ─── 鮮度バッジ ──────────────────────────────────────
-function FreshnessBadge({ updatedAt }: { updatedAt?: string }) {
-  if (!updatedAt) return null;
-  const diffMs = Date.now() - new Date(updatedAt).getTime();
-  const days = Math.floor(diffMs / 86400000);
-  let label: string; let color: string;
-  let icon: 'checkmark-circle' | 'alert-circle' | 'warning' = 'checkmark-circle';
-  if (days <= 30) { label = days <= 1 ? '最新' : `${days}日前`; color = C.blue; icon = 'checkmark-circle'; }
-  else if (days <= 90) { label = `${Math.floor(days / 30)}ヶ月前`; color = C.orange; icon = 'alert-circle'; }
-  else { const m = Math.floor(days / 30); label = m >= 12 ? `${Math.floor(m / 12)}年以上前` : `${m}ヶ月前`; color = C.red; icon = 'warning'; }
+// ─── 温度バッジ（足跡の鮮度） ─────────────────────────
+function TemperatureBadge({ spot }: { spot: ParkingPin }) {
+  const temp = spotTemperature(spot);
+  const color = TEMP_STYLE[temp].color;
+  const label = temperatureLabel(temp);
   return (
     <View style={[styles.badge, { backgroundColor: `${color}18`, borderWidth: StyleSheet.hairlineWidth, borderColor: `${color}44` }]}>
-      <Ionicons name={icon} size={10} color={color} style={{ marginRight: 2 }} />
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, marginRight: 4 }} />
       <Text style={[styles.badgeText, { color, fontSize: 10, fontWeight: '600' }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── 温度テキスト（「Xh前にライダーが利用」/「最初の足跡を残せます」） ──
+function TemperatureText({ spot }: { spot: ParkingPin }) {
+  const temp = spotTemperature(spot);
+  const text = lastArrivedText(spot);
+  const color = temp === 'cold' ? C.accent : TEMP_STYLE[temp].color;
+  const icon = temp === 'cold' ? 'footsteps-outline' : 'time-outline';
+  return (
+    <View style={styles.temperatureRow}>
+      <Ionicons name={icon as 'time-outline'} size={14} color={color} />
+      <Text style={[styles.temperatureText, { color }]}>{text}</Text>
     </View>
   );
 }
@@ -1000,6 +1013,10 @@ const styles = StyleSheet.create({
   badgeMuted:     { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
   badgeText:      { color: '#fff', fontSize: 12, fontWeight: '600' },
   badgeTextMuted: { color: C.sub, fontSize: 12 },
+
+  // Temperature
+  temperatureRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  temperatureText: { fontSize: 13, fontWeight: '500' },
 
   // Meta
   metaRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10 },

@@ -20,6 +20,7 @@ import { ParkingPin } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
 import { useTutorial } from '../contexts/TutorialContext';
 import { Colors } from '../constants/theme';
+import { spotTemperature, temperatureLabel, TEMP_STYLE } from '../utils/temperature';
 
 const C = Colors;
 
@@ -40,6 +41,12 @@ interface Props {
   onSearchPress?: () => void;
   areaSummary?: AreaSummary | null;
   onClearSearch?: () => void;
+}
+
+function TempDot({ spot }: { spot: ParkingPin }) {
+  const temp = spotTemperature(spot);
+  const color = TEMP_STYLE[temp].color;
+  return <View style={[styles.tempDot, { backgroundColor: color }]} />;
 }
 
 export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch }: Props) {
@@ -140,6 +147,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
                 style={styles.inlineItem}
               >
                 <Text style={styles.inlineRank}>1</Text>
+                <TempDot spot={items[0].spot} />
                 <Text style={styles.inlineName} numberOfLines={1}>
                   {items[0].spot.name}
                 </Text>
@@ -194,18 +202,24 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
 
       {/* ── 展開リスト（サマリーモード中は非表示） ──────── */}
       {!areaSummary && <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
-        {items.map((item, i) => (
-          <TouchableOpacity
-            key={item.spot.id}
-            style={styles.expandedRow}
-            onPress={() => { onSpotPress?.(item.spot); toggle(); }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.expandedRank}>{i + 1}</Text>
-            <Text style={styles.expandedName} numberOfLines={1}>{item.spot.name}</Text>
-            <Text style={styles.expandedDist}>{fmtDist(item.distanceM)}</Text>
-          </TouchableOpacity>
-        ))}
+        {items.map((item, i) => {
+          const temp = spotTemperature(item.spot);
+          const tempColor = TEMP_STYLE[temp].color;
+          return (
+            <TouchableOpacity
+              key={item.spot.id}
+              style={styles.expandedRow}
+              onPress={() => { onSpotPress?.(item.spot); toggle(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.expandedRank}>{i + 1}</Text>
+              <TempDot spot={item.spot} />
+              <Text style={styles.expandedName} numberOfLines={1}>{item.spot.name}</Text>
+              <Text style={[styles.expandedTempLabel, { color: tempColor }]}>{temperatureLabel(temp)}</Text>
+              <Text style={styles.expandedDist}>{fmtDist(item.distanceM)}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </Animated.View>}
     </View>
   );
@@ -369,5 +383,14 @@ const styles = StyleSheet.create({
   expandedDist: {
     color: C.sub,
     fontSize: 13,
+  },
+  expandedTempLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  tempDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

@@ -48,33 +48,7 @@ const JAPAN_CENTER: Region = {
 const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#636366';
 
-// ─── 駐車温度システム（5段階） ──────────────────────
-// ライダーが到着するとスポットが「温まる」。時間とともに冷める。
-type SpotTemperature = 'blazing' | 'hot' | 'warm' | 'cool' | 'cold';
-
-const TEMP_THRESHOLDS: { temp: SpotTemperature; maxMs: number }[] = [
-  { temp: 'blazing', maxMs: 30 * 60 * 1000 },     // 30分以内
-  { temp: 'hot',     maxMs: 2 * 60 * 60 * 1000 },  // 2時間以内
-  { temp: 'warm',    maxMs: 6 * 60 * 60 * 1000 },  // 6時間以内
-  { temp: 'cool',    maxMs: 24 * 60 * 60 * 1000 }, // 24時間以内
-];
-
-const TEMP_STYLE: Record<SpotTemperature, { color: string; pulseScale: number; auraDuration: number }> = {
-  blazing: { color: '#FF3B30', pulseScale: 1.4, auraDuration: 800 },   // 赤 — 激アツ
-  hot:     { color: '#FF6B00', pulseScale: 1.25, auraDuration: 1200 }, // オレンジ
-  warm:    { color: '#FF9F0A', pulseScale: 1.1, auraDuration: 2000 },  // アンバー
-  cool:    { color: '#64D2FF', pulseScale: 1.0, auraDuration: 0 },    // 水色（静止）
-  cold:    { color: '#48484A', pulseScale: 1.0, auraDuration: 0 },    // グレー
-};
-
-function spotTemperature(spot: ParkingPin): SpotTemperature {
-  if (!spot.lastArrivedAt) return 'cold';
-  const age = Date.now() - new Date(spot.lastArrivedAt).getTime();
-  for (const t of TEMP_THRESHOLDS) {
-    if (age < t.maxMs) return t.temp;
-  }
-  return 'cold';
-}
+import { SpotTemperature, TEMP_STYLE, spotTemperature } from '../utils/temperature';
 
 function markerColor(spot: ParkingPin): string {
   const temp = spotTemperature(spot);
