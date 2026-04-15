@@ -98,8 +98,6 @@ export function ProximityContextCard({
   const okGlowRef = useRef<Animated.CompositeAnimation | null>(null);
   const cardRef = useRef<View>(null);
   const goodBtnRef = useRef<View>(null);
-  const badBtnRef = useRef<View>(null);
-  const reasonsRef = useRef<View>(null);
 
   // チュートリアル中はダミー近接状態を強制表示
   const isTutorialReport = tutorial.active && tutorial.phase === 'report';
@@ -155,12 +153,6 @@ export function ProximityContextCard({
     });
     goodBtnRef.current?.measureInWindow((x, y, w, h) => {
       if (w > 0) tutorial.registerTarget('report-good-btn', { x, y, w, h, borderRadius: 14 });
-    });
-    badBtnRef.current?.measureInWindow((x, y, w, h) => {
-      if (w > 0) tutorial.registerTarget('report-bad-btn', { x, y, w, h, borderRadius: 14 });
-    });
-    reasonsRef.current?.measureInWindow((x, y, w, h) => {
-      if (w > 0) tutorial.registerTarget('report-reasons', { x, y, w, h, borderRadius: 12 });
     });
   }, [tutorial.active, isTutorialReport, tutorial.stepIndex, phase]);
 
@@ -440,7 +432,6 @@ export function ProximityContextCard({
                 <Text style={styles.actionText}>停めた</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                ref={badBtnRef}
                 style={[styles.actionBtn, styles.badBtn]}
                 onPress={handleBad}
                 activeOpacity={0.8}
@@ -460,7 +451,7 @@ export function ProximityContextCard({
         {effectiveState.kind === 'nearby' && phase === 'corrections' && (
           <>
             <Text style={styles.correctionTitle}>何があった？</Text>
-            <View ref={reasonsRef} style={styles.correctionGrid}>
+            <View style={styles.correctionGrid}>
               {CORRECTION_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.id}

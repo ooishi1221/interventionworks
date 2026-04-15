@@ -166,7 +166,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
               <TouchableOpacity
                 onPress={() => {
                   if (tutorial.isStep('explore-pillbar')) {
-                    tutorial.advanceTutorial(); // → explore-detail
+                    tutorial.advanceTutorial(); // → explore-nav
                   }
                   onSpotPress?.(items[0].spot);
                 }}

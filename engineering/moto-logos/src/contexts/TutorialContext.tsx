@@ -88,7 +88,7 @@ export const STEPS: StepDef[] = [
     id: 'report-good',
     phase: 'report',
     instruction: '近くのスポットが自動で表示されます\n「停めた」をタップしてみましょう',
-    target: null,
+    target: 'report-good-btn',
     waitFor: 'tap-target',
   },
 
