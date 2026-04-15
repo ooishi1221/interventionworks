@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/send-scheduled",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/retention-notify",
+      "schedule": "15,45 * * * *"
     }
   ]
 }
