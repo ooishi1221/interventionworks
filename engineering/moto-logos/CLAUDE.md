@@ -324,6 +324,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 位置情報パーミッション拒否時はオレンジバナー表示 + 設定画面リンク + 東京にフォールバック
 - スポット0件時は地図上にオーバーレイ（「このエリアにはまだスポットがありません」）
 - `.catch(() => {})` での無言エラー握りつぶしは禁止。最低限 `captureError()` を入れる
+- `console.warn` / `console.error` でのエラー処理は禁止。すべて `captureError()` を使う
 - ImagePicker の結果は必ず `result.assets?.length` をチェックしてからアクセス
 - Firestore バッチ読み取り: `where('__name__', 'in', [...])` は10件チャンク分割必須（Firestore制約）
 - N+1 クエリ禁止: 複数ドキュメント取得は `Promise.all` で並列化
@@ -529,6 +530,19 @@ eas update --branch preview
 | — | ~~.env.example 未作成~~ | **完了** — `.env.example` 追加 |
 | — | ~~エラー握り潰し（空catch）~~ | **完了** — `captureError` 適用、reportParked/reportDeparted は例外伝播に変更 |
 | — | ~~geohash 0件で全件取得フォールバック~~ | **完了** — geohash成功時は0件でもそのまま返す |
+| — | ~~allSpotsRaw 無限蓄積~~ | **完了** — 500件上限+遠方自動除外 |
+| — | ~~SpotPin 再レンダー過多~~ | **完了** — React.memo 適用 |
+| — | ~~setTimeout リーク（MapScreen 4箇所）~~ | **完了** — ref管理+アンマウント時cleanup |
+| — | ~~キーボードアニメーション死コード~~ | **完了** — kbOffset/overlayOpacity 削除（JSX未使用） |
+| — | ~~RiderScreen モーダル依存リロード~~ | **完了** — useEffect依存からfavModalOpen/spotsModalOpen除去 |
+| — | ~~LiveFeed タイマーリーク~~ | **完了** — 再帰setTimeout ref管理+cleanup |
+| — | ~~allSpots 毎レンダーフィルタリング~~ | **完了** — useMemo化 |
+| — | ~~GPS 5秒ポーリング~~ | **完了** — 15秒/30m間隔に緩和 |
+| — | ~~NotificationsScreen FlatList未最適化~~ | **完了** — removeClippedSubviews/windowSize/maxToRenderPerBatch |
+| — | ~~SpotDetailSheet 連打で並行リクエスト~~ | **完了** — staleガードで前リクエスト結果を無視 |
+| — | ~~Firestore キャッシュ無制限~~ | **完了** — 50MB上限設定 |
+| — | ~~console.warn 本番残留~~ | **完了** — captureError に統一 |
+| — | ~~fetchReviews 無制限取得~~ | **完了** — limit(30) 追加 |
 
 ---
 
