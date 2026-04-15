@@ -295,7 +295,7 @@ export async function getMySpotsTotalViews(localSpotIds: string[]): Promise<numb
     localSpotIds.map((id) =>
       getDoc(doc(db, COLLECTIONS.SPOTS, id))
         .then((snap) => (snap.exists() ? ((snap.data().viewCount as number) ?? 0) : 0))
-        .catch((e) => { console.warn('[Firestore] spot views fetch failed:', e); return 0; })
+        .catch((e) => { captureError(e, { context: 'spot_views_fetch', spotId: id }); return 0; })
     )
   );
   return results.reduce((sum, v) => sum + v, 0);
@@ -538,8 +538,7 @@ export async function logActivity(): Promise<void> {
       lastActiveAt: Timestamp.now(),
     });
   } catch (e) {
-    // アクティビティ記録失敗はアプリ動作に影響させない
-    console.warn('[logActivity]', e);
+    captureError(e, { context: 'log_activity' });
   }
 }
 

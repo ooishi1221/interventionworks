@@ -177,7 +177,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
   const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
 
-  // ── 初期ロード ───────────────────────────────────────
+  // レポート送信後のリフレッシュ用
   const loadAll = useCallback(async () => {
     const src = spot.source as 'seed' | 'user';
     setReportsLoading(true);
@@ -190,11 +190,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
     setReports(r);
     setAlreadyVoted(!!prev);
     setReportsLoading(false);
-  }, [spot]);
+  }, [spot.id, spot.source]);
 
+  // ── 初期ロード（spot変更時は前のリクエストを無視） ───────
   useEffect(() => {
     if (tutorial.active && spot.id === '_tutorial_spot_') {
-      // チュートリアル: ダミーレビュー + 写真を表示
       const asset = Asset.fromModule(require('../../assets/tutorial-parking.jpg'));
       asset.downloadAsync().then(() => {
         setReports([
@@ -207,9 +207,24 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
       setReportsLoading(false);
       return;
     }
-    loadAll();
+
+    let stale = false;
+    const src = spot.source as 'seed' | 'user';
+    setReportsLoading(true);
+    Promise.all([
+      getAllFavorites(),
+      fetchReviews(spot.id, 'date'),
+      AsyncStorage.getItem(`vote_${spot.id}`),
+    ]).then(([favs, r, prev]) => {
+      if (stale) return;
+      setIsFav(favs.some((f) => f.spotId === spot.id && f.source === src));
+      setReports(r);
+      setAlreadyVoted(!!prev);
+      setReportsLoading(false);
+    });
     incrementViewCount(spot.id);
-  }, [loadAll, tutorial.active]);
+    return () => { stale = true; };
+  }, [spot.id, tutorial.active]);
 
   // ── お気に入りトグル ──────────────────────────────────
   const toggleFav = async () => {

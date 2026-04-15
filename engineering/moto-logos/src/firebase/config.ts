@@ -41,6 +41,7 @@ export function getDb(): Firestore {
       _db = initializeFirestore(app, {
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager(),
+          cacheSizeBytes: 50_000_000, // 50MB
         }),
       });
     } catch {
