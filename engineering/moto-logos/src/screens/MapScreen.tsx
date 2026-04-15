@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -535,11 +535,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setReportLoading(false);
   };
 
-  const allSpotsBase = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
-  // チュートリアル中はダミースポットを注入
-  const allSpots = tutorial.active
-    ? [tutorial.dummySpot, ...allSpotsBase]
-    : allSpotsBase;
+  const allSpots = useMemo(() => {
+    const base = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
+    return tutorial.active ? [tutorial.dummySpot, ...base] : base;
+  }, [allSpotsRaw, ccFilterEnabled, userCC, tutorial.active, tutorial.dummySpot]);
 
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
   const prevTutorialActive = useRef(tutorial.active);

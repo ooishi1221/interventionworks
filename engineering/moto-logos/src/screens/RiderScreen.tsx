@@ -141,7 +141,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     getMySpotsTotalViews(spotIds).then(setTotalViews).catch((e) => captureError(e, { context: 'rider_total_views' }));
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData, favModalOpen, spotsModalOpen]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

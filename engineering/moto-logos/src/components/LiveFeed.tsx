@@ -46,6 +46,7 @@ const DISPLAY_DURATION = 5000;
 export function LiveFeed() {
   const [index, setIndex] = useState(0);
   const translateY = useRef(new Animated.Value(-80)).current;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -60,7 +61,7 @@ export function LiveFeed() {
         useNativeDriver: true,
       }).start(() => {
         if (!mounted) return;
-        setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           if (!mounted) return;
           Animated.timing(translateY, {
             toValue: -80,
@@ -76,7 +77,10 @@ export function LiveFeed() {
     };
 
     showNext();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   const item = DUMMY_FEED[index];
