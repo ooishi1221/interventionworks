@@ -108,7 +108,7 @@ src/
 ├── firebase/       # Firestore/Storage 初期化・CRUD・型定義
 ├── db/             # SQLite スキーマ・CRUD
 ├── hooks/          # カスタムフック（useDatabase, useProximityState, useArrivalDetection, useImpactNotification）
-├── utils/          # ユーティリティ（geohash, image-upload, ng-filter, sentry, photoPicker）
+├── utils/          # ユーティリティ（geohash, distance, image-upload, ng-filter, sentry, photoPicker）
 ├── constants/      # テーマ・地図スタイル
 ├── types/          # TypeScript 型定義
 └── data/           # シードデータ
@@ -173,7 +173,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 ### Firestore 運用
 
 - 新規スポットには必ず `geohash`（精度9）を付与する
-- Read 数を意識する。全件取得（`fetchAllSpots`）はマイグレーション期間のみ
+- Read 数を意識する。`fetchSpotsInRegion` は geohash クエリで範囲検索し、0件でもそのまま返す。`fetchAllSpots` はインデックス未作成時の緊急フォールバックのみ
 - `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
 - `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, bike情報）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
@@ -304,7 +304,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 ### 環境変数
 
 - `.env` に Firebase + Sentry 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
-- `.env` は `.gitignore` 済み。新規メンバーは Firebase Console / Sentry から値を取得する
+- `.env.example` に必要なキー一覧あり（値は空）。新規メンバーはこれをコピーして Firebase Console / Sentry から値を取得する
 - EAS Build 時は `eas.json` の `env` ブロックから Sentry DSN を注入
 
 ### クラッシュ監視（Sentry）
@@ -456,7 +456,7 @@ eas update --branch preview
 - `TutorialOverlay` (`src/components/TutorialOverlay.tsx`): セットアップ画面 + 完了画面
 - `TutorialGuide` (`src/components/TutorialGuide.tsx`): スポットライト（4矩形暗幕）+ パルスグロー + 指示テキスト
 
-**フロー（24ステップ）:**
+**フロー（10ステップ）:**
 1. セットアップ: ニックネーム + CC選択（「探したい排気量のバイクは？」）
 2. シーン「バイク置き場を探す」→ ピルバータップ → 詳細シート（バッジ→鮮度→口コミ）→ 案内開始 → 検索自動入力
 3. シーン「バイクを降りたら」→ 近接カード → 停めた → 📸看板メモ → 停められなかった → 理由選択 → 通知バナー
@@ -524,6 +524,11 @@ eas update --branch preview
 | ~~#92~~ | ~~カラー定数の一元化~~ | **完了** — `Colors` export、14ファイル統合 |
 | ~~#93~~ | ~~TypeScript any型の排除~~ | **完了** — UserSpotRow型付け等 |
 | #94 | アクセシビリティラベル追加 | 未完了（P2） |
+| — | ~~haversineMeters 4ファイル重複~~ | **完了** — `src/utils/distance.ts` に集約 |
+| — | ~~migration.ts 残骸~~ | **完了** — `src/firebase/migration.ts` 削除（未参照） |
+| — | ~~.env.example 未作成~~ | **完了** — `.env.example` 追加 |
+| — | ~~エラー握り潰し（空catch）~~ | **完了** — `captureError` 適用、reportParked/reportDeparted は例外伝播に変更 |
+| — | ~~geohash 0件で全件取得フォールバック~~ | **完了** — geohash成功時は0件でもそのまま返す |
 
 ---
 
