@@ -26,7 +26,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const PADDING = 8; // ターゲット周囲のパディング
 
 export function TutorialGuide() {
-  const { active, currentStep, stepIndex, getTarget, advanceTutorial, finishTutorial, phase } = useTutorial();
+  const { active, exiting, currentStep, stepIndex, getTarget, advanceTutorial, phase } = useTutorial();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
@@ -45,16 +45,18 @@ export function TutorialGuide() {
     if (active && phase !== 'setup' && phase !== 'complete') {
       const isScene = !!currentStep.sceneTitle;
       const isFirstStep = prevStepRef.current === 0 && stepIndex > 0;
+      const prevWasScene = prevStepRef.current !== stepIndex;
       prevStepRef.current = stepIndex;
 
       if (isScene || isFirstStep) {
-        // シーンカード / 最初のステップ: ゆっくりフェードイン
-        fadeAnim.setValue(0);
-        contentAnim.setValue(0);
-        Animated.sequence([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-          Animated.timing(contentAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-        ]).start();
+        // シーンカード / 最初のステップ: フェードアウト→フェードイン
+        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+          contentAnim.setValue(0);
+          Animated.sequence([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(contentAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+          ]).start();
+        });
       } else {
         // 通常ステップ: コンテンツだけクロスフェード（背景暗幕は維持）
         fadeAnim.setValue(1);
@@ -75,6 +77,14 @@ export function TutorialGuide() {
       pulseRef.current?.stop();
     }
   }, [active, stepIndex, phase]);
+
+  // 終了時フェードアウト
+  useEffect(() => {
+    if (exiting) {
+      pulseRef.current?.stop();
+      Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start();
+    }
+  }, [exiting]);
 
   // ── ターゲット到着待ち ─────────────────────────────
   // ステップ削減でUI表示とスポットライトが同時になるケースがある。
@@ -104,9 +114,8 @@ export function TutorialGuide() {
   }, [active, stepIndex, currentStep.target, getTarget]);
 
   // セットアップと完了フェーズはTutorialOverlayが処理する
-  if (!active || phase === 'setup' || phase === 'complete') return null;
-  // auto ステップは何も表示しない（タイマーで自動遷移）
-  if (currentStep.waitFor === 'auto') return null;
+  // exiting中はフェードアウトのため表示を維持
+  if ((!active && !exiting) || phase === 'setup' || phase === 'complete') return null;
   const target = currentStep.target ? getTarget(currentStep.target) : null;
 
   const handleBackdropPress = () => {
@@ -289,11 +298,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.01)',
     zIndex: 9998,
+    justifyContent: 'center',
   },
   fullOverlayLight: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',
     zIndex: 9998,
+    justifyContent: 'center',
   },
   backdrop: {
     position: 'absolute',
@@ -311,8 +322,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,159,10,0.08)',
   },
   floatingCard: {
-    position: 'absolute',
-    top: '35%',
     left: 20,
     right: 20,
     alignItems: 'center',

@@ -63,15 +63,6 @@ export const STEPS: StepDef[] = [
     target: 'nav-button',
     waitFor: 'tap-target',
   },
-  {
-    id: 'explore-close-sheet',
-    phase: 'explore',
-    instruction: '',
-    target: null,
-    waitFor: 'auto',
-    autoDelay: 600,
-  },
-
   // ── Scene: 足跡を残す ───────────────────────────────
   {
     id: 'scene-report',
@@ -158,6 +149,8 @@ export interface TargetRect {
 interface TutorialContextValue {
   /** チュートリアルが進行中か */
   active: boolean;
+  /** 終了アニメーション中か */
+  exiting: boolean;
   /** 現在のステップindex (0-based) */
   stepIndex: number;
   /** 現在のステップ定義 */
@@ -174,7 +167,7 @@ interface TutorialContextValue {
   advanceTutorial: () => void;
   /** チュートリアル開始 */
   startTutorial: () => void;
-  /** チュートリアル終了 */
+  /** チュートリアル終了（フェードアウト開始） */
   finishTutorial: () => void;
   /** 特定ステップかチェック */
   isStep: (id: string) => boolean;
@@ -185,6 +178,7 @@ const TutorialContext = createContext<TutorialContextValue | null>(null);
 // ─── Provider ───────────────────────────────────────────
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const targets = useRef<Record<string, TargetRect>>({});
   const [dummySpot, setDummySpot] = useState<ParkingPin>(DUMMY_SPOT);
@@ -242,9 +236,14 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const finishTutorial = useCallback(() => {
-    setActive(false);
-    setStepIndex(0);
+    setExiting(true);
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    // フェードアウト用に400ms待ってからアンマウント
+    setTimeout(() => {
+      setActive(false);
+      setExiting(false);
+      setStepIndex(0);
+    }, 400);
   }, []);
 
   const isStep = useCallback((id: string) => {
@@ -254,6 +253,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<TutorialContextValue>(() => ({
     active,
+    exiting,
     stepIndex,
     currentStep,
     phase,
@@ -264,7 +264,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     startTutorial,
     finishTutorial,
     isStep,
-  }), [active, stepIndex, currentStep, phase, dummySpot, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep]);
+  }), [active, exiting, stepIndex, currentStep, phase, dummySpot, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep]);
 
   return (
     <TutorialContext.Provider value={value}>

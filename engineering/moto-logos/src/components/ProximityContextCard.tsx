@@ -171,11 +171,11 @@ export function ProximityContextCard({
   }, [tutorial.active, isTutorialReport, tutorial.stepIndex, phase]);
 
   // ステップ変更時とレイアウト完了時に測定
+  // スライドアニメーション完了後にも測定するが、フォールバックとして遅延リトライも維持
   useEffect(() => {
     if (!isTutorialReport) return;
-    // アニメーション完了を待って複数回リトライ
-    const t1 = setTimeout(measureTargets, 300);
-    const t2 = setTimeout(measureTargets, 800);
+    const t1 = setTimeout(measureTargets, 500);
+    const t2 = setTimeout(measureTargets, 1200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [measureTargets]);
 
@@ -198,7 +198,12 @@ export function ProximityContextCard({
       tension: 120,
       friction: 14,
       useNativeDriver: true,
-    }).start();
+    }).start(({ finished }) => {
+      // スライド完了後に正確な位置を測定（チュートリアル用）
+      if (finished && visible && isTutorialReport) {
+        measureTargets();
+      }
+    });
   }, [visible]);
 
   // 報告済みスポットID（写真追加用に保持）
