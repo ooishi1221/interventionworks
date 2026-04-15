@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { spawn, execFile } from "child_process";
 import { openSync } from "fs";
+import { writeFile, mkdir } from "fs/promises";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "..", ".env") });
@@ -27,6 +28,7 @@ const app = new App({
 const BOT = { username: "Claude Code", icon_emoji: ":zap:" };
 const PROJECT_ROOT = join(__dirname, "..", "..", "..");
 const CHANNEL = process.env.SLACK_CHANNEL_ID;
+const CHANNEL_DEV_LOG = "C0ASQ80PGJV";
 
 // --- Utilities ---
 
@@ -111,6 +113,40 @@ const TOOL_ICONS = {
   Grep: "🔍", Glob: "📂", Agent: "🤖", WebSearch: "🌐",
   WebFetch: "🌐", AskUserQuestion: "❓",
 };
+
+// --- Image download ---
+const IMAGES_DIR = "/tmp/slack_images";
+
+async function downloadSlackFiles(files) {
+  if (!files || files.length === 0) return [];
+  await mkdir(IMAGES_DIR, { recursive: true });
+
+  const paths = [];
+  for (const file of files) {
+    if (!file.mimetype?.startsWith("image/")) continue;
+    const localName = `${Date.now()}_${file.name || "image.png"}`;
+    const localPath = join(IMAGES_DIR, localName);
+    try {
+      const res = await fetch(file.url_private_download, {
+        headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await writeFile(localPath, Buffer.from(await res.arrayBuffer()));
+      paths.push(localPath);
+      console.log(`[download] ${file.name} → ${localPath}`);
+    } catch (e) {
+      console.error(`[download] failed: ${file.name}: ${e.message}`);
+    }
+  }
+  return paths;
+}
+
+function buildPromptWithImages(text, imagePaths) {
+  if (imagePaths.length === 0) return text;
+  const listing = imagePaths.join("\n");
+  if (!text) return `以下の画像を確認してください:\n${listing}`;
+  return `${text}\n\n以下の画像を確認してください:\n${listing}`;
+}
 
 function startSession(initialPrompt, threadTs) {
   if (session) {
@@ -223,14 +259,28 @@ app.command("/claude", async ({ command, ack, say }) => {
 // --- @mention ---
 app.event("app_mention", async ({ event, say }) => {
   const msg = event.text.replace(/<@[A-Z0-9]+>/g, "").trim();
-  if (!msg) return;
-  console.log(`[Slack] mention: ${msg}`);
+  const imagePaths = await downloadSlackFiles(event.files);
+
+  if (!msg && imagePaths.length === 0) return;
+
+  // Image only → save and acknowledge (no session)
+  if (!msg && imagePaths.length > 0) {
+    await say({
+      text: `📸 画像を保存しました:\n${imagePaths.join("\n")}`,
+      thread_ts: event.ts,
+      ...BOT,
+    });
+    return;
+  }
+
+  const prompt = buildPromptWithImages(msg, imagePaths);
+  console.log(`[Slack] mention: ${prompt}`);
   const posted = await say({
     text: `> ${msg}\nセッション開始...`,
     thread_ts: event.ts,
     ...BOT,
   });
-  startSession(msg, posted.ts || event.ts);
+  startSession(prompt, posted.ts || event.ts);
 });
 
 // --- Button click handler ---
@@ -279,18 +329,44 @@ app.event("message", async ({ event }) => {
   if (!session) return;
   if (!event.thread_ts) return;
   if (event.thread_ts !== session.threadTs) return;
-  if (event.bot_id || event.subtype) return;
+  if (event.bot_id) return;
+  if (event.subtype && event.subtype !== "file_share") return;
 
-  const reply = event.text;
+  const imagePaths = await downloadSlackFiles(event.files);
+  const text = event.text || "";
+
+  if (imagePaths.length > 0) {
+    postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, session.threadTs);
+  }
+
+  const reply = buildPromptWithImages(text, imagePaths);
+  if (!reply) return;
+
   console.log(`[Slack→stdin] ${reply}`);
   session.proc.stdin.write(reply + "\n");
 });
 
 // --- DM ---
 app.event("message", async ({ event, say }) => {
-  if (event.channel_type !== "im" || event.bot_id || event.subtype || event.thread_ts) return;
+  if (event.channel_type !== "im" || event.bot_id || event.thread_ts) return;
+  if (event.subtype && event.subtype !== "file_share") return;
 
-  const msg = event.text;
+  const imagePaths = await downloadSlackFiles(event.files);
+  const text = event.text || "";
+
+  if (!text && imagePaths.length === 0) return;
+
+  // Image only → save and acknowledge (no session)
+  if (!text && imagePaths.length > 0) {
+    await say({
+      text: `📸 画像を保存しました:\n${imagePaths.join("\n")}`,
+      thread_ts: event.ts,
+      ...BOT,
+    });
+    return;
+  }
+
+  const msg = buildPromptWithImages(text, imagePaths);
   console.log(`[Slack] DM: ${msg}`);
 
   if (session) {
@@ -299,11 +375,28 @@ app.event("message", async ({ event, say }) => {
   }
 
   const posted = await say({
-    text: `> ${msg}\nセッション開始...`,
+    text: `> ${text}\nセッション開始...`,
     thread_ts: event.ts,
     ...BOT,
   });
   startSession(msg, posted.ts || event.ts);
+});
+
+// --- Channel image (no mention needed) ---
+app.event("message", async ({ event }) => {
+  if (event.channel_type === "im") return;
+  if (event.thread_ts) return;
+  if (event.bot_id) return;
+  if (event.channel !== CHANNEL && event.channel !== CHANNEL_DEV_LOG) return;
+  if (!event.files || event.files.length === 0) return;
+  if (event.subtype && event.subtype !== "file_share") return;
+  // Skip mentions (handled by app_mention handler)
+  if (event.text && /<@[A-Z0-9]+>/.test(event.text)) return;
+
+  const imagePaths = await downloadSlackFiles(event.files);
+  if (imagePaths.length === 0) return;
+
+  postToSlack(`📸 画像を保存しました:\n${imagePaths.join("\n")}`, event.ts);
 });
 
 // --- Graceful shutdown ---
