@@ -59,7 +59,7 @@ function markerColor(spot: ParkingPin): string {
 }
 
 // ─── 温度ピン ─────────────────────────────────────────
-function SpotPin({ spot }: { spot: ParkingPin }) {
+const SpotPin = React.memo(function SpotPin({ spot }: { spot: ParkingPin }) {
   const temp = spotTemperature(spot);
   const style = TEMP_STYLE[temp];
   const hasPulse = style.auraDuration > 0;
@@ -110,7 +110,7 @@ function SpotPin({ spot }: { spot: ParkingPin }) {
       </RNAnimated.View>
     </RNAnimated.View>
   );
-}
+});
 
 /** App.tsx から ref 経由で呼び出せるメソッド */
 export interface MapScreenHandle {
@@ -157,6 +157,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [searchText, setSearchText]           = useState('');
   const [searching, setSearching]             = useState(false);
   const [searchResultMsg, setSearchResultMsg] = useState<string | null>(null);
+
+  // setTimeout リーク防止用 ref
+  const miscTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (miscTimerRef.current) clearTimeout(miscTimerRef.current); }, []);
   const [areaSummary, setAreaSummary]         = useState<AreaSummary | null>(null);
 
   // ── ライブフィード設定 ──────────────────────────────
@@ -177,11 +181,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     let fetched: ParkingPin[] = [];
     try {
       fetched = await fetchSpotsInRegion(region);
-      // 既存データとマージ（新エリア分を追加、同一IDは上書き）
+      // 既存データとマージ（新エリア分を追加、同一IDは上書き、遠方を除外）
       setAllSpotsRaw((prev) => {
         const map = new Map(prev.map((s) => [s.id, s]));
         for (const s of fetched) map.set(s.id, s);
-        return Array.from(map.values());
+        const all = Array.from(map.values());
+        if (all.length <= 500) return all;
+        all.sort((a, b) =>
+          haversineMeters(region.latitude, region.longitude, a.latitude, a.longitude) -
+          haversineMeters(region.latitude, region.longitude, b.latitude, b.longitude)
+        );
+        return all.slice(0, 500);
       });
     } catch (e) {
       captureError(e, { context: 'fetchSpotsInRegion' });
@@ -334,7 +344,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       latitudeDelta: 0.005,
       longitudeDelta: 0.005,
     }, 800);
-    setTimeout(() => setSelected(nearest), 900);
+    miscTimerRef.current = setTimeout(() => setSelected(nearest), 900);
   };
 
   // ── 住所検索 ──────────────────────────────────────────
@@ -386,7 +396,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         setSearchResultMsg('この付近に登録済みの駐輪場はありません');
       }
 
-      setTimeout(() => setSearchResultMsg(null), 4000);
+      miscTimerRef.current = setTimeout(() => setSearchResultMsg(null), 4000);
     } catch {
       Alert.alert('エラー', '検索に失敗しました。');
     }
@@ -516,7 +526,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }, 600);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSearchResultMsg('スポットを共有しました!');
-      setTimeout(() => setSearchResultMsg(null), 3000);
+      miscTimerRef.current = setTimeout(() => setSearchResultMsg(null), 3000);
     } catch (e: unknown) {
       captureError(e, { context: 'quickReport' });
       const message = e instanceof Error ? e.message : String(e);
@@ -598,49 +608,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
-  // ── キーボード追従アニメーション ───────────────────
   const [searchFocused, setSearchFocused] = useState(false);
-  const kbOffset = useRef(new RNAnimated.Value(0)).current;
-  const overlayOpacity = useRef(new RNAnimated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      const h = e.endCoordinates.height;
-      RNAnimated.parallel([
-        RNAnimated.timing(kbOffset, {
-          toValue: h - TAB_BAR_H,
-          duration: Platform.OS === 'ios' ? e.duration : 250,
-          useNativeDriver: false,
-        }),
-        RNAnimated.timing(overlayOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    });
-
-    const hideSub = Keyboard.addListener(hideEvent, (e) => {
-      RNAnimated.parallel([
-        RNAnimated.timing(kbOffset, {
-          toValue: 0,
-          duration: Platform.OS === 'ios' ? (e.duration ?? 250) : 250,
-          useNativeDriver: false,
-        }),
-        RNAnimated.timing(overlayOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    });
-
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
 
   const dismissSearch = () => {
     Keyboard.dismiss();
@@ -770,7 +739,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
               latitude: spot.latitude, longitude: spot.longitude,
               latitudeDelta: 0.005, longitudeDelta: 0.005,
             }, 800);
-            setTimeout(() => setSelected(spot), 900);
+            miscTimerRef.current = setTimeout(() => setSelected(spot), 900);
           }}
           onSearchPress={() => setSearchVisible(true)}
           areaSummary={areaSummary}

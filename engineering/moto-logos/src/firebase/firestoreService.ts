@@ -375,7 +375,8 @@ export async function fetchReviews(
 ): Promise<Review[]> {
   const q = query(
     collection(db, COLLECTIONS.REVIEWS),
-    where('spotId', '==', spotId)
+    where('spotId', '==', spotId),
+    limit(30)
   );
   const snap = await getDocs(q);
 
