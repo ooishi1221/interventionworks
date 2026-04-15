@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { captureError } from '../utils/sentry';
 import {
   collection,
   getDocs,
@@ -90,7 +91,9 @@ export function NotificationsScreen({ onBack }: Props) {
       const allIds = results.map((r) => r.id);
       await AsyncStorage.setItem(READ_KEY, JSON.stringify(allIds));
       setReadIds(new Set(allIds));
-    } catch {}
+    } catch (e) {
+      captureError(e, { context: 'notifications_load' });
+    }
     setLoading(false);
   }, []);
 
@@ -127,6 +130,9 @@ export function NotificationsScreen({ onBack }: Props) {
           data={items}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}
+          removeClippedSubviews
+          maxToRenderPerBatch={10}
+          windowSize={7}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[s.card, !readIds.has(item.id) && s.cardUnread]}

@@ -17,8 +17,8 @@ import { haversineMeters } from '../utils/distance';
 // ── 定数 ──────────────────────────────────────────────
 const NEARBY_THRESHOLD_M = 50;
 const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h
-const LOCATION_INTERVAL_MS = 5_000; // GPS ポーリング間隔
-const LOCATION_DISTANCE_M = 10; // 最小移動距離
+const LOCATION_INTERVAL_MS = 15_000; // GPS ポーリング間隔
+const LOCATION_DISTANCE_M = 30; // 最小移動距離
 
 // ── 型定義 ─────────────────────────────────────────────
 export interface NearbySpotInfo {
