@@ -52,30 +52,9 @@ export const STEPS: StepDef[] = [
   {
     id: 'explore-pillbar',
     phase: 'explore',
-    instruction: 'ここに最寄りのスポットが表示されます\n1番をタップしてみましょう',
+    instruction: 'ここに最寄りのスポットが表示されます\nタップしてみましょう',
     target: 'pillbar',
     waitFor: 'tap-target',
-  },
-  {
-    id: 'explore-detail-badges',
-    phase: 'explore',
-    instruction: '排気量・有料無料・台数などが\n確認できます',
-    target: 'detail-badges',
-    waitFor: 'tap-anywhere',
-  },
-  {
-    id: 'explore-detail-freshness',
-    phase: 'explore',
-    instruction: 'ライダーの足跡で\n情報の鮮度が上がります',
-    target: 'detail-freshness',
-    waitFor: 'tap-anywhere',
-  },
-  {
-    id: 'explore-detail-reviews',
-    phase: 'explore',
-    instruction: 'みんなの口コミも見られます',
-    target: 'detail-reviews',
-    waitFor: 'tap-anywhere',
   },
   {
     id: 'explore-nav',
@@ -90,36 +69,7 @@ export const STEPS: StepDef[] = [
     instruction: '',
     target: null,
     waitFor: 'auto',
-    autoDelay: 800,
-  },
-  {
-    id: 'explore-search',
-    phase: 'explore',
-    instruction: '場所で検索もできます\n🔍をタップしてみましょう',
-    target: 'search-button',
-    waitFor: 'tap-target',
-  },
-  {
-    id: 'explore-search-show',
-    phase: 'explore',
-    instruction: '場所名を入力して検索できます',
-    target: null,
-    waitFor: 'tap-anywhere',
-  },
-  {
-    id: 'explore-search-result',
-    phase: 'explore',
-    instruction: 'このように検索して\n詳細情報を確認できます',
-    target: null,
-    waitFor: 'tap-anywhere',
-  },
-  {
-    id: 'explore-search-done',
-    phase: 'explore',
-    instruction: '',
-    target: null,
-    waitFor: 'auto',
-    autoDelay: 500,
+    autoDelay: 600,
   },
 
   // ── Scene: 足跡を残す ───────────────────────────────
@@ -129,59 +79,17 @@ export const STEPS: StepDef[] = [
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
-    sceneTitle: 'バイクを降りたら',
-    sceneIcon: 'flag-outline',
+    sceneTitle: '到着したら自動で記録',
+    sceneIcon: 'location-outline',
   },
 
   // ── Phase: Report（足跡を残す） ─────────────────────
   {
-    id: 'report-intro',
-    phase: 'report',
-    instruction: 'バイクを停めたらアプリを開きましょう\n近くのスポットが自動で表示されます',
-    target: 'proximity-card',
-    waitFor: 'tap-anywhere',
-  },
-  {
     id: 'report-good',
     phase: 'report',
-    instruction: '「停めた」をタップしてみましょう',
-    target: 'report-good-btn',
-    waitFor: 'tap-target',
-  },
-  {
-    id: 'report-good-thanks',
-    phase: 'report',
-    instruction: '',
+    instruction: '近くのスポットが自動で表示されます\n「停めた」をタップしてみましょう',
     target: null,
     waitFor: 'tap-target',
-  },
-  {
-    id: 'report-good-done',
-    phase: 'report',
-    instruction: 'これだけで足跡が残ります',
-    target: null,
-    waitFor: 'tap-anywhere',
-  },
-  {
-    id: 'report-bad-intro',
-    phase: 'report',
-    instruction: '停められなかった場合は👎をタップします',
-    target: 'report-bad-btn',
-    waitFor: 'tap-target',
-  },
-  {
-    id: 'report-bad-reason',
-    phase: 'report',
-    instruction: '理由を選んでみましょう',
-    target: null,
-    waitFor: 'tap-target',
-  },
-  {
-    id: 'report-bad-done',
-    phase: 'report',
-    instruction: 'あなたの足跡がライダー全員に届きます\n次に来る仲間が助かります！',
-    target: 'feed-notification',
-    waitFor: 'tap-anywhere',
   },
 
   // ── Scene: 新規登録 ───────────────────────────────
@@ -202,13 +110,6 @@ export const STEPS: StepDef[] = [
     instruction: '📸をタップで登録できます',
     target: 'camera-button',
     waitFor: 'tap-target',
-  },
-  {
-    id: 'register-done',
-    phase: 'register',
-    instruction: '写真を撮るだけで登録完了です！\nとても簡単ですよね',
-    target: null,
-    waitFor: 'tap-anywhere',
   },
 
   // ── Phase: Complete ───────────────────────────────

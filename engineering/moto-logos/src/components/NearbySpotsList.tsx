@@ -214,9 +214,6 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
             style={styles.searchBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (tutorial.isStep('explore-search')) {
-                tutorial.advanceTutorial(); // → explore-search-done
-              }
               onSearchPress?.();
             }}
             activeOpacity={0.7}

@@ -9,7 +9,7 @@
  *
  * ターゲットがない場合: 全面タップで次へ進む
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,13 @@ export function TutorialGuide() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
   const prevStepRef = useRef(stepIndex);
+
+  // ── Android edge-to-edge 座標補正 ────────────────────
+  // measureInWindow はスクリーン絶対座標を返すが、
+  // absoluteFillObject のコンテナ原点がステータスバー分ズレる場合がある。
+  // コンテナ自身の原点を測定して差し引く。
+  const spotlightRef = useRef<View>(null);
+  const originRef = useRef({ x: 0, y: 0 });
 
   // ステップ切替: フェードアウト → フェードイン
   useEffect(() => {
@@ -69,13 +76,37 @@ export function TutorialGuide() {
     }
   }, [active, stepIndex, phase]);
 
+  // ── ターゲット到着待ち ─────────────────────────────
+  // ステップ削減でUI表示とスポットライトが同時になるケースがある。
+  // ターゲットが定義されているが未測定の場合、200ms間隔で再チェック。
+  const [, forceRender] = useState(0);
+
+  const measureOrigin = useCallback(() => {
+    spotlightRef.current?.measureInWindow((x, y) => {
+      if (originRef.current.x !== x || originRef.current.y !== y) {
+        originRef.current = { x, y };
+        forceRender(v => v + 1);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!active || !currentStep.target) return;
+    const found = getTarget(currentStep.target);
+    if (found) return;
+    const timer = setInterval(() => {
+      if (getTarget(currentStep.target!)) {
+        clearInterval(timer);
+        forceRender(v => v + 1);
+      }
+    }, 200);
+    return () => clearInterval(timer);
+  }, [active, stepIndex, currentStep.target, getTarget]);
+
   // セットアップと完了フェーズはTutorialOverlayが処理する
   if (!active || phase === 'setup' || phase === 'complete') return null;
   // auto ステップは何も表示しない（タイマーで自動遷移）
   if (currentStep.waitFor === 'auto') return null;
-  // ありがとう画面（写真/OK選択）: オーバーレイなし
-  if (currentStep.id === 'report-good-thanks') return null;
-
   const target = currentStep.target ? getTarget(currentStep.target) : null;
 
   const handleBackdropPress = () => {
@@ -105,15 +136,17 @@ export function TutorialGuide() {
 
   // ── tap-target でターゲット未取得（定義なし or 測定未完了）: 完全タッチ貫通
   //    pointerEvents="none" で全タッチを下のUIに通す。コンポーネント側がadvance
+  //    Animated.View を使わない: useNativeDriver でシーン→通常ステップ遷移時に
+  //    fadeAnim の JS 値が 0 のまま残りオーバーレイが見えなくなる問題を回避
   if (!target && currentStep.waitFor === 'tap-target') {
     return (
-      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none">
+      <View style={styles.fullOverlayLight} pointerEvents="none">
         {currentStep.instruction ? (
           <View style={styles.floatingCard}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           </View>
         ) : null}
-      </Animated.View>
+      </View>
     );
   }
 
@@ -137,9 +170,12 @@ export function TutorialGuide() {
   }
 
   // ターゲットあり: スポットライト（4つの暗幕 + 穴）
+  // コンテナ原点を差し引いて座標を補正（Android edge-to-edge対応）
+  const ox = originRef.current.x;
+  const oy = originRef.current.y;
   const hole = {
-    x: target.x - PADDING,
-    y: target.y - PADDING,
+    x: target.x - PADDING - ox,
+    y: target.y - PADDING - oy,
     w: target.w + PADDING * 2,
     h: target.h + PADDING * 2,
     borderRadius: (target.borderRadius ?? 0) + PADDING / 2,
@@ -162,7 +198,12 @@ export function TutorialGuide() {
     : Math.max(hole.y + hole.h + GAP, Math.min(belowCenter, SCREEN_H - SAFE_BOTTOM - CARD_HEIGHT_EST));
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]} pointerEvents="box-none">
+    <Animated.View
+      ref={spotlightRef}
+      style={[styles.container, { opacity: fadeAnim }]}
+      pointerEvents="box-none"
+      onLayout={measureOrigin}
+    >
       {/* ── 4つの暗幕矩形 ──────────────────────────── */}
 
       {/* 上 */}
@@ -204,10 +245,12 @@ export function TutorialGuide() {
       />
 
       {/* ── 指示テキスト ─────────────────────────────── */}
+      {/* fadeAnim を使用: ターゲット到着ポーリング後にビューが切り替わるため
+          contentAnim のネイティブドライバー値が伝播しないケースを回避 */}
       {currentStep.instruction ? (
-        <Animated.View style={[
+        <View style={[
           styles.instructionCard,
-          { top: instructionTop, opacity: contentAnim },
+          { top: instructionTop },
         ]}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
@@ -216,7 +259,7 @@ export function TutorialGuide() {
               <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
             </View>
           )}
-        </Animated.View>
+        </View>
       ) : null}
     </Animated.View>
   );

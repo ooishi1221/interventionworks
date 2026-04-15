@@ -132,9 +132,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
   const tutorial = useTutorial();
   const navBtnRef = useRef<View>(null);
   const sheetRef = useRef<View>(null);
-  const badgeRowRef = useRef<View>(null);
-  const freshnessRef = useRef<View>(null);
-  const reviewsRef = useRef<View>(null);
 
   // チュートリアル: ターゲット位置登録
   useEffect(() => {
@@ -146,40 +143,10 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
       sheetRef.current?.measureInWindow((x, y, w, h) => {
         if (w > 0) tutorial.registerTarget('detail-sheet', { x, y, w, h, borderRadius: 20 });
       });
-      badgeRowRef.current?.measureInWindow((x, y, w, h) => {
-        if (w > 0) tutorial.registerTarget('detail-badges', { x, y, w, h, borderRadius: 8 });
-      });
-      freshnessRef.current?.measureInWindow((x, y, w, h) => {
-        if (w > 0) tutorial.registerTarget('detail-freshness', { x, y, w, h, borderRadius: 10 });
-      });
-      reviewsRef.current?.measureInWindow((x, y, w, h) => {
-        if (w > 0) tutorial.registerTarget('detail-reviews', { x, y, w, h, borderRadius: 12 });
-      });
     };
     setTimeout(measure, 400);
     setTimeout(measure, 900);
   }, [tutorial.active, tutorial.stepIndex]);
-
-  // チュートリアル: バッジ行/鮮度/口コミのピカピカ
-  const badgeGlow = useRef(new Animated.Value(0)).current;
-  const badgeGlowRef = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    const shouldGlow = tutorial.isStep('explore-detail-badges') || tutorial.isStep('explore-detail-freshness') || tutorial.isStep('explore-detail-reviews');
-    if (shouldGlow) {
-      badgeGlow.setValue(0);
-      badgeGlowRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(badgeGlow, { toValue: 1, duration: 500, useNativeDriver: false }),
-          Animated.timing(badgeGlow, { toValue: 0, duration: 500, useNativeDriver: false }),
-        ])
-      );
-      badgeGlowRef.current.start();
-    } else {
-      badgeGlowRef.current?.stop();
-      badgeGlow.setValue(0);
-    }
-  }, [tutorial.stepIndex]);
 
   // 下スワイプで閉じるアニメーション
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
@@ -612,27 +579,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
             </View>
 
             {/* バッジ */}
-            <View ref={badgeRowRef} style={styles.badgeRow}>
-              {tutorial.isStep('explore-detail-badges') && (
-                <Animated.View
-                  style={{
-                    ...StyleSheet.absoluteFillObject,
-                    borderRadius: 8,
-                    borderWidth: 3,
-                    borderColor: badgeGlow.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
-                    }),
-                    shadowColor: '#FF9F0A',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowRadius: 16,
-                    shadowOpacity: badgeGlow,
-                    zIndex: 10,
-                    margin: -4,
-                  }}
-                  pointerEvents="none"
-                />
-              )}
+            <View style={styles.badgeRow}>
               {spot.source === 'user' && (
                 <View style={[styles.badge, { backgroundColor: C.purple }]}>
                   <Text style={styles.badgeText}>ユーザー登録</Text>
@@ -666,29 +613,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
                   <Text style={styles.badgeText}>今{spot.currentParked}台が駐車中</Text>
                 </View>
               )}
-              <View ref={freshnessRef} style={{ position: 'relative' }}>
-                {tutorial.isStep('explore-detail-freshness') && (
-                  <Animated.View
-                    style={{
-                      ...StyleSheet.absoluteFillObject,
-                      borderRadius: 10,
-                      borderWidth: 3,
-                      borderColor: badgeGlow.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
-                      }),
-                      shadowColor: '#FF9F0A',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowRadius: 16,
-                      shadowOpacity: badgeGlow,
-                      zIndex: 10,
-                      margin: -4,
-                    }}
-                    pointerEvents="none"
-                  />
-                )}
-                <TemperatureBadge spot={spot} />
-              </View>
+              <TemperatureBadge spot={spot} />
             </View>
 
             {/* 温度テキスト（足跡の鮮度） */}
@@ -741,27 +666,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
             {reportsLoading ? (
               <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} />
             ) : reports.length > 0 ? (
-              <View ref={reviewsRef} style={[styles.reportsSection, { position: 'relative' }]}>
-                {tutorial.isStep('explore-detail-reviews') && (
-                  <Animated.View
-                    style={{
-                      ...StyleSheet.absoluteFillObject,
-                      borderRadius: 12,
-                      borderWidth: 3,
-                      borderColor: badgeGlow.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['rgba(255,159,10,0.2)', 'rgba(255,159,10,1)'],
-                      }),
-                      shadowColor: '#FF9F0A',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowRadius: 16,
-                      shadowOpacity: badgeGlow,
-                      zIndex: 10,
-                      margin: -4,
-                    }}
-                    pointerEvents="none"
-                  />
-                )}
+              <View style={styles.reportsSection}>
                 <Text style={styles.sectionLabel}>みんなの足跡</Text>
                 {reports.map((r) => (
                   <ReportCard key={r.firestoreId ?? String(r.id)} report={r} onPhotoTap={setFullPhoto} />

@@ -107,8 +107,8 @@ export function ProximityContextCard({
     ? { kind: 'nearby', nearest: { spot: tutorial.dummySpot, distanceM: 12 } }
     : proximityState;
 
-  // report-good-done/scene steps: カード非表示
-  const tutorialHideCard = tutorial.isStep('report-good-done') || (tutorial.active && !!tutorial.currentStep.sceneTitle);
+  // scene steps: カード非表示
+  const tutorialHideCard = tutorial.active && !!tutorial.currentStep.sceneTitle;
   const visible = effectiveState.kind !== 'normal' && !tutorialHideCard;
 
   // カード内部状態
@@ -125,17 +125,15 @@ export function ProximityContextCard({
   // チュートリアルステップ変更時にカード状態をリセット
   useEffect(() => {
     if (!tutorial.active) return;
-    if (tutorial.isStep('report-intro') || tutorial.isStep('report-good')) {
-      setPhase('initial');
-    }
-    if (tutorial.isStep('report-bad-intro')) {
+    if (tutorial.isStep('report-good')) {
       setPhase('initial');
     }
   }, [tutorial.stepIndex]);
 
-  // チュートリアル: OKボタンピカピカ
+  // チュートリアル: ボタンピカピカ（report-good: 停めたボタン / photo: OKボタン）
+  const shouldGlow = tutorial.active && (phase === 'photo' || tutorial.isStep('report-good'));
   useEffect(() => {
-    if (tutorial.active && phase === 'photo') {
+    if (shouldGlow) {
       okGlowAnim.setValue(0);
       okGlowRef.current = Animated.loop(
         Animated.sequence([
@@ -147,7 +145,7 @@ export function ProximityContextCard({
     } else {
       okGlowRef.current?.stop();
     }
-  }, [tutorial.active, phase]);
+  }, [shouldGlow]);
 
   // チュートリアル: ターゲット位置登録（onLayout + 繰り返しリトライ）
   const measureTargets = useCallback(() => {
@@ -205,9 +203,7 @@ export function ProximityContextCard({
     // チュートリアル中: Firestore書き込みなしでadvance
     if (tutorial.isStep('report-good')) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('thanks');
-      tutorial.advanceTutorial(); // report-good → report-good-thanks
-      setTimeout(() => tutorial.advanceTutorial(), 100); // → report-good-done（写真ステップをスキップ）
+      tutorial.advanceTutorial(); // report-good → scene-register
       return;
     }
     if (!nearbySpot || submitting) return;
@@ -258,13 +254,6 @@ export function ProximityContextCard({
 
   // ── 看板メモ（カメラ撮影） ────────────────────────────
   const handleSnapPhoto = useCallback(async () => {
-    // チュートリアル: ダミー画像で投稿完了演出
-    if (tutorial.isStep('report-good-thanks')) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('thanks');
-      tutorial.advanceTutorial(); // → report-good-done
-      return;
-    }
     try {
       const uri = await pickPhotoFromCamera();
       if (uri) {
@@ -281,13 +270,6 @@ export function ProximityContextCard({
 
   // ── 看板メモ（アルバムから選択） ──────────────────────
   const handlePickFromAlbum = useCallback(async () => {
-    // チュートリアル: ダミー画像で投稿完了演出
-    if (tutorial.isStep('report-good-thanks')) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('thanks');
-      tutorial.advanceTutorial(); // → report-good-done
-      return;
-    }
     try {
       const uri = await pickPhotoFromLibrary();
       if (uri) {
@@ -312,8 +294,7 @@ export function ProximityContextCard({
   // ── 写真スキップ → 足跡完了 ──────────────────────────
   const skipPhoto = useCallback(() => {
     setPhase('thanks');
-    if (tutorial.isStep('report-good-thanks')) tutorial.advanceTutorial();
-  }, [tutorial]);
+  }, []);
 
   // ── thanks消滅 ────────────────────────────────────────
   const dismissThanks = useCallback(() => {
@@ -324,20 +305,10 @@ export function ProximityContextCard({
   const handleBad = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhase('corrections');
-    if (tutorial.isStep('report-bad-intro')) {
-      tutorial.advanceTutorial(); // → report-bad-reason
-    }
-  }, [tutorial]);
+  }, []);
 
   // ── 報告: 理由選択後に送信 ─────────────────────────
   const submitCorrection = useCallback(async (correction: CorrectionType) => {
-    // チュートリアル中: ダミー
-    if (tutorial.isStep('report-bad-reason')) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPhase('initial');
-      tutorial.advanceTutorial(); // → report-bad-done
-      return;
-    }
     if (!nearbySpot || submitting) return;
     const spotId = nearbySpot.spot.id;
 
@@ -438,7 +409,7 @@ export function ProximityContextCard({
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 ref={goodBtnRef}
-                style={[styles.actionBtn, styles.goodBtn]}
+                style={[styles.actionBtn, styles.goodBtn, { position: 'relative', overflow: 'visible' }]}
                 onPress={handleGood}
                 activeOpacity={0.8}
                 disabled={submitting}
@@ -446,6 +417,25 @@ export function ProximityContextCard({
                 accessibilityRole="button"
                 accessibilityHint="ここに駐車できたことを記録します"
               >
+                {tutorial.isStep('report-good') && (
+                  <Animated.View
+                    style={{
+                      ...StyleSheet.absoluteFillObject,
+                      borderRadius: 14,
+                      borderWidth: 3,
+                      borderColor: okGlowAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['rgba(255,159,10,0.3)', 'rgba(255,159,10,1)'],
+                      }),
+                      shadowColor: '#FF9F0A',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowRadius: 16,
+                      shadowOpacity: okGlowAnim,
+                      margin: -4,
+                    }}
+                    pointerEvents="none"
+                  />
+                )}
                 <Ionicons name="thumbs-up" size={22} color="#fff" />
                 <Text style={styles.actionText}>停めた</Text>
               </TouchableOpacity>
