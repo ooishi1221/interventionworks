@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { adminAuth } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
-import { COLLECTIONS, type UserResponse, type AdminRole, type BanStatus, type UserRank } from '@/lib/types';
+import { COLLECTIONS, type UserResponse, type AdminRole, type BanStatus } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const q = searchParams.get('q')?.trim().toLowerCase() || '';
     const banStatusFilter = searchParams.get('banStatus') as BanStatus | null;
-    const rankFilter = searchParams.get('rank') as UserRank | null;
 
     let query: FirebaseFirestore.Query = adminDb
       .collection(COLLECTIONS.USERS)
@@ -24,10 +23,6 @@ export async function GET(request: NextRequest) {
     if (banStatusFilter && ['active', 'suspended', 'banned'].includes(banStatusFilter)) {
       query = query.where('banStatus', '==', banStatusFilter);
     }
-    if (rankFilter && ['novice', 'rider', 'patrol'].includes(rankFilter)) {
-      query = query.where('rank', '==', rankFilter);
-    }
-
     if (cursor) {
       const cursorDoc = await adminDb.collection(COLLECTIONS.USERS).doc(cursor).get();
       if (cursorDoc.exists) {
@@ -58,11 +53,7 @@ export async function GET(request: NextRequest) {
       const allQuery = adminDb
         .collection(COLLECTIONS.USERS)
         .orderBy('createdAt', 'desc');
-      const rankQuery = rankFilter
-        ? allQuery.where('rank', '==', rankFilter)
-        : allQuery;
-
-      let activeQuery = rankQuery;
+      let activeQuery = allQuery;
       if (cursor) {
         const cursorDoc = await adminDb.collection(COLLECTIONS.USERS).doc(cursor).get();
         if (cursorDoc.exists) {
@@ -91,8 +82,6 @@ export async function GET(request: NextRequest) {
       const user: UserResponse = {
         id: doc.id,
         displayName: data.displayName,
-        trustScore: data.trustScore,
-        rank: data.rank,
         createdAt: data.createdAt?.toDate().toISOString() || '',
         updatedAt: data.updatedAt?.toDate().toISOString() || '',
       };

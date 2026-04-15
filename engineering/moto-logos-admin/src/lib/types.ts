@@ -9,7 +9,6 @@
 
 export type SpotStatus = 'active' | 'pending' | 'closed';
 export type VerificationLevel = 'official' | 'trusted' | 'community';
-export type UserRank = 'novice' | 'rider' | 'patrol';
 export type ValidationType = 'good' | 'bad';
 export type AdminRole = 'super_admin' | 'moderator' | 'viewer';
 export type ReportReason = 'spam' | 'inappropriate' | 'misleading' | 'other';
@@ -63,8 +62,6 @@ export type BanStatus = 'active' | 'suspended' | 'banned';
 
 export interface FirestoreUser {
   displayName: string;
-  trustScore: number;
-  rank: UserRank;
   photoUrl?: string;
   banStatus?: BanStatus;
   banReason?: string;
@@ -174,8 +171,6 @@ export interface SpotResponse {
 export interface UserResponse {
   id: string;
   displayName: string;
-  trustScore: number;
-  rank: UserRank;
   banStatus?: BanStatus;
   banReason?: string;
   bannedAt?: string;
@@ -240,8 +235,8 @@ export interface KpiStats {
   /** リテンション率 (%) */
   retention: { d1: number; d7: number; d30: number };
 
-  /** 日次新規スポット投稿率: 本日の新規スポット数 / DAU (%) */
-  postingRate: number;
+  /** 日次足跡率: 本日の新規スポット数 / DAU (%) */
+  footprintRate: number;
 
   /** 日次検証率: 本日の Good/Bad 投票数 / DAU (%) */
   verificationRate: number;
@@ -249,8 +244,8 @@ export interface KpiStats {
   /** スポット鮮度分布 */
   freshness: { fresh: number; stale: number; critical: number };
 
-  /** ランク分布 */
-  rankDistribution: { novice: number; rider: number; patrol: number };
+  /** 駐車温度分布 */
+  temperatureDistribution: { blazing: number; hot: number; warm: number; cool: number; cold: number };
 
   /** モデレーション平均処理日数 */
   moderationAvgDays: number;

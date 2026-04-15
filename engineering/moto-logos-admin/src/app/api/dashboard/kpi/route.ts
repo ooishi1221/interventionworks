@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/auth';
-import { COLLECTIONS, type KpiStats, type UserRank } from '@/lib/types';
+import { COLLECTIONS, type KpiStats } from '@/lib/types';
 
 function daysAgo(n: number): string {
   const d = new Date();
@@ -66,7 +66,6 @@ export async function GET() {
       spotsSnap,
       todaySpotsSnap,
       todayValidationsSnap,
-      usersSnap,
       moderationSnap,
     ] = await Promise.all([
       // 1. 過去30日間のアクティビティ
@@ -78,7 +77,7 @@ export async function GET() {
       // 2. 全スポット（freshness + geographic）
       adminDb.collection(COLLECTIONS.SPOTS).get(),
 
-      // 3. 今日作成されたスポット（postingRate）
+      // 3. 今日作成されたスポット（footprintRate）
       adminDb
         .collection(COLLECTIONS.SPOTS)
         .where('createdAt', '>=', todayStart)
@@ -92,10 +91,7 @@ export async function GET() {
         .where('createdAt', '<=', todayEnd)
         .get(),
 
-      // 5. 全ユーザー（rankDistribution）
-      adminDb.collection(COLLECTIONS.USERS).get(),
-
-      // 6. モデレーションログ: spot.update アクション
+      // 5. モデレーションログ: spot.update アクション
       adminDb
         .collection(COLLECTIONS.MODERATION_LOGS)
         .where('action', '==', 'spot.update')
@@ -190,7 +186,7 @@ export async function GET() {
     // 3. Posting Rate
     // ─────────────────────────────────────────────────
     const todaySpotsCount = todaySpotsSnap.size;
-    const postingRate = dau > 0
+    const footprintRate = dau > 0
       ? Math.round((todaySpotsCount / dau) * 10000) / 100
       : 0;
 
@@ -235,17 +231,32 @@ export async function GET() {
     }
 
     // ─────────────────────────────────────────────────
-    // 6. Rank Distribution
+    // 6. Temperature Distribution (from currentParkedAt)
     // ─────────────────────────────────────────────────
-    const rankDistribution = { novice: 0, rider: 0, patrol: 0 };
-    for (const doc of usersSnap.docs) {
-      const rank = doc.data().rank as UserRank | undefined;
-      if (rank && rank in rankDistribution) {
-        rankDistribution[rank]++;
-      } else {
-        // Default to novice if rank is missing
-        rankDistribution.novice++;
+    const temperatureDistribution = { blazing: 0, hot: 0, warm: 0, cool: 0, cold: 0 };
+    const TEMP_THRESHOLDS = [
+      { temp: 'blazing' as const, maxMs: 30 * 60 * 1000 },       // 30分以内
+      { temp: 'hot' as const, maxMs: 2 * 60 * 60 * 1000 },       // 2時間以内
+      { temp: 'warm' as const, maxMs: 6 * 60 * 60 * 1000 },      // 6時間以内
+      { temp: 'cool' as const, maxMs: 24 * 60 * 60 * 1000 },     // 24時間以内
+    ];
+    for (const doc of spotsSnap.docs) {
+      const data = doc.data();
+      const parkedAt = tsToDate(data.currentParkedAt);
+      if (!parkedAt) {
+        temperatureDistribution.cold++;
+        continue;
       }
+      const ageMs = now.getTime() - parkedAt.getTime();
+      let assigned = false;
+      for (const t of TEMP_THRESHOLDS) {
+        if (ageMs < t.maxMs) {
+          temperatureDistribution[t.temp]++;
+          assigned = true;
+          break;
+        }
+      }
+      if (!assigned) temperatureDistribution.cold++;
     }
 
     // ─────────────────────────────────────────────────
@@ -320,10 +331,10 @@ export async function GET() {
       dailyTrend,
       stickiness,
       retention: { d1, d7, d30 },
-      postingRate,
+      footprintRate,
       verificationRate,
       freshness: { fresh, stale, critical },
-      rankDistribution,
+      temperatureDistribution,
       moderationAvgDays,
       topAreas,
       reviewRate,

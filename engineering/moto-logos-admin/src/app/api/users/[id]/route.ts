@@ -22,8 +22,6 @@ export async function GET(
     const response: Record<string, unknown> = {
       id: doc.id,
       displayName: data.displayName,
-      trustScore: data.trustScore,
-      rank: data.rank,
       photoUrl: data.photoUrl || null,
       createdAt: data.createdAt?.toDate().toISOString() || '',
       updatedAt: data.updatedAt?.toDate().toISOString() || '',
@@ -53,7 +51,7 @@ export async function PATCH(
     const { id } = await context.params;
     const updates = await request.json();
 
-    const allowedFields = ['trustScore', 'rank'];
+    const allowedFields = ['displayName'];
     const filtered: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (key in updates) filtered[key] = updates[key];

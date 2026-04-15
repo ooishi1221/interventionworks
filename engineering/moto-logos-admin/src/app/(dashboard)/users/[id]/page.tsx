@@ -3,13 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import type { UserRank, BanStatus } from '@/lib/types';
+import type { BanStatus } from '@/lib/types';
 
 interface UserDetail {
   id: string;
   displayName: string;
-  trustScore: number;
-  rank: UserRank;
   photoUrl?: string | null;
   banStatus?: BanStatus;
   banReason?: string;
@@ -35,12 +33,6 @@ interface ReviewItem {
   createdAt: string;
 }
 
-const RANK_BADGE: Record<UserRank, { label: string; className: string }> = {
-  novice: { label: 'Novice', className: 'bg-text-secondary/20 text-text-secondary' },
-  rider: { label: 'Rider', className: 'bg-fresh-blue/20 text-fresh-blue' },
-  patrol: { label: 'Patrol', className: 'bg-accent/20 text-accent' },
-};
-
 const BAN_STATUS_BADGE: Record<string, { label: string; className: string }> = {
   active: { label: '正常', className: 'bg-success/20 text-success' },
   suspended: { label: '一時停止', className: 'bg-fresh-yellow/20 text-fresh-yellow' },
@@ -64,11 +56,6 @@ export default function UserDetailPage() {
   const [banReason, setBanReason] = useState('');
   const [banDuration, setBanDuration] = useState('');
   const [processing, setProcessing] = useState(false);
-
-  // trustScore / rank 編集
-  const [editingScore, setEditingScore] = useState(false);
-  const [scoreInput, setScoreInput] = useState('');
-  const [editingRank, setEditingRank] = useState(false);
 
   // 通知モーダル
   const [showNotifyModal, setShowNotifyModal] = useState(false);
@@ -207,27 +194,6 @@ export default function UserDetailPage() {
     }
   };
 
-  const handleUpdateField = async (field: 'trustScore' | 'rank', value: number | string) => {
-    setProcessing(true);
-    try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value, reason: `管理者による${field}手動調整` }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || 'エラーが発生しました');
-        return;
-      }
-      setUserDetail((prev) => (prev ? { ...prev, [field]: value } : prev));
-      setEditingScore(false);
-      setEditingRank(false);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   const handleUnban = async () => {
     if (!confirm('このユーザーのBANを解除しますか？')) return;
     setProcessing(true);
@@ -270,7 +236,6 @@ export default function UserDetailPage() {
   }
 
   const banBadge = BAN_STATUS_BADGE[userDetail.banStatus || 'active'] || BAN_STATUS_BADGE.active;
-  const rankBadge = RANK_BADGE[userDetail.rank];
   const isBanned = userDetail.banStatus === 'suspended' || userDetail.banStatus === 'banned';
 
   return (
@@ -339,64 +304,7 @@ export default function UserDetailPage() {
         </div>
 
         {/* ステータス情報 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          {/* ランク（クリックで編集） */}
-          <div className="bg-card rounded-lg p-3">
-            <p className="text-xs text-text-secondary mb-1">ランク</p>
-            {editingRank && canEdit ? (
-              <select
-                value={userDetail.rank}
-                onChange={(e) => handleUpdateField('rank', e.target.value)}
-                disabled={processing}
-                className="w-full px-2 py-1 bg-surface border border-border rounded text-xs text-foreground"
-                autoFocus
-                onBlur={() => setEditingRank(false)}
-              >
-                <option value="novice">Novice</option>
-                <option value="rider">Rider</option>
-                <option value="patrol">Patrol</option>
-              </select>
-            ) : (
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${rankBadge.className} ${canEdit ? 'cursor-pointer hover:opacity-70' : ''}`}
-                onClick={() => canEdit && setEditingRank(true)}
-              >
-                {rankBadge.label}
-              </span>
-            )}
-          </div>
-          {/* 信頼スコア（クリックで編集） */}
-          <div className="bg-card rounded-lg p-3">
-            <p className="text-xs text-text-secondary mb-1">信頼スコア</p>
-            {editingScore && canEdit ? (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const val = parseInt(scoreInput);
-                if (!isNaN(val)) handleUpdateField('trustScore', val);
-              }}>
-                <input
-                  type="number"
-                  value={scoreInput}
-                  onChange={(e) => setScoreInput(e.target.value)}
-                  className="w-full px-2 py-1 bg-surface border border-border rounded text-sm text-foreground font-bold"
-                  autoFocus
-                  onBlur={() => setEditingScore(false)}
-                />
-              </form>
-            ) : (
-              <p
-                className={`text-lg font-bold font-[family-name:var(--font-inter)] ${canEdit ? 'cursor-pointer hover:opacity-70' : ''}`}
-                onClick={() => {
-                  if (canEdit) {
-                    setScoreInput(String(userDetail.trustScore));
-                    setEditingScore(true);
-                  }
-                }}
-              >
-                {userDetail.trustScore}
-              </p>
-            )}
-          </div>
+        <div className="grid grid-cols-2 gap-4 mt-6">
           <div className="bg-card rounded-lg p-3">
             <p className="text-xs text-text-secondary mb-1">BANステータス</p>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${banBadge.className}`}>

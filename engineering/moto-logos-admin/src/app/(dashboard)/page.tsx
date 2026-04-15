@@ -222,7 +222,7 @@ export default function DashboardPage() {
           value={kpi?.stickiness}
           colorClass={kpi?.stickiness != null ? stickinessColor(kpi.stickiness) : undefined}
         />
-        <PercentCard label="投稿率" value={kpi?.postingRate} />
+        <PercentCard label="足跡率" value={kpi?.footprintRate} />
         <PercentCard label="検証率" value={kpi?.verificationRate} />
         <PercentCard label="レビュー投稿率" value={kpi?.reviewRate} />
         <PercentCard label="写真添付率" value={kpi?.photoAttachRate} />
@@ -261,12 +261,14 @@ export default function DashboardPage() {
           />
         </div>
         <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-sm text-text-secondary mb-4">ランク分布</h3>
+          <h3 className="text-sm text-text-secondary mb-4">駐車温度分布</h3>
           <StackedBar
             segments={[
-              { label: 'ノービス', value: kpi?.rankDistribution?.novice ?? 0, color: '#6B7280' },
-              { label: 'ライダー', value: kpi?.rankDistribution?.rider ?? 0, color: 'var(--accent)' },
-              { label: 'パトロール', value: kpi?.rankDistribution?.patrol ?? 0, color: 'var(--success)' },
+              { label: '激アツ', value: kpi?.temperatureDistribution?.blazing ?? 0, color: '#FF3B30' },
+              { label: 'ホット', value: kpi?.temperatureDistribution?.hot ?? 0, color: '#FF6B00' },
+              { label: 'ウォーム', value: kpi?.temperatureDistribution?.warm ?? 0, color: '#FF9F0A' },
+              { label: 'クール', value: kpi?.temperatureDistribution?.cool ?? 0, color: '#64D2FF' },
+              { label: 'コールド', value: kpi?.temperatureDistribution?.cold ?? 0, color: '#48484A' },
             ]}
           />
         </div>

@@ -61,8 +61,6 @@ export async function POST(
     return NextResponse.json({
       id: updated.id,
       displayName: updatedData.displayName,
-      trustScore: updatedData.trustScore,
-      rank: updatedData.rank,
       banStatus: 'active',
       createdAt: updatedData.createdAt?.toDate().toISOString() || '',
       updatedAt: updatedData.updatedAt?.toDate().toISOString() || '',
