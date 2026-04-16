@@ -1,39 +1,56 @@
+import IPhoneFrame from './IPhoneFrame'
+
 export default function CoreValues() {
   const values = [
     {
-      icon: '👣',
-      title: '足跡を残す',
-      headline: '停めたら、メモる。それだけでいい。',
-      body: 'グローブしたまま、写真1枚。住所は自動。あなたが停めた場所が、地図にそっと刻まれる。報告じゃない。自分のメモだ。',
+      num: '01',
+      label: 'FOOTPRINT',
+      headline: '停めたらメモる。それだけでいい。',
+      body: 'グローブしたまま写真1枚。住所は自動。停めた場所が地図にそっと刻まれる。報告じゃない。自分のメモだ。',
+      screenshot: '/images/ss-detail.png',
+      alt: 'スポット詳細画面',
     },
     {
-      icon: '🔥',
-      title: '仲間の気配',
-      headline: '誰かが、さっきここにいた。',
-      body: 'ライダーが停めた場所は、ピンが赤く脈打つ。時間が経てば冷めていく。温かいピンは「最近、ここに仲間がいた」という証。見えない誰かの体温が、この地図には残っている。',
+      num: '02',
+      label: 'WARMTH',
+      headline: '誰かがさっきここにいた。',
+      body: 'ライダーが停めた場所はピンが赤く脈打つ。時間が経てば冷めていく。温かいピンは「最近ここに仲間がいた」という証。見えない誰かの体温がこの地図には残っている。',
+      screenshot: '/images/ss-map.png',
+      alt: 'マップ画面',
     },
     {
-      icon: '🔄',
-      title: '自分のためが、誰かのために',
-      headline: '自分のメモが、誰かの安心になる。',
-      body: '「自分が次に来るときのために」残したメモが、知らない誰かを救っている。貢献しようなんて思わなくていい。ただ自分のために残すだけで、それが利他になる。',
+      num: '03',
+      label: 'ALTRUISM',
+      headline: '自分のメモが誰かの安心になる。',
+      body: '「次に来るときのために」残したメモが知らない誰かを救っている。貢献しようなんて思わなくていい。ただ自分のために残すだけで それが利他になる。',
+      screenshot: '/images/ss-report.png',
+      alt: '記録画面',
     },
   ]
 
   return (
-    <section className="section values-section">
+    <section className="section core-values-alt">
       <div className="container">
-        <h2 className="section-title">
-          評価も、ランクも、競争もない。<br />
+        <h2 className="section-title reveal">
+          評価もランクも競争もない。<br />
           あるのは<span className="accent">足跡</span>だけ。
         </h2>
-        <div className="values-grid">
+        <div className="cv-list">
           {values.map((v, i) => (
-            <div className="value-card" key={i}>
-              <div className="value-card-icon">{v.icon}</div>
-              <div className="value-card-label">{v.title}</div>
-              <h3>{v.headline}</h3>
-              <p>{v.body}</p>
+            <div
+              className={`cv-row reveal ${i % 2 === 1 ? 'cv-row-reverse' : ''}`}
+              key={i}
+              style={{ transitionDelay: `${i * 0.1}s` }}
+            >
+              <div className="cv-phone">
+                <IPhoneFrame src={v.screenshot} alt={v.alt} />
+              </div>
+              <div className="cv-text">
+                <span className="cv-num">{v.num}</span>
+                <span className="cv-label">{v.label}</span>
+                <h3>{v.headline}</h3>
+                <p>{v.body}</p>
+              </div>
             </div>
           ))}
         </div>
