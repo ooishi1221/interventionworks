@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Asset } from 'expo-asset';
@@ -131,7 +131,7 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
       {/* ヘッダー */}
       <View style={s.header}>
         {onBack && (
@@ -231,12 +231,12 @@ export function LegalScreen({ onAccept, onBack, mode, initialDoc }: Props) {
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

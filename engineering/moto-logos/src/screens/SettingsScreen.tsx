@@ -6,7 +6,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   Switch,
@@ -131,7 +130,7 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
   const version = Constants.expoConfig?.version || '1.0.0';
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
       <View style={s.header}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} style={s.backBtn}>
@@ -290,12 +289,12 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
           © OpenStreetMap contributors (ODbL)
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   backBtn: { width: 32 },
   headerTitle: { color: C.text, fontSize: 18, fontWeight: '700' },

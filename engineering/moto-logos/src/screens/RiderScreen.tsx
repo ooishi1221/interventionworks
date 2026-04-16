@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   TouchableOpacity,
@@ -19,6 +18,7 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
+import Constants from 'expo-constants';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -194,7 +194,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   })();
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View style={s.safe}>
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
@@ -381,7 +381,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
         onClose={() => { setSpotsModalOpen(false); loadData(); onDataChanged?.(); }}
         onGoToSpot={onGoToSpot}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -450,7 +450,7 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
+  safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   content: { paddingBottom: 20 },
 
   // ── Hero Card ──

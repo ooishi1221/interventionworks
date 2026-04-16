@@ -7,7 +7,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Alert,
@@ -15,6 +14,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
@@ -68,7 +68,7 @@ export function InquiryScreen({ onBack }: Props) {
 
   if (sent) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
         <View style={s.sentView}>
           <Ionicons name="checkmark-circle" size={64} color={C.green} />
           <Text style={s.sentTitle}>送信完了</Text>
@@ -77,12 +77,12 @@ export function InquiryScreen({ onBack }: Props) {
             <Text style={s.sentBtnText}>戻る</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color={C.text} />
@@ -132,12 +132,12 @@ export function InquiryScreen({ onBack }: Props) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   backBtn: { width: 32 },
   headerTitle: { color: C.text, fontSize: 18, fontWeight: '700' },

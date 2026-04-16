@@ -10,13 +10,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   TextInput,
   Image,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { UserCC, Vehicle } from '../types';
@@ -113,7 +114,7 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View style={s.safe}>
       <View style={s.header}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color={C.text} />
@@ -181,7 +182,7 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
           <FormRow label="カラー" placeholder="例: レッド" value={color} onChangeText={setColor} />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -205,7 +206,7 @@ function FormRow({ label, placeholder, value, onChangeText, keyboardType }: {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
+  safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,

@@ -15,6 +15,7 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { captureError } from '../utils/sentry';
@@ -105,7 +106,7 @@ export function NotificationsScreen({ onBack }: Props) {
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
       <View style={s.header}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} style={s.backBtn}>
@@ -181,12 +182,12 @@ export function NotificationsScreen({ onBack }: Props) {
           </SafeAreaView>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   backBtn: { width: 32 },
   headerTitle: { color: C.text, fontSize: 18, fontWeight: '700' },
