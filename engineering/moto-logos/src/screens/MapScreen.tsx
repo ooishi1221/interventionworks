@@ -767,7 +767,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     if (tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
     }
-    if (tutorial.isStep('explore-close-sheet')) {
+    // report フェーズに入ったらシートを閉じる（近接カードを表示するため）
+    if (tutorial.isStep('scene-report') || tutorial.isStep('report-good')) {
       setSelected(null);
     }
   }, [tutorial.active, tutorial.stepIndex]);

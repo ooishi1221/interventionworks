@@ -33,6 +33,12 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Firebase Admin SDK credentials
+serviceAccount*.json
+
+# Temporary data files
+toyocho_osm.json
+
 # typescript
 *.tsbuildinfo
 
