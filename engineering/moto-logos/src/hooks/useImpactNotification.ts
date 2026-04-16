@@ -1,5 +1,5 @@
 /**
- * useImpactNotification — 「あなたの足跡で○人が助かりました」通知（デジタルヤエー）
+ * useImpactNotification — 「あなたの足跡を○人が見た」通知（デジタルヤエー）
  *
  * フロー:
  *   1. アプリがフォアグラウンドに来るたびに、自分が登録したスポットの合計閲覧数を取得
@@ -63,8 +63,8 @@ export function useImpactNotification(): void {
           // ローカル通知を発火
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: `あなたの足跡で${currentViews}人が助かりました 🤝`,
-              body: '走り続けるあなたの存在が、仲間の道しるべになっています',
+              title: `あなたの足跡を${currentViews}人が見た`,
+              body: '',
               sound: 'default',
               data: { type: 'impact' },
             },

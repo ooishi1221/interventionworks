@@ -110,7 +110,7 @@ export function ProximityContextCard({
 
   // カード内部状態
   const [phase, setPhase] = useState<
-    'initial' | 'photo' | 'corrections' | 'thanks' | 'alternatives'
+    'initial' | 'photo' | 'thanks' | 'alternatives'
     | 'search-choice' | 'welcome-back'
   >('initial');
 
@@ -275,56 +275,17 @@ export function ProximityContextCard({
     setPhase('initial');
   }, []);
 
-  // ── 報告: ダメだった → 理由選択表示 ────────────────
-  const handleBad = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPhase('corrections');
-  }, []);
-
-  // ── 報告: 理由選択後に送信 ─────────────────────────
-  const submitCorrection = useCallback(async (correction: CorrectionType) => {
+  // ── 報告: ダメだった → 即記録 + 「他を探す」表示 ───
+  const handleBad = useCallback(async () => {
     if (!nearbySpot || submitting) return;
-    const spotId = nearbySpot.spot.id;
-
-    let userId = user?.userId;
-    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
-    if (!userId) return;
-
-    setSubmitting(true);
-    try {
-      if (correction === 'full') {
-        await reportSpotFull(spotId);
-      } else if (correction === 'closed') {
-        await reportSpotClosed(spotId);
-      }
-      const bike = await getFirstVehicle();
-      await addReview(spotId, userId, 0, `[${correction}]`, undefined, undefined, bike?.name);
-      await AsyncStorage.setItem(`vote_${spotId}`, correction);
-      await markReported(spotId);
-      logActivityLocal('report', `${nearbySpot.spot.name}で${correction}`);
-      incrementStat('reports');
-      addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, correction);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      onSpotUpdated?.();
-      // 理由送信後 → 「他を探す」リスト表示
-      setPhase('alternatives');
-    } catch (e) {
-      captureError(e, { context: 'proximity_report_bad' });
-    }
-    setSubmitting(false);
-  }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
-
-  // ── 理由スキップ → そのまま「他を探す」へ ──────────
-  const skipCorrection = useCallback(async () => {
-    if (!nearbySpot) { setPhase('alternatives'); return; }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const spotId = nearbySpot.spot.id;
     let userId = user?.userId;
     if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
     if (userId) {
-      // 理由なしでも「停められなかった」事実を記録
       const bike = await getFirstVehicle();
       addReview(spotId, userId, 0, undefined, undefined, undefined, bike?.name).catch((e) =>
-        captureError(e, { context: 'proximity_skip_correction' })
+        captureError(e, { context: 'proximity_report_bad' })
       );
       AsyncStorage.setItem(`vote_${spotId}`, 'unmatched');
       markReported(spotId);
@@ -334,7 +295,25 @@ export function ProximityContextCard({
     }
     onSpotUpdated?.();
     setPhase('alternatives');
-  }, [nearbySpot, user, onSpotUpdated]);
+  }, [nearbySpot, user, submitting, onSpotUpdated]);
+
+  // ── 理由の追加送信（alternatives表示中に「ついでに」選択） ──
+  const submitCorrection = useCallback(async (correction: CorrectionType) => {
+    if (!nearbySpot) return;
+    const spotId = nearbySpot.spot.id;
+    try {
+      if (correction === 'full') {
+        await reportSpotFull(spotId);
+      } else if (correction === 'closed') {
+        await reportSpotClosed(spotId);
+      }
+      // vote を理由で上書き
+      await AsyncStorage.setItem(`vote_${spotId}`, correction);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {
+      captureError(e, { context: 'proximity_correction' });
+    }
+  }, [nearbySpot]);
 
 
 
@@ -429,31 +408,6 @@ export function ProximityContextCard({
                 </Text>
               </TouchableOpacity>
             )}
-          </>
-        )}
-
-        {/* ── ニアバイ: 理由選択（スキップ可） ──────────── */}
-        {effectiveState.kind === 'nearby' && phase === 'corrections' && (
-          <>
-            <Text style={styles.correctionTitle}>何があった？</Text>
-            <View style={styles.correctionGrid}>
-              {CORRECTION_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={styles.correctionChip}
-                  onPress={() => submitCorrection(opt.id)}
-                  activeOpacity={0.7}
-                  disabled={submitting}
-                >
-                  <Ionicons name={opt.icon} size={16} color={C.text} />
-                  <Text style={styles.correctionChipText}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity onPress={() => { skipCorrection(); }} style={styles.skipAltLink}>
-              <Ionicons name="navigate-outline" size={16} color={C.blue} />
-              <Text style={styles.skipAltText}>スキップして近くの別の場所を探す</Text>
-            </TouchableOpacity>
           </>
         )}
 
@@ -634,7 +588,7 @@ export function ProximityContextCard({
           </>
         )}
 
-        {/* ── 「他を探す」候補リスト（共通） ──────────── */}
+        {/* ── 「他を探す」候補リスト + 理由チップ ────────── */}
         {phase === 'alternatives' && (
           <>
             <Text style={styles.altTitle}>近くのスポット</Text>
@@ -655,6 +609,21 @@ export function ProximityContextCard({
                 </TouchableOpacity>
               ))
             )}
+            {/* 理由チップ（ついでに教えてくれたら） */}
+            <Text style={styles.correctionHint}>何があった？（任意）</Text>
+            <View style={styles.correctionGrid}>
+              {CORRECTION_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={styles.correctionChip}
+                  onPress={() => submitCorrection(opt.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={opt.icon} size={16} color={C.sub} />
+                  <Text style={styles.correctionChipText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <TouchableOpacity
               onPress={() => setPhase('initial')}
               style={styles.backLink}
@@ -778,11 +747,11 @@ const styles = StyleSheet.create({
   },
 
   // ── 理由選択 ───────────────────────────────────────
-  correctionTitle: {
-    color: C.text,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
+  correctionHint: {
+    color: C.sub,
+    fontSize: 12,
+    marginTop: 12,
+    marginBottom: 8,
   },
   correctionGrid: {
     flexDirection: 'row',
@@ -811,21 +780,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 14,
-  },
-
-  // ── 理由スキップリンク ────────────────────────────
-  skipAltLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    marginTop: 4,
-  },
-  skipAltText: {
-    color: '#0A84FF',
-    fontSize: 14,
-    fontWeight: '600',
   },
 
   // ── 足跡完了 ──────────────────────────────────────
