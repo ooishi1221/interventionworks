@@ -2,7 +2,7 @@ export default function BetaPerks() {
   const perks = [
     {
       label: 'FIRST FOOTPRINT',
-      headline: '誰よりも早くこの地図に足跡を残せる。',
+      headline: '誰よりも早く地図に足跡を残せる。',
       body: 'まだ足跡はほとんどない。最初の100人のライダーとしてこの地図の最初のページを刻む。',
     },
     {

@@ -22,7 +22,7 @@ export default function CoreValues() {
       num: '03',
       label: 'ALTRUISM',
       headline: '自分のメモが誰かの安心になる。',
-      body: '「次に来るときのために」残したメモが知らない誰かを救っている。貢献しようなんて思わなくていい。ただ自分のために残すだけで それが利他になる。',
+      body: '「次に来るときのために」残したメモが知らない誰かを救っている。貢献しようなんて思わなくていい。自分のために残すだけでいい。',
       screenshot: '/images/ss-report.png',
       alt: '記録画面',
     },
