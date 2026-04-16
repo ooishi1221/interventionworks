@@ -509,19 +509,20 @@ export async function getMyReviewCount(userId: string): Promise<number> {
 // DAU/WAU/MAU — 日次アクティビティ記録
 // ─────────────────────────────────────────────────────
 
-const DEVICE_ID_KEY = 'moto_logos_device_id';
+import { getFirebaseAuth } from './config';
 
-async function getDeviceId(): Promise<string> {
-  let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
-  if (!id) {
-    // crypto.randomUUID 非対応環境フォールバック
-    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-    });
-    await AsyncStorage.setItem(DEVICE_ID_KEY, id);
-  }
-  return id;
+/**
+ * 現在の認証済み userId を返す。
+ * UserContext 経由ではなく直接 auth.uid を取得する内部ヘルパー。
+ * auth 未初期化時は AsyncStorage の deviceId にフォールバック。
+ */
+async function getCurrentUserId(): Promise<string> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return auth.currentUser.uid;
+  // フォールバック: auth 未初期化（起動直後の競合状態）
+  const deviceId = await AsyncStorage.getItem('moto_logos_device_id');
+  if (deviceId) return deviceId;
+  throw new Error('userId が取得できません');
 }
 
 /**
@@ -530,12 +531,12 @@ async function getDeviceId(): Promise<string> {
  */
 export async function logActivity(): Promise<void> {
   try {
-    const deviceId = await getDeviceId();
+    const userId = await getCurrentUserId();
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const docId = `${deviceId}_${today}`;
+    const docId = `${userId}_${today}`;
 
     await setDoc(doc(db, COLLECTIONS.USER_ACTIVITY, docId), {
-      deviceId,
+      userId,
       date: today,
       platform: Platform.OS,
       lastActiveAt: Timestamp.now(),
@@ -555,7 +556,7 @@ export async function logActivity(): Promise<void> {
  * マップデータ（osm_, jmpsa_, real_）は残す。
  */
 export async function purgeTestData(): Promise<{ spots: number; reviews: number }> {
-  const deviceId = await getDeviceId();
+  const userId = await getCurrentUserId();
   let spotCount = 0;
   let reviewCount = 0;
 
@@ -577,7 +578,7 @@ export async function purgeTestData(): Promise<{ spots: number; reviews: number 
   // --- 自分のレビューを削除 ---
   const reviewsQ = query(
     collection(db, COLLECTIONS.REVIEWS),
-    where('userId', '==', deviceId),
+    where('userId', '==', userId),
   );
   const reviewsSnap = await getDocs(reviewsQ);
 

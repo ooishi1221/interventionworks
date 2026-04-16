@@ -18,7 +18,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { UserCC, Vehicle } from '../types';
 import { Colors, Spacing, FontSize } from '../constants/theme';
@@ -26,6 +25,7 @@ import { getFirstVehicle, insertVehicle, updateVehicle } from '../db/database';
 import { syncBikeToFirestore } from '../firebase/firestoreService';
 import { captureError } from '../utils/sentry';
 import { pickPhotoFromCamera } from '../utils/photoPicker';
+import { useUser } from '../contexts/UserContext';
 
 const C = { ...Colors, orange: Colors.accent };
 
@@ -43,6 +43,7 @@ interface Props {
 }
 
 export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
+  const user = useUser();
   const [name, setName] = useState('');
   const [manufacturer, setManufacturer] = useState('');
   const [model, setModel] = useState('');
@@ -98,9 +99,8 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
       }
 
       // Firestore同期
-      const userId = await AsyncStorage.getItem('moto_logos_device_id');
-      if (userId) {
-        syncBikeToFirestore(userId, vehicleData).catch((e) => captureError(e, { context: 'syncBike' }));
+      if (user?.userId) {
+        syncBikeToFirestore(user.userId, vehicleData).catch((e) => captureError(e, { context: 'syncBike' }));
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

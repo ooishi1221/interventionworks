@@ -266,6 +266,7 @@ function App() {
                 focusSpot={focusSpot}
                 onFocusConsumed={() => setFocusSpot(null)}
                 refreshTrigger={mapRefreshTrigger}
+                onGoToSettings={() => setTab('settings')}
               />
             </View>
             {tab === 'rider' && (

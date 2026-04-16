@@ -13,13 +13,10 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getFirebaseAuth } from '../firebase/config';
 import { COLLECTIONS } from '../firebase/firestoreTypes';
 import { captureError } from './sentry';
-
-const DEVICE_ID_KEY = 'moto_logos_device_id';
 
 /**
  * フォアグラウンドで通知を受信したときの表示設定。
@@ -99,19 +96,20 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 /**
  * Expo Push Token を Firestore の push_tokens コレクションに保存する。
- * デバイスID をドキュメントキーとして使い、同一デバイスのトークンを上書きする。
+ * auth.uid をドキュメントキーとして使い、同一ユーザーのトークンを上書きする。
  */
 async function savePushToken(token: string): Promise<void> {
   try {
-    const deviceId = await getDeviceId();
-    if (!deviceId) {
-      captureError(new Error('デバイスIDが取得できませんでした'), { context: 'push_token_no_device_id' });
+    const auth = getFirebaseAuth();
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      captureError(new Error('認証ユーザーが取得できませんでした'), { context: 'push_token_no_user' });
       return;
     }
 
-    await setDoc(doc(db, COLLECTIONS.PUSH_TOKENS, deviceId), {
+    await setDoc(doc(db, COLLECTIONS.PUSH_TOKENS, userId), {
       token,
-      deviceId,
+      userId,
       platform: Platform.OS,
       updatedAt: Timestamp.now(),
       createdAt: Timestamp.now(),
@@ -119,14 +117,5 @@ async function savePushToken(token: string): Promise<void> {
   } catch (error) {
     // トークン保存失敗はアプリ動作に影響させない
     captureError(error, { context: 'push_token_save' });
-    console.warn('[PushNotifications] トークン保存に失敗:', error);
   }
-}
-
-/**
- * AsyncStorage からデバイスIDを取得する。
- * firestoreService.ts の getDeviceId と同じキーを使う。
- */
-async function getDeviceId(): Promise<string | null> {
-  return AsyncStorage.getItem(DEVICE_ID_KEY);
 }

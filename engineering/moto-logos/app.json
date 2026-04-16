@@ -35,11 +35,14 @@
           "icon": "./assets/icon.png",
           "color": "#FF6B00"
         }
-      ]
+      ],
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin"
     ],
     "ios": {
       "bundleIdentifier": "com.interventionworks.motologos",
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "comgooglemaps",

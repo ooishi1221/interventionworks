@@ -74,7 +74,7 @@ A: 検索で場所を見つける（足跡を消費）
 | 空間検索 | Geohash プレフィクスクエリ（自前実装、外部依存なし） |
 | クラッシュ監視 | Sentry `@sentry/react-native ~7.2.0`（org: `moto-logos-team`） |
 | ビルド/配信 | EAS Build（development / preview / production）、EAS Update（OTA） |
-| 認証 | Firebase Anonymous Auth（Firestore ルール認可用） |
+| 認証 | Firebase Auth（匿名 + Apple Sign-In + Google Sign-In） |
 | 状態管理 | React hooks のみ（外部ライブラリなし） |
 
 ---
@@ -154,13 +154,17 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 
 ### 認証・ユーザー識別システム
 
-- **Firebase Anonymous Auth**: アプリ起動時に `ensureAnonymousAuth()` で匿名サインイン（`src/firebase/config.ts`）
-- Firestore セキュリティルールは `request.auth != null` で認可（匿名認証で通過）
-- **デバイスIDベース**: AsyncStorage の `moto_logos_device_id`（UUID v4）を userId として使用
-- `UserContext` (`src/contexts/UserContext.tsx`) がアプリ全体に `userId`, `rank`, `trustScore` を供給
-- 初回起動時に Firestore `users` コレクションにドキュメントを自動作成（初期 trustScore: 100, rank: rider）
-- 将来の Firebase Auth 移行パス確保済み（userId の差し替えのみで移行可能）
+- **匿名ファースト**: アプリ起動時に `ensureAnonymousAuth()` で匿名サインイン → 即利用開始（ログイン強制なし）
+- **ソーシャルログイン（任意連携）**: Apple Sign-In / Google Sign-In でアカウントリンク（`src/firebase/authService.ts`）
+  - `linkWithCredential()` で匿名アカウントを昇格 → 足跡がデバイスから解放される
+  - 新端末で同じアカウントでサインイン → `signInWithCredential()` でデータ復元
+  - 連携時に旧 deviceId ベースの Firestore データを auth.uid に自動移行（`migrateUserData()`）
+- **userId**: 連携済み → `auth.uid`、未連携の既存ユーザー → 旧 `deviceId`、新規ユーザー → `auth.uid`
+- `UserContext` (`src/contexts/UserContext.tsx`) がアプリ全体に `userId`, `authProvider`, `isLinked` + `linkApple()`, `linkGoogle()`, `logout()` を供給
+- Firestore セキュリティルールは `request.auth != null` で認可
+- 初回起動時に Firestore `users` コレクションにドキュメントを自動作成
 - レビュー・投票には必ず実 userId を紐付ける（`'local_user'` ハードコード禁止）
+- **UI**: 設定画面に「アカウント」セクション（`AccountLinkCard`）、初回足跡後にナッジカード（`LinkNudgeCard`）
 
 ### 写真アップロード（Firebase Storage）
 
@@ -174,8 +178,8 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 
 - 新規スポットには必ず `geohash`（精度9）を付与する
 - Read 数を意識する。`fetchSpotsInRegion` は geohash クエリで範囲検索し、0件でもそのまま返す。`fetchAllSpots` はインデックス未作成時の緊急フォールバックのみ
-- `user_activity` コレクション: アプリ起動時に1日1回デバイスIDと日付を記録（DAU/WAU/MAU 集計用）
-- `users` コレクション: デバイスID をキーとしたユーザープロフィール（displayName, trustScore, bike情報）
+- `user_activity` コレクション: アプリ起動時に1日1回 userId と日付を記録（DAU/WAU/MAU 集計用）
+- `users` コレクション: auth.uid をキーとしたユーザープロフィール（displayName, bike情報）。旧ユーザーは deviceId キーのまま（連携時に移行）
 - Firestore ルールは Firebase Console で管理（リポジトリ外）
 - **レビューは Firestore がマスター**。SQLite の reviews テーブルはマイグレーション用の読み取り専用レガシー
 
@@ -523,6 +527,7 @@ eas update --branch preview
 | ~~未来検索UI（SearchOverlay）~~ | ~~P0~~ | **実装済み** — フルスクリーンオーバーレイ + ジオコーディング + ピルバーにエリアサマリー表示（実機確認待ち） |
 | ~~Googleマップ検索復帰~~ | ~~P1~~ | **実装済み（#137）** — セッション保存 + 15分リマインダー + 復帰カード（実機検証待ち） |
 | ~~アプリ内広域検索~~ | ~~P1~~ | **実装済み** — 15km圏スポット取得 + 最寄り表示 |
+| ~~ソーシャルログイン~~ | ~~P1~~ | **実装済み（#130）** — Apple/Google Sign-In + 匿名→リンク昇格 + データ移行 + ナッジカード |
 | コールドスタート対策 | P1 | **未着手（#135）** — 「知ってるのにない」離脱防止。データ拡充 + チュートリアル後ツールチップ |
 | 警察ガイドデータ取り込み | P1 | **未着手（#136）** — PDFスキャン→OCR→ジオコーディング→Firestore投入 |
 | 看板OCR | P1 | **保留** — コスト考慮。管理画面で人力入力に変更 |

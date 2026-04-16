@@ -40,6 +40,7 @@ import { ProximityContextCard } from '../components/ProximityContextCard';
 import { NearbySpotsList, AreaSummary } from '../components/NearbySpotsList';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
+import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import * as Notifications from 'expo-notifications';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
@@ -142,10 +143,11 @@ interface Props {
   focusSpot?: ParkingPin | null;
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
+  onGoToSettings?: () => void;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger },
+  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings },
   ref
 ) {
   const user = useUser();
@@ -948,6 +950,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           welcomeBackVisible={welcomeBackVisible}
           onWelcomeBackDismiss={handleWelcomeBackDismiss}
         />
+      )}
+
+      {/* ── アカウント連携ナッジ ───────────────────────── */}
+      {!selected && !searchVisible && onGoToSettings && (
+        <LinkNudgeCard onGoToSettings={onGoToSettings} />
       )}
 
       {/* ── カメラピル（下部: パシャで登録） ──────────────── */}

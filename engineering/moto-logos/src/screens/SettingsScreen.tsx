@@ -20,6 +20,7 @@ import * as Updates from 'expo-updates';
 import { purgeTestData, reportParked, fetchSpotsInRegion } from '../firebase/firestoreService';
 import * as Location from 'expo-location';
 import { Colors } from '../constants/theme';
+import { AccountLinkCard } from '../components/AccountLinkCard';
 
 const C = { ...Colors, card: Colors.cardElevated };
 
@@ -210,6 +211,7 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
 
         {/* アカウント */}
         <Text style={s.sectionTitle}>アカウント</Text>
+        <AccountLinkCard />
         <View style={s.card}>
           <TouchableOpacity style={s.row} onPress={handleDeleteAccount}>
             <View style={s.rowLeft}>
