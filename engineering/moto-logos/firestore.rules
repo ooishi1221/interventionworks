@@ -44,5 +44,11 @@ service cloud.firestore {
     match /moderation_logs/{docId} {
       allow read, write: if false;
     }
+
+    // beta_errors: 認証ユーザーは作成のみ。読取・更新・削除は Admin SDK のみ
+    match /beta_errors/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }

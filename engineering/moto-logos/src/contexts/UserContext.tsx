@@ -22,7 +22,7 @@ import {
   signInWithGoogle as doGoogleSignIn,
   signOutAndReset,
 } from '../firebase/authService';
-import { captureError } from '../utils/sentry';
+import { captureError, setBetaUser } from '../utils/sentry';
 
 // ─────────────────────────────────────────────────────
 // 型定義
@@ -71,21 +71,25 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
         if (isLinked && migrated) {
           // 連携済み + 移行済み → auth.uid を使用
           await ensureUserDocument(authUid, nickname || 'ライダー');
+          setBetaUser(authUid);
           setState({ userId: authUid, authProvider: provider, isLinked: true });
         } else if (isLinked && !migrated && oldDeviceId) {
           // 連携済みだが移行未完了（前回中断？）→ リトライ
           await migrateUserData(oldDeviceId, authUid);
           await ensureUserDocument(authUid, nickname || 'ライダー');
+          setBetaUser(authUid);
           setState({ userId: authUid, authProvider: provider, isLinked: true });
         } else if (!isLinked && oldDeviceId) {
           // 匿名 + 既存 deviceId → 旧ユーザー。deviceId を継続
           await ensureUserDocument(oldDeviceId, nickname || 'ライダー');
+          setBetaUser(oldDeviceId);
           setState({ userId: oldDeviceId, authProvider: 'anonymous', isLinked: false });
         } else {
           // 新規ユーザー → auth.uid を最初から使用
           await AsyncStorage.setItem(DEVICE_ID_KEY, authUid);
           await markMigrated();
           await ensureUserDocument(authUid, nickname || 'ライダー');
+          setBetaUser(authUid);
           setState({ userId: authUid, authProvider: 'anonymous', isLinked: false });
         }
       } catch (e) {
@@ -109,6 +113,7 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
     }
 
     await ensureUserDocument(authUid, nickname || 'ライダー');
+    setBetaUser(authUid);
     setState({ userId: authUid, authProvider: provider, isLinked: true });
   }, [nickname]);
 
@@ -127,6 +132,7 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
     }
 
     await ensureUserDocument(authUid, nickname || 'ライダー');
+    setBetaUser(authUid);
     setState({ userId: authUid, authProvider: provider, isLinked: true });
   }, [nickname]);
 
@@ -137,6 +143,7 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
     await AsyncStorage.setItem(DEVICE_ID_KEY, newUid);
     await markMigrated();
     await ensureUserDocument(newUid, nickname || 'ライダー');
+    setBetaUser(newUid);
     setState({ userId: newUid, authProvider: 'anonymous', isLinked: false });
   }, [nickname]);
 

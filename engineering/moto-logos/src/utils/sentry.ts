@@ -5,6 +5,9 @@
  * Firebase Crashlytics は Expo managed workflow 非対応のため、
  * Expo 公式対応の Sentry を採用。
  *
+ * β期間中は Firestore beta_errors コレクションにも書き込み、
+ * Slack Bot が検知して即時通知する。
+ *
  * 設定手順:
  *   1. https://sentry.io でプロジェクト「moto-logos」を作成
  *   2. .env に EXPO_PUBLIC_SENTRY_DSN を追加
@@ -12,8 +15,63 @@
  */
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN ?? '';
+
+// ── β自動エラー通知 ─────────────────────────────────────
+let _betaUserId = '';
+const _recentErrors = new Map<string, number>();
+const RATE_LIMIT_MS = 60_000;
+
+/** UserContext から呼ばれ、エラー報告に userId を含める */
+export function setBetaUser(userId: string): void {
+  _betaUserId = userId;
+}
+
+/** Firestore beta_errors に書き込み（fire-and-forget） */
+function _writeBetaError(error: unknown, context?: Record<string, string>): void {
+  try {
+    const message = error instanceof Error ? error.message : String(error);
+    const key = message.slice(0, 200);
+
+    // レート制限: 同一エラー60秒以内はスキップ
+    const now = Date.now();
+    const last = _recentErrors.get(key);
+    if (last && now - last < RATE_LIMIT_MS) return;
+
+    // 古いエントリを掃除
+    for (const [k, t] of _recentErrors) {
+      if (now - t > RATE_LIMIT_MS) _recentErrors.delete(k);
+    }
+    _recentErrors.set(key, now);
+
+    // auth 未準備ならスキップ（起動直後のエラー等）
+    const { getFirebaseAuth } = require('../firebase/config');
+    const auth = getFirebaseAuth();
+    if (!auth.currentUser) return;
+
+    // Firestore に書き込み
+    const { addDoc, collection, Timestamp } = require('firebase/firestore');
+    const { db } = require('../firebase/config');
+
+    addDoc(collection(db, 'beta_errors'), {
+      message,
+      stack: error instanceof Error ? (error.stack ?? '') : '',
+      context: context ?? null,
+      os: Platform.OS,
+      deviceModel: Device.modelName ?? 'unknown',
+      deviceBrand: Device.brand ?? 'unknown',
+      osVersion: Device.osVersion ?? 'unknown',
+      appVersion: Constants.expoConfig?.version ?? 'unknown',
+      userId: _betaUserId || 'unknown',
+      createdAt: Timestamp.now(),
+    }).catch(() => {}); // 書き込み失敗は無視（再帰防止）
+  } catch {
+    // _writeBetaError 自体の失敗は絶対に外に漏らさない
+  }
+}
 
 /**
  * Sentry を初期化する。
@@ -55,8 +113,12 @@ export function initSentry(): void {
 /**
  * 手動でエラーを Sentry に送信する。
  * try-catch で捕捉したエラーの報告に使う。
+ * β期間中は Firestore にも書き込み、Slack 通知をトリガーする。
  */
 export function captureError(error: unknown, context?: Record<string, string>): void {
+  // Firestore β自動通知（Sentry の有無に関係なく実行）
+  _writeBetaError(error, context);
+
   if (!DSN) {
     // DSN 未設定時は console.error にフォールバック
     console.error('[Sentry fallback]', error, context);

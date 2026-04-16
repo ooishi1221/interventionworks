@@ -258,4 +258,5 @@ export const COLLECTIONS = {
   PUSH_TOKENS:     'push_tokens',
   HAZARD_REPORTS:  'hazard_reports',
   THEFT_ALERTS:    'theft_alerts',
+  BETA_ERRORS:     'beta_errors',
 } as const;

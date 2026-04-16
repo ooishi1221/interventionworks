@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { spawn, execFile } from "child_process";
 import { writeFile, mkdir } from "fs/promises";
+import { startWatching } from "./firestore-watcher.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "..", ".env") });
@@ -404,4 +405,14 @@ process.on("SIGTERM", () => {
   console.log("Slack <-> Claude Code bridge running (resume mode)");
   console.log(`   Channel: ${CHANNEL}`);
   console.log(`   Project: ${PROJECT_ROOT}`);
+
+  // β自動エラー通知: Firestore beta_errors → Slack
+  startWatching(async (blocks, text) => {
+    await app.client.chat.postMessage({
+      channel: CHANNEL,
+      text,
+      blocks,
+      ...BOT,
+    });
+  });
 })();
