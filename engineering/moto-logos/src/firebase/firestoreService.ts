@@ -22,7 +22,7 @@ import {
   GeoPoint,
   type DocumentData,
 } from 'firebase/firestore';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './config';
 import { COLLECTIONS } from './firestoreTypes';
@@ -198,6 +198,9 @@ export async function fetchSpotsInRegion(
     return results;
   } catch (e) {
     captureError(e, { context: 'geohash_query_failed' });
+    if (__DEV__) {
+      Alert.alert('Firestore エラー', `geohash query: ${e instanceof Error ? e.message : String(e)}`);
+    }
     // geohash インデックス未作成時のみ全件取得にフォールバック
     return fetchAllSpots();
   }

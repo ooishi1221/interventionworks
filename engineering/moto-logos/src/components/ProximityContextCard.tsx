@@ -65,6 +65,10 @@ interface Props {
   getNearbyAlternatives: (excludeId?: string, max?: number) => NearbySpotInfo[];
   onQuickReport: () => void; // FAB と同じ登録フロー
   onSpotUpdated?: () => void; // 報告後に allSpotsRaw を更新
+  onWideAreaSearch?: () => void; // アプリ内広域検索（SearchOverlay を開く）
+  onGoogleMapsSearch?: () => void; // Googleマップ検索を起動
+  welcomeBackVisible?: boolean; // Googleマップから復帰した
+  onWelcomeBackDismiss?: () => void; // 「見つかった？」を閉じる
 }
 
 // ── 距離フォーマット ──────────────────────────────────
@@ -88,6 +92,10 @@ export function ProximityContextCard({
   getNearbyAlternatives,
   onQuickReport,
   onSpotUpdated,
+  onWideAreaSearch,
+  onGoogleMapsSearch,
+  welcomeBackVisible,
+  onWelcomeBackDismiss,
 }: Props) {
   const user = useUser();
   const tutorial = useTutorial();
@@ -96,8 +104,6 @@ export function ProximityContextCard({
   const slideAnim = useRef(new Animated.Value(200)).current; // 下からスライドイン
   const okGlowAnim = useRef(new Animated.Value(0)).current;
   const okGlowRef = useRef<Animated.CompositeAnimation | null>(null);
-  const cardRef = useRef<View>(null);
-  const goodBtnRef = useRef<View>(null);
 
   // チュートリアル中はダミー近接状態を強制表示
   const isTutorialReport = tutorial.active && tutorial.phase === 'report';
@@ -107,12 +113,19 @@ export function ProximityContextCard({
 
   // scene steps: カード非表示
   const tutorialHideCard = tutorial.active && !!tutorial.currentStep.sceneTitle;
-  const visible = effectiveState.kind !== 'normal' && !tutorialHideCard;
 
   // カード内部状態
   const [phase, setPhase] = useState<
     'initial' | 'photo' | 'tagging' | 'corrections' | 'thanks' | 'alternatives'
+    | 'search-choice' | 'welcome-back'
   >('initial');
+
+  const visible = (effectiveState.kind !== 'normal' || phase === 'welcome-back') && !tutorialHideCard;
+
+  // Googleマップから復帰 → welcome-back phase に遷移
+  useEffect(() => {
+    if (welcomeBackVisible) setPhase('welcome-back');
+  }, [welcomeBackVisible]);
   const [submitting, setSubmitting] = useState(false);
   // 撮影済み写真URI（タグ選択待ち）
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
@@ -159,26 +172,6 @@ export function ProximityContextCard({
     }
   }, [shouldGlow]);
 
-  // チュートリアル: ターゲット位置登録（onLayout + 繰り返しリトライ）
-  const measureTargets = useCallback(() => {
-    if (!tutorial.active || !isTutorialReport) return;
-    cardRef.current?.measureInWindow((x, y, w, h) => {
-      if (w > 0) tutorial.registerTarget('proximity-card', { x, y, w, h, borderRadius: 20 });
-    });
-    goodBtnRef.current?.measureInWindow((x, y, w, h) => {
-      if (w > 0) tutorial.registerTarget('report-good-btn', { x, y, w, h, borderRadius: 14 });
-    });
-  }, [tutorial.active, isTutorialReport, tutorial.stepIndex, phase]);
-
-  // ステップ変更時とレイアウト完了時に測定
-  // スライドアニメーション完了後にも測定するが、フォールバックとして遅延リトライも維持
-  useEffect(() => {
-    if (!isTutorialReport) return;
-    const t1 = setTimeout(measureTargets, 500);
-    const t2 = setTimeout(measureTargets, 1200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [measureTargets]);
-
   // 状態変更時にリセット
   useEffect(() => {
     setPhase('initial');
@@ -198,12 +191,7 @@ export function ProximityContextCard({
       tension: 120,
       friction: 14,
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      // スライド完了後に正確な位置を測定（チュートリアル用）
-      if (finished && visible && isTutorialReport) {
-        measureTargets();
-      }
-    });
+    }).start();
   }, [visible]);
 
   // 報告済みスポットID（写真追加用に保持）
@@ -373,10 +361,7 @@ export function ProximityContextCard({
     setPhase('alternatives');
   }, [nearbySpot, user, onSpotUpdated]);
 
-  // ── 「他を探す」表示 ────────────────────────────────
-  const showAlternatives = useCallback(() => {
-    setPhase('alternatives');
-  }, []);
+
 
   // ── ナビ起動 ────────────────────────────────────────
   const openNav = useCallback((spot: ParkingPin) => {
@@ -401,7 +386,7 @@ export function ProximityContextCard({
       style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
       pointerEvents="box-none"
     >
-      <View ref={cardRef} style={styles.card} onLayout={measureTargets}>
+      <View style={styles.card}>
         {/* ── ニアバイ: 初期カード ─────────────────────── */}
         {effectiveState.kind === 'nearby' && phase === 'initial' && nearbySpot && (
           <>
@@ -419,7 +404,6 @@ export function ProximityContextCard({
             </Text>
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                ref={goodBtnRef}
                 style={[styles.actionBtn, styles.goodBtn, { position: 'relative', overflow: 'visible' }]}
                 onPress={handleGood}
                 activeOpacity={0.8}
@@ -613,11 +597,84 @@ export function ProximityContextCard({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.searchBtn]}
-                onPress={showAlternatives}
+                onPress={() => setPhase('search-choice')}
                 activeOpacity={0.8}
               >
                 <Ionicons name="navigate-outline" size={22} color="#fff" />
                 <Text style={styles.actionText}>他を探す</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* ── 検索方法の選択（no-spots → 他を探す） ──────── */}
+        {phase === 'search-choice' && (
+          <>
+            <Text style={styles.noSpotTitle}>どこで探す？</Text>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: C.blue }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onWideAreaSearch?.();
+                  setPhase('initial');
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="search-outline" size={22} color="#fff" />
+                <Text style={styles.actionText}>アプリ内で探す</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#34A853' }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onGoogleMapsSearch?.();
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="open-outline" size={22} color="#fff" />
+                <Text style={styles.actionText}>Googleマップ</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => setPhase('initial')}
+              style={styles.backLink}
+            >
+              <Text style={styles.backText}>戻る</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Googleマップ復帰プロンプト ──────────────────── */}
+        {phase === 'welcome-back' && (
+          <>
+            <Text style={styles.noSpotTitle}>バイク置き場、見つかった？</Text>
+            <Text style={[styles.meta, { textAlign: 'center', marginBottom: 14 }]}>
+              登録すると次のライダーの道しるべになります
+            </Text>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.registerBtn]}
+                onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  onWelcomeBackDismiss?.();
+                  onQuickReport();
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="camera-outline" size={22} color="#fff" />
+                <Text style={styles.actionText}>登録する</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.badBtn]}
+                onPress={() => {
+                  onWelcomeBackDismiss?.();
+                  setPhase('initial');
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="close-outline" size={22} color="#fff" />
+                <Text style={styles.actionText}>今はいい</Text>
               </TouchableOpacity>
             </View>
           </>

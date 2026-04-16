@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
-import { purgeTestData } from '../firebase/firestoreService';
+import { purgeTestData, reportParked, fetchSpotsInRegion } from '../firebase/firestoreService';
+import * as Location from 'expo-location';
 import { Colors } from '../constants/theme';
 
 const C = { ...Colors, card: Colors.cardElevated };
@@ -234,6 +235,35 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
             <View style={s.rowLeft}>
               <Ionicons name="refresh-outline" size={20} color={C.accent} />
               <Text style={s.rowLabel}>キャッシュクリア（初回体験リセット）</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={s.separator} />
+          <TouchableOpacity style={s.row} onPress={async () => {
+            try {
+              const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+              const region = {
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+              };
+              const spots = await fetchSpotsInRegion(region);
+              const targets = spots.slice(0, 5);
+              if (targets.length === 0) {
+                Alert.alert('温度テスト', '周辺にスポットがありません');
+                return;
+              }
+              for (const t of targets) {
+                await reportParked(t.id);
+              }
+              Alert.alert('温度テスト', `${targets.length}件のスポットをhotにしました。マップに戻って確認してください。`);
+            } catch {
+              Alert.alert('エラー', '位置情報の取得に失敗しました');
+            }
+          }}>
+            <View style={s.rowLeft}>
+              <Ionicons name="flame-outline" size={20} color="#FF6B00" />
+              <Text style={s.rowLabel}>温度テスト（周辺5件をhot化）</Text>
             </View>
           </TouchableOpacity>
           <View style={s.separator} />

@@ -32,6 +32,7 @@ export function TutorialGuide() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
   const prevStepRef = useRef(stepIndex);
+  const [fadingToComplete, setFadingToComplete] = useState(false);
 
   // ── Android edge-to-edge 座標補正 ────────────────────
   // measureInWindow はスクリーン絶対座標を返すが、
@@ -40,28 +41,25 @@ export function TutorialGuide() {
   const spotlightRef = useRef<View>(null);
   const originRef = useRef({ x: 0, y: 0 });
 
-  // ステップ切替: フェードアウト → フェードイン
+  // ステップ切替: 暗幕維持 + コンテンツだけフェード（地図が見える隙間を防ぐ）
   useEffect(() => {
     if (active && phase !== 'setup' && phase !== 'complete') {
-      const isScene = !!currentStep.sceneTitle;
-      const isFirstStep = prevStepRef.current === 0 && stepIndex > 0;
-      const prevWasScene = prevStepRef.current !== stepIndex;
+      const isFirstAppearance = prevStepRef.current === 0 && stepIndex > 0;
       prevStepRef.current = stepIndex;
 
-      if (isScene || isFirstStep) {
-        // シーンカード / 最初のステップ: フェードアウト→フェードイン
-        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-          contentAnim.setValue(0);
-          Animated.sequence([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-            Animated.timing(contentAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-          ]).start();
-        });
+      if (isFirstAppearance) {
+        // 初回表示: 暗幕ごとフェードイン
+        fadeAnim.setValue(0);
+        contentAnim.setValue(0);
+        Animated.parallel([
+          Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(contentAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        ]).start();
       } else {
-        // 通常ステップ: コンテンツだけクロスフェード（背景暗幕は維持）
+        // 通常遷移: 暗幕維持、コンテンツだけフェード
         fadeAnim.setValue(1);
         contentAnim.setValue(0);
-        Animated.timing(contentAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+        Animated.timing(contentAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
       }
 
       // パルスグロー（ピカピカ — 常に光ってる＋脈動）
@@ -77,6 +75,16 @@ export function TutorialGuide() {
       pulseRef.current?.stop();
     }
   }, [active, stepIndex, phase]);
+
+  // complete フェーズへの遷移: フェードアウト（地図が見える隙間を防ぐ）
+  useEffect(() => {
+    if (active && phase === 'complete') {
+      setFadingToComplete(true);
+      Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+        setFadingToComplete(false);
+      });
+    }
+  }, [phase, active]);
 
   // 終了時フェードアウト
   useEffect(() => {
@@ -113,9 +121,17 @@ export function TutorialGuide() {
     return () => clearInterval(timer);
   }, [active, stepIndex, currentStep.target, getTarget]);
 
-  // セットアップと完了フェーズはTutorialOverlayが処理する
+  // セットアップはTutorialOverlayが処理する
   // exiting中はフェードアウトのため表示を維持
-  if ((!active && !exiting) || phase === 'setup' || phase === 'complete') return null;
+  if ((!active && !exiting) || phase === 'setup') return null;
+  if (phase === 'complete' && !fadingToComplete) return null;
+
+  // complete フェーズへのフェードアウト中: 暗幕のみ表示
+  if (phase === 'complete' && fadingToComplete) {
+    return (
+      <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim }]} pointerEvents="none" />
+    );
+  }
   const target = currentStep.target ? getTarget(currentStep.target) : null;
 
   const handleBackdropPress = () => {
@@ -149,13 +165,13 @@ export function TutorialGuide() {
   //    fadeAnim の JS 値が 0 のまま残りオーバーレイが見えなくなる問題を回避
   if (!target && currentStep.waitFor === 'tap-target') {
     return (
-      <View style={styles.fullOverlayLight} pointerEvents="none">
+      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none">
         {currentStep.instruction ? (
-          <View style={styles.floatingCard}>
+          <Animated.View style={[styles.floatingCard, { opacity: contentAnim }]}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
-          </View>
+          </Animated.View>
         ) : null}
-      </View>
+      </Animated.View>
     );
   }
 
@@ -165,13 +181,13 @@ export function TutorialGuide() {
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
           {currentStep.instruction ? (
-            <View style={styles.floatingCard}>
+            <Animated.View style={[styles.floatingCard, { opacity: contentAnim }]}>
               <Text style={styles.instructionText}>{currentStep.instruction}</Text>
               <View style={styles.tapHintRow}>
                 <Text style={styles.tapHint}>タップして次へ</Text>
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
               </View>
-            </View>
+            </Animated.View>
           ) : null}
         </Animated.View>
       </TouchableWithoutFeedback>
@@ -257,9 +273,9 @@ export function TutorialGuide() {
       {/* fadeAnim を使用: ターゲット到着ポーリング後にビューが切り替わるため
           contentAnim のネイティブドライバー値が伝播しないケースを回避 */}
       {currentStep.instruction ? (
-        <View style={[
+        <Animated.View style={[
           styles.instructionCard,
-          { top: instructionTop },
+          { top: instructionTop, opacity: contentAnim },
         ]}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
@@ -268,7 +284,7 @@ export function TutorialGuide() {
               <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
             </View>
           )}
-        </View>
+        </Animated.View>
       ) : null}
     </Animated.View>
   );
