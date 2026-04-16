@@ -24,7 +24,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
-  getAllUserSpots,
   getAllFavorites,
   getFirstVehicle,
   getFootprints,
@@ -35,7 +34,7 @@ import {
   type Footprint,
   type ParkingSession,
 } from '../db/database';
-import { getMySpotsTotalViews, reportDeparted } from '../firebase/firestoreService';
+import { reportDeparted } from '../firebase/firestoreService';
 import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle } from '../types';
@@ -113,7 +112,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const [footprints, setFootprints] = useState<Footprint[]>([]);
   const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
   const [activeSession, setActiveSession] = useState<ParkingSession | null>(null);
-  const [totalViews, setTotalViews] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [favModalOpen, setFavModalOpen] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
@@ -126,11 +124,10 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
       reportDeparted(s.spotId).catch((e) => captureError(e, { context: 'auto_depart' }));
     }
 
-    const [vehicle, fp, uloc, spots, session] = await Promise.all([
+    const [vehicle, fp, uloc, session] = await Promise.all([
       getFirstVehicle(),
       getFootprints(50),
       getUniqueFootprintLocations(),
-      getAllUserSpots(),
       getActiveParkingSession(),
     ]);
     setBike(vehicle);
@@ -138,8 +135,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     setUniqueLocations(uloc);
     setActiveSession(session);
 
-    const spotIds = spots.map((s) => `user_${s.id}`);
-    getMySpotsTotalViews(spotIds).then(setTotalViews).catch((e) => captureError(e, { context: 'rider_total_views' }));
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -195,7 +190,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const impactMessage = (() => {
     const count = uniqueLocations.length;
     if (count === 0) return '最初の足跡を刻もう — スポットに行って記録するだけ';
-    if (totalViews > 0) return `${count}か所の足跡が ${totalViews}人 のライダーに届いた`;
     return `${count}か所に足跡を残した`;
   })();
 
