@@ -21,7 +21,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
-import type { PhotoTag } from '../firebase/firestoreTypes';
 import {
   reportSpotGood,
   reportSpotFull,
@@ -53,11 +52,6 @@ const CORRECTION_OPTIONS: { id: CorrectionType; label: string; icon: keyof typeo
   { id: 'other',       label: 'その他',     icon: 'ellipsis-horizontal' },
 ];
 
-const PHOTO_TAG_OPTIONS: { id: PhotoTag; label: string; emoji: string }[] = [
-  { id: 'sign',     label: '看板',  emoji: '\uD83D\uDCCB' },
-  { id: 'entrance', label: '入口',  emoji: '\uD83D\uDEAA' },
-  { id: 'general',  label: 'その他', emoji: '\uD83D\uDCF8' },
-];
 
 // ── Props ─────────────────────────────────────────────
 interface Props {
@@ -116,7 +110,7 @@ export function ProximityContextCard({
 
   // カード内部状態
   const [phase, setPhase] = useState<
-    'initial' | 'photo' | 'tagging' | 'corrections' | 'thanks' | 'alternatives'
+    'initial' | 'photo' | 'corrections' | 'thanks' | 'alternatives'
     | 'search-choice' | 'welcome-back'
   >('initial');
 
@@ -127,8 +121,6 @@ export function ProximityContextCard({
     if (welcomeBackVisible) setPhase('welcome-back');
   }, [welcomeBackVisible]);
   const [submitting, setSubmitting] = useState(false);
-  // 撮影済み写真URI（タグ選択待ち）
-  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
   // 表示中のスポット（nearby の場合）
   const nearbySpot = effectiveState.kind === 'nearby' ? effectiveState.nearest : null;
@@ -235,7 +227,7 @@ export function ProximityContextCard({
   }, [nearbySpot, user, submitting, onSpotUpdated, tutorial]);
 
   // ── 写真選択の共通処理 ──────────────────────────────
-  const uploadPhotoAndFinish = useCallback(async (photoUri: string | null, tag?: PhotoTag) => {
+  const uploadPhotoAndFinish = useCallback(async (photoUri: string | null) => {
     if (!photoUri || !reportedSpotId) { setPhase('thanks'); return; }
     let userId = user?.userId;
     if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
@@ -243,7 +235,7 @@ export function ProximityContextCard({
 
     try {
       const bike = await getFirstVehicle();
-      await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name, tag);
+      await addReview(reportedSpotId, userId, 1, undefined, photoUri, undefined, bike?.name);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       captureError(e, { context: 'proximity_snap_photo' });
@@ -255,40 +247,23 @@ export function ProximityContextCard({
   const handleSnapPhoto = useCallback(async () => {
     try {
       const uri = await pickPhotoFromCamera();
-      if (uri) {
-        setPendingPhotoUri(uri);
-        setPhase('tagging');
-      } else {
-        setPhase('thanks');
-      }
+      await uploadPhotoAndFinish(uri);
     } catch (e) {
       captureError(e, { context: 'proximity_snap_photo' });
       setPhase('thanks');
     }
-  }, [reportedSpotId, user, tutorial]);
+  }, [uploadPhotoAndFinish]);
 
   // ── 看板メモ（アルバムから選択） ──────────────────────
   const handlePickFromAlbum = useCallback(async () => {
     try {
       const uri = await pickPhotoFromLibrary();
-      if (uri) {
-        setPendingPhotoUri(uri);
-        setPhase('tagging');
-      } else {
-        setPhase('thanks');
-      }
+      await uploadPhotoAndFinish(uri);
     } catch (e) {
       captureError(e, { context: 'proximity_pick_album' });
       setPhase('thanks');
     }
-  }, [reportedSpotId, user, tutorial]);
-
-  // ── タグ選択 → アップロード ────────────────────────────
-  const handleTagSelect = useCallback(async (tag: PhotoTag) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await uploadPhotoAndFinish(pendingPhotoUri, tag);
-    setPendingPhotoUri(null);
-  }, [pendingPhotoUri, uploadPhotoAndFinish]);
+  }, [uploadPhotoAndFinish]);
 
   // ── 写真スキップ → 足跡完了 ──────────────────────────
   const skipPhoto = useCallback(() => {
@@ -536,27 +511,6 @@ export function ProximityContextCard({
                 {tutorial.active ? 'OK' : 'スキップ'}
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── 写真タグ選択（撮影後） ────────────────────── */}
-        {phase === 'tagging' && (
-          <View>
-            <Text style={styles.photoPromptText}>何の写真？</Text>
-            <View style={styles.tagRow}>
-              {PHOTO_TAG_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={styles.tagBtn}
-                  onPress={() => handleTagSelect(opt.id)}
-                  activeOpacity={0.7}
-                  disabled={submitting}
-                >
-                  <Text style={styles.tagEmoji}>{opt.emoji}</Text>
-                  <Text style={styles.tagLabel}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
         )}
 
@@ -857,30 +811,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 14,
-  },
-
-  // ── 写真タグ選択 ──────────────────────────────────
-  tagRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  tagBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#3A3A3C',
-  },
-  tagEmoji: {
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  tagLabel: {
-    color: '#F5F5F5',
-    fontSize: 13,
-    fontWeight: '600',
   },
 
   // ── 理由スキップリンク ────────────────────────────
