@@ -22,8 +22,8 @@ export default function Hero() {
               俺たちは<span className="accent">ここにいる。</span>
             </h1>
             <p className="hero-sub hero-stagger" style={{ transitionDelay: '0.2s' }}>
-              ライダーの足跡でできた地図を一緒につくらないか。<br />
-              クローズドβテスター募集中。
+              ライダーの足跡でできた地図を<br />
+              一緒につくらないか。
             </p>
             <div className="hero-stagger hero-form-row" style={{ transitionDelay: '0.4s' }}>
               <BetaForm compact />
