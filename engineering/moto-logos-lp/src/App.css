@@ -31,7 +31,7 @@
   transform: scale(0.75) translateY(-60px);
 }
 .hero-intro-text {
-  font-size: 40px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.4;
   text-align: center;
@@ -92,7 +92,7 @@
   padding: 0 var(--space-lg);
 }
 .section-title {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   margin-bottom: var(--space-xl);
   line-height: 1.5;
@@ -170,7 +170,7 @@
   object-fit: cover;
 }
 .hero h1 {
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1.4;
   margin-bottom: var(--space-md);
@@ -183,8 +183,8 @@
 }
 /* iPhone frame */
 .hero-mockup {
-  width: 260px;
-  height: 530px;
+  width: 200px;
+  height: 408px;
   margin: var(--space-lg) auto var(--space-xl);
   position: relative;
   z-index: 1;
@@ -546,8 +546,8 @@
   align-items: center;
 }
 .cv-phone {
-  width: 180px;
-  height: 370px;
+  width: 140px;
+  height: 286px;
   flex-shrink: 0;
 }
 .cv-num {
@@ -890,7 +890,7 @@
   pointer-events: none;
 }
 .final-cta h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   margin-bottom: var(--space-md);
   position: relative;
