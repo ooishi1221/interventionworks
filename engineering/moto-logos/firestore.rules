@@ -50,5 +50,11 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow read, update, delete: if false;
     }
+
+    // beta_feedback: 認証ユーザーは作成のみ。読取・更新・削除は Admin SDK のみ
+    match /beta_feedback/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }

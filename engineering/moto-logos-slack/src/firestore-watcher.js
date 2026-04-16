@@ -1,7 +1,7 @@
 /**
- * Firestore Watcher — beta_errors コレクション監視
+ * Firestore Watcher — beta_errors + beta_feedback コレクション監視
  *
- * firebase-admin で beta_errors の新規ドキュメントを検知し、
+ * firebase-admin で新規ドキュメントを検知し、
  * コールバック経由で Slack に通知する。
  */
 import { initializeApp, cert } from "firebase-admin/app";
@@ -32,8 +32,10 @@ try {
   console.error("[Firestore Watcher] init failed:", e.message);
 }
 
+const TYPE_LABELS = { bug: "バグ", opinion: "意見", confused: "わからない" };
+
 /**
- * beta_errors コレクションの監視を開始する。
+ * beta_errors + beta_feedback コレクションの監視を開始する。
  * @param {(blocks: object[], fallbackText: string) => Promise<void>} postToSlack
  */
 export function startWatching(postToSlack) {
@@ -44,6 +46,7 @@ export function startWatching(postToSlack) {
 
   const startedAt = Timestamp.now();
 
+  // ── beta_errors 監視 ──────────────────────────────
   db.collection("beta_errors")
     .where("createdAt", ">", startedAt)
     .onSnapshot(
@@ -51,10 +54,7 @@ export function startWatching(postToSlack) {
         for (const change of snapshot.docChanges()) {
           if (change.type !== "added") continue;
           const d = change.doc.data();
-          const ts = d.createdAt?.toDate?.();
-          const timeStr = ts
-            ? ts.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
-            : "unknown";
+          const timeStr = formatTime(d.createdAt);
 
           const contextStr = d.context
             ? Object.entries(d.context)
@@ -62,72 +62,76 @@ export function startWatching(postToSlack) {
                 .join(" | ")
             : "—";
 
-          const fallbackText = `🚨 Beta Error: ${d.message}`;
-
           const blocks = [
-            {
-              type: "header",
-              text: { type: "plain_text", text: "🚨 Beta Error", emoji: true },
-            },
-            {
-              type: "section",
-              fields: [
-                {
-                  type: "mrkdwn",
-                  text: `*Error:*\n\`${(d.message || "").slice(0, 300)}\``,
-                },
-                {
-                  type: "mrkdwn",
-                  text: `*Context:*\n${contextStr}`,
-                },
-              ],
-            },
-            {
-              type: "section",
-              fields: [
-                {
-                  type: "mrkdwn",
-                  text: `*User:*\n\`${d.userId || "unknown"}\``,
-                },
-                {
-                  type: "mrkdwn",
-                  text: `*Device:*\n${d.deviceModel || "?"} · ${d.os || "?"} ${d.osVersion || ""}`,
-                },
-              ],
-            },
-            {
-              type: "context",
-              elements: [
-                {
-                  type: "mrkdwn",
-                  text: `App v${d.appVersion || "?"} · ${timeStr}`,
-                },
-              ],
-            },
+            { type: "header", text: { type: "plain_text", text: "🚨 Beta Error", emoji: true } },
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*Error:*\n\`${(d.message || "").slice(0, 300)}\`` },
+              { type: "mrkdwn", text: `*Context:*\n${contextStr}` },
+            ]},
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*User:*\n\`${d.userId || "unknown"}\`` },
+              { type: "mrkdwn", text: `*Device:*\n${d.deviceModel || "?"} · ${d.os || "?"} ${d.osVersion || ""}` },
+            ]},
+            { type: "context", elements: [
+              { type: "mrkdwn", text: `App v${d.appVersion || "?"} · ${timeStr}` },
+            ]},
           ];
 
-          // スタックトレースがあれば折りたたみで追加
           if (d.stack) {
-            blocks.push({
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `*Stack:*\n\`\`\`${d.stack.slice(0, 500)}\`\`\``,
-              },
-            });
+            blocks.push({ type: "section", text: { type: "mrkdwn", text: `*Stack:*\n\`\`\`${d.stack.slice(0, 500)}\`\`\`` }});
           }
-
           blocks.push({ type: "divider" });
 
-          postToSlack(blocks, fallbackText).catch((err) =>
-            console.error("[Firestore Watcher] Slack post failed:", err.message)
+          postToSlack(blocks, `🚨 Beta Error: ${d.message}`).catch((err) =>
+            console.error("[Watcher] error post failed:", err.message)
           );
         }
       },
-      (err) => {
-        console.error("[Firestore Watcher] onSnapshot error:", err.message);
-      }
+      (err) => console.error("[Watcher] beta_errors onSnapshot error:", err.message)
     );
 
-  console.log("[Firestore Watcher] watching beta_errors collection");
+  // ── beta_feedback 監視 ─────────────────────────────
+  db.collection("beta_feedback")
+    .where("createdAt", ">", startedAt)
+    .onSnapshot(
+      (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+          if (change.type !== "added") continue;
+          const d = change.doc.data();
+          const timeStr = formatTime(d.createdAt);
+          const typeLabel = TYPE_LABELS[d.feedbackType] || d.feedbackType || "?";
+
+          const blocks = [
+            { type: "header", text: { type: "plain_text", text: `💬 Beta Feedback [${typeLabel}]`, emoji: true } },
+            { type: "section", text: { type: "mrkdwn",
+              text: `> ${(d.message || "").slice(0, 500)}`,
+            }},
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*User:*\n\`${d.userId || "unknown"}\`` },
+              { type: "mrkdwn", text: `*Device:*\n${d.deviceModel || "?"} · ${d.os || "?"} ${d.osVersion || ""}` },
+            ]},
+            { type: "context", elements: [
+              { type: "mrkdwn", text: `App v${d.appVersion || "?"} · ${timeStr}` },
+            ]},
+          ];
+
+          if (d.photoUrl) {
+            blocks.push({ type: "image", image_url: d.photoUrl, alt_text: "feedback photo" });
+          }
+          blocks.push({ type: "divider" });
+
+          postToSlack(blocks, `💬 Feedback [${typeLabel}]: ${d.message}`).catch((err) =>
+            console.error("[Watcher] feedback post failed:", err.message)
+          );
+        }
+      },
+      (err) => console.error("[Watcher] beta_feedback onSnapshot error:", err.message)
+    );
+
+  console.log("[Firestore Watcher] watching beta_errors + beta_feedback");
+}
+
+function formatTime(ts) {
+  const d = ts?.toDate?.();
+  return d ? d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }) : "unknown";
 }

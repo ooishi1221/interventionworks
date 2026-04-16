@@ -41,6 +41,7 @@ import { NearbySpotsList, AreaSummary } from '../components/NearbySpotsList';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
+import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
 import * as Notifications from 'expo-notifications';
 
 // GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
@@ -977,6 +978,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <Ionicons name="camera" size={20} color="#F2F2F7" />
         </TouchableOpacity>
       )}
+
+      {/* ── βフィードバックボタン ───────────────────────── */}
+      {!searchVisible && !selected && <BetaFeedbackButton />}
 
       {/* ── 検索オーバーレイ（未来検索） ────────────────── */}
       <SearchOverlay

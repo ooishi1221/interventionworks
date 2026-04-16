@@ -259,4 +259,5 @@ export const COLLECTIONS = {
   HAZARD_REPORTS:  'hazard_reports',
   THEFT_ALERTS:    'theft_alerts',
   BETA_ERRORS:     'beta_errors',
+  BETA_FEEDBACK:   'beta_feedback',
 } as const;
