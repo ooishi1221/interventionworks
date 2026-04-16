@@ -10,6 +10,7 @@ import {
   TextInput,
   Keyboard,
   Animated as RNAnimated,
+  Easing,
   Dimensions,
   Linking,
   AppState,
@@ -74,55 +75,56 @@ function markerColor(spot: ParkingPin): string {
 }
 
 // ─── 温度ピン ─────────────────────────────────────────
-const SpotPin = React.memo(function SpotPin({ spot }: { spot: ParkingPin }) {
+// 呼吸アニメ: 温度に応じてボーダーが明滅
+const BREATH: Record<SpotTemperature, { min: number; duration: number }> = {
+  blazing: { min: 0.3, duration: 1500 },
+  hot:     { min: 0.4, duration: 2500 },
+  warm:    { min: 0.6, duration: 3500 },
+  cool:    { min: 1,   duration: 0 },
+  cold:    { min: 1,   duration: 0 },
+};
+
+// ボーダー太さで温度を表現（Android非整数borderWidth描画バグ回避のため全て整数）
+const BORDER_W: Record<SpotTemperature, number> = {
+  blazing: 3, hot: 2, warm: 2, cool: 1, cold: 1,
+};
+
+const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; wide?: boolean }) {
   const temp = spotTemperature(spot);
-  const style = TEMP_STYLE[temp];
-  const hasPulse = style.auraDuration > 0;
-  const pulse = useRef(new RNAnimated.Value(1)).current;
-  const entrance = useRef(new RNAnimated.Value(0)).current;
+  const breath = BREATH[temp];
+  const hasPulse = breath.duration > 0;
+  const opacity = useRef(new RNAnimated.Value(1)).current;
 
+  // 呼吸 — sinカーブでボーダー+ピンが滑らかに明暗
   useEffect(() => {
-    RNAnimated.spring(entrance, { toValue: 1, tension: 200, friction: 8, useNativeDriver: true }).start();
-  }, []);
-
-  // 温度に応じた脈動（blazing=激しく、hot=中、warm=穏やか、cool/cold=なし）
-  useEffect(() => {
-    if (!hasPulse) { pulse.setValue(1); return; }
+    if (!hasPulse) { opacity.setValue(1); return; }
     const anim = RNAnimated.loop(
       RNAnimated.sequence([
-        RNAnimated.timing(pulse, { toValue: style.pulseScale, duration: style.auraDuration, useNativeDriver: true }),
-        RNAnimated.timing(pulse, { toValue: 1, duration: style.auraDuration, useNativeDriver: true }),
+        RNAnimated.timing(opacity, {
+          toValue: breath.min, duration: breath.duration / 2,
+          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+        }),
+        RNAnimated.timing(opacity, {
+          toValue: 1, duration: breath.duration / 2,
+          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+        }),
       ])
     );
     anim.start();
     return () => anim.stop();
-  }, [hasPulse, style.pulseScale, style.auraDuration]);
+  }, [hasPulse, breath.min, breath.duration]);
 
   const color = markerColor(spot);
-  const auraSize = temp === 'blazing' ? 44 : 36;
+
+  if (wide) {
+    return <View style={[styles.pinDot, { backgroundColor: color }]} />;
+  }
 
   return (
-    <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48, overflow: 'hidden', transform: [{ scale: entrance }], opacity: entrance }}>
-      {/* 温度オーラ（cold以外） */}
-      {temp !== 'cold' && (
-        <RNAnimated.View
-          style={{
-            position: 'absolute',
-            width: auraSize, height: auraSize, borderRadius: auraSize / 2,
-            backgroundColor: color,
-            opacity: temp === 'blazing' ? 0.45 : temp === 'hot' ? 0.3 : 0.15,
-            transform: [{ scale: hasPulse ? pulse : entrance }],
-          }}
-        />
-      )}
-      <RNAnimated.View style={[
-        styles.pin,
-        { backgroundColor: color, transform: [{ scale: hasPulse ? pulse : entrance }] },
-      ]}>
-        <Text style={styles.pinText}>
-          {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : spot.source === 'user' ? '★' : 'P'}
-        </Text>
-      </RNAnimated.View>
+    <RNAnimated.View style={[styles.pinLarge, { backgroundColor: color, opacity }]}>
+      <Text style={styles.pinLargeText}>
+        {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : spot.source === 'user' ? '★' : 'P'}
+      </Text>
     </RNAnimated.View>
   );
 });
@@ -155,6 +157,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
   const [locationDenied, setLocationDenied]   = useState(false);
+  const [wideZoom, setWideZoom]               = useState(true);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   // ── Googleマップ検索復帰 ─────────────────────────────
@@ -461,6 +464,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleRegionChangeComplete = (region: Region) => {
     currentRegionRef.current = region;
+    // latitudeDelta > 0.05 ≒ 約5km表示幅 → 広域モード
+    setWideZoom(region.latitudeDelta > 0.05);
     if (!lastFetchRegionRef.current) { lastFetchRegionRef.current = region; return; }
 
     // 前回取得リージョンから十分移動した場合のみ自動再検索（デバウンス 800ms）
@@ -876,9 +881,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             key={spot.id}
             coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
             onPress={() => setSelected(spot)}
+            anchor={{ x: 0.5, y: 0.5 }}
             accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
           >
-            <SpotPin spot={spot} />
+            <SpotPin spot={spot} wide={wideZoom} />
           </Marker>
         ))}
       </ClusteredMapView>
@@ -1122,18 +1128,13 @@ const styles = StyleSheet.create({
 
   // ── クラスター ─────────────────────────────────────
   cluster: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 36, height: 36, borderRadius: 5,
     backgroundColor: 'rgba(10,132,255,0.85)',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-    shadowColor: '#0A84FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6, shadowRadius: 8, elevation: 6,
   },
   clusterLarge: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 42, height: 42, borderRadius: 6,
     backgroundColor: 'rgba(255,159,10,0.85)',
-    shadowColor: '#FF9F0A',
   },
   clusterText: {
     color: '#fff', fontSize: 13, fontWeight: '800',
@@ -1160,6 +1161,15 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
+  },
+  pinLarge: {
+    width: 34, height: 34, borderRadius: 5,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)',
+  },
+  pinLargeText: { fontSize: 13, color: '#fff', fontWeight: '800' },
+  pinDot: {
+    width: 14, height: 14, borderRadius: 7,
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 

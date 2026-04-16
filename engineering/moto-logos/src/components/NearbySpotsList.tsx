@@ -311,6 +311,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   inlineItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
