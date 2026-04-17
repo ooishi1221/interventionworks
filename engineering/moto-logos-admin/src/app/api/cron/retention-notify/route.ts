@@ -5,9 +5,8 @@ import { COLLECTIONS } from '@/lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const RETENTION_LOG = 'retention_log';
-const BATCH_SIZE = 100;
-/** 到着トリガー: 直近30分以内の到着を検出 */
-const ARRIVAL_WINDOW_MS = 30 * 60 * 1000;
+/** 到着トリガー: 直近24時間以内の到着を検出（1日1回実行） */
+const ARRIVAL_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** 閲覧インパクト: 前回通知からの閲覧増分がこの閾値を超えたら通知 */
 const VIEW_THRESHOLD = 5;
 /** デデュプ: 同じユーザー×タイプは1日1回まで */
@@ -16,11 +15,11 @@ const DEDUP_HOURS = 24;
 /**
  * GET /api/cron/retention-notify
  *
- * リテンション通知 — B→Aの橋。30分間隔で実行。
+ * リテンション通知 — B→Aの橋。1日1回実行（10:00 UTC）。
  *
- * 1. 到着トリガー: 直近30分に到着があったスポットを検出
+ * 1. 到着トリガー: 昨日の到着をまとめて検出
  *    → そのスポットに足跡を残した別ユーザーにプッシュ
- *    「○○に新しいライダーが到着。あなたの足跡を辿ってきたかも」
+ *    「昨日○○にN人のライダーが到着。あなたの足跡が道標になった」
  *
  * 2. 閲覧インパクト: viewCount が前回通知時から一定数増えたスポット
  *    → スポット投稿者にプッシュ
@@ -47,7 +46,7 @@ export async function GET(request: Request) {
     let totalErrors = 0;
 
     // ════════════════════════════════════════════════════
-    // 1. 到着トリガー通知
+    // 1. 到着トリガー通知（昨日の到着をまとめて通知）
     // ════════════════════════════════════════════════════
     const arrivalCutoff = new Date(now.getTime() - ARRIVAL_WINDOW_MS);
 
@@ -55,6 +54,9 @@ export async function GET(request: Request) {
       .collection(COLLECTIONS.SPOTS)
       .where('currentParkedAt', '>=', arrivalCutoff)
       .get();
+
+    // ユーザーごとに「昨日到着があったスポット」を集約
+    const userArrivalSpots = new Map<string, { spotId: string; spotName: string }[]>();
 
     for (const spotDoc of recentSpots.docs) {
       const spot = spotDoc.data();
@@ -76,33 +78,40 @@ export async function GET(request: Request) {
       const createdBy = spot.createdBy as string | undefined;
       if (createdBy) footprintUserIds.add(createdBy);
 
-      if (footprintUserIds.size === 0) continue;
-
-      // 到着者自身は除外（currentParkedBy があれば）
+      // 到着者自身は除外
       const arrivedBy = spot.currentParkedBy as string | undefined;
 
       for (const userId of footprintUserIds) {
         if (userId === arrivedBy) continue;
+        const list = userArrivalSpots.get(userId) || [];
+        list.push({ spotId, spotName });
+        userArrivalSpots.set(userId, list);
+      }
+    }
 
-        // デデュプチェック
-        if (await isDuplicate(userId, spotId, 'arrival', DEDUP_HOURS)) continue;
+    // ユーザーごとに1通のまとめ通知を送信
+    for (const [userId, spots] of userArrivalSpots) {
+      if (await isDuplicate(userId, 'daily', 'arrival', DEDUP_HOURS)) continue;
 
-        // プッシュトークン取得
-        const token = await getToken(userId);
-        if (!token) continue;
+      const token = await getToken(userId);
+      if (!token) continue;
 
-        const sent = await sendPush(token, {
-          title: '足跡が繋がった',
-          body: `${spotName}に新しいライダーが到着。あなたの足跡を辿ってきたかも`,
-          data: { type: 'retention_arrival', spotId },
-        });
+      const body =
+        spots.length === 1
+          ? `昨日${spots[0].spotName}にライダーが到着。あなたの足跡が道標になった`
+          : `昨日${spots.length}件のスポットにライダーが到着。あなたの足跡が道標になった`;
 
-        if (sent) {
-          arrivalSent++;
-          await logRetention(userId, spotId, 'arrival');
-        } else {
-          totalErrors++;
-        }
+      const sent = await sendPush(token, {
+        title: '足跡が繋がった',
+        body,
+        data: { type: 'retention_arrival', spotId: spots[0].spotId },
+      });
+
+      if (sent) {
+        arrivalSent++;
+        await logRetention(userId, 'daily', 'arrival');
+      } else {
+        totalErrors++;
       }
     }
 
