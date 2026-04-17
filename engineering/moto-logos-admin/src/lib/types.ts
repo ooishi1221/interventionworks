@@ -77,6 +77,18 @@ export interface FirestoreUser {
 // ─────────────────────────────────────────────────────
 
 export type PhotoModerationStatus = 'pending' | 'approved' | 'rejected';
+export type PhotoTag = 'sign' | 'entrance' | 'general';
+export type MapUpdateStatus = 'pending' | 'analyzed' | 'applied' | 'skipped';
+
+export interface GeminiAnalysisResult {
+  priceInfo?: string;
+  openHours?: string;
+  parkingCapacity?: number;
+  isFree?: boolean;
+  payment?: { cash: boolean; icCard: boolean; qrCode: boolean };
+  capacity?: { is50only: boolean; upTo125: boolean; upTo400: boolean; isLargeOk: boolean };
+  confidence: number;
+}
 
 export interface FirestoreReview {
   spotId: string;
@@ -84,14 +96,41 @@ export interface FirestoreReview {
   score: number;
   comment?: string;
   photoUrls: string[];
+  photoTag?: PhotoTag;
   goodCount: number;
   badCount: number;
   /** 写真モデレーションステータス（photoUrls が空でないレビューのみ） */
   photoModeration?: PhotoModerationStatus;
   photoModeratedAt?: FirebaseFirestore.Timestamp;
   photoModeratedBy?: string;
+  /** 地図更新ステータス */
+  mapUpdateStatus?: MapUpdateStatus;
+  mapUpdateAnalysis?: GeminiAnalysisResult;
+  mapUpdateAnalyzedBy?: string;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
+}
+
+export interface MapUpdateReviewResponse {
+  reviewId: string;
+  spotId: string;
+  spotName: string;
+  userId: string;
+  photoUrls: string[];
+  photoTag?: PhotoTag;
+  comment?: string;
+  score: number;
+  mapUpdateStatus: MapUpdateStatus;
+  mapUpdateAnalysis?: GeminiAnalysisResult;
+  createdAt: string;
+  currentSpot?: {
+    priceInfo?: string;
+    openHours?: string;
+    parkingCapacity?: number;
+    isFree?: boolean;
+    payment?: SpotPayment;
+    capacity?: SpotCapacity;
+  };
 }
 
 // ─────────────────────────────────────────────────────

@@ -1,16 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/stale-spots",
+      "path": "/api/cron/daily",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/send-scheduled",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/retention-notify",
-      "schedule": "0 10 * * *"
     }
   ]
 }

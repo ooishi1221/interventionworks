@@ -88,6 +88,7 @@ Firebase Auth Custom Claims でロールを管理。
 | 事前登録者 | `/beta-signups` | LP経由の事前登録者一覧 + 残枠表示 + 招待ステータス管理（未招待/招待済み/参加中） |
 | βフィードバック | `/beta-feedback` | βテスターからのフィードバック一覧 + タイプ別フィルタ（bug/opinion/confused）+ ステータス管理 + 写真表示 |
 | βエラー | `/beta-errors` | 自動エラー報告一覧 + スタックトレース展開 + ステータス管理（未対応/既知/対応中/修正済み） |
+| 地図更新 | `/map-updates` | ユーザー写真からAI解析（Gemini）でスポット情報を更新。未処理→AI解析→差分確認→更新/スキップ |
 | ロール管理 | `/roles` | 管理者ロールの付与・変更（super_admin専用） |
 
 ## API エンドポイント
@@ -125,8 +126,11 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/beta-feedback/[id]/status` | フィードバックステータス変更（POST: open/in_progress/resolved） |
 | `/api/beta-errors` | βエラー一覧（GET: status/appVersionフィルタ + ページネーション） |
 | `/api/beta-errors/[id]/status` | エラーステータス変更（POST: open/known/in_progress/fixed） |
-| `/api/cron/stale-spots` | 6ヶ月→pending + 12ヶ月+goodCount=0→closed（Vercel Cron 毎日3:00 UTC） |
-| `/api/cron/retention-notify` | リテンション通知 — 到着まとめ + 閲覧インパクト（Vercel Cron 毎日10:00 UTC） |
+| `/api/cron/daily` | 統合Cron（毎日3:00 UTC）: stale-spots + send-scheduled + retention-notify を並列実行 |
+| `/api/map-updates` | 写真付きレビュー一覧（GET: statusフィルタ + cursor + スポット情報結合） |
+| `/api/map-updates/[reviewId]/analyze` | Gemini AI解析（POST: 写真→構造化データ抽出） |
+| `/api/map-updates/[reviewId]/apply` | 解析結果をスポットに適用（POST: 選択フィールド指定） |
+| `/api/map-updates/[reviewId]/skip` | レビューをスキップ（POST） |
 
 ## Firestore コレクション
 
