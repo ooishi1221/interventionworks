@@ -16,7 +16,7 @@ export default function HowTo() {
       num: '3',
       icon: '👣',
       title: '地図に足跡を残す',
-      text: '関東のライダーと一緒に最初の地図をつくろう。',
+      text: '東京のライダーと一緒に最初の地図をつくろう。',
     },
   ]
 

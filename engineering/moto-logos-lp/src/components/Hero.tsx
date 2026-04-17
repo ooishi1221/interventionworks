@@ -19,7 +19,7 @@ export default function Hero() {
             </p>
             <div className="hero-form-row">
               <BetaForm compact />
-              <div className="beta-badge">CLOSED BETA — 関東限定・先行100名</div>
+              <div className="beta-badge">CLOSED BETA — 東京限定・先行100名</div>
             </div>
           </div>
           <div className="hero-mockup mockup-float">

@@ -12,7 +12,7 @@ export default function BetaPerks() {
     },
     {
       label: 'WARM UP THE MAP',
-      headline: '関東一円のスポットが足跡を待っている。',
+      headline: '東京中のスポットが足跡を待っている。',
       body: 'OpenStreetMapと公式データから集めたバイク駐車場。データはある。あとはライダーの体温を注ぎ込むだけだ。',
     },
   ]

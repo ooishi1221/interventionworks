@@ -8,8 +8,8 @@ export default function Philosophy() {
           <span className="accent">ライダーの居場所はなかった。</span>
         </h2>
         <p className="philosophy-body reveal">
-          ナビに載っていない駐輪場。3年前の情報を信じて走った先にあったフェンス。
-          大型お断りの看板は着いてからしか読めない。
+          渋谷で停める場所が見つからず3周した夜。新宿で「大型お断り」の看板を着いてから読んだ朝。
+          ナビは駐車場を教えてくれても駐輪場は知らない。
         </p>
         <p className="philosophy-body reveal">
           Google Mapsは車のための地図だ。
