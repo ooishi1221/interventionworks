@@ -22,8 +22,7 @@ import * as Haptics from 'expo-haptics';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
-import { useUser } from '../contexts/UserContext';
+import { db, getFirebaseAuth } from '../firebase/config';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
 import { uploadReviewPhoto } from '../utils/image-upload';
 import { captureError } from '../utils/sentry';
@@ -43,8 +42,11 @@ const TAB_BAR_H = Platform.OS === 'android' ? 56 : 82;
 const BOTTOM_BASE = TAB_BAR_H + 2;
 const WARN_YELLOW = '#FFD60A';
 
+function getUserId(): string {
+  return getFirebaseAuth().currentUser?.uid || 'unknown';
+}
+
 export function BetaFeedbackButton() {
-  const user = useUser();
   const [open, setOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
@@ -88,7 +90,7 @@ export function BetaFeedbackButton() {
       let photoUrl: string | undefined;
       if (photoUri) {
         try {
-          const uid = user?.userId || 'anon';
+          const uid = getUserId();
           photoUrl = await uploadReviewPhoto(photoUri, uid, 'feedback');
         } catch (e) {
           captureError(e, { context: 'beta_feedback_photo' });
@@ -96,7 +98,7 @@ export function BetaFeedbackButton() {
       }
 
       await addDoc(collection(db, 'beta_feedback'), {
-        userId: user?.userId || 'unknown',
+        userId: getUserId(),
         feedbackType,
         message: message.trim(),
         photoUrl: photoUrl ?? null,
@@ -117,7 +119,7 @@ export function BetaFeedbackButton() {
       captureError(e, { context: 'beta_feedback_send' });
       Alert.alert('送信に失敗しました', 'ネットワークを確認してもう一度お試しください');
     }
-  }, [feedbackType, message, photoUri, user, handleClose]);
+  }, [feedbackType, message, photoUri, handleClose]);
 
   const canSend = feedbackType && message.trim().length > 0 && !sending;
 
