@@ -1,0 +1,5882 @@
+[
+  {
+    "no": 1,
+    "name": "タイムズヨドバシAkiba",
+    "ward": "千代田区",
+    "address": "神田花岡町1番1号",
+    "capacity": 20,
+    "pricing": "30分500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 2,
+    "name": "UDXパーキング",
+    "ward": "千代田区",
+    "address": "外神田4丁目14番1号",
+    "capacity": 124,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 3,
+    "name": "丸の内仲通りビルガレージ",
+    "ward": "千代田区",
+    "address": "丸の内2丁目3番地",
+    "capacity": 15,
+    "pricing": "60分1100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 4,
+    "name": "千代田第一 神田神保町駐車場",
+    "ward": "千代田区",
+    "address": "神田神保町2丁目5番地",
+    "capacity": 5,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 5,
+    "name": "パレスサイドビル駐車場",
+    "ward": "千代田区",
+    "address": "一ツ橋1丁目1番1号",
+    "capacity": 50,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 6,
+    "name": "山王グランドビルガレージ",
+    "ward": "千代田区",
+    "address": "永田町2丁目14番2号",
+    "capacity": 5,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 7,
+    "name": "NTTル・パルク神田バイク第1駐車場",
+    "ward": "千代田区",
+    "address": "神田須田町1丁目",
+    "capacity": 10,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 8,
+    "name": "新丸ビルゾーン",
+    "ward": "千代田区",
+    "address": "丸の内1丁目5番",
+    "capacity": 10,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 9,
+    "name": "ウエストパーキング 神田鍛冶町",
+    "ward": "千代田区",
+    "address": "神田鍛冶町3丁目3番地",
+    "capacity": 5,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 10,
+    "name": "飯田橋プラーノ駐輪場",
+    "ward": "千代田区",
+    "address": "飯田橋3丁目",
+    "capacity": 16,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 11,
+    "name": "千代田区立神田花岡町自動二輪車駐車場",
+    "ward": "千代田区",
+    "address": "神田花岡町",
+    "capacity": 10,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 12,
+    "name": "日比谷駐車場",
+    "ward": "千代田区",
+    "address": "日比谷公園1番4号",
+    "capacity": 35,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 13,
+    "name": "バイクタイムズ 秋葉原万世橋",
+    "ward": "千代田区",
+    "address": "神田須田町1丁目25番",
+    "capacity": 60,
+    "pricing": "",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 14,
+    "name": "千代田第6 内神田3丁目駐車場",
+    "ward": "千代田区",
+    "address": "内神田3丁目",
+    "capacity": 4,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 15,
+    "name": "バイクタイムズ外神田",
+    "ward": "千代田区",
+    "address": "外神田1丁目",
+    "capacity": 18,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 16,
+    "name": "海運ビル駐車場",
+    "ward": "千代田区",
+    "address": "内幸町2丁目1番4号",
+    "capacity": 14,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 17,
+    "name": "ワテラス駐車場",
+    "ward": "千代田区",
+    "address": "神田淡路町2丁目",
+    "capacity": 4,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 18,
+    "name": "永楽ビル駐車場",
+    "ward": "千代田区",
+    "address": "丸の内1丁目4番1号",
+    "capacity": 10,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 19,
+    "name": "JPタワー駐車場",
+    "ward": "千代田区",
+    "address": "丸の内2丁目7番",
+    "capacity": 10,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 20,
+    "name": "Parking in秋葉原バイク",
+    "ward": "千代田区",
+    "address": "神田佐久間町1丁目",
+    "capacity": 7,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 21,
+    "name": "丸ノ内鍛冶橋 オートバイ専用駐車場",
+    "ward": "千代田区",
+    "address": "丸の内3丁目",
+    "capacity": 9,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 22,
+    "name": "TOBU PARK 3丁目バイク駐車場",
+    "ward": "千代田区",
+    "address": "外神田3丁目",
+    "capacity": 6,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 23,
+    "name": "テラススクエア バイク駐車場",
+    "ward": "千代田区",
+    "address": "神田錦町3丁目22番地",
+    "capacity": 6,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 24,
+    "name": "エコロパーク神保町第10",
+    "ward": "千代田区",
+    "address": "神田神保町3丁目2番地",
+    "capacity": 3,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 25,
+    "name": "四ツ谷・市ヶ谷バイク駐車場",
+    "ward": "千代田区",
+    "address": "",
+    "capacity": 47,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 26,
+    "name": "ホテルアーケード／パレスビル レストラン&ショップ",
+    "ward": "千代田区",
+    "address": "丸の内1丁目1番1号",
+    "capacity": 30,
+    "pricing": "30分500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 27,
+    "name": "新国際ビル 自動二輪車用駐車場",
+    "ward": "千代田区",
+    "address": "丸の内3丁目4番1号",
+    "capacity": 14,
+    "pricing": "60分100円、入庫から12時間最大500円(精算しあり)",
+    "icPayment": false,
+    "notes": "営業時間:7時～23時"
+  },
+  {
+    "no": 28,
+    "name": "Parking in 神田練塀町バイク",
+    "ward": "千代田区",
+    "address": "神田練塀町15番地",
+    "capacity": 5,
+    "pricing": "1日1回500円、駐車場24時間まで(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 29,
+    "name": "NBパーキング神田多町",
+    "ward": "千代田区",
+    "address": "神田多町2丁目5番10号",
+    "capacity": 5,
+    "pricing": "60分200円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 30,
+    "name": "丸の内二重橋ビル駐車場",
+    "ward": "千代田区",
+    "address": "丸の内3丁目2番3号",
+    "capacity": 28,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": "営業時間:7時～23時"
+  },
+  {
+    "no": 31,
+    "name": "パーキングイースト 外神田バイク駐車場",
+    "ward": "千代田区",
+    "address": "外神田6丁目14番1号",
+    "capacity": 20,
+    "pricing": "60分200円、入庫から24時間最大800円(1～4番車室)、入庫から24時間最大400円(5番以降)、夜間20時～8時最大400円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 32,
+    "name": "Parking in 神田佐久間町第3",
+    "ward": "千代田区",
+    "address": "神田佐久間町3丁目21番地",
+    "capacity": 4,
+    "pricing": "60分100円(8時～22時)、入庫から24時間最大900円(精算しあり)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 33,
+    "name": "Parking in 神田佐久間町第4",
+    "ward": "千代田区",
+    "address": "神田佐久間町3丁目21番41号",
+    "capacity": 6,
+    "pricing": "60分100円、24時間最大500円(精算しあり)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 34,
+    "name": "東京ミッドタウン日比谷駐車場",
+    "ward": "千代田区",
+    "address": "有楽町1丁目1番2号",
+    "capacity": 30,
+    "pricing": "60分250円",
+    "icPayment": false,
+    "notes": "営業時間:6時～翌午2時"
+  },
+  {
+    "no": 35,
+    "name": "コインパーク神田神保町3丁目バイク駐車場",
+    "ward": "千代田区",
+    "address": "神田神保町3丁目4番地",
+    "capacity": 13,
+    "pricing": "50分200円、入庫から24時間最大900円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 36,
+    "name": "Parking in 神田須田町2丁目第2",
+    "ward": "千代田区",
+    "address": "神田須田町2丁目23番16号",
+    "capacity": 6,
+    "pricing": "60分200円、入庫から24時間最大700円(精算しあり)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 37,
+    "name": "東京国際フォーラム オートバイ駐車場",
+    "ward": "千代田区",
+    "address": "丸の内3丁目5番1号",
+    "capacity": 100,
+    "pricing": "60分200円、全祝日及び年末年始を除く月～金30分以内入庫から30分以内出庫で無料、最初50分、10時間最大60分100円加算",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は四輪自動車区画に駐車"
+  },
+  {
+    "no": 38,
+    "name": "日本橋箱崎町駐車場",
+    "ward": "中央区",
+    "address": "日本橋箱崎町19及び36番先(隅田川大橋下)",
+    "capacity": 4,
+    "pricing": "60分100円、入庫から12時間最大700円",
+    "icPayment": true,
+    "notes": "夜間利用不可"
+  },
+  {
+    "no": 39,
+    "name": "中央区営京橋プラザ駐車場",
+    "ward": "中央区",
+    "address": "銀座1丁目25番3号",
+    "capacity": 10,
+    "pricing": "60分100円、最大料金1000円、夜間(19時～9時)一泊3000円",
+    "icPayment": false,
+    "notes": "営業時間:7時～22時"
+  },
+  {
+    "no": 40,
+    "name": "中央区営銀座地下駐車場",
+    "ward": "中央区",
+    "address": "銀座7丁目17番12号",
+    "capacity": 10,
+    "pricing": "60分100円、最大料金1000円、夜間(19時～9時)一泊4000円",
+    "icPayment": false,
+    "notes": "営業時間:5時～22時、夜間受付可(入出庫不可)"
+  },
+  {
+    "no": 41,
+    "name": "日本橋兜町 時間貸バイク駐車場",
+    "ward": "中央区",
+    "address": "日本橋兜町1丁目13号",
+    "capacity": 26,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 42,
+    "name": "東京シティエアターミナルC駐車場",
+    "ward": "中央区",
+    "address": "日本橋箱崎町42番1号",
+    "capacity": 60,
+    "pricing": "60分100円、1日最大900円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 43,
+    "name": "中央区営浜町公園地下駐車場",
+    "ward": "中央区",
+    "address": "日本橋2丁目59番4号",
+    "capacity": 6,
+    "pricing": "60分100円、入庫(19時～9時)は1300円",
+    "icPayment": false,
+    "notes": "営業時間:7時～22時、夜間受付可"
+  },
+  {
+    "no": 44,
+    "name": "中央第1日本橋堀留町 アグナス駐車場",
+    "ward": "中央区",
+    "address": "日本橋堀留町2丁目10番10号",
+    "capacity": 3,
+    "pricing": "30分100円(8時～22時)、60分100円(22時～8時)、入庫から24時間最大900円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 45,
+    "name": "エコステーション21 東銀座バイク駐車場",
+    "ward": "中央区",
+    "address": "築地1丁目",
+    "capacity": 10,
+    "pricing": "5時間700円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 46,
+    "name": "東京駅八重洲パーキング東駐車場",
+    "ward": "中央区",
+    "address": "八重洲2丁目1番地",
+    "capacity": 18,
+    "pricing": "30分220円、入庫から24時間最大6000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 47,
+    "name": "銀座三越B3F駐輪場",
+    "ward": "中央区",
+    "address": "銀座4丁目16号",
+    "capacity": 22,
+    "pricing": "30分150円",
+    "icPayment": false,
+    "notes": "営業時間:入庫8時～22時、30分出庫～23時間後"
+  },
+  {
+    "no": 48,
+    "name": "中央第11日本橋富沢町バイク駐車場",
+    "ward": "中央区",
+    "address": "日本橋富沢町",
+    "capacity": 14,
+    "pricing": "30分100円(8時～22時)、入庫から24時間最大1000円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 49,
+    "name": "東京スクエアガーデンパーキング",
+    "ward": "中央区",
+    "address": "京橋3丁目1番1号",
+    "capacity": 30,
+    "pricing": "60分100円、入庫から24時間最大800円(精算しあり)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 50,
+    "name": "リパーク銀座東駐車場",
+    "ward": "中央区",
+    "address": "銀座6丁目17番1号",
+    "capacity": 12,
+    "pricing": "1日1回1000円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 51,
+    "name": "コレド室町テラス駐車場",
+    "ward": "中央区",
+    "address": "日本橋室町3丁目2番1号",
+    "capacity": 17,
+    "pricing": "60分200円",
+    "icPayment": false,
+    "notes": "営業時間:6時～翌午2時(2時～6時入出庫不可)"
+  },
+  {
+    "no": 52,
+    "name": "タイムズ東急プラザ銀座",
+    "ward": "中央区",
+    "address": "銀座5丁目2番1号",
+    "capacity": 14,
+    "pricing": "最初の2時間無料、以降60分100円",
+    "icPayment": false,
+    "notes": "三輪車、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 53,
+    "name": "日本橋高島屋S.C. 新館駐車場",
+    "ward": "中央区",
+    "address": "日本橋2丁目5番1号",
+    "capacity": 11,
+    "pricing": "60分600円",
+    "icPayment": false,
+    "notes": "営業時間:10時～23時"
+  },
+  {
+    "no": 54,
+    "name": "GINZA SIX",
+    "ward": "中央区",
+    "address": "銀座6丁目10番1号",
+    "capacity": 29,
+    "pricing": "12時間無料",
+    "icPayment": false,
+    "notes": "営業時間:10時～23時"
+  },
+  {
+    "no": 55,
+    "name": "日本橋高島屋S.C. 太陽生命日本橋ビル駐輪場",
+    "ward": "中央区",
+    "address": "日本橋2丁目11番2号",
+    "capacity": 4,
+    "pricing": "最初の2時間無料、以降3時間毎500円",
+    "icPayment": false,
+    "notes": "営業時間:6時～24時"
+  },
+  {
+    "no": 56,
+    "name": "新富一丁目オートバイ駐車場",
+    "ward": "中央区",
+    "address": "新富町1丁目13番先",
+    "capacity": 30,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可、夜間受付可"
+  },
+  {
+    "no": 57,
+    "name": "六本木オートバイ駐車場",
+    "ward": "港区",
+    "address": "六本木3丁目1番先",
+    "capacity": 64,
+    "pricing": "60分100円、入庫から24時間最大1000円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 58,
+    "name": "品川インターシティ 二輪車駐車場",
+    "ward": "港区",
+    "address": "港南2丁目15番地",
+    "capacity": 31,
+    "pricing": "最初の2時間無料、入庫から5時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下の利用不可"
+  },
+  {
+    "no": 59,
+    "name": "六本木六丁目 オートバイ専用駐車場",
+    "ward": "港区",
+    "address": "六本木6丁目2番先",
+    "capacity": 4,
+    "pricing": "30分100円、入庫から12時間最大1000円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 60,
+    "name": "Aパーク西麻布",
+    "ward": "港区",
+    "address": "西麻布3丁目17番30号",
+    "capacity": 9,
+    "pricing": "最初の5時間500円、以降60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 61,
+    "name": "白金高輪バイクイン",
+    "ward": "港区",
+    "address": "白金2丁目4番地",
+    "capacity": 40,
+    "pricing": "入庫より8時間毎400円(スペース大)、1,250cc以上入庫より8時間毎300円(スペース小)",
+    "icPayment": false,
+    "notes": "4時間30分～0時30分"
+  },
+  {
+    "no": 62,
+    "name": "六本木三丁目 オートバイ専用駐車場",
+    "ward": "港区",
+    "address": "六本木3丁目4番先",
+    "capacity": 50,
+    "pricing": "60分100円、入庫から12時間最大900円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 63,
+    "name": "東京ミッドタウン駐車場",
+    "ward": "港区",
+    "address": "赤坂9丁目7番1号",
+    "capacity": 50,
+    "pricing": "30分300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 64,
+    "name": "新橋三丁目 オートバイ専用駐車場",
+    "ward": "港区",
+    "address": "新橋3丁目25番先",
+    "capacity": 28,
+    "pricing": "60分100円、60分200円(8時～22時)、入庫から24時間最大1000円",
+    "icPayment": true,
+    "notes": "100cc以下・バイクは利用不可"
+  },
+  {
+    "no": 65,
+    "name": "パークイット芝大門1丁目 バイクパーキング",
+    "ward": "港区",
+    "address": "芝大門1丁目4番8号",
+    "capacity": 5,
+    "pricing": "60分100円(8時～22時)、60分100円(22時～8時)、入庫から24時間最大1200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 66,
+    "name": "一ノ橋 オートバイ専用駐車場",
+    "ward": "港区",
+    "address": "麻布十番3丁目8番地先",
+    "capacity": 10,
+    "pricing": "30分100円、入庫から12時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 67,
+    "name": "六本木ヒルズ クロスポイントバイク駐輪場",
+    "ward": "港区",
+    "address": "六本木3丁目2番1号",
+    "capacity": 30,
+    "pricing": "30分100円、入庫から24時間最大1200円",
+    "icPayment": false,
+    "notes": "100cc以下・バイクは利用不可"
+  },
+  {
+    "no": 68,
+    "name": "MTG六本木1丁目駐車場",
+    "ward": "港区",
+    "address": "六本木1丁目10番地",
+    "capacity": 3,
+    "pricing": "30分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 69,
+    "name": "クエストパーク東新橋 第1バイク専用駐輪場",
+    "ward": "港区",
+    "address": "東新橋2丁目2番地",
+    "capacity": 3,
+    "pricing": "60分100円、入庫から24時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 70,
+    "name": "エコロパーク赤坂第4",
+    "ward": "港区",
+    "address": "赤坂2丁目6番3号",
+    "capacity": 7,
+    "pricing": "60分200円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 71,
+    "name": "サイカパーク赤坂見附 オートバイ駐車場",
+    "ward": "港区",
+    "address": "赤坂3丁目9番18号",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から12時間最大700円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 72,
+    "name": "虎ノ門ヒルズ 時間貸バイク置場",
+    "ward": "港区",
+    "address": "虎ノ門1丁目23番地",
+    "capacity": 50,
+    "pricing": "30分100円、60分200円(12時間最大700円)",
+    "icPayment": false,
+    "notes": "営業時間:7時～23時"
+  },
+  {
+    "no": 73,
+    "name": "エコステーション21 東京タワー駐輪場",
+    "ward": "港区",
+    "address": "芝公園4丁目2番2号",
+    "capacity": 20,
+    "pricing": "4時間400円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 74,
+    "name": "白金タワーバイク駐輪場",
+    "ward": "港区",
+    "address": "白金1丁目1番地",
+    "capacity": 9,
+    "pricing": "60分100円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 75,
+    "name": "虎ノ門3丁目 時間貸バイク駐車場",
+    "ward": "港区",
+    "address": "虎ノ門3丁目7番20号",
+    "capacity": 14,
+    "pricing": "60分200円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 76,
+    "name": "海岸二丁目 オートバイ専用駐車場",
+    "ward": "港区",
+    "address": "海岸2丁目6番先",
+    "capacity": 10,
+    "pricing": "60分100円、入庫から24時間最大1100円",
+    "icPayment": true,
+    "notes": "バイクパーキング"
+  },
+  {
+    "no": 77,
+    "name": "エコロパーク虎ノ門第6",
+    "ward": "港区",
+    "address": "虎ノ門3丁目1番地",
+    "capacity": 4,
+    "pricing": "60分200円(8時～22時)、24時間最大800円(月～土)、入庫24時間最大400円(日・祝、特別日)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 78,
+    "name": "エコロパーク新橋第9",
+    "ward": "港区",
+    "address": "西新橋1丁目9番8号",
+    "capacity": 5,
+    "pricing": "60分200円(8時～22時)、60分100円(22時～8時)、24時間最大800円(月～土)、24時間最大400円(日・祝)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 79,
+    "name": "クレアスパーク コンシェリア新橋",
+    "ward": "港区",
+    "address": "新橋4丁目19番地",
+    "capacity": 6,
+    "pricing": "24時間最大800円(月～土)、24時間最大500円(日・祝)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 80,
+    "name": "エコロパーク六本木第9",
+    "ward": "港区",
+    "address": "六本木5丁目10番29号",
+    "capacity": 5,
+    "pricing": "20分100円、入庫から24時間最大700円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 81,
+    "name": "エコロパーク新橋第8",
+    "ward": "港区",
+    "address": "西新橋1丁目22番1号",
+    "capacity": 10,
+    "pricing": "60分200円、24時間最大800円(月～)、入庫24時間最大400円(日・祝、特別日)、60分300円(22時～8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 82,
+    "name": "エコロパーク西新橋第2",
+    "ward": "港区",
+    "address": "西新橋2丁目22番6号",
+    "capacity": 27,
+    "pricing": "40分200円(8時～22時)、60分100円(22時～8時)、24時間最大800円、24時間最大400円(日祝)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 83,
+    "name": "西新宿第四駐車場",
+    "ward": "新宿区",
+    "address": "西新宿2丁目4番地(都庁心臓部10階乗下)",
+    "capacity": 52,
+    "pricing": "30分100円、24時間最大800円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 84,
+    "name": "新宿サブナード駐車場",
+    "ward": "新宿区",
+    "address": "歌舞伎町1丁目2番2号",
+    "capacity": 61,
+    "pricing": "30分150円、入庫から12時間まで最大",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 85,
+    "name": "新宿第3 歌舞伎町区役所通り駐車場",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目21番13号",
+    "capacity": 5,
+    "pricing": "60分200円(8時～2時)、60分100円(2時～8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 86,
+    "name": "歌舞伎町交番前パーキング",
+    "ward": "新宿区",
+    "address": "歌舞伎町1丁目20番地",
+    "capacity": 4,
+    "pricing": "入庫から12時間最大1200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 87,
+    "name": "エコステーション21 新宿駅新南口バイク駐輪場",
+    "ward": "新宿区",
+    "address": "新宿4丁目1番先",
+    "capacity": 32,
+    "pricing": "6時間60分100円(キャッシュレス100円)",
+    "icPayment": false,
+    "notes": "24時間"
+  },
+  {
+    "no": 88,
+    "name": "公共新宿パーキング",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目10番1号",
+    "capacity": 5,
+    "pricing": "60分300円、入庫から12時間最大1200円",
+    "icPayment": false,
+    "notes": "営業時間:22時30分～翌日"
+  },
+  {
+    "no": 89,
+    "name": "伊勢丹本館パーキング",
+    "ward": "新宿区",
+    "address": "新宿3丁目16番13号",
+    "capacity": 9,
+    "pricing": "30分250円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 90,
+    "name": "エコステーション21 新大久保駅自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "大久町2丁目3番先",
+    "capacity": 33,
+    "pricing": "30分210円(キャッシュレス)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 91,
+    "name": "新宿駅西口駐車場",
+    "ward": "新宿区",
+    "address": "新宿1丁目西口地下(市ノ)",
+    "capacity": 56,
+    "pricing": "60分100円、入庫から12時間最大1260円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 92,
+    "name": "エコステーション21 大久保駅前駐輪場",
+    "ward": "新宿区",
+    "address": "百人町1丁目",
+    "capacity": 5,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 93,
+    "name": "エコロパーク西新宿第9",
+    "ward": "新宿区",
+    "address": "西新宿7丁目22番27号",
+    "capacity": 13,
+    "pricing": "60分200円、入庫から24時間最大700円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 94,
+    "name": "ドン・キホーテ新宿店",
+    "ward": "新宿区",
+    "address": "大久保1丁目12番6号",
+    "capacity": 5,
+    "pricing": "60分200円、24時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 95,
+    "name": "サイカパーク新宿御苑前駅 自転車・バイク駐車場",
+    "ward": "新宿区",
+    "address": "新宿1丁目1番4号",
+    "capacity": 6,
+    "pricing": "最初の6時間は60分150円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 96,
+    "name": "NPC24H 上落合1丁目",
+    "ward": "新宿区",
+    "address": "上落合1丁目29番4号",
+    "capacity": 5,
+    "pricing": "入庫から24時間最大600円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 97,
+    "name": "アットパーク歌舞伎町",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目34番5号",
+    "capacity": 5,
+    "pricing": "60分200円(18時～6時最大1000円)、営業(18時～6時最大1000円)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 98,
+    "name": "NPC24H 新宿3丁目第4パーキング",
+    "ward": "新宿区",
+    "address": "新宿3丁目11番1号",
+    "capacity": 3,
+    "pricing": "30分110円、5丁目1番28時間最大800円",
+    "icPayment": false,
+    "notes": "100cc以下のバイクは利用不可"
+  },
+  {
+    "no": 99,
+    "name": "エコロパーク大久保第29",
+    "ward": "新宿区",
+    "address": "大久保2丁目1番地2号",
+    "capacity": 2,
+    "pricing": "60分200円(8時～22時)、2時間100円(22時～8時)、入庫から24時間最大900円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 100,
+    "name": "タイムズ新宿東宝ビル",
+    "ward": "新宿区",
+    "address": "歌舞伎町1丁目19番地",
+    "capacity": 4,
+    "pricing": "60分200円、入庫から12時間最大1200円",
+    "icPayment": false,
+    "notes": "営業時間:8時～23時"
+  },
+  {
+    "no": 101,
+    "name": "エコステーション21 新宿駅東南口自転車駐輪場",
+    "ward": "新宿区",
+    "address": "新宿3丁目37番地",
+    "capacity": 44,
+    "pricing": "最初の2時間無料、以降60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 102,
+    "name": "都庁オートバイ専用駐車場",
+    "ward": "新宿区",
+    "address": "西新宿2丁目5番先(副都心部10号線高架下)",
+    "capacity": 43,
+    "pricing": "最初60分100円(8時間)、入庫24時間最大800円(0時以降)",
+    "icPayment": true,
+    "notes": "営業時間:入庫7時～22時"
+  },
+  {
+    "no": 103,
+    "name": "エコステーション21高田馬場駅第一自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "高田馬場4丁目10番2号",
+    "capacity": 20,
+    "pricing": "60分100円(キャッシュレス決済20分以降)",
+    "icPayment": true,
+    "notes": "営業時間:5時～翌午前1時"
+  },
+  {
+    "no": 104,
+    "name": "エコステーション21 中井駅北自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "中落合1丁目18番地",
+    "capacity": 8,
+    "pricing": "入庫60分(キャッシュレス決済20分以降)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 105,
+    "name": "エコロパーク歌舞伎町第10",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目15番11号",
+    "capacity": 5,
+    "pricing": "60分200円、入庫から24時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 106,
+    "name": "エコロパーク歌舞伎町第27",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目32番地",
+    "capacity": 1,
+    "pricing": "60分200円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 107,
+    "name": "アットパークセブンイレブン歌舞伎町2丁目店",
+    "ward": "新宿区",
+    "address": "歌舞伎町2丁目19番地",
+    "capacity": 1,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 108,
+    "name": "初台北オートバイ駐車場",
+    "ward": "新宿区",
+    "address": "西新宿3丁目19番先",
+    "capacity": 24,
+    "pricing": "2時間100円、24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 109,
+    "name": "サイカパーク 幡橋駅自動二輪駐車場",
+    "ward": "新宿区",
+    "address": "片町5番1号",
+    "capacity": 18,
+    "pricing": "最初の2時間無料、以降60分110円(キャッシュレス)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 110,
+    "name": "サイカパーク牛込柳町駅 自転車等駐車場Bエリア",
+    "ward": "新宿区",
+    "address": "市谷2丁目6番7号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、以降60分110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 111,
+    "name": "サイカパーク早大通り 自転車等駐車場1エリア",
+    "ward": "新宿区",
+    "address": "早稲田鶴巻町538番12号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、以降60分110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 112,
+    "name": "サイカパーク早大通り 自転車等駐車場2エリア",
+    "ward": "新宿区",
+    "address": "早稲田鶴巻町517番1号",
+    "capacity": 3,
+    "pricing": "最初の2時間無料、以降60分110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 113,
+    "name": "サイカパーク新宿三丁目駅 自動二輪駐車場",
+    "ward": "新宿区",
+    "address": "新宿3丁目1番地",
+    "capacity": 29,
+    "pricing": "入庫60分110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 114,
+    "name": "エコステーション21高田馬場駅第三自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "高田馬場1丁目35番地",
+    "capacity": 16,
+    "pricing": "",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 115,
+    "name": "エコステーション21 中井駅南自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "上落合2丁目20番先",
+    "capacity": 14,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 116,
+    "name": "エコステーション21西新宿五丁目駅 自転車等駐輪場Dエリア",
+    "ward": "新宿区",
+    "address": "西新宿4丁目5番先",
+    "capacity": 14,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 117,
+    "name": "エコステーション21 大久保駅自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "百人町2丁目25番先",
+    "capacity": 22,
+    "pricing": "60分100円(キャッシュレス)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 118,
+    "name": "エコステーション21 新宿西口駅自転車等駐輪場",
+    "ward": "新宿区",
+    "address": "歌舞伎町1丁目30番先",
+    "capacity": 5,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 119,
+    "name": "東急歌舞伎町タワー駐輪場",
+    "ward": "新宿区",
+    "address": "歌舞伎町1丁目29番1号",
+    "capacity": 10,
+    "pricing": "1時間無料、以降60分100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 120,
+    "name": "mobiParkリヴシティ 新宿壱番館・弐番館",
+    "ward": "新宿区",
+    "address": "北新宿1丁目19番12号",
+    "capacity": 5,
+    "pricing": "入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 121,
+    "name": "上野公園大駐車場",
+    "ward": "文京区",
+    "address": "湯島4丁目6番12号",
+    "capacity": 13,
+    "pricing": "10時間700円、管理人支払",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 122,
+    "name": "エコロパーク湯島第3",
+    "ward": "文京区",
+    "address": "湯島3丁目6番地",
+    "capacity": 5,
+    "pricing": "入庫から24時間最大500円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 123,
+    "name": "湯島バイクパーキング",
+    "ward": "文京区",
+    "address": "湯島3丁目45番地",
+    "capacity": 6,
+    "pricing": "2時間450円(8時～22時)/昼間最大900円、60分100円(22時～8時)/夜間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 124,
+    "name": "サニーパーク東池袋-1",
+    "ward": "文京区",
+    "address": "大塚6丁目8番先",
+    "capacity": 2,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 125,
+    "name": "神田明神下駐輪場",
+    "ward": "文京区",
+    "address": "湯島1丁目1番10号",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から24時間最大800円、0円/月~(会員しあり)、入庫から24時間最大800円(土日祝)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 126,
+    "name": "東京ドームバイク駐車場",
+    "ward": "文京区",
+    "address": "後楽1丁目3番17号",
+    "capacity": 19,
+    "pricing": "2時間200円、以降60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 127,
+    "name": "台東区雷門地下駐車場",
+    "ward": "台東区",
+    "address": "雷門2丁目18番先",
+    "capacity": 12,
+    "pricing": "30分50円(7時～23時)、30分50円(23時～7時)、入庫から12時間最大500円(金のみ)",
+    "icPayment": true,
+    "notes": "営業時間:7時～23時"
+  },
+  {
+    "no": 128,
+    "name": "入谷駅南自転車等駐車場",
+    "ward": "台東区",
+    "address": "北上野1丁目15番先",
+    "capacity": 22,
+    "pricing": "30分50円、1日最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 129,
+    "name": "NTTル・パルク御徒町バイク駐車場",
+    "ward": "台東区",
+    "address": "上野5丁目24番11号",
+    "capacity": 7,
+    "pricing": "20分100円(8時～22時)、60分100円(22時～8時)、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": "100cc以下のバイクは利用不可"
+  },
+  {
+    "no": 130,
+    "name": "Dパーキング 東上野3丁目第3駐車場",
+    "ward": "台東区",
+    "address": "東上野3丁目17番7号",
+    "capacity": 10,
+    "pricing": "60分100円(8時～9時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 131,
+    "name": "スパーク浅草",
+    "ward": "台東区",
+    "address": "浅草5丁目6番地",
+    "capacity": 3,
+    "pricing": "24時間400円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 132,
+    "name": "Parking in御徒町バイク",
+    "ward": "台東区",
+    "address": "上野5丁目10番24号",
+    "capacity": 23,
+    "pricing": "60分100円、1日最大800円(8時以降)",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 133,
+    "name": "パーキングJ 池之端第二駐車場",
+    "ward": "台東区",
+    "address": "池之端2丁目7番14号",
+    "capacity": 5,
+    "pricing": "60分200円、入庫24時間最大800円",
+    "icPayment": false,
+    "notes": "100cc以下のバイクは利用不可"
+  },
+  {
+    "no": 134,
+    "name": "TOBU PARK 浅草第7バイク駐車場",
+    "ward": "台東区",
+    "address": "浅草2丁目28番地",
+    "capacity": 4,
+    "pricing": "5時間毎200円",
+    "icPayment": true,
+    "notes": "100cc以下のバイクは利用不可"
+  },
+  {
+    "no": 135,
+    "name": "NPC24H 東上野1丁目パーキング",
+    "ward": "台東区",
+    "address": "東上野1丁目13番先",
+    "capacity": 4,
+    "pricing": "30分110円(営業時間)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 136,
+    "name": "エコロパーク東上野第8",
+    "ward": "台東区",
+    "address": "東上野4丁目19番先",
+    "capacity": 5,
+    "pricing": "60分200円(8時～22時)、入庫から24時間最大500円、入庫から12時間まで1000円(精算しあり)",
+    "icPayment": false,
+    "notes": "30分100円"
+  },
+  {
+    "no": 137,
+    "name": "ファイン・パーキング 西浅草第1",
+    "ward": "台東区",
+    "address": "西浅草2丁目12番地",
+    "capacity": 27,
+    "pricing": "30分100円、1日最大800円(精算しあり)",
+    "icPayment": false,
+    "notes": "営業時間:7時～23時、夜間利用可"
+  },
+  {
+    "no": 138,
+    "name": "錦糸町パークタワー",
+    "ward": "墨田区",
+    "address": "江東橋3丁目5番16号",
+    "capacity": 53,
+    "pricing": "60分100円、入庫から12時間最大600円(精算しあり)",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可、ミニカーは利用不可"
+  },
+  {
+    "no": 139,
+    "name": "墨田第四押上駅前駐輪場",
+    "ward": "墨田区",
+    "address": "業平4丁目10番6号",
+    "capacity": 5,
+    "pricing": "60分100円(8時間)、入庫から24時間最大500円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 140,
+    "name": "丸井錦糸町店駐輪場",
+    "ward": "墨田区",
+    "address": "江東橋3丁目9番10号",
+    "capacity": 24,
+    "pricing": "最初の2時間無料、入庫2時間毎300円",
+    "icPayment": false,
+    "notes": "営業時間:6時30分～24時"
+  },
+  {
+    "no": 141,
+    "name": "オリナス錦糸町駐輪場",
+    "ward": "墨田区",
+    "address": "太平4丁目1番地",
+    "capacity": 30,
+    "pricing": "最初の3時間無料、入庫30分50円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 142,
+    "name": "アルカキット錦糸町 臨時バイク置き場",
+    "ward": "墨田区",
+    "address": "",
+    "capacity": 5,
+    "pricing": "30分270円",
+    "icPayment": false,
+    "notes": "営業時間:9時30分～22時45分～23時"
+  },
+  {
+    "no": 143,
+    "name": "東京スカイツリータウン バイク置場",
+    "ward": "墨田区",
+    "address": "押上1丁目1番2号",
+    "capacity": 60,
+    "pricing": "以降60分300円(スペース大:W1000xL2400)、60分200円(スペース小:W700xL1900)",
+    "icPayment": false,
+    "notes": "入庫7時30分～22時30分、営業時間外出庫不可"
+  },
+  {
+    "no": 144,
+    "name": "アップルパークマルホン 押上駐輪場",
+    "ward": "墨田区",
+    "address": "",
+    "capacity": 3,
+    "pricing": "5時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 145,
+    "name": "タイムズCS押上駅前",
+    "ward": "墨田区",
+    "address": "墨田1丁目10番地",
+    "capacity": 3,
+    "pricing": "30分330円(8時～22時)、60分110円(22時～8時)、入庫1430円(24時間)(土日祝不可)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 146,
+    "name": "スカイツリー前 バイク駐車場",
+    "ward": "墨田区",
+    "address": "墨田1丁目2丁目26番地",
+    "capacity": 27,
+    "pricing": "区画No.1～3全長2.4mまで、No.4～6全長2.3mまで、No.9～27:8時間150円",
+    "icPayment": false,
+    "notes": "No.1～3:全長2.4m以上、No.4～6:全長2.3mまで、No.9～27:8時間150円"
+  },
+  {
+    "no": 147,
+    "name": "TOBU PARK 曳舟駅高架下駐輪場",
+    "ward": "墨田区",
+    "address": "",
+    "capacity": 7,
+    "pricing": "8時間160円",
+    "icPayment": false,
+    "notes": "125cc以下の利用可"
+  },
+  {
+    "no": 148,
+    "name": "Tacyサイクルパーク イトーヨーカドー曳舟店お客様駐輪場1F",
+    "ward": "墨田区",
+    "address": "京島1丁目2番1号",
+    "capacity": 4,
+    "pricing": "最初の3時間無料、以降",
+    "icPayment": false,
+    "notes": "営業時間:9時30分～22時30分、大型バイク入庫不可"
+  },
+  {
+    "no": 149,
+    "name": "バイクパーキングハ広",
+    "ward": "墨田区",
+    "address": "八広6丁目26番先",
+    "capacity": 7,
+    "pricing": "60分100円、入庫から24時間最大600円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可、ミニカーは利用不可"
+  },
+  {
+    "no": 150,
+    "name": "夢の島公園第一(南)駐車場",
+    "ward": "江東区",
+    "address": "夢の島3丁目2番地",
+    "capacity": 17,
+    "pricing": "1日1回200円、管理人窓口支払(前払い制)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 151,
+    "name": "Tacyサイクルパーク イトーヨーカドー木場店",
+    "ward": "江東区",
+    "address": "木場1丁目5番地",
+    "capacity": 40,
+    "pricing": "最初の4時間無料、以降4時間毎200円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 152,
+    "name": "東陽3丁目バイク駐車場",
+    "ward": "江東区",
+    "address": "東陽3丁目24番12号",
+    "capacity": 10,
+    "pricing": "60分100円、1日最大500円(0時切替開始)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 153,
+    "name": "アーバンドックららぽーと 豊洲駐輪場A",
+    "ward": "江東区",
+    "address": "豊洲2丁目4番9号",
+    "capacity": 33,
+    "pricing": "最初の3時間無料、入庫より5時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 154,
+    "name": "サイクルタイムズ豊洲",
+    "ward": "江東区",
+    "address": "豊洲3丁目4番8号",
+    "capacity": 3,
+    "pricing": "10時間毎150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 155,
+    "name": "ティーファス深川駐輪場",
+    "ward": "江東区",
+    "address": "牡丹",
+    "capacity": 6,
+    "pricing": "60分100円(7時～22時)、入庫2時間100円(22時)、入庫最大300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 156,
+    "name": "i-park select24 門前仲町スターダスト駐輪場",
+    "ward": "江東区",
+    "address": "門前仲町2丁目3番地",
+    "capacity": 14,
+    "pricing": "最初の30分100円、入庫8時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 157,
+    "name": "サイカパーク 西友東陽町店駐輪場",
+    "ward": "江東区",
+    "address": "東陽4丁目12番3号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 158,
+    "name": "YAMADA web.com 江東新砂店駐輪場",
+    "ward": "江東区",
+    "address": "新砂1丁目5号",
+    "capacity": 5,
+    "pricing": "入庫12時間毎200円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 159,
+    "name": "エコステーション21 南砂町駅前駐輪場",
+    "ward": "江東区",
+    "address": "南砂3丁目2番4号",
+    "capacity": 8,
+    "pricing": "最初の2時間無料、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 160,
+    "name": "隅田川大橋B駐輪場",
+    "ward": "江東区",
+    "address": "(隅田川大橋下)",
+    "capacity": 8,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 161,
+    "name": "江東区立新木場駅南 自転車駐車場",
+    "ward": "江東区",
+    "address": "新木場1丁目5番地",
+    "capacity": 45,
+    "pricing": "24時間200円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 162,
+    "name": "江東区立南砂町駅西 自転車駐車場",
+    "ward": "江東区",
+    "address": "南砂3丁目9番先",
+    "capacity": 30,
+    "pricing": "1日1回200円",
+    "icPayment": false,
+    "notes": "個人(乗車等)開7時～1時間、125cc以下のみ利用可"
+  },
+  {
+    "no": 163,
+    "name": "高橋駐車場",
+    "ward": "江東区",
+    "address": "高橋13番先",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 164,
+    "name": "江東区立潮見駅 自転車駐車場",
+    "ward": "江東区",
+    "address": "潮見2丁目6番地",
+    "capacity": 8,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 165,
+    "name": "有明ガーデン駐車場",
+    "ward": "江東区",
+    "address": "有明2丁目1番地",
+    "capacity": 65,
+    "pricing": "最初の1時間無料、以降30分400円、入庫から24時間最大3000円(月～金)、30分500円、最大料金なし(土日祝)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 166,
+    "name": "江東区立門前仲町駅黒船橋 自転車駐車場",
+    "ward": "江東区",
+    "address": "門前仲町1丁目1番先",
+    "capacity": 10,
+    "pricing": "最初の1時間無料、以降24時間最大",
+    "icPayment": false,
+    "notes": "色ナンバー車(ミニカー)は利用不可"
+  },
+  {
+    "no": 167,
+    "name": "江東区立亀戸駅北口第三 自転車駐車場",
+    "ward": "江東区",
+    "address": "亀戸1丁目41番2号",
+    "capacity": 6,
+    "pricing": "1日1回200円",
+    "icPayment": false,
+    "notes": "個人(入場は1回まで)、125cc以下のみ利用可"
+  },
+  {
+    "no": 168,
+    "name": "東京アクアティクスセンター",
+    "ward": "江東区",
+    "address": "辰巳2丁目2番1号",
+    "capacity": 7,
+    "pricing": "60分100円、以降1時間毎",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 169,
+    "name": "JR東急目黒ビル駐輪場",
+    "ward": "品川区",
+    "address": "上大崎4丁目2番地",
+    "capacity": 77,
+    "pricing": "最初の2時間無料、4時間30分～、30分",
+    "icPayment": false,
+    "notes": "営業時間:4時30分～翌1時、30分～"
+  },
+  {
+    "no": 170,
+    "name": "エコステーション21 サイクルパーキング大井町A",
+    "ward": "品川区",
+    "address": "東大井5丁目1番地",
+    "capacity": 33,
+    "pricing": "最初の2時間無料、以降6時間毎200円",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 171,
+    "name": "立会川駅 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "東大井1丁目1番地",
+    "capacity": 7,
+    "pricing": "24時間250円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 172,
+    "name": "五反田駅 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "西五反田2丁目3番先",
+    "capacity": 25,
+    "pricing": "24時間250円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 173,
+    "name": "新馬場駅 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "南品川1丁目9番先",
+    "capacity": 5,
+    "pricing": "24時間250円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 174,
+    "name": "大崎駅東口 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "大崎3丁目4番先",
+    "capacity": 44,
+    "pricing": "24時間250円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 175,
+    "name": "大井町駅西口区営自転車等駐車場 立会道路",
+    "ward": "品川区",
+    "address": "大井1丁目7番地",
+    "capacity": 62,
+    "pricing": "24時間250円",
+    "icPayment": false,
+    "notes": "営業時間:7時～2時"
+  },
+  {
+    "no": 176,
+    "name": "エコステーション21Think Park Towerバイク駐輪場",
+    "ward": "品川区",
+    "address": "大崎2丁目1番地",
+    "capacity": 18,
+    "pricing": "最初の2時間無料、以降60分100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 177,
+    "name": "大井競馬場前駅 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "勝島1丁目",
+    "capacity": 9,
+    "pricing": "12時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 178,
+    "name": "エコステーション21京急立会川自転車・バイク駐輪場",
+    "ward": "品川区",
+    "address": "東大井2丁目20番地",
+    "capacity": 9,
+    "pricing": "30分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 179,
+    "name": "クレアスバイクパークパレステュディオ五反田STATIONFRONT",
+    "ward": "品川区",
+    "address": "東五反田1丁目2番2号",
+    "capacity": 35,
+    "pricing": "5時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 180,
+    "name": "エコステーション21ハツ山 歩道橋下自転車等駐車場",
+    "ward": "品川区",
+    "address": "北品川1丁目",
+    "capacity": 4,
+    "pricing": "最初の1時間無料、以降200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 181,
+    "name": "エコステーション21 エトモ武蔵小山駐輪場B",
+    "ward": "品川区",
+    "address": "小山3丁目4番6号",
+    "capacity": 5,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 182,
+    "name": "品川第3旗の台駅前 バイク駐車場",
+    "ward": "品川区",
+    "address": "旗の台3丁目1番先",
+    "capacity": 10,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 183,
+    "name": "エコステーション21 大崎ニュー・シティ駐輪場",
+    "ward": "品川区",
+    "address": "大崎1丁目6番4号",
+    "capacity": 11,
+    "pricing": "",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 184,
+    "name": "エコステーション21ゲート シティ大崎バイク駐車場",
+    "ward": "品川区",
+    "address": "大崎1丁目11番1号",
+    "capacity": 24,
+    "pricing": "4時間毎220円(125cc以上)",
+    "icPayment": false,
+    "notes": "枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 185,
+    "name": "品川第4旗の台 バイク駐車場",
+    "ward": "品川区",
+    "address": "旗の台5丁目1番地",
+    "capacity": 10,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 186,
+    "name": "イオンスタイル品川 シーサイドバイク駐輪場",
+    "ward": "品川区",
+    "address": "東品川4丁目12番地",
+    "capacity": 26,
+    "pricing": "最初の2時間無料",
+    "icPayment": false,
+    "notes": "営業時間:6時30分～24時"
+  },
+  {
+    "no": 187,
+    "name": "サイクルタイムズ スクエア荏原",
+    "ward": "品川区",
+    "address": "荏原4丁目5番地",
+    "capacity": 6,
+    "pricing": "60分200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 188,
+    "name": "区営五反田駅東口 バイク自転車等駐車場",
+    "ward": "品川区",
+    "address": "東五反田5丁目22番8号",
+    "capacity": 8,
+    "pricing": "24時間200円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 189,
+    "name": "エコステーション21五反田 東急スクエア駐輪場B",
+    "ward": "品川区",
+    "address": "東五反田2丁目1番地",
+    "capacity": 5,
+    "pricing": "入庫3時間毎250円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 190,
+    "name": "エコステーション21 大崎ブライトプラザ駐輪場",
+    "ward": "品川区",
+    "address": "北品川5丁目4番地",
+    "capacity": 4,
+    "pricing": "最初の1時間無料、以降3時間毎200円(125cc以上)、入庫3時間300円(126cc以上)",
+    "icPayment": false,
+    "notes": "排気量:126cc以上2台、125cc以下2台、共にサイズ制約あり"
+  },
+  {
+    "no": 191,
+    "name": "東急西小山駅(北)駐輪場",
+    "ward": "品川区",
+    "address": "小山5丁目21番地",
+    "capacity": 5,
+    "pricing": "24時間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 192,
+    "name": "目黒セントラルスクエア駐車場",
+    "ward": "品川区",
+    "address": "上大崎3丁目",
+    "capacity": 1,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": "営業時間:6時～24時、営業時間外出庫不可"
+  },
+  {
+    "no": 193,
+    "name": "戸越銀座駅 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "平塚1丁目5番1号",
+    "capacity": 5,
+    "pricing": "24時間250円",
+    "icPayment": true,
+    "notes": "100cc以下のみ利用可"
+  },
+  {
+    "no": 194,
+    "name": "旗の台駅第2 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "旗の台2丁目7番先",
+    "capacity": 3,
+    "pricing": "24時間250円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 195,
+    "name": "地下鉄中延駅第2 区営自転車等駐車場",
+    "ward": "品川区",
+    "address": "中延4丁目7番先",
+    "capacity": 3,
+    "pricing": "24時間250円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可、枠内に入庫できない車両は利用不可"
+  },
+  {
+    "no": 196,
+    "name": "目黒区立駒場東大前 東大口駐輪場",
+    "ward": "目黒区",
+    "address": "駒場3丁目8番1号",
+    "capacity": 15,
+    "pricing": "最初の1時間無料、入庫24時間毎300円(51cc以上)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 197,
+    "name": "目黒区立池尻大橋駅北口駐輪場",
+    "ward": "目黒区",
+    "address": "大橋2丁目24番11号",
+    "capacity": 25,
+    "pricing": "最初の1時間無料、入庫24時間毎150円(51cc以上)、入庫24時間毎300円(50cc以上)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 198,
+    "name": "目黒区立洗足二丁目駐輪場",
+    "ward": "目黒区",
+    "address": "洗足2丁目18番11号",
+    "capacity": 20,
+    "pricing": "入庫24時間毎300円(51cc以上)",
+    "icPayment": false,
+    "notes": "営業時間:5時～翌午1時"
+  },
+  {
+    "no": 199,
+    "name": "アクトパーク学芸大学",
+    "ward": "目黒区",
+    "address": "鷹番3丁目9番6号",
+    "capacity": 4,
+    "pricing": "40分100円(8時～20時)/昼間最大700円、90分100円(20時～8時)/夜間最大300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 200,
+    "name": "東京国際(羽田)空港 第1駐車場",
+    "ward": "大田区",
+    "address": "羽田空港3丁目3番3号",
+    "capacity": 40,
+    "pricing": "30分50円、24時間最大500円(精算しあり)、以降60分100円、30分以内の出場無料",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 201,
+    "name": "東京国際(羽田)空港 第2駐車場",
+    "ward": "大田区",
+    "address": "羽田空港3丁目3番先",
+    "capacity": 38,
+    "pricing": "30分50円、24時間最大500円(精算しあり)、60分100円、30分以内の出場無料",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 202,
+    "name": "東京国際(羽田)空港 第3駐車場",
+    "ward": "大田区",
+    "address": "羽田空港2丁目3番4号",
+    "capacity": 8,
+    "pricing": "30分50円、24時間最大500円(精算しあり)、60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 203,
+    "name": "サイカパーク大森駅前ビル 第2バイク駐車場",
+    "ward": "大田区",
+    "address": "山王2丁目1番地",
+    "capacity": 3,
+    "pricing": "最初の1時間無料、入庫から3時間毎・以降5時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 204,
+    "name": "Tacyサイクルパークイトーヨーカドー大森店お客様駐輪場(A・B部)",
+    "ward": "大田区",
+    "address": "大森北2丁目13番地",
+    "capacity": 80,
+    "pricing": "入庫から3時間無料、入庫12時間毎200円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 205,
+    "name": "東京国際(羽田)空港 第4駐車場(別館)",
+    "ward": "大田区",
+    "address": "羽田空港3丁目4番先",
+    "capacity": 5,
+    "pricing": "30分50円、24時間最大500円(精算しあり)、入庫100円、30分以内の出場無料",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 206,
+    "name": "東京国際(羽田)空港 第5駐車場",
+    "ward": "大田区",
+    "address": "羽田空港2丁目5番先",
+    "capacity": 5,
+    "pricing": "入庫から24時間700円(精算しあり)、入庫60分100円",
+    "icPayment": false,
+    "notes": "126cc以上のみ利用可"
+  },
+  {
+    "no": 207,
+    "name": "雑色駅西口自転車駐車場",
+    "ward": "大田区",
+    "address": "仲六郷2丁目29番先",
+    "capacity": 12,
+    "pricing": "1日1回200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 208,
+    "name": "京急大鳥居駐輪場",
+    "ward": "大田区",
+    "address": "西糀谷3丁目32番地、33番地",
+    "capacity": 1,
+    "pricing": "最短20円(126cc以上)",
+    "icPayment": false,
+    "notes": "排気量:126cc以上1台、125cc以下のみ1台、共にサイズ制約あり"
+  },
+  {
+    "no": 209,
+    "name": "サイカパーク 大森駅前ビル第1駐車場",
+    "ward": "大田区",
+    "address": "山王2丁目4番1号",
+    "capacity": 14,
+    "pricing": "最初の1時間無料、入庫3時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 210,
+    "name": "大鳥居駅南駐車場",
+    "ward": "大田区",
+    "address": "萩中3丁目7番先",
+    "capacity": 4,
+    "pricing": "60分100円、入庫3時間最大200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 211,
+    "name": "Dパーキング蒲田駅前第2",
+    "ward": "大田区",
+    "address": "西蒲田7丁目44番地",
+    "capacity": 15,
+    "pricing": "1台100円、入庫から24時間最大900円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 212,
+    "name": "Dパーキング 大田区池上6丁目第1",
+    "ward": "大田区",
+    "address": "池上6丁目10番3号",
+    "capacity": 5,
+    "pricing": "入庫から24時間最大300円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 213,
+    "name": "蓮沼自転車駐車場",
+    "ward": "大田区",
+    "address": "西蒲田7丁目36番先",
+    "capacity": 10,
+    "pricing": "1日300円(51cc以上)(8時間)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 214,
+    "name": "蒲田3丁目 時間貸しバイク駐車場",
+    "ward": "大田区",
+    "address": "蒲田3丁目15番16号",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から24時間最大500円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 215,
+    "name": "Dパーキング糀谷駅前第1",
+    "ward": "大田区",
+    "address": "西蒲田3丁目3番5号",
+    "capacity": 4,
+    "pricing": "40分100円(8時～24時)、60分100円(22時～8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 216,
+    "name": "Kパーキング 京急蒲田駅前駐輪場",
+    "ward": "大田区",
+    "address": "南蒲田1丁目20番地",
+    "capacity": 2,
+    "pricing": "60分100円(22時～8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 217,
+    "name": "TOBU PARK ヒューリック蒲田ビル駐輪場",
+    "ward": "大田区",
+    "address": "蒲田5丁目17番地",
+    "capacity": 4,
+    "pricing": "60分100円、入庫から24時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 218,
+    "name": "田園調布(B) 駐車場(オートバイ)",
+    "ward": "大田区",
+    "address": "田園調布本町51番地",
+    "capacity": 16,
+    "pricing": "24時間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 219,
+    "name": "流通センター駅前 自転車駐車場",
+    "ward": "大田区",
+    "address": "平和島6丁目2番先",
+    "capacity": 2,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 220,
+    "name": "羽田エアポートガーデン駐車場(A駐車場)",
+    "ward": "大田区",
+    "address": "羽田空港2丁目7番1号",
+    "capacity": 3,
+    "pricing": "60分100円、入庫から24時間最大700円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 221,
+    "name": "本多パーキング",
+    "ward": "世田谷区",
+    "address": "北沢2丁目10番15号",
+    "capacity": 16,
+    "pricing": "30分100円、入庫から10時間最大1000円",
+    "icPayment": false,
+    "notes": "営業時間:6時～23時"
+  },
+  {
+    "no": 222,
+    "name": "三軒茶屋中央駐車場",
+    "ward": "世田谷区",
+    "address": "三軒茶屋2丁目11番地",
+    "capacity": 28,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 223,
+    "name": "二子玉川西駐車場",
+    "ward": "世田谷区",
+    "address": "",
+    "capacity": 0,
+    "pricing": "60分200円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 224,
+    "name": "用賀駐車場",
+    "ward": "世田谷区",
+    "address": "用賀4丁目5番先",
+    "capacity": 15,
+    "pricing": "40分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 225,
+    "name": "用賀2丁目駐車場",
+    "ward": "世田谷区",
+    "address": "用賀2丁目31番先",
+    "capacity": 5,
+    "pricing": "入庫から24時間100円(8時〜22時)、60分100円(22時〜8時)、入庫当日24時まで最大800円(精算し直し)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 226,
+    "name": "三本杉陸橋駐車場",
+    "ward": "世田谷区",
+    "address": "桜1丁目1番先",
+    "capacity": 2,
+    "pricing": "60分100円、入庫当日24時まで最大800円(精算し直し)",
+    "icPayment": false,
+    "notes": "駐車スペースに収まる大きさの車両に限る"
+  },
+  {
+    "no": 227,
+    "name": "玉川高島屋S・C マロニエコート",
+    "ward": "世田谷区",
+    "address": "玉川3丁目17番先",
+    "capacity": 3,
+    "pricing": "30分300円",
+    "icPayment": false,
+    "notes": "営業時間:8時30分〜22時"
+  },
+  {
+    "no": 228,
+    "name": "世田谷ビジネススクエア 第3バイク駐車場",
+    "ward": "世田谷区",
+    "address": "用賀4丁目7番地",
+    "capacity": 3,
+    "pricing": "入庫から6時間300円、1泊2時間無料、入庫から24時間最大800円、1時間321円(51cc以上)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 229,
+    "name": "オダクル千歳船橋第2",
+    "ward": "世田谷区",
+    "address": "桜丘5丁目47番地",
+    "capacity": 25,
+    "pricing": "10時間214円(50cc以下)、交通系電子マネー専用",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 230,
+    "name": "松原駐車場",
+    "ward": "世田谷区",
+    "address": "赤堤4丁目22番先",
+    "capacity": 5,
+    "pricing": "40分100円、入庫から24時間最大300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 231,
+    "name": "二子玉川ライズ第2駐輪場",
+    "ward": "世田谷区",
+    "address": "玉川2丁目21番地",
+    "capacity": 3,
+    "pricing": "1時間60分100円(1F:51cc〜)、1F:6時間〜8時間無料(50cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 232,
+    "name": "小田急豪徳寺第2 バイク駐車場",
+    "ward": "世田谷区",
+    "address": "豪徳寺1丁目33番地",
+    "capacity": 8,
+    "pricing": "60分100円、入庫から24時間最大300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 233,
+    "name": "上町24hカーポート",
+    "ward": "世田谷区",
+    "address": "世田谷2丁目30番15号",
+    "capacity": 5,
+    "pricing": "60分100円、昼間(9時〜21時)入庫から最大700円(税込)、夜間(21時〜9時)100円",
+    "icPayment": false,
+    "notes": "自動二輪・原付のみ"
+  },
+  {
+    "no": 234,
+    "name": "オダクル成城学園前第2",
+    "ward": "世田谷区",
+    "address": "成城6丁目1番先",
+    "capacity": 23,
+    "pricing": "10時間無料(8時〜18時)、24時間無料の月極あり",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 235,
+    "name": "SKY PARK二子玉川 バイク駐輪場",
+    "ward": "世田谷区",
+    "address": "玉川4丁目21号",
+    "capacity": 4,
+    "pricing": "60分200円(8時〜18時)/夜間最大1000円、60分100円(18時〜8時)、夜間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 236,
+    "name": "タイムズ 経堂コルティ駐車場",
+    "ward": "世田谷区",
+    "address": "経堂2丁目1番33号",
+    "capacity": 8,
+    "pricing": "1時間毎100円(終日)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 237,
+    "name": "エコステーション21 オオゼキ上町店第2駐車場",
+    "ward": "世田谷区",
+    "address": "世田谷2丁目2番6号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降4時間毎100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 238,
+    "name": "TOBU PARK世田谷区希望丘 複合施設駐輪場・バイク駐輪場",
+    "ward": "世田谷区",
+    "address": "船橋6丁目25番1号",
+    "capacity": 7,
+    "pricing": "12時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 239,
+    "name": "リパーク祖師ヶ谷大蔵",
+    "ward": "世田谷区",
+    "address": "祖師谷3丁目1番20号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降5時間毎100円、入庫から24時間最大300円",
+    "icPayment": true,
+    "notes": "停められない場合あり"
+  },
+  {
+    "no": 240,
+    "name": "サイカパークりそな銀行 祖師谷支店特約駐輪場",
+    "ward": "世田谷区",
+    "address": "祖師谷3丁目1番21号",
+    "capacity": 5,
+    "pricing": "最初の30分無料、以降時間制料金",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 241,
+    "name": "パーラーミツボシ 祖師谷店駐輪場",
+    "ward": "世田谷区",
+    "address": "祖師谷1丁目8番13号",
+    "capacity": 5,
+    "pricing": "2時間500円(パーラーミツボシ祖師谷店営業時間内のみ)",
+    "icPayment": false,
+    "notes": "営業時間にパーラーミツボシ祖師谷店営業時間のみ利用可"
+  },
+  {
+    "no": 242,
+    "name": "西友三軒茶屋店 お客様駐輪場B",
+    "ward": "世田谷区",
+    "address": "太子堂4丁目25番6号",
+    "capacity": 14,
+    "pricing": "最初の2時間無料、以降48時間毎500円",
+    "icPayment": false,
+    "notes": "排気量によっては入庫できない場合あり"
+  },
+  {
+    "no": 243,
+    "name": "西友三軒茶屋店 お客様駐輪場A",
+    "ward": "世田谷区",
+    "address": "太子堂4丁目24番25号",
+    "capacity": 7,
+    "pricing": "最初の90分無料、以降28時間毎550円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 244,
+    "name": "アイパーク 東北沢駅前第1",
+    "ward": "世田谷区",
+    "address": "北沢1丁目21番14号",
+    "capacity": 5,
+    "pricing": "30分200円(8時〜20時)、60分100円(20時〜8時)、入庫から24時間最大700円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 245,
+    "name": "恵比寿ガーデンプレイス 北ゲート駐輪場",
+    "ward": "渋谷区",
+    "address": "恵比寿4丁目20番4号",
+    "capacity": 46,
+    "pricing": "最初の2時間無料、入庫から8時間300円(51cc以上)(1〜30番車室)、入庫200円(50cc以下)(32〜48車室)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 246,
+    "name": "サイカパーク恵比寿駅東口 自転車等駐車場",
+    "ward": "渋谷区",
+    "address": "恵比寿南1丁目4番2号",
+    "capacity": 13,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 247,
+    "name": "サイカパーク初台南口 自転車駐輪場",
+    "ward": "渋谷区",
+    "address": "初台1丁目",
+    "capacity": 4,
+    "pricing": "最初の2時間無料、入庫から5時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 248,
+    "name": "表参道ヒルズ 自転車駐車場",
+    "ward": "渋谷区",
+    "address": "神宮前4丁目12番10号",
+    "capacity": 8,
+    "pricing": "最初の1時間無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 249,
+    "name": "エコステーション21 渋谷神泉",
+    "ward": "渋谷区",
+    "address": "神泉町23番",
+    "capacity": 3,
+    "pricing": "30分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 250,
+    "name": "エコステーション21代々木 上原自転車等駐車場",
+    "ward": "渋谷区",
+    "address": "西原3丁目",
+    "capacity": 7,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 251,
+    "name": "サイカパーク 神宮前",
+    "ward": "渋谷区",
+    "address": "神宮前6丁目",
+    "capacity": 3,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 252,
+    "name": "サイカパーク 神宮前自動二輪等駐車場",
+    "ward": "渋谷区",
+    "address": "神宮前",
+    "capacity": 14,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 253,
+    "name": "サイカパーク 渋谷1丁目",
+    "ward": "渋谷区",
+    "address": "渋谷1丁目",
+    "capacity": 3,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 254,
+    "name": "サイカパーク笹塚南高架下 自動二輪車等駐車場",
+    "ward": "渋谷区",
+    "address": "笹塚",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 255,
+    "name": "渋谷立体パーキング自輪場",
+    "ward": "渋谷区",
+    "address": "渋谷2丁目",
+    "capacity": 4,
+    "pricing": "1時間200円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 256,
+    "name": "エコステーション21 千駄ヶ谷駅バイク駐車場",
+    "ward": "渋谷区",
+    "address": "千駄ヶ谷1丁目",
+    "capacity": 4,
+    "pricing": "30分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 257,
+    "name": "サイカパーク エコステーション21幡ヶ谷",
+    "ward": "渋谷区",
+    "address": "幡ヶ谷2丁目",
+    "capacity": 3,
+    "pricing": "30分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 258,
+    "name": "高架下統一 自転車置場・原付専用駐車場",
+    "ward": "渋谷区",
+    "address": "本町",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 259,
+    "name": "エコステーション21代々木上原 二輪車等駐車場",
+    "ward": "渋谷区",
+    "address": "西原3丁目",
+    "capacity": 7,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 260,
+    "name": "渋谷区役所仮庁舎 自動二輪車等駐車場",
+    "ward": "渋谷区",
+    "address": "宇田川町",
+    "capacity": 3,
+    "pricing": "30分100円、入庫から12時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 261,
+    "name": "サイカパークNHK西門側 自転車等駐車場二輪車エリア",
+    "ward": "渋谷区",
+    "address": "神南2丁目",
+    "capacity": 5,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 262,
+    "name": "バイカーズ恵比寿西口 自転車等駐車場二輪エリア",
+    "ward": "渋谷区",
+    "address": "恵比寿西1丁目",
+    "capacity": 6,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 263,
+    "name": "バイカパーク笹塚通 自転車等駐車場",
+    "ward": "渋谷区",
+    "address": "笹塚",
+    "capacity": 3,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 264,
+    "name": "バイカパーク天神橋",
+    "ward": "渋谷区",
+    "address": "幡ヶ谷",
+    "capacity": 3,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 265,
+    "name": "渋谷第4区営広場駐車場",
+    "ward": "渋谷区",
+    "address": "渋谷",
+    "capacity": 6,
+    "pricing": "1時間200円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 266,
+    "name": "代々木4丁目駐車場",
+    "ward": "渋谷区",
+    "address": "代々木4丁目",
+    "capacity": 3,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 267,
+    "name": "エコステーション21本町5丁目 ふれあい通り",
+    "ward": "渋谷区",
+    "address": "本町5丁目",
+    "capacity": 3,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 268,
+    "name": "サイカパーク 笹塚駅ビル自転車駐車場",
+    "ward": "渋谷区",
+    "address": "笹塚1丁目",
+    "capacity": 10,
+    "pricing": "最初の2時間無料、2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 269,
+    "name": "エコステーション21 渋谷マークシティ",
+    "ward": "渋谷区",
+    "address": "道玄坂1丁目",
+    "capacity": 6,
+    "pricing": "30分100円、入庫から12時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 270,
+    "name": "サイカパーク代々木八幡",
+    "ward": "渋谷区",
+    "address": "代々木5丁目",
+    "capacity": 5,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 271,
+    "name": "サイカパーク渋谷二丁目",
+    "ward": "渋谷区",
+    "address": "渋谷2丁目",
+    "capacity": 6,
+    "pricing": "最初の30分無料、入庫から3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 272,
+    "name": "サイカパーク恵比寿駅西口 自動二輪等駐車場",
+    "ward": "渋谷区",
+    "address": "恵比寿南2丁目1番先",
+    "capacity": 36,
+    "pricing": "最初の1時間無料、入庫から3時間毎110円(自動二輪)、Suica/Pasmo支払103円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 273,
+    "name": "エコステーション21代々木 二丁目自動二輪車等駐車場",
+    "ward": "渋谷区",
+    "address": "代々木2丁目1番先",
+    "capacity": 6,
+    "pricing": "最初の30分無料、入庫から5時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 274,
+    "name": "渋谷区文化総合センター 大和田バイク駐車場",
+    "ward": "渋谷区",
+    "address": "桜丘町23番21号",
+    "capacity": 5,
+    "pricing": "最初の30分無料、2時間100円",
+    "icPayment": false,
+    "notes": "営業時間:8時〜23時"
+  },
+  {
+    "no": 275,
+    "name": "アットパーク東三丁目",
+    "ward": "渋谷区",
+    "address": "東3丁目2番先",
+    "capacity": 4,
+    "pricing": "最初の30分無料、以降1時間毎100円、3時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 276,
+    "name": "渋谷第11恵比寿南 まちかど公園駐輪場",
+    "ward": "渋谷区",
+    "address": "恵比寿南1丁目15番地",
+    "capacity": 10,
+    "pricing": "最初の1時間無料、入庫から24時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 277,
+    "name": "渋谷ヒカリエバイク駐車場",
+    "ward": "渋谷区",
+    "address": "渋谷2丁目21番先",
+    "capacity": 24,
+    "pricing": "以降60分毎100円(自動二輪)、6時間50分〜24時間",
+    "icPayment": false,
+    "notes": "営業時間:6時50分〜24時"
+  },
+  {
+    "no": 278,
+    "name": "サイカパーク 富ヶ谷遊歩道バイク駐車場",
+    "ward": "渋谷区",
+    "address": "富ヶ谷1丁目13番地",
+    "capacity": 5,
+    "pricing": "最初の30分無料、入庫から3時間毎110円、Suica/Pasmo支払103円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 279,
+    "name": "エコロパーク渋谷第1",
+    "ward": "渋谷区",
+    "address": "渋谷1丁目12番地",
+    "capacity": 2,
+    "pricing": "30分100円、入庫から12時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 280,
+    "name": "渋谷第12代々木1丁目 駐輪場",
+    "ward": "渋谷区",
+    "address": "代々木1丁目20番地",
+    "capacity": 6,
+    "pricing": "最初の30分無料、以降4時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 281,
+    "name": "渋谷第13本町1丁目交差点 バイク駐車場",
+    "ward": "渋谷区",
+    "address": "西原1丁目33番地",
+    "capacity": 6,
+    "pricing": "最初の30分無料、以降4時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 282,
+    "name": "渋谷第14西原1丁目公園 駐車場",
+    "ward": "渋谷区",
+    "address": "西原1丁目33番地",
+    "capacity": 6,
+    "pricing": "最初の30分無料、以降4時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 283,
+    "name": "TOBU PARK神宮前 バイク駐輪場",
+    "ward": "渋谷区",
+    "address": "神宮前1丁目10号",
+    "capacity": 18,
+    "pricing": "30分100円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 284,
+    "name": "NTTル・パルク 代官山バイク駐車場",
+    "ward": "渋谷区",
+    "address": "猿楽町8番9号",
+    "capacity": 11,
+    "pricing": "60分100円、入庫から24時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 285,
+    "name": "サイカパーク恵比寿駅西口 第2自転車駐車場",
+    "ward": "渋谷区",
+    "address": "恵比寿南1丁目5番地",
+    "capacity": 6,
+    "pricing": "最初の30分無料、入庫から3時間毎110円(Suica/Pasmo支払103円)",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 286,
+    "name": "エコロパーク 渋谷道玄坂第3",
+    "ward": "渋谷区",
+    "address": "道玄坂1丁目7番地",
+    "capacity": 3,
+    "pricing": "30分100円、入庫から12時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 287,
+    "name": "コインパーク 渋谷3丁目バイク駐車場",
+    "ward": "渋谷区",
+    "address": "渋谷3丁目4番7号",
+    "capacity": 13,
+    "pricing": "60分100円、入庫から24時間最大(8時〜8時)300円、最大300円",
+    "icPayment": false,
+    "notes": "排気量により入庫できない場合あり"
+  },
+  {
+    "no": 288,
+    "name": "渋谷ストリーム バイク駐車場",
+    "ward": "渋谷区",
+    "address": "渋谷3丁目21番3号",
+    "capacity": 69,
+    "pricing": "最初の1時間無料、以降30時間毎100円(125cc以下)、以降60分毎100円(126cc以上)",
+    "icPayment": true,
+    "notes": "排気量により利用不可"
+  },
+  {
+    "no": 289,
+    "name": "A-2050幡ヶ谷駅前 バイク駐車場",
+    "ward": "渋谷区",
+    "address": "幡ヶ谷1丁目33番地",
+    "capacity": 13,
+    "pricing": "入庫から24時間最大300円",
+    "icPayment": false,
+    "notes": "排気量により入庫できない場合あり"
+  },
+  {
+    "no": 290,
+    "name": "エコロパーク 渋谷道玄坂第2",
+    "ward": "渋谷区",
+    "address": "円山町20番地",
+    "capacity": 4,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 291,
+    "name": "エコロパーク 千駄ヶ谷小学校前",
+    "ward": "渋谷区",
+    "address": "神宮前1丁目16号",
+    "capacity": 6,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 292,
+    "name": "渋谷東駐車場(オートバイ)",
+    "ward": "渋谷区",
+    "address": "渋谷2丁目15番(高速3号線高架下)",
+    "capacity": 10,
+    "pricing": "60分100円、入庫から24時間最大700円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 293,
+    "name": "ロウンツリー代々木",
+    "ward": "渋谷区",
+    "address": "代々木1丁目21番10号(インターパーク代々木)",
+    "capacity": 5,
+    "pricing": "3時間100円、昼間(8時〜19時)最大200円、夜間(19時〜8時)最大200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 294,
+    "name": "渋谷区役所前 駐車場(バイク)",
+    "ward": "渋谷区",
+    "address": "宇田川1番1号",
+    "capacity": 35,
+    "pricing": "30分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 295,
+    "name": "宮下公園南バイク駐車場",
+    "ward": "渋谷区",
+    "address": "渋谷1丁目26番5号",
+    "capacity": 21,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 296,
+    "name": "宮下公園北バイク駐車場",
+    "ward": "渋谷区",
+    "address": "神宮前6丁目20番10号",
+    "capacity": 78,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 297,
+    "name": "エコステーション21代々木 八幡駅北バイク駐車場",
+    "ward": "渋谷区",
+    "address": "元代々木町4番6号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降3時間毎100円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 298,
+    "name": "上原一丁目駐車場",
+    "ward": "渋谷区",
+    "address": "上原1丁目1番地先",
+    "capacity": 4,
+    "pricing": "60分100円、入庫から24時間最大600円(繰返しあり)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 299,
+    "name": "沼袋第一自転車駐車場",
+    "ward": "中野区",
+    "address": "沼袋3丁目1番地",
+    "capacity": 13,
+    "pricing": "1日1回200円(100円環境負荷金)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 300,
+    "name": "鷺宮南自転車駐車場",
+    "ward": "中野区",
+    "address": "白鷺2丁目49番地",
+    "capacity": 50,
+    "pricing": "1日1回200円、翌朝入交入庫",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 301,
+    "name": "NTTル・パルク中野中央 第1バイク駐車場",
+    "ward": "中野区",
+    "address": "中央4丁目6番7号",
+    "capacity": 11,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": "100cc以下のバイクのみ"
+  },
+  {
+    "no": 302,
+    "name": "中野駅前オートバイ駐車場",
+    "ward": "中野区",
+    "address": "中野5丁目9番地",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 303,
+    "name": "TOBU PARK 中野坂上駅駐輪場",
+    "ward": "中野区",
+    "address": "本町2丁目7番地",
+    "capacity": 6,
+    "pricing": "60分200円、入庫から24時間最大700円",
+    "icPayment": false,
+    "notes": "令和6年中に廃止予定"
+  },
+  {
+    "no": 304,
+    "name": "荻窪タウンセブンビル・ ルミネ荻窪駐車場",
+    "ward": "杉並区",
+    "address": "上荻1丁目9番1号",
+    "capacity": 17,
+    "pricing": "最初の60分100円、入庫10時30分〜21時間",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 305,
+    "name": "Parking in 高円寺南3丁目駐輪場",
+    "ward": "杉並区",
+    "address": "高円寺南3丁目65番地",
+    "capacity": 65,
+    "pricing": "8時間1回300円(大型)・大型バイクOK、入庫から8時間毎330円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 306,
+    "name": "代田橋バイク・自転車駐車場",
+    "ward": "杉並区",
+    "address": "和泉1丁目3番先",
+    "capacity": 6,
+    "pricing": "入庫から8時間毎330円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 307,
+    "name": "荻窪駅西口バイク駐車場",
+    "ward": "杉並区",
+    "address": "上荻1丁目10番10号",
+    "capacity": 20,
+    "pricing": "入庫から8時間毎330円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 308,
+    "name": "バイパーク東高円寺",
+    "ward": "杉並区",
+    "address": "和田3丁目55番40号",
+    "capacity": 7,
+    "pricing": "60分100円(8時〜20時)、24時間400円(125cc以下)、24時間600円(126cc以上)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 309,
+    "name": "Parking in 高円寺ストリート7番街",
+    "ward": "杉並区",
+    "address": "高円寺南3丁目66番地",
+    "capacity": 24,
+    "pricing": "入庫から8時間毎330円、24時間400円(125cc以下)、24時間600円(126cc以上)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 310,
+    "name": "Parking in 西荻窪",
+    "ward": "杉並区",
+    "address": "西荻南3丁目12号",
+    "capacity": 31,
+    "pricing": "入庫から8時間毎330円、125cc以下のみ",
+    "icPayment": false,
+    "notes": "125cc以下のみ"
+  },
+  {
+    "no": 311,
+    "name": "Parking in 阿佐ヶ谷駅西駐輪場",
+    "ward": "杉並区",
+    "address": "阿佐谷3丁目56番1号",
+    "capacity": 15,
+    "pricing": "入庫から8時間毎330円、125cc以下のみ",
+    "icPayment": false,
+    "notes": "125cc以下のみ"
+  },
+  {
+    "no": 312,
+    "name": "下井草南自転車駐車場",
+    "ward": "杉並区",
+    "address": "下井草3丁目36番16号",
+    "capacity": 9,
+    "pricing": "入庫から24時間毎300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 313,
+    "name": "久我山南自転車駐車場",
+    "ward": "杉並区",
+    "address": "久我山3丁目25号",
+    "capacity": 5,
+    "pricing": "1日1回300円(定期)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 314,
+    "name": "浜田山南自転車駐車場",
+    "ward": "杉並区",
+    "address": "浜田山3丁目22番12号",
+    "capacity": 5,
+    "pricing": "1日1回300円(定期)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 315,
+    "name": "方南町東自転車駐車場",
+    "ward": "杉並区",
+    "address": "方南1丁目20番2号",
+    "capacity": 27,
+    "pricing": "1日48時間毎300円、以降24時間毎300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 316,
+    "name": "エコステーション21ティップ ネス下井草店駐輪場B",
+    "ward": "杉並区",
+    "address": "下井草2丁目40番1号(下井草1丁目27番地)",
+    "capacity": 7,
+    "pricing": "6時間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 317,
+    "name": "Parking in 阿佐ヶ谷駅東駐輪場",
+    "ward": "杉並区",
+    "address": "阿佐谷南2丁目40番地",
+    "capacity": 6,
+    "pricing": "入庫から8時間毎330円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 318,
+    "name": "高井戸北B駐車場",
+    "ward": "杉並区",
+    "address": "宮前2丁目1番地(環八・高井戸北陸橋下)",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": "枠内に入れできない車両は利用不可"
+  },
+  {
+    "no": 319,
+    "name": "上井草北自転車駐車場",
+    "ward": "杉並区",
+    "address": "井草5丁目5番2号",
+    "capacity": 12,
+    "pricing": "最初の1時間無料、以降24時間毎300円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 320,
+    "name": "荻窪バイク第2駐車場",
+    "ward": "杉並区",
+    "address": "上荻1丁目11番4号",
+    "capacity": 6,
+    "pricing": "最初の8時間毎400円、以降4時間毎100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 321,
+    "name": "池袋西口都市計画 公共地下駐車場",
+    "ward": "豊島区",
+    "address": "西池袋1丁目1番30号",
+    "capacity": 35,
+    "pricing": "30分100円(6時〜24時)、30分50円(0時〜6時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 322,
+    "name": "東池袋オートバイ 専用駐車場",
+    "ward": "豊島区",
+    "address": "東池袋1丁目29番先",
+    "capacity": 27,
+    "pricing": "30分100円、入庫から10時間最大1000円",
+    "icPayment": true,
+    "notes": "原付は利用不可"
+  },
+  {
+    "no": 323,
+    "name": "タイムズステーション 池袋バイク駐車場",
+    "ward": "豊島区",
+    "address": "東池袋4丁目25番先",
+    "capacity": 8,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 324,
+    "name": "池袋東口公共地下駐車場",
+    "ward": "豊島区",
+    "address": "南池袋1丁目29番先",
+    "capacity": 5,
+    "pricing": "最初の2時間は60分330円、以降60分300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 325,
+    "name": "池袋北口バイク駐輪場",
+    "ward": "豊島区",
+    "address": "西池袋1丁目30番地",
+    "capacity": 23,
+    "pricing": "60分300円、入庫から最大700円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用不可"
+  },
+  {
+    "no": 326,
+    "name": "ライフ千川駅前店駐輪場B",
+    "ward": "豊島区",
+    "address": "要町3丁目45番地",
+    "capacity": 4,
+    "pricing": "以降30分毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 327,
+    "name": "エコステーション21 サンシャインシティ西駐輪場",
+    "ward": "豊島区",
+    "address": "東池袋3丁目1番地",
+    "capacity": 14,
+    "pricing": "3時間毎に加算",
+    "icPayment": false,
+    "notes": "停められない場合あり"
+  },
+  {
+    "no": 328,
+    "name": "パーキング紅葉園 駒込",
+    "ward": "豊島区",
+    "address": "駒込1丁目43番14号",
+    "capacity": 7,
+    "pricing": "20分100円、昼間(8〜22時)最大500円、夜間(22〜8時)最大200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 329,
+    "name": "椎名橋北 オートバイ専用駐車場",
+    "ward": "豊島区",
+    "address": "西池袋4丁目38番先(椎名橋高架下)",
+    "capacity": 30,
+    "pricing": "60分100円(8時〜22時)/1時間最大800円、夜間1時間100円(22時〜8時)/入庫から200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 330,
+    "name": "椎名橋南 オートバイ専用駐車場",
+    "ward": "豊島区",
+    "address": "目白5丁目27番先(椎名橋高架下)",
+    "capacity": 30,
+    "pricing": "60分100円(8時〜22時)/最大800円、2時間100円(22時〜8時)/最大200円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 331,
+    "name": "六ツ又陸橋 オートバイ専用駐車場",
+    "ward": "豊島区",
+    "address": "東池袋3丁目8番先",
+    "capacity": 40,
+    "pricing": "60分100円、入庫から24時間最大800円(繰返しあり)、60分200円(7時〜23時30分)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 332,
+    "name": "JR大塚駅南口ビル駐車場",
+    "ward": "豊島区",
+    "address": "南大塚3丁目33番地",
+    "capacity": 5,
+    "pricing": "60分100円、入庫から12時間最大500円、1泊500円(23時30分〜7時)",
+    "icPayment": false,
+    "notes": "営業時間:7時〜23時30分"
+  },
+  {
+    "no": 333,
+    "name": "リーベンパーク目白駐輪場",
+    "ward": "豊島区",
+    "address": "目白3丁目14番地",
+    "capacity": 8,
+    "pricing": "60分100円、入庫から12時間最大500円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 334,
+    "name": "東京芸術劇場駐車場",
+    "ward": "豊島区",
+    "address": "西池袋1丁目",
+    "capacity": 3,
+    "pricing": "30分100円、1日最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 335,
+    "name": "バイクタイムズ東池袋第13",
+    "ward": "豊島区",
+    "address": "東池袋1丁目27番7号",
+    "capacity": 7,
+    "pricing": "60分220円、1日最大650円(8時0分)(繰返しあり)",
+    "icPayment": false,
+    "notes": "駐車場手前に駐輪二輪車あり"
+  },
+  {
+    "no": 336,
+    "name": "リパーク東池袋2丁目 第2バイク",
+    "ward": "豊島区",
+    "address": "東池袋2丁目63番地",
+    "capacity": 4,
+    "pricing": "60分300円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 337,
+    "name": "バイクタイムズ としまエコミューゼタウン",
+    "ward": "豊島区",
+    "address": "南池袋2丁目45番3号",
+    "capacity": 35,
+    "pricing": "60分100円、1日最大600円",
+    "icPayment": false,
+    "notes": "営業時間:7時〜24時"
+  },
+  {
+    "no": 338,
+    "name": "エコロパーク東池袋第3",
+    "ward": "豊島区",
+    "address": "東池袋4丁目",
+    "capacity": 3,
+    "pricing": "60分200円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 339,
+    "name": "エコステーション21 iTerrace駐輪場Cエリア",
+    "ward": "豊島区",
+    "address": "南長崎4丁目5番20号",
+    "capacity": 10,
+    "pricing": "入庫から1時間無料、以降24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "126cc以上は上2台、125cc以下は下5台、51cc以下3台"
+  },
+  {
+    "no": 340,
+    "name": "エコロパーク池袋第5",
+    "ward": "豊島区",
+    "address": "池袋2丁目10番1号",
+    "capacity": 3,
+    "pricing": "30分100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 341,
+    "name": "空蝉橋 オートバイ専用駐車場",
+    "ward": "豊島区",
+    "address": "北大塚2丁目3番10号",
+    "capacity": 40,
+    "pricing": "60分100円(8時〜22時)/入庫から最大900円(8時〜22時最大)、夜間400円、以降2時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 342,
+    "name": "サンスクエアバイク駐車場",
+    "ward": "北区",
+    "address": "王子1丁目4番1号",
+    "capacity": 24,
+    "pricing": "最初の2時間無料、以降60分210円、24時間最大820円",
+    "icPayment": false,
+    "notes": "枠内に入れできない車両は利用不可"
+  },
+  {
+    "no": 343,
+    "name": "Parking in ビーンズ赤羽バイク",
+    "ward": "北区",
+    "address": "赤羽1丁目63番3号",
+    "capacity": 30,
+    "pricing": "最初の2時間無料、以降6時間毎220円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 344,
+    "name": "Parking in ジェクサー赤羽第1駐輪場",
+    "ward": "北区",
+    "address": "赤羽南2丁目9番47号",
+    "capacity": 5,
+    "pricing": "48時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 345,
+    "name": "エコロパーク王子第7",
+    "ward": "北区",
+    "address": "王子1丁目9番6号",
+    "capacity": 3,
+    "pricing": "30分100円、入庫から12時間最大900円(繰返しなし)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 346,
+    "name": "日暮里駅前KTKパーク(日暮里駅前 ステーションガーデンタワー地下)",
+    "ward": "荒川区",
+    "address": "西日暮里2丁目25番1号",
+    "capacity": 15,
+    "pricing": "24時間600円(23泊可能)",
+    "icPayment": false,
+    "notes": "営業時間:28時〜23時"
+  },
+  {
+    "no": 347,
+    "name": "Parking in 南千住駅東口駐輪場",
+    "ward": "荒川区",
+    "address": "南千住4丁目5番地",
+    "capacity": 7,
+    "pricing": "最初の90分無料、以降10時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ"
+  },
+  {
+    "no": 348,
+    "name": "CUBE町屋第6",
+    "ward": "荒川区",
+    "address": "町屋1丁目20番17号",
+    "capacity": 13,
+    "pricing": "9分100円(8時〜)、2時間100円(20時〜8時)、入庫から5時間最大300",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 349,
+    "name": "Dパーキング BiVi南千住駐車場",
+    "ward": "荒川区",
+    "address": "南千住4丁目7番1号",
+    "capacity": 14,
+    "pricing": "最初の28分無料、以降12時間毎300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 350,
+    "name": "Parking in西日暮里バイク",
+    "ward": "荒川区",
+    "address": "西日暮里5丁目38番先",
+    "capacity": 6,
+    "pricing": "円(126cc以上)、入庫26時間毎100円、以降48時間毎100円(125cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 351,
+    "name": "リパークLaLaテラス南千住 バイクAエリア",
+    "ward": "荒川区",
+    "address": "南千住4丁目7番地",
+    "capacity": 6,
+    "pricing": "最初の2時間無料、以降8時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 352,
+    "name": "エコステーション21 マークスタワー駐輪場",
+    "ward": "荒川区",
+    "address": "荒川7丁目46番1号",
+    "capacity": 6,
+    "pricing": "以降48時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 353,
+    "name": "熊野前駐車場(Aブロック) オートバイ",
+    "ward": "荒川区",
+    "address": "東尾久3丁目37番地",
+    "capacity": 13,
+    "pricing": "60分100円、入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": "枠以下のみ利用可"
+  },
+  {
+    "no": 354,
+    "name": "西台駅高架下自転車駐車場",
+    "ward": "板橋区",
+    "address": "高島平9丁目1番地",
+    "capacity": 15,
+    "pricing": "最初の2時間無料、以降24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー・車(ミニカー)は利用不可"
+  },
+  {
+    "no": 355,
+    "name": "高島平駅第1自転車駐車場",
+    "ward": "板橋区",
+    "address": "高島平8丁目1番地",
+    "capacity": 19,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー・車(ミニカー)は利用不可"
+  },
+  {
+    "no": 356,
+    "name": "高島陸橋交差点 自転車駐車場Aエリア",
+    "ward": "板橋区",
+    "address": "高島平1丁目",
+    "capacity": 37,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可、51cc以上は停められる台数限定、駐車場を確保していない"
+  },
+  {
+    "no": 357,
+    "name": "浮間舟渡駅自転車駐車場",
+    "ward": "板橋区",
+    "address": "舟渡1丁目",
+    "capacity": 10,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可、51cc以上停めることができない場合あり"
+  },
+  {
+    "no": 358,
+    "name": "高島平駅第2自転車駐車場",
+    "ward": "板橋区",
+    "address": "高島平8丁目2番1号",
+    "capacity": 24,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 359,
+    "name": "志村三丁目駅第3 自転車駐車場",
+    "ward": "板橋区",
+    "address": "志村3丁目26番21号先",
+    "capacity": 36,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 360,
+    "name": "ときわ台駅南口 自転車駐車場",
+    "ward": "板橋区",
+    "address": "常盤台2丁目4番10号",
+    "capacity": 10,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 361,
+    "name": "板橋区役所前駅高架下 自転車駐車場",
+    "ward": "板橋区",
+    "address": "板橋3丁目7番先",
+    "capacity": 10,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 362,
+    "name": "下板橋駅第1自転車駐車場",
+    "ward": "板橋区",
+    "address": "板橋1丁目4番13号先",
+    "capacity": 5,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 363,
+    "name": "板橋駅自転車駐車場",
+    "ward": "板橋区",
+    "address": "板橋1丁目1番2号",
+    "capacity": 13,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 364,
+    "name": "板橋区役所前駅南 自転車駐車場",
+    "ward": "板橋区",
+    "address": "板橋2丁目56番4号先",
+    "capacity": 20,
+    "pricing": "最初の2時間無料、入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 365,
+    "name": "大和町自転車駐車場",
+    "ward": "板橋区",
+    "address": "大和町20番7号",
+    "capacity": 5,
+    "pricing": "回数券2000円(10回分)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 366,
+    "name": "新高島平駅北自転車駐車場",
+    "ward": "板橋区",
+    "address": "高島平7丁目17番3号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 367,
+    "name": "大山駅前自転車駐車場",
+    "ward": "板橋区",
+    "address": "大山町2番2号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 368,
+    "name": "東武練馬駅南自転車駐車場",
+    "ward": "板橋区",
+    "address": "徳丸2丁目3番17号先",
+    "capacity": 23,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 369,
+    "name": "東武練馬駅東自転車駐車場",
+    "ward": "板橋区",
+    "address": "徳丸1丁目6番1号",
+    "capacity": 5,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 370,
+    "name": "成増駅北口第2 自転車駐車場",
+    "ward": "板橋区",
+    "address": "成増3丁目14番17号",
+    "capacity": 60,
+    "pricing": "入庫から24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー一車(ミニカー)は利用不可"
+  },
+  {
+    "no": 371,
+    "name": "成増駅南口自転車駐車場",
+    "ward": "板橋区",
+    "address": "成増2丁目13番1号",
+    "capacity": 20,
+    "pricing": "最初の2時間無料、入庫から24時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 372,
+    "name": "新板橋駅前高架下 自転車駐車場",
+    "ward": "板橋区",
+    "address": "板橋4丁目4番先",
+    "capacity": 25,
+    "pricing": "最初の2時間無料、以降24時間毎300円(126cc以上)、入庫から24時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "水色ナンバー一車(ミニカー)利用不可"
+  },
+  {
+    "no": 373,
+    "name": "ビッグボーイ成増店駐輪場",
+    "ward": "板橋区",
+    "address": "成増2丁目26番地",
+    "capacity": 6,
+    "pricing": "2時間100円",
+    "icPayment": false,
+    "notes": "250cc以下のみ利用可"
+  },
+  {
+    "no": 374,
+    "name": "光が丘公園駐車場",
+    "ward": "練馬区",
+    "address": "光が丘4丁目1番1号",
+    "capacity": 13,
+    "pricing": "1日1回200円、駐車場事務所窓口支払(前払い制)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 375,
+    "name": "城北中央公園駐車場",
+    "ward": "練馬区",
+    "address": "氷川台1丁目2番地",
+    "capacity": 6,
+    "pricing": "1日1回200円、詰所支払(無人の場合:サービスセンターにて支払)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 376,
+    "name": "練馬区立練馬駅北口 地下駐車場",
+    "ward": "練馬区",
+    "address": "練馬1丁目17番5号",
+    "capacity": 5,
+    "pricing": "60分100円、1日500円(0時切替)",
+    "icPayment": false,
+    "notes": "50cc以下"
+  },
+  {
+    "no": 377,
+    "name": "石神井公園 ピアレスパーキング",
+    "ward": "練馬区",
+    "address": "石神井町2丁目14番15号",
+    "capacity": 25,
+    "pricing": "60分100円、1日最大500円(繰返しなし)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 378,
+    "name": "光が丘IMA自転車駐車場 (C-1エリア)",
+    "ward": "練馬区",
+    "address": "光が丘5丁目1番地",
+    "capacity": 58,
+    "pricing": "最初の3時間無料、入庫から24時間毎200円",
+    "icPayment": true,
+    "notes": "51cc以上13台、50cc以下45台"
+  },
+  {
+    "no": 379,
+    "name": "西武スマイルパークエミナード 石神井公園第1駐輪場",
+    "ward": "練馬区",
+    "address": "石神井町3丁目(1371番先)",
+    "capacity": 20,
+    "pricing": "最初の2時間無料、12時間毎230円(交通系電子マネー・スマホ決済のみ)",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 380,
+    "name": "西武スマイルパーク 江古田駅北口駐輪場",
+    "ward": "練馬区",
+    "address": "旭丘1丁目247番4号5号",
+    "capacity": 5,
+    "pricing": "12時間毎250円、(交通系電子マネー支払)",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 381,
+    "name": "ライフ石神井公園店駐輪場",
+    "ward": "練馬区",
+    "address": "石神井町7丁目3番地",
+    "capacity": 5,
+    "pricing": "最初の90分無料",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 382,
+    "name": "西武スマイルパーク 練馬高野台駅第4駐輪場",
+    "ward": "練馬区",
+    "address": "高野台1丁目7番地",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降12時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 383,
+    "name": "光が丘IMA自転車駐車場 (C-2エリア)",
+    "ward": "練馬区",
+    "address": "光が丘2丁目10番地",
+    "capacity": 14,
+    "pricing": "最初の1時間無料、入庫から24時間毎300円、以降4時間毎200円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 384,
+    "name": "エコステーション21テックランド 平和台駅前店駐輪場Aエリア",
+    "ward": "練馬区",
+    "address": "北町6丁目32番5号",
+    "capacity": 36,
+    "pricing": "最初の90分無料、入庫から24時間毎200円",
+    "icPayment": false,
+    "notes": "営業時間:6時〜24時間、最初の合計51cc以上、50cc以下対応"
+  },
+  {
+    "no": 385,
+    "name": "エコステーション21 オークプラザ駐輪場",
+    "ward": "練馬区",
+    "address": "東大泉4丁目4番21号",
+    "capacity": 5,
+    "pricing": "入庫10時間200円",
+    "icPayment": false,
+    "notes": "91cc以上のバイクは入庫不可(満車の場合あり)"
+  },
+  {
+    "no": 386,
+    "name": "豊玉B駐車場",
+    "ward": "練馬区",
+    "address": "豊玉北3丁目2番地",
+    "capacity": 3,
+    "pricing": "60分100円、入庫から24時間最大800円",
+    "icPayment": false,
+    "notes": "特定二輪車等は利用不可"
+  },
+  {
+    "no": 387,
+    "name": "西武スマイルパーク リズモ大泉学園駐車場",
+    "ward": "練馬区",
+    "address": "東大1丁目28番1号",
+    "capacity": 32,
+    "pricing": "最初の2時間無料、入庫から24時間最大500円(繰返し)",
+    "icPayment": false,
+    "notes": "51cc以上OK"
+  },
+  {
+    "no": 388,
+    "name": "西武スマイルパークエミナード 石神井公園第3駐車場",
+    "ward": "練馬区",
+    "address": "石神井町3丁目(1502番4号)",
+    "capacity": 11,
+    "pricing": "最初の2時間無料、12時間毎230円(交通系電子マネーのみ)",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 389,
+    "name": "EasyPark大泉学園店",
+    "ward": "練馬区",
+    "address": "大泉学園町4丁目22番地",
+    "capacity": 3,
+    "pricing": "60分100円、24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 390,
+    "name": "西武スマイルパーク練馬駅 西口第1バイク駐車場",
+    "ward": "練馬区",
+    "address": "練馬1丁目7番6号",
+    "capacity": 30,
+    "pricing": "最初の1時間無料、以降24時間最大300円",
+    "icPayment": false,
+    "notes": "排気量により入庫できない車両あり"
+  },
+  {
+    "no": 391,
+    "name": "北千住駅前駐車場",
+    "ward": "足立区",
+    "address": "千住3丁目92番地",
+    "capacity": 24,
+    "pricing": "最初の2時間220円、以降1時間110円、1日最大880円(当日のみ)",
+    "icPayment": false,
+    "notes": "営業時間:8時〜23時"
+  },
+  {
+    "no": 392,
+    "name": "バイクタイムズ 北千住駅西口立体",
+    "ward": "足立区",
+    "address": "千住仲町42番先",
+    "capacity": 10,
+    "pricing": "最初の2時間220円、以降1時間110円、1日最大880円(当日のみ)(繰返しなし)",
+    "icPayment": false,
+    "notes": "営業時間:8時〜23時"
+  },
+  {
+    "no": 393,
+    "name": "リクスタパーキング綾瀬2丁 目第4駐輪場・バイク駐車場",
+    "ward": "足立区",
+    "address": "綾瀬2丁目23番6号",
+    "capacity": 15,
+    "pricing": "8時間330円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 394,
+    "name": "CCP見沼代親水公園駅 西口駐輪場",
+    "ward": "足立区",
+    "address": "舎人4丁目2番3号",
+    "capacity": 8,
+    "pricing": "8時間150円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 395,
+    "name": "ポロンコロン第二駐輪場",
+    "ward": "足立区",
+    "address": "西新井栄町2丁目5番17号",
+    "capacity": 2,
+    "pricing": "2時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 396,
+    "name": "リクスタパーキング綾瀬西口 第7駐輪場・バイク駐車場",
+    "ward": "足立区",
+    "address": "綾瀬4丁目9番地",
+    "capacity": 5,
+    "pricing": "8時間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 397,
+    "name": "エコステーション21 ポンテポルタ千住駐輪場A",
+    "ward": "足立区",
+    "address": "千住橋戸町1番13号",
+    "capacity": 6,
+    "pricing": "6時間無料、以降8時間毎220円、1日最大(当日のみ)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 398,
+    "name": "ST-Park竹の塚第29 バイク駐車場",
+    "ward": "足立区",
+    "address": "竹の塚1丁目30番地",
+    "capacity": 30,
+    "pricing": "10時間150円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 399,
+    "name": "cycle24h 竹の塚2丁目バイク置場",
+    "ward": "足立区",
+    "address": "竹の塚2丁目25番先",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降24時間毎200円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 400,
+    "name": "ST-Park 梅島第2バイク駐車場",
+    "ward": "足立区",
+    "address": "梅島3丁目1番地",
+    "capacity": 8,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 401,
+    "name": "イトーヨーカドー 綾瀬店お客様駐輪場(C)",
+    "ward": "足立区",
+    "address": "綾瀬3丁目",
+    "capacity": 21,
+    "pricing": "6時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 402,
+    "name": "CCPアリオ北駅前駐輪場",
+    "ward": "足立区",
+    "address": "日ノ出町",
+    "capacity": 7,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 404,
+    "name": "リクスタパーキング北千住 第3駐輪場・バイク駐車場",
+    "ward": "足立区",
+    "address": "千住旭町2丁目8番1号",
+    "capacity": 5,
+    "pricing": "5時間330円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 405,
+    "name": "リクスタパーキング 千住仲町第4バイク駐車場",
+    "ward": "足立区",
+    "address": "千住仲町23番15号",
+    "capacity": 10,
+    "pricing": "最初の12時間330円、以降3時間毎110円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 406,
+    "name": "亀有南駐車場",
+    "ward": "葛飾区",
+    "address": "亀有3丁目26番3号",
+    "capacity": 45,
+    "pricing": "1日1回200円(0時切替)、提携施設利用のお客様は3時間無料",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 407,
+    "name": "水元公園駐車場",
+    "ward": "葛飾区",
+    "address": "水元公園3番1号",
+    "capacity": 3,
+    "pricing": "1日1回200円、管理人支払(前払い制)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 408,
+    "name": "バイクタイムズ新小岩",
+    "ward": "葛飾区",
+    "address": "新小岩2丁目11番地",
+    "capacity": 6,
+    "pricing": "最初の1時間無料、入庫から24時間最大500円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 409,
+    "name": "葛飾区新小岩北バイク",
+    "ward": "葛飾区",
+    "address": "西新小岩1丁目1番地",
+    "capacity": 57,
+    "pricing": "60分110円(8時〜22時)/入庫から12時間最大550円(繰返しあり)、28時間100円(22時〜8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 410,
+    "name": "ヴィナシス金町バイク",
+    "ward": "葛飾区",
+    "address": "金町6丁目2番地",
+    "capacity": 8,
+    "pricing": "60分100円、1日最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 411,
+    "name": "京成パーク高砂第2駐車場",
+    "ward": "葛飾区",
+    "address": "高砂5丁目27番9号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降7時間毎150円",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 412,
+    "name": "Parking in 新小岩駅西",
+    "ward": "葛飾区",
+    "address": "新小岩1丁目45番1号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、以降60分毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 413,
+    "name": "信濃屋小岩パーキング",
+    "ward": "江戸川区",
+    "address": "南小岩8丁目15番地",
+    "capacity": 20,
+    "pricing": "1日1回600円(自動二輪)、1回1時間以内は13時間利用可能(出し入れ自由)、1日1回320円(自動二輪以外)",
+    "icPayment": false,
+    "notes": "営業時間:24時間"
+  },
+  {
+    "no": 414,
+    "name": "平井駅東駐輪場",
+    "ward": "江戸川区",
+    "address": "平井5丁目23番先",
+    "capacity": 15,
+    "pricing": "1日1回210円(排気量50ccまで)、原付1種:排気量51cc以上、1日320円(51cc以上)",
+    "icPayment": false,
+    "notes": "1日1回、排気量51cc以上は別途30分〜翌日の利用可、駅前10台"
+  },
+  {
+    "no": 415,
+    "name": "篠崎駅東駐輪場",
+    "ward": "江戸川区",
+    "address": "篠崎町2丁目15番2号",
+    "capacity": 40,
+    "pricing": "1日320円(51cc以上)、1日210円(50cc以下)",
+    "icPayment": false,
+    "notes": "営業時間:4時30分〜翌1時30分"
+  },
+  {
+    "no": 416,
+    "name": "江戸川区船堀駅西2号 駐輪場",
+    "ward": "江戸川区",
+    "address": "船堀2丁目15番16号",
+    "capacity": 13,
+    "pricing": "最初の2時間無料、1日320円(51cc以上)、以降1日130円、210円(50cc以下)(1時間30分毎)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 417,
+    "name": "一之江駅北口駐輪場",
+    "ward": "江戸川区",
+    "address": "一之江3丁目5番1号",
+    "capacity": 31,
+    "pricing": "1日320円(51cc以上)、210円(50cc以下)・2時間",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 418,
+    "name": "葛西駅東2号駐輪場",
+    "ward": "江戸川区",
+    "address": "東葛西6丁目19番1号",
+    "capacity": 51,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "131cc以上は停められない場合あり"
+  },
+  {
+    "no": 419,
+    "name": "西葛西駅西駐輪場",
+    "ward": "江戸川区",
+    "address": "西葛西6丁目",
+    "capacity": 43,
+    "pricing": "最初の2時間無料、1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "131cc以上は停められない場合あり(1時間30分毎)"
+  },
+  {
+    "no": 420,
+    "name": "葛西臨海公園駅西駐輪場",
+    "ward": "江戸川区",
+    "address": "臨海町1丁目3番地",
+    "capacity": 3,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)、1日100円",
+    "icPayment": false,
+    "notes": "5台以上停められない場合あり"
+  },
+  {
+    "no": 421,
+    "name": "江戸川区小岩駅西3号 駐輪場",
+    "ward": "江戸川区",
+    "address": "南小岩6丁目16番1号",
+    "capacity": 13,
+    "pricing": "最初の2時間無料、1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "1日1回、48時間30分〜翌1時30分利用可"
+  },
+  {
+    "no": 422,
+    "name": "東大島駅駐輪場",
+    "ward": "江戸川区",
+    "address": "小松川3丁目",
+    "capacity": 5,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "営業時間:4時30分〜翌1時30分"
+  },
+  {
+    "no": 423,
+    "name": "西葛西駅東2号駐輪場",
+    "ward": "江戸川区",
+    "address": "西葛西6丁目",
+    "capacity": 60,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "営業時間:4時30分〜翌1時30分"
+  },
+  {
+    "no": 424,
+    "name": "江戸川第3小岩駅前バイク",
+    "ward": "江戸川区",
+    "address": "南小岩7丁目27番23号",
+    "capacity": 7,
+    "pricing": "入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 425,
+    "name": "京成小岩北駐輪場",
+    "ward": "江戸川区",
+    "address": "北小岩2丁目",
+    "capacity": 8,
+    "pricing": "入庫から24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 426,
+    "name": "江戸川区なぎさ南1 自動二輪駐車場",
+    "ward": "江戸川区",
+    "address": "南葛西7丁目3番先",
+    "capacity": 5,
+    "pricing": "12時間100円",
+    "icPayment": false,
+    "notes": "営業時間:24時間、1日1回320円(51cc以上)、排気量制限あり、夜間利用不可"
+  },
+  {
+    "no": 427,
+    "name": "エコステーション21GiGO・ デニーズ船堀店駐輪場B",
+    "ward": "江戸川区",
+    "address": "船堀1丁目6番11号",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、以降10時間毎300円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 428,
+    "name": "エコステーション21 小岩駅東駐輪場",
+    "ward": "江戸川区",
+    "address": "南小岩7丁目16番6号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降5時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 429,
+    "name": "瑞江駅東5号駐輪場",
+    "ward": "江戸川区",
+    "address": "瑞江2丁目18番6号",
+    "capacity": 30,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "営業時間:24時間、差額:自転車等利用可能"
+  },
+  {
+    "no": 430,
+    "name": "葛西臨海公園駅東駐輪場",
+    "ward": "江戸川区",
+    "address": "臨海町6丁目3番地",
+    "capacity": 10,
+    "pricing": "1日1回320円(51cc以上)、1日1回210円(50cc以下)",
+    "icPayment": false,
+    "notes": "駐車場:自転車・自動二輪等利用可"
+  },
+  {
+    "no": 431,
+    "name": "Dパーキング マックスバリュ船堀店駐輪場",
+    "ward": "江戸川区",
+    "address": "船堀3丁目7番先",
+    "capacity": 5,
+    "pricing": "入庫から545分無料、以降60分500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 432,
+    "name": "TSUTAYA瑞江店 自転車・バイク駐輪場",
+    "ward": "江戸川区",
+    "address": "西瑞江1丁目50番12号",
+    "capacity": 5,
+    "pricing": "60分100円、最大24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 433,
+    "name": "八王子市営旭町駐車場",
+    "ward": "八王子市",
+    "address": "旭町9番1号",
+    "capacity": 40,
+    "pricing": "24時間400円",
+    "icPayment": false,
+    "notes": "サイドカー及び排気量50cc以下の車両は利用不可"
+  },
+  {
+    "no": 434,
+    "name": "北野駅西自転車駐車場",
+    "ward": "八王子市",
+    "address": "打越町2003番1号",
+    "capacity": 5,
+    "pricing": "1日1回300円(126cc以上)、1日1回200円(125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下は別の区1台"
+  },
+  {
+    "no": 435,
+    "name": "めじろ台駅バイク駐車場",
+    "ward": "八王子市",
+    "address": "めじろ台2丁目1775番3号",
+    "capacity": 13,
+    "pricing": "1日1回300円(51cc以上)(0時切替)、50cc以下の支払",
+    "icPayment": false,
+    "notes": "50cc以下"
+  },
+  {
+    "no": 436,
+    "name": "南大沢駅第2バイク駐車場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目3番地",
+    "capacity": 5,
+    "pricing": "24時間300円(100円環境費用)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 437,
+    "name": "エコステーション21 ピア長池A",
+    "ward": "八王子市",
+    "address": "別所2丁目1番地",
+    "capacity": 79,
+    "pricing": "最初の3時間無料、以降24時間毎200円(126cc以上)、24時間毎150円(125cc以下)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 438,
+    "name": "京王堀之内駅自転車駐車場",
+    "ward": "八王子市",
+    "address": "堀之内3丁目24番4号",
+    "capacity": 54,
+    "pricing": "",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 439,
+    "name": "南大沢駅第1バイク駐車場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目28番地",
+    "capacity": 5,
+    "pricing": "24時間300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 440,
+    "name": "南大沢大橋自転車駐車場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目1620番1号",
+    "capacity": 5,
+    "pricing": "24時間200円、管理人支払",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー(ミニカー)利用不可"
+  },
+  {
+    "no": 441,
+    "name": "南大沢駅北自転車駐車場",
+    "ward": "八王子市",
+    "address": "南大R1丁目444番地",
+    "capacity": 5,
+    "pricing": "1日1回300円(126cc以上)、24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 442,
+    "name": "高尾駅北口 臨時自転車駐車場",
+    "ward": "八王子市",
+    "address": "高尾町1576番4号",
+    "capacity": 10,
+    "pricing": "1日250円(51cc〜125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 443,
+    "name": "北野駅東自転車駐車場",
+    "ward": "八王子市",
+    "address": "打越町1335番1号",
+    "capacity": 5,
+    "pricing": "1日1回250円(0時切替)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、自転車駐車場"
+  },
+  {
+    "no": 444,
+    "name": "京王八王子駅 東自転車駐車場",
+    "ward": "八王子市",
+    "address": "明神町3丁目6番7号",
+    "capacity": 6,
+    "pricing": "最初の2時間無料、以降6時間300円",
+    "icPayment": false,
+    "notes": "定期購読者"
+  },
+  {
+    "no": 445,
+    "name": "フレンテ南大沢駐輪場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目",
+    "capacity": 5,
+    "pricing": "最初の2時間無料、以降2時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 447,
+    "name": "京王バイクパーク北野駐車場",
+    "ward": "八王子市",
+    "address": "打越町333番地",
+    "capacity": 30,
+    "pricing": "最初の1時間無料、以降24時間毎330円(125cc以下)、24時間毎220円(125cc以下)",
+    "icPayment": true,
+    "notes": "駐車台数:125cc以下25台、構内バイク(126cc以上)5台"
+  },
+  {
+    "no": 448,
+    "name": "西八王子駅北口第3自転車駐車場",
+    "ward": "八王子市",
+    "address": "千人町3丁目32番地先",
+    "capacity": 33,
+    "pricing": "1日1回200円(126cc以下)、1日1回200円(125cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 449,
+    "name": "片倉駅自転車駐車場",
+    "ward": "八王子市",
+    "address": "片倉町712番6号",
+    "capacity": 22,
+    "pricing": "1日1回300円(126cc以下)、1日1回200円(125cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:126cc以上12台、小型バイク(125cc以下)10台"
+  },
+  {
+    "no": 450,
+    "name": "ガレリア・ユギ第2駐輪場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目28番地",
+    "capacity": 18,
+    "pricing": "入車から512時間300円(126cc以下)、入車から12時間200円(50cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:大型バイク12台、小型バイク(125cc以下)6台"
+  },
+  {
+    "no": 451,
+    "name": "高尾駅南口ミニバイク自転車駐車場",
+    "ward": "八王子市",
+    "address": "初沢町1259番6号",
+    "capacity": 8,
+    "pricing": "1日1回300円(126cc以下)、1日1回100円(50cc以下)、0円(原付)",
+    "icPayment": false,
+    "notes": "125cc以下"
+  },
+  {
+    "no": 452,
+    "name": "京王ストア北野店指定駐輪場",
+    "ward": "八王子市",
+    "address": "打越町333番地",
+    "capacity": 10,
+    "pricing": "最初の1時間無料、以降24時間毎220円",
+    "icPayment": false,
+    "notes": "125cc以下"
+  },
+  {
+    "no": 453,
+    "name": "長沼駅自転車駐車場",
+    "ward": "八王子市",
+    "address": "長沼町682番1号",
+    "capacity": 6,
+    "pricing": "1日1回300円(126cc以下)、1日1回250円(51cc～125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下"
+  },
+  {
+    "no": 454,
+    "name": "アップルパーク パオレ南大沢駐輪場",
+    "ward": "八王子市",
+    "address": "南大沢2丁目2番地",
+    "capacity": 10,
+    "pricing": "最初の90分無料、以降24時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 455,
+    "name": "DAICHIPARK No.159 セブンイレブン八王子万町店",
+    "ward": "八王子市",
+    "address": "万町20番2号",
+    "capacity": 4,
+    "pricing": "6時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 456,
+    "name": "高尾駅北口自転車駐車場",
+    "ward": "八王子市",
+    "address": "初沢町1259番6号",
+    "capacity": 14,
+    "pricing": "24時間250円(51cc～125cc以下)、24時間250円(51cc～125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 457,
+    "name": "西八王子駅南口臨時自転車駐車場",
+    "ward": "八王子市",
+    "address": "台町4丁目96番7号",
+    "capacity": 37,
+    "pricing": "1日1回250円(51cc～125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 458,
+    "name": "アップルパーク八王子駅前駐輪場第1",
+    "ward": "八王子市",
+    "address": "旭町3番地",
+    "capacity": 10,
+    "pricing": "3時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 459,
+    "name": "高尾駅南口自転車駐車場",
+    "ward": "八王子市",
+    "address": "初沢町1231番26号",
+    "capacity": 26,
+    "pricing": "1日1回200円(50cc以下)、1日1回250円(50cc以上～125cc以下)、管理人支払",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 460,
+    "name": "八王子駅北口東自転車駐車場",
+    "ward": "八王子市",
+    "address": "明神町3丁目18番4号",
+    "capacity": 20,
+    "pricing": "管理人支払(8時対応)、料金前払い制",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 461,
+    "name": "国営昭和記念公園駐車場(立川口)",
+    "ward": "立川市",
+    "address": "緑町3173番地",
+    "capacity": 18,
+    "pricing": "1日1回250円、公園年間パスポートお持ちのお客様(200円)、障害者手帳・療育手帳お持ちのお客様(無料)、料金所支払",
+    "icPayment": false,
+    "notes": "営業時間:3月30分～17時(3月1日～10月31日)、9時30分～16時30分(11月1日～2月末日)"
+  },
+  {
+    "no": 462,
+    "name": "西国立駅第二有料自転車等駐車場",
+    "ward": "立川市",
+    "address": "錦町1丁目24番20号",
+    "capacity": 20,
+    "pricing": "24時間160円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 463,
+    "name": "立川市武蔵砂川駅第二有料自転車等駐車場",
+    "ward": "立川市",
+    "address": "上砂町4丁目50番1号",
+    "capacity": 18,
+    "pricing": "24時間160円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 464,
+    "name": "国営昭和記念公園駐車場(砂川口)",
+    "ward": "立川市",
+    "address": "",
+    "capacity": 18,
+    "pricing": "1日1回250円、公園年間パスポートお持ちのお客様(200円)、障害者手帳・療育手帳お持ちのお客様(無料)、料金所支払",
+    "icPayment": false,
+    "notes": "営業時間:3月30分～17時(3月1日～10月31日)、9時30分～18時(11月1日～2月末日)"
+  },
+  {
+    "no": 465,
+    "name": "三幸バイク駐車場",
+    "ward": "立川市",
+    "address": "錦町2丁目1番33号",
+    "capacity": 7,
+    "pricing": "60分100円、1日最大1700円(月～金(8時切替))、土日祝は最大料金なし",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 466,
+    "name": "エキュートバイク駐車場",
+    "ward": "立川市",
+    "address": "柴崎町2丁目1番地",
+    "capacity": 19,
+    "pricing": "60分100円",
+    "icPayment": false,
+    "notes": "営業時間:6時30分～23時30分"
+  },
+  {
+    "no": 467,
+    "name": "武蔵砂川駅第一有料自転車等駐車場",
+    "ward": "立川市",
+    "address": "上砂町4丁目52番1号",
+    "capacity": 7,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 468,
+    "name": "イナミパーキング",
+    "ward": "立川市",
+    "address": "曙町1丁目29番地",
+    "capacity": 10,
+    "pricing": "60分100円、入車から12時間最大700円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 469,
+    "name": "立川第2柴崎町2丁目駐車場",
+    "ward": "立川市",
+    "address": "柴崎町2丁目12番3号",
+    "capacity": 5,
+    "pricing": "60分100円、入車から524時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 470,
+    "name": "立川第3フロム中武駐輪場",
+    "ward": "立川市",
+    "address": "曙町2丁目11番2号",
+    "capacity": 8,
+    "pricing": "60分100円、入車から24時間最大700円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 471,
+    "name": "立川郵便局駐輪場",
+    "ward": "立川市",
+    "address": "曙町2丁目14番36号",
+    "capacity": 2,
+    "pricing": "最初の1時間無料、以降28時間100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 472,
+    "name": "タイムズ 丸井吉祥寺店駐車場",
+    "ward": "武蔵野市",
+    "address": "吉祥寺南町1丁目7番2号",
+    "capacity": 5,
+    "pricing": "30分300円(月～金10時～21時)、30分400円(土日祝10時～21時)",
+    "icPayment": false,
+    "notes": "入庫10時～、出庫18時～21時、金のみ"
+  },
+  {
+    "no": 473,
+    "name": "吉祥寺駅前(バイク)",
+    "ward": "武蔵野市",
+    "address": "吉祥寺本町1丁目24番7号",
+    "capacity": 6,
+    "pricing": "入車から24時間毎550円(月～金のみ)",
+    "icPayment": false,
+    "notes": "出庫18時～22時"
+  },
+  {
+    "no": 474,
+    "name": "ヨドバシ吉祥寺バイク駐車場",
+    "ward": "武蔵野市",
+    "address": "吉祥寺本町1丁目19番1号",
+    "capacity": 7,
+    "pricing": "入車から512時間最大600円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 475,
+    "name": "アットパーク吉祥寺バイク駐車場",
+    "ward": "武蔵野市",
+    "address": "吉祥寺本町1丁目11番2号",
+    "capacity": 10,
+    "pricing": "1日最大2000円(月～金)、60分100円(8時～22時)、60分100円(22時～8時)、1日最大1000円(8時切替)",
+    "icPayment": false,
+    "notes": "50cc以下のバイクは利用不可"
+  },
+  {
+    "no": 476,
+    "name": "吉祥寺ライトビルパーキング",
+    "ward": "武蔵野市",
+    "address": "吉祥寺本町1丁目24番5号",
+    "capacity": 3,
+    "pricing": "20分100円(8時～22時)、60分100円(22時～8時)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 477,
+    "name": "バイクタイムズ三鷹駅前第9",
+    "ward": "武蔵野市",
+    "address": "中町1丁目12番地",
+    "capacity": 7,
+    "pricing": "30分110円、入車から512時間最大660円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 478,
+    "name": "サイクルドットコム 武蔵野STビル駐輪場",
+    "ward": "武蔵野市",
+    "address": "境南町1丁目8番地",
+    "capacity": 4,
+    "pricing": "最初の3時間無料、8時間毎200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 479,
+    "name": "キラリナ京王吉祥寺駐車場",
+    "ward": "武蔵野市",
+    "address": "吉祥寺南町2丁目1番25号",
+    "capacity": 6,
+    "pricing": "1日1回1000円、宿泊料金会員(23時～8時)",
+    "icPayment": false,
+    "notes": "営業時間:終日、23時～8時は宿泊料金設定あり"
+  },
+  {
+    "no": 480,
+    "name": "シティパーク吉祥寺",
+    "ward": "武蔵野市",
+    "address": "吉祥寺南町1丁目11番地",
+    "capacity": 6,
+    "pricing": "30分100円、入車から5時間最大500円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 481,
+    "name": "バイクタイムズ 吉祥寺本町1丁目",
+    "ward": "武蔵野市",
+    "address": "吉祥寺本町1丁目25番地",
+    "capacity": 16,
+    "pricing": "60分110円、入車から24時間最大660円(繰返しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 482,
+    "name": "バイクタイムズ 下連雀3丁目第3",
+    "ward": "三鷹市",
+    "address": "下連雀3丁目14番地",
+    "capacity": 10,
+    "pricing": "30分110円、入車から524時間最大440円",
+    "icPayment": false,
+    "notes": "営業時間:終日"
+  },
+  {
+    "no": 483,
+    "name": "井の頭恩賜公園第二駐車場",
+    "ward": "三鷹市",
+    "address": "下連雀1丁目",
+    "capacity": 8,
+    "pricing": "1日1回200円",
+    "icPayment": false,
+    "notes": "出庫は21時まで"
+  },
+  {
+    "no": 484,
+    "name": "河辺駅北口自転車等駐車場",
+    "ward": "青梅市",
+    "address": "河辺町5丁目29番地",
+    "capacity": 15,
+    "pricing": "1日1回250円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 485,
+    "name": "河辺駅南口自転車等駐車場",
+    "ward": "青梅市",
+    "address": "河辺町5丁目29番地",
+    "capacity": 15,
+    "pricing": "1日1回250円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 486,
+    "name": "青梅駅自転車駐車場",
+    "ward": "青梅市",
+    "address": "本町163番1号",
+    "capacity": 6,
+    "pricing": "1日1回250円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 487,
+    "name": "多摩駅東口自転車駐車場",
+    "ward": "府中市",
+    "address": "朝日町2丁目26番地",
+    "capacity": 7,
+    "pricing": "24時間毎350円(126cc以上)、24時間150円(125cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 488,
+    "name": "エコステーション21 分倍河原駐輪場A",
+    "ward": "府中市",
+    "address": "片町3丁目22番6号",
+    "capacity": 44,
+    "pricing": "入車8時間毎300円(126cc以上)、入車8時間毎200円(125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ入車できない車種あり、利用不可"
+  },
+  {
+    "no": 489,
+    "name": "アップルパークライフ 府中河原店C駐輪場",
+    "ward": "府中市",
+    "address": "住吉町2丁目5番先",
+    "capacity": 8,
+    "pricing": "最初の90分無料、以降8時間毎300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 490,
+    "name": "西府駅南自転車駐車場",
+    "ward": "府中市",
+    "address": "西府町1丁目60番7号",
+    "capacity": 6,
+    "pricing": "1日1回200円(51cc～125cc以下)、1日1回150円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 491,
+    "name": "西府駅北自転車駐車場",
+    "ward": "府中市",
+    "address": "本宿町1丁目46番6号",
+    "capacity": 2,
+    "pricing": "24時間350円(126cc以上)、24時間250円(51～125cc以下)",
+    "icPayment": true,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 492,
+    "name": "府中駅東第2バイク駐車場",
+    "ward": "府中市",
+    "address": "府中町2丁目6番地",
+    "capacity": 5,
+    "pricing": "24時間毎350円(126cc以上)、24時間毎250円(51～125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 493,
+    "name": "中河原駅東自転車駐車場",
+    "ward": "府中市",
+    "address": "住吉町1丁目81番3号",
+    "capacity": 2,
+    "pricing": "24時間150円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可、125cc以下のみ利用可"
+  },
+  {
+    "no": 494,
+    "name": "国営昭和記念公園駐車場(西立川口)",
+    "ward": "昭島市",
+    "address": "もくせいの杜31番地",
+    "capacity": 18,
+    "pricing": "1日1回250円、公園年間パスポートお持ちのお客様(210円)、障害者手帳・療育手帳お持ちのお客様(無料)、料金所支払",
+    "icPayment": false,
+    "notes": "営業時間:5時30分～17時(3月1日～10月31日)、9時30分～16時30分(11月1日～2月末日)"
+  },
+  {
+    "no": 495,
+    "name": "調布とうきゅうお客様駐輪場",
+    "ward": "調布市",
+    "address": "布田4丁目18番地13号",
+    "capacity": 5,
+    "pricing": "最初の90分無料、以降28時間毎220円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、構内に入車できない車種あり"
+  },
+  {
+    "no": 496,
+    "name": "調布市立国領西自転車等駐車場",
+    "ward": "調布市",
+    "address": "国領町1丁目44番6号",
+    "capacity": 30,
+    "pricing": "12時間300円(51cc～125cc以下)、12時間200円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 497,
+    "name": "調布市立京王多摩川自転車等駐車場",
+    "ward": "調布市",
+    "address": "多摩川5丁目38番6号",
+    "capacity": 10,
+    "pricing": "12時間300円(125cc以下)、12時間200円(50cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:125cc以下3台、50cc以下7台、125cc以下"
+  },
+  {
+    "no": 498,
+    "name": "町田駅森野第3バイク駐車場",
+    "ward": "町田市",
+    "address": "森野1丁目34番地",
+    "capacity": 5,
+    "pricing": "1日1回310円",
+    "icPayment": false,
+    "notes": "126cc以上のみ利用可"
+  },
+  {
+    "no": 499,
+    "name": "原町田三丁目自転車駐車場",
+    "ward": "町田市",
+    "address": "原町田3丁目",
+    "capacity": 20,
+    "pricing": "最初の2時間無料、入車から24時間210円(51cc～125cc以下)、入車から24時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 500,
+    "name": "町田ターミナル自転車駐車場",
+    "ward": "町田市",
+    "address": "原町田3丁目1番42号",
+    "capacity": 42,
+    "pricing": "24時間210円(51cc～125cc以下)、24時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:51cc～125cc以下、510台、125cc以下のみ利用可"
+  },
+  {
+    "no": 501,
+    "name": "エコステーション21ヨドバシカメラ町田店駐輪場",
+    "ward": "町田市",
+    "address": "原町田1丁目11番地",
+    "capacity": 13,
+    "pricing": "最初の2時間無料、入車3時間毎200円",
+    "icPayment": false,
+    "notes": "91cc以上のバイクは利用不可"
+  },
+  {
+    "no": 502,
+    "name": "平野屋バイク駐車場",
+    "ward": "町田市",
+    "address": "原町田5丁目4番地",
+    "capacity": 21,
+    "pricing": "60分100円、入車から512時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 503,
+    "name": "相原駅西口自転車駐車場",
+    "ward": "町田市",
+    "address": "相原町1216番4号",
+    "capacity": 47,
+    "pricing": "24時間310円(126cc以上)、24時間310円(51cc～125cc以下)、24時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "126cc以上3台、51cc～125cc以下8台、50cc以下36台、125cc以下のみ利用可"
+  },
+  {
+    "no": 504,
+    "name": "多摩境駅北側自転車駐車場",
+    "ward": "町田市",
+    "address": "小山ヶ丘3丁目23番142号",
+    "capacity": 40,
+    "pricing": "24時間210円(51cc～125cc以下)、24時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 505,
+    "name": "つくし野駅自転車駐車場",
+    "ward": "町田市",
+    "address": "つくし野1丁目26番地",
+    "capacity": 5,
+    "pricing": "24時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 506,
+    "name": "鶴川駅東側バイク駐車場",
+    "ward": "町田市",
+    "address": "能ヶ谷1丁目249番1号",
+    "capacity": 9,
+    "pricing": "入車から24時間毎310円(126cc以上)、24時間210円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 507,
+    "name": "成瀬駅南口臨時バイク駐車場",
+    "ward": "町田市",
+    "address": "成瀬が丘2丁目7番3号",
+    "capacity": 51,
+    "pricing": "1日1回210円(51cc～125cc以下)、12時間160円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 508,
+    "name": "成瀬駅南口自転車駐車場",
+    "ward": "町田市",
+    "address": "成瀬が丘2丁目1番8号",
+    "capacity": 3,
+    "pricing": "1日1回310円(126cc以上)、1日1回210円(51cc～125cc以下)、1日1回160円(50cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 509,
+    "name": "平野屋第2バイク駐車場",
+    "ward": "町田市",
+    "address": "原町田3丁目7番11号",
+    "capacity": 8,
+    "pricing": "60分100円、入車から512時間最大1000円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 510,
+    "name": "タマパーク 玉川学園第3駐車場",
+    "ward": "町田市",
+    "address": "玉川学園2丁目13番地",
+    "capacity": 7,
+    "pricing": "60分100円、入車から524時間最大200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 511,
+    "name": "アミックスパーキング",
+    "ward": "町田市",
+    "address": "原町田6丁目18番16号",
+    "capacity": 5,
+    "pricing": "最初の1時間無料、以降60分100円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 512,
+    "name": "パークステージつくし野",
+    "ward": "町田市",
+    "address": "つくし野2丁目26番31号",
+    "capacity": 8,
+    "pricing": "60分100円、入車から524時間最大200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 513,
+    "name": "イトーヨーカドー 武蔵小金井店駐輪場",
+    "ward": "小金井市",
+    "address": "本町6丁目10番地",
+    "capacity": 13,
+    "pricing": "最初の3時間無料、以降28時間毎150円",
+    "icPayment": false,
+    "notes": "構内に入車できない車種あり"
+  },
+  {
+    "no": 514,
+    "name": "エコステーション21ピーコック ストア東小金井店駐輪場",
+    "ward": "小金井市",
+    "address": "中町2丁目23番23号",
+    "capacity": 7,
+    "pricing": "最初の90分無料、入車12時間毎300円(126cc以上)、以降12時間毎150円(125cc以下)",
+    "icPayment": false,
+    "notes": "125cc以上4台"
+  },
+  {
+    "no": 515,
+    "name": "一橋学園駅東有料自転車駐車場",
+    "ward": "小平市",
+    "address": "学園東町2丁目1番2号",
+    "capacity": 3,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 516,
+    "name": "小平駅北第二有料自転車駐車場",
+    "ward": "小平市",
+    "address": "美園町3丁目18番1号",
+    "capacity": 6,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 517,
+    "name": "小平駅東有料自転車駐車場",
+    "ward": "小平市",
+    "address": "小川町1丁目31番1号",
+    "capacity": 6,
+    "pricing": "1日1回150円、管理人支払",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 518,
+    "name": "花小金井駅南有料自転車駐車場",
+    "ward": "小平市",
+    "address": "花小金井南町2丁目19番13号",
+    "capacity": 17,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 519,
+    "name": "鷹の台駅南有料自転車駐車場",
+    "ward": "小平市",
+    "address": "上水本町1丁目16番2号",
+    "capacity": 8,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 520,
+    "name": "一橋学園駅有料自転車駐車場",
+    "ward": "小平市",
+    "address": "喜平町2丁目3番1号",
+    "capacity": 10,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 521,
+    "name": "一橋学園駅北有料自転車駐車場",
+    "ward": "小平市",
+    "address": "学園西町1丁目6番1号",
+    "capacity": 3,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 522,
+    "name": "小平市立花小金井駅北(B)自転車駐車場",
+    "ward": "小平市",
+    "address": "小金井市花小金井1丁目",
+    "capacity": 19,
+    "pricing": "12時間160円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 523,
+    "name": "サイカパーク 新小平駅前駐輪場",
+    "ward": "小平市",
+    "address": "小川町2丁目1950番地",
+    "capacity": 60,
+    "pricing": "最初の90分無料、入車から512時間125cc以下200円(126cc以上)、入車から512時間100円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 524,
+    "name": "SEIYU東大和店駐輪場",
+    "ward": "小平市",
+    "address": "",
+    "capacity": 10,
+    "pricing": "10時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 525,
+    "name": "パーキングヴィースト 一橋学園駅前",
+    "ward": "小平市",
+    "address": "学園東町1丁目3番3号",
+    "capacity": 4,
+    "pricing": "入車から524時間毎300円",
+    "icPayment": false,
+    "notes": "125cc以下、構内に入車できない車種あり"
+  },
+  {
+    "no": 526,
+    "name": "いなげや花小金井駅前店駐輪場A",
+    "ward": "小平市",
+    "address": "花小金井1丁目3番3号",
+    "capacity": 7,
+    "pricing": "",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 527,
+    "name": "西友花小金井店第1駐車場",
+    "ward": "小平市",
+    "address": "花小金井1丁目2番23号",
+    "capacity": 4,
+    "pricing": "30分100円(月～金)、20分100円(土・日・祝)",
+    "icPayment": false,
+    "notes": "営業時間:8時45分～22時45分"
+  },
+  {
+    "no": 528,
+    "name": "京王オートバイパーク 平山城址公園",
+    "ward": "日野市",
+    "address": "平山5丁目18番地",
+    "capacity": 30,
+    "pricing": "最初の1時間無料、以降15時間毎200円",
+    "icPayment": false,
+    "notes": "構内に入車できない車両は利用不可"
+  },
+  {
+    "no": 529,
+    "name": "日野駅西第2駐輪場",
+    "ward": "日野市",
+    "address": "大坂上1丁目30番地",
+    "capacity": 26,
+    "pricing": "24時間毎200円(125cc以下)、24時間150円(125cc未満)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 530,
+    "name": "高幡不動駅南第1駐輪場",
+    "ward": "日野市",
+    "address": "高幡76番地",
+    "capacity": 14,
+    "pricing": "24時間毎150円(125cc以下、125cc未満)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 531,
+    "name": "南平駅南第3駐輪場",
+    "ward": "日野市",
+    "address": "南平7丁目5番地",
+    "capacity": 21,
+    "pricing": "24時間毎200円(125cc以下)、24時間毎150円(50cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 532,
+    "name": "A-parkサイクル 新秋津駅前",
+    "ward": "東村山市",
+    "address": "秋津町5丁目25番地",
+    "capacity": 18,
+    "pricing": "8時間200円",
+    "icPayment": false,
+    "notes": "125cc以上のみ利用可"
+  },
+  {
+    "no": 533,
+    "name": "新秋津駅第1駐輪場",
+    "ward": "東村山市",
+    "address": "秋津町5丁目6番地",
+    "capacity": 32,
+    "pricing": "入車から524時間毎220円(51～125cc以下)、入車から524時間毎150円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 534,
+    "name": "秋津駅第1駐輪場",
+    "ward": "東村山市",
+    "address": "秋津町5丁目8番12号",
+    "capacity": 14,
+    "pricing": "入車から524時間毎220円(51～125cc以下)、入車から524時間毎150円(50cc以下)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 535,
+    "name": "久米川駅南口第1駐輪場",
+    "ward": "東村山市",
+    "address": "栄町2丁目29番地",
+    "capacity": 12,
+    "pricing": "24時間200円(51cc～125cc以下)、24時間150円(50cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 536,
+    "name": "新秋津駅第5駐輪場",
+    "ward": "東村山市",
+    "address": "秋津町引丁目17番地",
+    "capacity": 50,
+    "pricing": "24時間100円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 537,
+    "name": "東村山駅西口第1駐輪場",
+    "ward": "東村山市",
+    "address": "野口町1丁目3番27号",
+    "capacity": 34,
+    "pricing": "48時間240円(51cc～125cc以下)、24時間160円(50cc以下)、500円提携まで支払(紙幣・新500円硬貨・電子決済利用可能)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 538,
+    "name": "KOKUBUNJI STEP'S 国分寺駅南口駐輪場",
+    "ward": "国分寺市",
+    "address": "南町3丁目8番9号",
+    "capacity": 5,
+    "pricing": "最初の30分無料、入車3時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 539,
+    "name": "アットパーク泉町二丁目自転車等駐車場",
+    "ward": "国分寺市",
+    "address": "泉町2丁目9番2号",
+    "capacity": 82,
+    "pricing": "最初の1時間無料、以降248時間200円、電子マネー190円(51cc以上)、以降248時間150円、電子マネー140円(50cc以下)",
+    "icPayment": true,
+    "notes": ""
+  },
+  {
+    "no": 540,
+    "name": "西武スマイルパーク 恋ヶ窪第4駐輪場",
+    "ward": "国分寺市",
+    "address": "東恋ヶ窪2丁目11番10号",
+    "capacity": 7,
+    "pricing": "128時間240円(交通系電子マネー支払230円)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 541,
+    "name": "国立駅南第2自転車駐車場",
+    "ward": "国立市",
+    "address": "中1丁目16番地",
+    "capacity": 9,
+    "pricing": "1日1回300円(126cc以上)、1日1回200円(125cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:126cc以上12台、小型(125cc以下)45台"
+  },
+  {
+    "no": 542,
+    "name": "矢川駅北第2自転車駐車場",
+    "ward": "国立市",
+    "address": "富士見台3丁目35番5号",
+    "capacity": 20,
+    "pricing": "24時間毎300円(126cc以上)、24時間250円(125cc以下)、24時間150円(50cc以下)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 543,
+    "name": "福生駅西口自転車・バイク駐車場",
+    "ward": "福生市",
+    "address": "福生1015番地",
+    "capacity": 22,
+    "pricing": "最初の1時間無料、以降6時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 544,
+    "name": "福生駅西口自転車駐車場",
+    "ward": "福生市",
+    "address": "福生997番20号",
+    "capacity": 5,
+    "pricing": "1日1回150円、5日～100円駐輪定期有",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 545,
+    "name": "牛浜駅東口自転車駐車場",
+    "ward": "福生市",
+    "address": "牛浜148番4号",
+    "capacity": 19,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 546,
+    "name": "牛浜駅西口自転車駐車場",
+    "ward": "福生市",
+    "address": "牛浜58番1号",
+    "capacity": 8,
+    "pricing": "1日1回150円(おつりと領収書は管理人がいるときのみ対応)",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 547,
+    "name": "拝島駅北口自転車駐車場",
+    "ward": "福生市",
+    "address": "熊川1697番14号",
+    "capacity": 6,
+    "pricing": "1日1回150円、管理人支払",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 548,
+    "name": "熊川駅東自転車駐車場",
+    "ward": "福生市",
+    "address": "熊川1798番1号",
+    "capacity": 5,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 549,
+    "name": "福生駅東口自転車・バイク駐車場",
+    "ward": "福生市",
+    "address": "東町7番6号",
+    "capacity": 10,
+    "pricing": "最初の1時間無料、以降6時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 550,
+    "name": "福生駅西口第3自転車・バイク駐輪場",
+    "ward": "福生市",
+    "address": "福生1047番地",
+    "capacity": 16,
+    "pricing": "最初の1時間無料、以降6時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 551,
+    "name": "福生駅西口第8駐車場",
+    "ward": "福生市",
+    "address": "本町67番1号",
+    "capacity": 6,
+    "pricing": "最初の1時間無料、以降6時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 552,
+    "name": "狛江駅北口地下駐車場",
+    "ward": "狛江市",
+    "address": "元和泉1丁目2番1号",
+    "capacity": 5,
+    "pricing": "2時間100円(7時～9時)、60分100円(9時～21時)、2時間100円(21時～2時)、夜間(7時～翌2時最大500円)、夜間2時～7時最大400円",
+    "icPayment": false,
+    "notes": "営業時間:7時～翌午前2時、夜間閉鎖あり"
+  },
+  {
+    "no": 553,
+    "name": "秋津駅南口駐輪場",
+    "ward": "清瀬市",
+    "address": "野塩5丁目280番地",
+    "capacity": 15,
+    "pricing": "1日1回150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 554,
+    "name": "秋津駅北口駐輪場",
+    "ward": "清瀬市",
+    "address": "野塩1丁目342番地",
+    "capacity": 8,
+    "pricing": "1日1回150円、管理人支払(不在時はポスト支払)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 555,
+    "name": "清瀬駅北口第2駐輪場",
+    "ward": "清瀬市",
+    "address": "上清戸1丁目329番地",
+    "capacity": 28,
+    "pricing": "",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 556,
+    "name": "サイクルスペース24 東久留米駐輪場",
+    "ward": "東久留米市",
+    "address": "新川町1丁目9番30号",
+    "capacity": 57,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 557,
+    "name": "西武スマイルパーク 東久留米駅北口駐車場",
+    "ward": "東久留米市",
+    "address": "東本町1丁目6番地",
+    "capacity": 14,
+    "pricing": "10時間240円",
+    "icPayment": false,
+    "notes": "構内に入車できない車種あり"
+  },
+  {
+    "no": 558,
+    "name": "日生サイクルプラザ 東久留米市",
+    "ward": "東久留米市",
+    "address": "東本町1丁目3番8号",
+    "capacity": 22,
+    "pricing": "12時間300円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 559,
+    "name": "永山駅駐輪場",
+    "ward": "多摩市",
+    "address": "永山1丁目5番地",
+    "capacity": 86,
+    "pricing": "最初の2時間無料、1日1回210円(51cc～125cc以下)、1日1回160円(50cc以下)(午前3時切替)",
+    "icPayment": false,
+    "notes": "営業時間:始発～終電+30分、管理人がいる時間帯あり、125cc以下のみ利用可"
+  },
+  {
+    "no": 560,
+    "name": "エコステーション21 永山第3駐輪場",
+    "ward": "多摩市",
+    "address": "永山1丁目4番地",
+    "capacity": 46,
+    "pricing": "最初の28時間無料、入車8時間毎350円(126cc以上)、入車8時間毎300円(126cc以下)",
+    "icPayment": false,
+    "notes": "構内に入車できない車種あり"
+  },
+  {
+    "no": 561,
+    "name": "エコステーション21 丘の上パティオ第2駐輪場",
+    "ward": "多摩市",
+    "address": "落合1丁目45番地",
+    "capacity": 64,
+    "pricing": "入車28時間毎300円(126cc以上)",
+    "icPayment": false,
+    "notes": "駐車台数:126cc以上のみ"
+  },
+  {
+    "no": 562,
+    "name": "聖蹟桜ヶ丘 ヴィータパーキング",
+    "ward": "多摩市",
+    "address": "関戸4丁目72番地",
+    "capacity": 7,
+    "pricing": "24時間500円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 563,
+    "name": "聖蹟桜ヶ丘駅西自転車駐車場",
+    "ward": "多摩市",
+    "address": "一ノ宮2丁目11番25号",
+    "capacity": 6,
+    "pricing": "1日1回200円(8時切替)",
+    "icPayment": false,
+    "notes": "管理窓口入口(入庫不可)の場合あり"
+  },
+  {
+    "no": 564,
+    "name": "エコステーション21京王聖蹟桜ヶ丘ショッピングセンター第二駐輪場",
+    "ward": "多摩市",
+    "address": "関戸2丁目41番地",
+    "capacity": 5,
+    "pricing": "以降4時間毎330円(50cc以上)、以降4時間毎220円(125cc以下)",
+    "icPayment": false,
+    "notes": "駐車台数:利用口2台、出入口台2台、125cc以下1台"
+  },
+  {
+    "no": 565,
+    "name": "オダクル多摩センター第2",
+    "ward": "多摩市",
+    "address": "鶴牧1丁目13番地",
+    "capacity": 71,
+    "pricing": "10時間150円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 566,
+    "name": "アップルパーク ザ・スクエア駐輪場",
+    "ward": "多摩市",
+    "address": "関戸1丁目1番5号",
+    "capacity": 4,
+    "pricing": "最初の90分無料、以降7時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 567,
+    "name": "エコステーション21 丘の上プラザ第2駐輪場",
+    "ward": "多摩市",
+    "address": "落合1丁目44番地",
+    "capacity": 37,
+    "pricing": "入車28時間毎300円(126cc以上)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 568,
+    "name": "多摩センター駅西駐輪場",
+    "ward": "多摩市",
+    "address": "鶴牧1丁目19番2号",
+    "capacity": 140,
+    "pricing": "最初の2時間無料、1日1回210円(51cc以上)、1日1回160円(50cc以下)、50cc以下60台、水色ナンバー車両は利用不可(午前3時切替)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 569,
+    "name": "エコステーション21 丘の上プラザ第1駐輪場",
+    "ward": "多摩市",
+    "address": "落合1丁目44番地",
+    "capacity": 14,
+    "pricing": "最初の3時間無料、以降6時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 570,
+    "name": "唐木田駅駐輪場",
+    "ward": "多摩市",
+    "address": "唐木田1丁目5番2号",
+    "capacity": 25,
+    "pricing": "最初の2時間以内無料、1日1回200円(51cc～125cc以下)、1日1回150円(50cc以下)(午前3時切替)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 571,
+    "name": "聖蹟桜ヶ丘駅南自転車駐車場",
+    "ward": "多摩市",
+    "address": "一ノ宮3丁目1番10号",
+    "capacity": 31,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 572,
+    "name": "矢野口駅西自転車駐車場",
+    "ward": "稲城市",
+    "address": "矢野口273番12号",
+    "capacity": 16,
+    "pricing": "24時間160円",
+    "icPayment": false,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 573,
+    "name": "京王オートバイパーク よみうりランド",
+    "ward": "稲城市",
+    "address": "矢野口199番2号",
+    "capacity": 92,
+    "pricing": "最初の1時間無料、以降148時間毎220円",
+    "icPayment": false,
+    "notes": "構内に入車できない車種あり"
+  },
+  {
+    "no": 574,
+    "name": "稲城長沼駅東自転車等駐車場",
+    "ward": "稲城市",
+    "address": "東長沼1235番3号",
+    "capacity": 7,
+    "pricing": "24時間160円",
+    "icPayment": true,
+    "notes": "水色ナンバー車両(ミニカー)は利用不可、125cc以下のみ利用可"
+  },
+  {
+    "no": 575,
+    "name": "南多摩駅東自転車等駐車場",
+    "ward": "稲城市",
+    "address": "大丸947番2号",
+    "capacity": 22,
+    "pricing": "24時間160円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 576,
+    "name": "稲城駅北口バイク駐車場",
+    "ward": "稲城市",
+    "address": "東長沼2113番7号",
+    "capacity": 7,
+    "pricing": "1日1回160円、稲城駅定期利用不可、大木在籍中のみ利用可能",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 577,
+    "name": "稲城長沼駅西自転車等駐車場",
+    "ward": "稲城市",
+    "address": "大丸大丸下二号185番地",
+    "capacity": 14,
+    "pricing": "24時間160円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 578,
+    "name": "若葉台駅前自転車駐車場",
+    "ward": "稲城市",
+    "address": "若葉台2丁目7番3号",
+    "capacity": 7,
+    "pricing": "1日1回160円、管理人支払(不在時はポスト支払)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 579,
+    "name": "西武スマイルパーク アスタビル駐輪場",
+    "ward": "西東京市",
+    "address": "田無町2丁目1番1号",
+    "capacity": 23,
+    "pricing": "最初の2時間無料、以降4時間毎200円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 580,
+    "name": "保谷駅北口第2自転車駐車場",
+    "ward": "西東京市",
+    "address": "下保谷4丁目11番地",
+    "capacity": 47,
+    "pricing": "1日1回200円",
+    "icPayment": true,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 581,
+    "name": "アップルパーク ひばりが丘駅前駐輪場第1",
+    "ward": "西東京市",
+    "address": "ひばりヶ丘北4丁目3番4号",
+    "capacity": 9,
+    "pricing": "入車から6時間100円、以降24時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 582,
+    "name": "エコステーション21りそな銀行ひばりヶ丘支店駐輪場",
+    "ward": "西東京市",
+    "address": "ひばりヶ丘北4丁目3番4号",
+    "capacity": 7,
+    "pricing": "最初の2時間無料、以降6時間毎100円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 583,
+    "name": "東伏見駅南口第1B",
+    "ward": "西東京市",
+    "address": "東伏見3丁目27番20号",
+    "capacity": 20,
+    "pricing": "1日1回200円、管理人支払",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、構内に入車できない車種あり"
+  },
+  {
+    "no": 584,
+    "name": "西武柳沢駅北口第1-2自転車駐車場",
+    "ward": "西東京市",
+    "address": "保谷町3丁目24番地",
+    "capacity": 10,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 585,
+    "name": "田無駅北口第1自転車駐車場",
+    "ward": "西東京市",
+    "address": "田無町4丁目5番34号",
+    "capacity": 10,
+    "pricing": "24時間200円",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可、水色ナンバー車両(ミニカー)は利用不可"
+  },
+  {
+    "no": 586,
+    "name": "箱根ヶ崎駅西口有料駐輪場",
+    "ward": "瑞穂町",
+    "address": "箱根ヶ崎397番地",
+    "capacity": 30,
+    "pricing": "1日1回100円(来場時に利用券購入)",
+    "icPayment": false,
+    "notes": "125cc以下のみ利用可"
+  },
+  {
+    "no": 587,
+    "name": "町営小丹波駐車場",
+    "ward": "奥多摩町",
+    "address": "棚沢16番2号",
+    "capacity": 10,
+    "pricing": "1日1回300円",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 588,
+    "name": "町営氷川駐車場",
+    "ward": "奥多摩町",
+    "address": "氷川1703番地",
+    "capacity": 50,
+    "pricing": "1日1回300円、夜間1泊駐車料金600円",
+    "icPayment": false,
+    "notes": "営業時間:8時～17時(繁忙休みなし含む入場受付)"
+  },
+  {
+    "no": 589,
+    "name": "台東区上野駅前 自動二輪車駐車場",
+    "ward": "台東区",
+    "address": "",
+    "capacity": 123,
+    "pricing": "30分100円、1日最大800円(精算しあり)",
+    "icPayment": false,
+    "notes": ""
+  },
+  {
+    "no": 590,
+    "name": "にこにこバイクパーキング 千住旭町",
+    "ward": "足立区",
+    "address": "千住旭町43番1号",
+    "capacity": 7,
+    "pricing": "60分100円、24時間最大500円",
+    "icPayment": false,
+    "notes": ""
+  }
+]
