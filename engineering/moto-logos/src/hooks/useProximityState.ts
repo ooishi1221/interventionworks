@@ -52,6 +52,8 @@ export function useProximityState({ spots, enabled }: UseProximityStateOpts) {
   const [state, setState] = useState<ProximityState>({ kind: 'normal' });
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const lastCalcLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const cooldownCacheRef = useRef<Map<string, { result: boolean; at: number }>>(new Map());
 
   // GPS 監視開始/停止
   useEffect(() => {
@@ -95,6 +97,7 @@ export function useProximityState({ spots, enabled }: UseProximityStateOpts) {
   }, [enabled]);
 
   // 状態判定（位置 or スポット一覧が変わるたびに再計算）
+  // 100m以上動いた場合のみフル再計算してCPU節約
   useEffect(() => {
     if (!enabled || !userLocation || spots.length === 0) {
       if (enabled && userLocation && spots.length === 0) {
@@ -105,32 +108,42 @@ export function useProximityState({ spots, enabled }: UseProximityStateOpts) {
       return;
     }
 
+    // 100m以上動いていなければスキップ（スポット変更時は常に再計算）
+    const prev = lastCalcLocationRef.current;
+    if (prev) {
+      const moved = haversineMeters(prev.latitude, prev.longitude, userLocation.latitude, userLocation.longitude);
+      if (moved < 100) return;
+    }
+    lastCalcLocationRef.current = userLocation;
+
     let cancelled = false;
 
     (async () => {
-      // 距離付きでソート
-      const withDist = spots.map((spot) => ({
-        spot,
-        distanceM: haversineMeters(
-          userLocation.latitude,
-          userLocation.longitude,
-          spot.latitude,
-          spot.longitude,
-        ),
-      }));
-      withDist.sort((a, b) => a.distanceM - b.distanceM);
+      // 最寄りだけ探す（全ソート不要）
+      let nearestSpot: ParkingPin | null = null;
+      let nearestDist = Infinity;
+      for (const spot of spots) {
+        const d = haversineMeters(userLocation.latitude, userLocation.longitude, spot.latitude, spot.longitude);
+        if (d < nearestDist) { nearestDist = d; nearestSpot = spot; }
+      }
 
-      const nearest = withDist[0];
-      if (!nearest || cancelled) return;
+      if (!nearestSpot || cancelled) return;
 
-      if (nearest.distanceM <= NEARBY_THRESHOLD_M) {
-        // クールダウンチェック
-        const cooling = await isCoolingDown(nearest.spot.id);
-        if (cancelled) return;
+      if (nearestDist <= NEARBY_THRESHOLD_M) {
+        // クールダウンチェック（キャッシュ付き、60秒有効）
+        const cached = cooldownCacheRef.current.get(nearestSpot.id);
+        let cooling: boolean;
+        if (cached && Date.now() - cached.at < 60_000) {
+          cooling = cached.result;
+        } else {
+          cooling = await isCoolingDown(nearestSpot.id);
+          if (cancelled) return;
+          cooldownCacheRef.current.set(nearestSpot.id, { result: cooling, at: Date.now() });
+        }
         if (cooling) {
           setState({ kind: 'normal' });
         } else {
-          setState({ kind: 'nearby', nearest });
+          setState({ kind: 'nearby', nearest: { spot: nearestSpot, distanceM: nearestDist } });
         }
       } else {
         setState({ kind: 'normal' });

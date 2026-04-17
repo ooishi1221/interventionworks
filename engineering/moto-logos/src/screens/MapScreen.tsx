@@ -9,8 +9,6 @@ import {
   Platform,
   TextInput,
   Keyboard,
-  Animated as RNAnimated,
-  Easing,
   Dimensions,
   Linking,
   AppState,
@@ -55,7 +53,7 @@ const TOKYO_FALLBACK: Region = {
 const LAST_LOCATION_KEY = 'moto_logos_last_location';
 
 const SYS_BLUE = '#0A84FF';
-const SYS_GRAY = '#636366';
+const SYS_GRAY = '#8E8E93';
 
 // ── Googleマップ検索復帰 ──────────────────────────────
 const GMAPS_SEARCH_KEY = 'moto_logos_gmaps_search';
@@ -69,55 +67,16 @@ interface GmapsSearchSession {
   startedAt: number;
 }
 
-import { SpotTemperature, TEMP_STYLE, spotTemperature } from '../utils/temperature';
+import { TEMP_STYLE, spotTemperature } from '../utils/temperature';
 
 function markerColor(spot: ParkingPin): string {
   const temp = spotTemperature(spot);
   if (temp !== 'cold') return TEMP_STYLE[temp].color;
-  if (spot.source === 'user') return '#BF5AF2';
   return SYS_GRAY;
 }
 
 // ─── 温度ピン ─────────────────────────────────────────
-// 呼吸アニメ: 温度に応じてボーダーが明滅
-const BREATH: Record<SpotTemperature, { min: number; duration: number }> = {
-  blazing: { min: 0.3, duration: 1500 },
-  hot:     { min: 0.4, duration: 2500 },
-  warm:    { min: 0.6, duration: 3500 },
-  cool:    { min: 1,   duration: 0 },
-  cold:    { min: 1,   duration: 0 },
-};
-
-// ボーダー太さで温度を表現（Android非整数borderWidth描画バグ回避のため全て整数）
-const BORDER_W: Record<SpotTemperature, number> = {
-  blazing: 3, hot: 2, warm: 2, cool: 1, cold: 1,
-};
-
 const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; wide?: boolean }) {
-  const temp = spotTemperature(spot);
-  const breath = BREATH[temp];
-  const hasPulse = breath.duration > 0;
-  const opacity = useRef(new RNAnimated.Value(1)).current;
-
-  // 呼吸 — sinカーブでボーダー+ピンが滑らかに明暗
-  useEffect(() => {
-    if (!hasPulse) { opacity.setValue(1); return; }
-    const anim = RNAnimated.loop(
-      RNAnimated.sequence([
-        RNAnimated.timing(opacity, {
-          toValue: breath.min, duration: breath.duration / 2,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
-        }),
-        RNAnimated.timing(opacity, {
-          toValue: 1, duration: breath.duration / 2,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
-        }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [hasPulse, breath.min, breath.duration]);
-
   const color = markerColor(spot);
 
   if (wide) {
@@ -125,11 +84,11 @@ const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; 
   }
 
   return (
-    <RNAnimated.View style={[styles.pinLarge, { backgroundColor: color, opacity }]}>
+    <View style={[styles.pinLarge, { backgroundColor: color }]}>
       <Text style={styles.pinLargeText}>
-        {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : spot.source === 'user' ? '★' : 'P'}
+        {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : 'P'}
       </Text>
-    </RNAnimated.View>
+    </View>
   );
 });
 
@@ -159,6 +118,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [initialRegion, setInitialRegion] = useState<Region>(TOKYO_FALLBACK);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
+  const fetchingRef = useRef(false);
   const [gpsLoading, setGpsLoading]       = useState(true);
   const [emptyDismissed, setEmptyDismissed] = useState(false);
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
@@ -207,6 +167,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
    * 既存スポットにマージ（同一ID上書き）して重複なくピンを蓄積する。
    */
   const fetchSpotsForRegion = useCallback(async (region: Region): Promise<ParkingPin[]> => {
+    if (fetchingRef.current) return [];
+    fetchingRef.current = true;
     setLoading(true);
     let fetched: ParkingPin[] = [];
     try {
@@ -230,6 +192,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
     }
     setLoading(false);
+    fetchingRef.current = false;
     lastFetchRegionRef.current = region;
     return fetched;
   }, []);
@@ -304,32 +267,36 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     logActivity();
   }, []);
 
-  // タブ2度押しリセット
+  // タブ2度押しリセット（現在地移動 + スポット再取得）
   useImperativeHandle(ref, () => ({
     resetView: () => {
       setSelected(null);
 
       if (lastLocationRef.current) {
-        mapRef.current?.animateToRegion({
+        const region = {
           ...lastLocationRef.current,
           latitudeDelta: 0.03,
           longitudeDelta: 0.03,
-        }, 600);
+        };
+        mapRef.current?.animateToRegion(region, 600);
+        fetchSpotsForRegion(region);
       } else if (locationGranted) {
         Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
           .then((loc) => {
             lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-            mapRef.current?.animateToRegion({
+            const region = {
               latitude: loc.coords.latitude,
               longitude: loc.coords.longitude,
               latitudeDelta: 0.03,
               longitudeDelta: 0.03,
-            }, 600);
+            };
+            mapRef.current?.animateToRegion(region, 600);
+            fetchSpotsForRegion(region);
           })
           .catch((e) => captureError(e, { context: 'resetView' }));
       }
     },
-  }), [locationGranted]);
+  }), [locationGranted, fetchSpotsForRegion]);
 
   // お気に入りからのジャンプ
   useEffect(() => {
@@ -359,12 +326,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-    mapRef.current?.animateToRegion({
+    const region = {
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
       latitudeDelta: 0.03,
       longitudeDelta: 0.03,
-    }, 600);
+    };
+    mapRef.current?.animateToRegion(region, 600);
+    // 現在地周辺のスポットも再取得
+    fetchSpotsForRegion(region);
   };
 
   // ── 最寄りスポット ────────────────────────────────────
@@ -938,7 +908,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
               ? [{ spot: tutorial.dummySpot, distanceM: 120 }, ...getNearbyAlternatives(undefined, 2)]
               : getNearbyAlternatives(undefined, 3)
           }
-          onLocationPress={goToCurrentLocation}
           onSpotPress={(spot) => {
             mapRef.current?.animateToRegion({
               latitude: spot.latitude, longitude: spot.longitude,
@@ -1201,7 +1170,8 @@ const styles = StyleSheet.create({
   },
   pinLargeText: { fontSize: 13, color: '#fff', fontWeight: '800' },
   pinDot: {
-    width: 14, height: 14, borderRadius: 7,
+    width: 24, height: 24, borderRadius: 12,
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)',
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 

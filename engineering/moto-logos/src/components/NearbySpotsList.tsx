@@ -1,9 +1,9 @@
 /**
  * NearbySpotsList v3 — 上部フローティングバー
  *
- * デフォルト: 1行コンパクト表示（📍 + 最寄り3件インライン）
+ * デフォルト: 1行コンパクト表示（最寄り3件インライン）
  * タップで展開: 3行リスト
- * 📍 = 現在地に戻る
+ * 現在地復帰はマップタブ2度押しで対応
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -37,7 +37,6 @@ export interface AreaSummary {
 interface Props {
   alternatives: NearbySpotInfo[];
   onSpotPress?: (spot: ParkingPin) => void;
-  onLocationPress?: () => void;
   onSearchPress?: () => void;
   areaSummary?: AreaSummary | null;
   onClearSearch?: () => void;
@@ -60,7 +59,7 @@ function ccDisplayLabel(cc: UserCC): string {
   return '大型';
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -119,16 +118,6 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
   return (
     <View style={styles.container} pointerEvents="box-none">
       <Animated.View ref={barRef} style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
-        {/* ── 現在地ボタン ─────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.locBtn}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onLocationPress?.(); }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Ionicons name="locate" size={16} color={C.blue} />
-        </TouchableOpacity>
-
         {/* ── CCフィルタトグル ─────────────────────────── */}
         {userCC !== undefined && onToggleCcFilter && (
           <TouchableOpacity
@@ -267,7 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(28,28,30,0.88)',
     borderRadius: 22,
     height: 40,
-    paddingLeft: 4,
+    paddingLeft: 12,
     paddingRight: 12,
     gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
@@ -277,16 +266,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 6,
-  },
-
-  // ── 現在地ボタン ──────────────────────────────────
-  locBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(10,132,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // ── 検索ボタン ────────────────────────────────────
