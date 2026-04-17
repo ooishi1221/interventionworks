@@ -24,18 +24,19 @@ export async function GET(request: NextRequest) {
 
     if (status === 'pending') {
       // pending: mapUpdateStatus が 'pending' または未設定のもの
-      // Firestore では「フィールドなし OR 値が pending」を単一クエリで取れないため、
-      // 全写真付きレビューから analyzed/applied/skipped を除外
+      // photoUrls の != [] はインデックス要件が厳しいため、取得後にフィルタ
       const allQuery = adminDb
         .collection(COLLECTIONS.REVIEWS)
-        .where('photoUrls', '!=', [])
-        .orderBy('createdAt', 'desc');
+        .orderBy('createdAt', 'desc')
+        .limit(limit * 5);
 
-      const allSnap = await allQuery.limit(limit * 3).get();
+      const allSnap = await allQuery.get();
 
-      // analyzed/applied/skipped 以外 = pending or 未設定
       const pendingDocs = allSnap.docs.filter((d) => {
-        const s = d.data().mapUpdateStatus;
+        const data = d.data();
+        const photos = data.photoUrls as string[] | undefined;
+        if (!photos || photos.length === 0) return false;
+        const s = data.mapUpdateStatus;
         return !s || s === 'pending';
       });
 
@@ -45,7 +46,6 @@ export async function GET(request: NextRequest) {
       // analyzed / applied / skipped
       let query: FirebaseFirestore.Query = adminDb
         .collection(COLLECTIONS.REVIEWS)
-        .where('photoUrls', '!=', [])
         .where('mapUpdateStatus', '==', status)
         .orderBy('createdAt', 'desc');
 
@@ -59,7 +59,12 @@ export async function GET(request: NextRequest) {
       const snap = await query.limit(limit + 1).get();
       const hasMore = snap.docs.length > limit;
       docs = hasMore ? snap.docs.slice(0, limit) : snap.docs;
-      nextCursor = hasMore ? docs[docs.length - 1].id : null;
+      // 写真付きのみフィルタ
+      docs = docs.filter((d) => {
+        const photos = d.data().photoUrls as string[] | undefined;
+        return photos && photos.length > 0;
+      });
+      nextCursor = hasMore ? docs[docs.length - 1]?.id || null : null;
     }
 
     // スポット情報を結合

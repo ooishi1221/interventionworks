@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { GeminiAnalysisResult } from '@/lib/types';
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
 const ANALYSIS_PROMPT = `あなたは日本のバイク駐車場の写真を解析するアシスタントです。
 写真から読み取れる情報を抽出してください。
