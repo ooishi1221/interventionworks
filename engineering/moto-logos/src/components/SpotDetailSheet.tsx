@@ -233,11 +233,10 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     const name = encodeURIComponent(spot.name);
     const newLink = `ynavigation://v1/route?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}&type=drive`;
     const oldLink = `yjnavicar://v1/map?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
-    try {
-      if (await Linking.canOpenURL(newLink)) { await Linking.openURL(newLink); return; }
-      if (await Linking.canOpenURL(oldLink)) { await Linking.openURL(oldLink); return; }
-    } catch (e) { captureError(e, { context: 'yahoo_navi_deeplink' }); }
-    // アプリ未インストール → ストアへ誘導
+    // canOpenURL はAndroidで <queries> 未宣言だと常にfalseになるため、直接openURLを試す
+    try { await Linking.openURL(newLink); return; } catch { /* fall through */ }
+    try { await Linking.openURL(oldLink); return; } catch { /* fall through */ }
+    // 両方失敗 → 未インストール → ストアへ誘導
     const store = Platform.select({
       android: 'https://play.google.com/store/apps/details?id=jp.co.yahoo.android.apps.navi',
       ios: 'https://apps.apple.com/jp/app/yahoo-%E3%82%AB%E3%83%BC%E3%83%8A%E3%83%93/id890808217',
