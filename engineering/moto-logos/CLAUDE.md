@@ -589,7 +589,7 @@ eas update --branch preview
 
 ## スポットデータ
 
-**Firestore 合計: 754件**（首都圏 + 関東広域）
+**Firestore 合計: 約1,306件**（首都圏 + 関東広域）
 
 ### データソース
 
@@ -598,6 +598,7 @@ eas update --branch preview
 | **実在確認済み** | 41件 | `real_` | — | 公式サイト・現地確認ベースの駐車場。住所・料金・台数・営業時間あり |
 | **JMPSA公開情報** | 38件 | `jmpsa_` | — | 日本二輪車普及安全協会（https://www.jmpsa.or.jp/society/parking/）の公開データから手動転記。渋谷・新宿・千代田・豊島・港・中央区 |
 | **OpenStreetMap** | 675件 | `osm_` | **ODbL** | Overpass API から `amenity=motorcycle_parking` を自動取得。名前あり23%、台数あり13%。ユーザーの足跡で情報が育つ設計 |
+| **警察ガイド** | 552件 | `police_` | — | 都内オートバイ駐車場MAP 2024（東京都道路整備保全公社発行）。全件に名称・住所・台数・料金・IC決済。CC制限・営業時間もnotesから自動パース。OSM重複34件はマージ更新済み |
 
 ### OSM データ詳細
 
@@ -631,6 +632,7 @@ eas update --branch preview
 | `scripts/fetchOsmSpots.mjs` | OSM から首都圏データ取得 → JSON 出力 | `node scripts/fetchOsmSpots.mjs` |
 | `scripts/importRealData.mjs` | 実在79件の投入（ダミー削除 + 実データ投入） | `node scripts/importRealData.mjs` |
 | `scripts/bulkImport.mjs` | 汎用 JSON → Firestore バッチ書き込み | `node scripts/bulkImport.mjs --file scripts/data/spots-osm-kanto.json` |
+| `scripts/importPoliceGuide.mjs` | 警察ガイド588件 → 重複チェック + Firestore投入 | `node scripts/importPoliceGuide.mjs --dry-run` |
 | `scripts/generateSpots.mjs` | ダミーデータ生成（開発用、本番非使用） | `node scripts/generateSpots.mjs` |
 
 ### データ拡充ロードマップ
@@ -639,7 +641,7 @@ eas update --branch preview
 |-------|--------|---------|------|
 | ~~Phase 0~~ | ~~実在確認 + JMPSA手動転記~~ | ~~79件~~ | **完了** |
 | ~~Phase 1~~ | ~~OpenStreetMap（Overpass API）~~ | ~~675件~~ | **完了（2026-04-14）** |
-| **Phase 1.5** | **警察配布バイク駐車場ガイド（PDFスキャン→OCR）** | **数百件** | **未着手（#136）— CEO冊子所持。スキャン後にデータ抽出→投入** |
+| ~~Phase 1.5~~ | ~~警察配布バイク駐車場ガイド（PDFスキャン→OCR）~~ | ~~552件~~ | **完了（2026-04-17）** — 588件OCR→ジオコーディング→552件新規投入+34件OSMマージ |
 | Phase 2 | 自治体オープンデータ（CC BY 4.0） | 数百件 | 未着手 — 東京23区の区別CSVを順次収集 |
 | Phase 3 | s-park（東京都道路整備保全公社）提携 | 580場 | 未着手 — 二輪駐車場 + リアルタイム満空情報。α/βテスト反響次第で交渉開始 |
 | Phase 4 | JMPSA 正式データ提携 | 15,300件（首都圏） | 未着手 — akippa前例あり。α/βテスト反響次第で交渉開始 |
