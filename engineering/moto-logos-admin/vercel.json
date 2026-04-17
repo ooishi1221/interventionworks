@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/retention-notify",
-      "schedule": "15,45 * * * *"
+      "schedule": "0 10 * * *"
     }
   ]
 }
