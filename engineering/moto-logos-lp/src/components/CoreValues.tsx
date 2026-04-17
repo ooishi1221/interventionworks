@@ -40,7 +40,6 @@ export default function CoreValues() {
             <div
               className={`cv-row reveal ${i % 2 === 1 ? 'cv-row-reverse' : ''}`}
               key={i}
-              style={{ transitionDelay: `${i * 0.1}s` }}
             >
               <div className="cv-phone">
                 <IPhoneFrame src={v.screenshot} alt={v.alt} />

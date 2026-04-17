@@ -26,7 +26,7 @@ export default function HowTo() {
         <h2 className="section-title reveal">参加のしかた</h2>
         <div className="howto-steps">
           {steps.map((s, i) => (
-            <div key={s.num} className="howto-step reveal" style={{ transitionDelay: `${i * 0.15}s` }}>
+            <div key={s.num} className="howto-step reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
               <div className="step-icon-wrap">
                 <div className="step-number">{s.num}</div>
                 <div className="step-icon">{s.icon}</div>

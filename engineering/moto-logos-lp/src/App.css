@@ -12,7 +12,16 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  transition: opacity 0.5s ease;
+}
+
+/* Text phases */
+.hero-intro-text {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  padding: 0 var(--space-lg);
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 .hero-intro.black .hero-intro-text {
   opacity: 0;
@@ -22,64 +31,48 @@
   opacity: 1;
   transform: scale(1);
 }
-.hero-intro.move {
+.hero-intro.textout .hero-intro-text,
+.hero-intro.reveal .hero-intro-text {
   opacity: 0;
+  transform: scale(0.95);
+}
+
+/* Overlay dissolve — the black curtain melts away */
+.hero-intro.reveal {
+  opacity: 0;
+  transition: opacity 1.0s ease-in-out;
   pointer-events: none;
-}
-.hero-intro.move .hero-intro-text {
-  opacity: 0;
-  transform: scale(0.75) translateY(-60px);
-}
-.hero-intro-text {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.4;
-  text-align: center;
-  padding: 0 var(--space-lg);
-  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 @media (min-width: 768px) {
   .hero-intro-text { font-size: 56px; }
 }
 
-/* Hero content stagger entrance */
-.hero-hidden {
-  visibility: visible;
-}
-.hero-hidden .hero-stagger {
-  opacity: 0;
-  transform: translateY(24px);
-}
-.hero-hidden .mockup-float {
-  transform: none;
-}
-.hero-wrapper-hidden .hero-bg {
-  opacity: 0;
-}
-.hero-revealed .hero-stagger {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
+/* Hero — always visible behind the overlay */
 .hero-wrapper-revealed .hero-bg {
   opacity: 0.25;
-  transition: opacity 1.2s ease;
-}
-.hero-revealed .hero-mockup {
-  opacity: 1;
-  transition: opacity 0.8s ease 0.4s;
 }
 
 /* ── Scroll reveal animation ── */
+
+/* Rise: emerge from below with weight */
 .reveal {
   opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transform: translateY(72px);
+  transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .reveal.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
+}
+
+/* Wipe center: curtain open for special moments */
+.reveal-wipe-center {
+  clip-path: inset(0 50% 0 50%);
+  transition: clip-path 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal-wipe-center.revealed {
+  clip-path: inset(0 0 0 0);
 }
 
 /* ── Shared layout ── */

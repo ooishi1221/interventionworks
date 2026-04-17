@@ -15,7 +15,7 @@ export default function Philosophy() {
           Google Mapsは車のための地図だ。
           バイク乗りはいつだって地図の上では透明人間だった。
         </p>
-        <div className="philosophy-divider reveal"></div>
+        <div className="philosophy-divider reveal-wipe-center"></div>
         <p className="philosophy-shift reveal">
           だから自分たちの地図をつくることにした。<br />
           正確なデータベースじゃない。<br />

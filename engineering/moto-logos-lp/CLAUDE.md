@@ -28,8 +28,8 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 | # | セクション | コンポーネント | 内容 |
 |---|-----------|---------------|------|
 | - | ヘッダー | `StickyCta.tsx` | 固定ヘッダー: ロゴ + LiveFeed通知 + βテスター参加ボタン |
-| 1 | イントロ | `HeroIntro.tsx` | シネマティック演出「俺たちはここにいる。」→ フェードアウト |
-| 2 | ヒーロー | `Hero.tsx` | Ken Burns背景 + h1 + β申し込みフォーム + iPhoneモック（実スクショ） |
+| 1 | イントロ | `HeroIntro.tsx` | シネマティック演出「これは存在証明だ。」→ 黒幕が溶けてヒーローが現れる |
+| 2 | ヒーロー | `Hero.tsx` | Ken Burns背景 + h1「俺たちはここにいる。」+ β申し込みフォーム + iPhoneモック（常時表示、黒幕の奥から出現） |
 | 3 | 参加のしかた | `HowTo.tsx` | 3ステップ（メール申込→招待→足跡） |
 | 4 | βテスター特権 | `BetaPerks.tsx` | 3枚カード（FIRST FOOTPRINT / DIRECT LINE / WARM UP THE MAP） |
 | 5 | フィロソフィー | `Philosophy.tsx` | パララックス背景付き。車社会の地図→自分たちの地図 |
@@ -63,9 +63,11 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 
 ## アニメーション・演出
 
-- **イントロ:** 1.5秒のシネマティック演出（黒画面→テキスト→フェード）
+- **イントロ:** 「これは存在証明だ。」→ テキスト消滅 → 黒幕が1.0sで溶解 → ヒーローが奥から出現（4フェーズ: black→show→textout→reveal→done）
+- **ヒーロー:** 常時表示（黒幕の背後に配置）。個別スタガーなし、黒幕の溶解が唯一のリビール
 - **Ken Burns:** Hero背景・FinalCta背景のスローズーム（20-25秒周期）
-- **スクロールリビール:** 各セクション要素が下からフェードイン + カードスタガー
+- **スクロールリビール:** 下から72px浮き上がり（0.4s、cubic-bezier(0.22, 1, 0.36, 1)）。カードスタガー0.1s間隔
+- **ワイプセンター:** PhotoBreak名言・Philosophy区切り線のみ中央から切り開くclip-path演出
 - **パララックス:** Philosophy背景のスクロール速度差
 - **モック浮遊:** Heroのiphoneが上下にフロート（4秒周期）
 - **カードホバー:** BetaPerks・FAQカードのオレンジグロー + リフト

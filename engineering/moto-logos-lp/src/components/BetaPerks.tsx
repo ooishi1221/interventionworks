@@ -25,7 +25,7 @@ export default function BetaPerks() {
         </h2>
         <div className="values-grid">
           {perks.map((v, i) => (
-            <div className="value-card reveal" key={i} style={{ transitionDelay: `${i * 0.15}s` }}>
+            <div className="value-card reveal" key={i} style={{ transitionDelay: `${i * 0.1}s` }}>
               <div className="value-card-label">{v.label}</div>
               <h3>{v.headline}</h3>
               <p>{v.body}</p>

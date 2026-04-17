@@ -14,7 +14,7 @@ export function useScrollReveal() {
       { threshold: 0.15 }
     )
 
-    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el))
+    document.querySelectorAll('.reveal, .reveal-wipe, .reveal-wipe-center').forEach((el) => observer.observe(el))
 
     return () => observer.disconnect()
   }, [])
