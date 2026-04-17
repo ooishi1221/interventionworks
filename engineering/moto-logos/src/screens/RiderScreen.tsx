@@ -13,7 +13,6 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Alert,
   ImageBackground,
   TextInput,
   Dimensions,
@@ -391,7 +390,7 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
   tagline?: string; hasPhoto?: boolean; onChangeNickname?: (name: string) => void;
 }) {
   const [editing, setEditing] = useState(!nickname);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(nickname ?? '');
 
   const submitNickname = useCallback(() => {
     if (draft.trim() && onChangeNickname) {
@@ -407,7 +406,7 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
           <MaterialCommunityIcons name="motorbike" size={32} color={C.accent} />
         </View>
       )}
-      {editing && !nickname ? (
+      {editing ? (
         <TextInput
           style={s.nicknameInput}
           placeholder="名前つけとく？"
@@ -423,13 +422,8 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
       ) : (
         <TouchableOpacity
           onPress={() => {
-            Alert.prompt?.(
-              'ニックネーム変更',
-              '新しいニックネームを入力',
-              (text: string) => { if (text.trim() && onChangeNickname) onChangeNickname(text.trim()); },
-              'plain-text',
-              nickname ?? '',
-            ) ?? Alert.alert('ニックネーム変更', '設定画面から変更できます');
+            setDraft(nickname ?? '');
+            setEditing(true);
           }}
           activeOpacity={0.7}
           accessibilityLabel={`ニックネーム: ${nickname || 'ライダー'}。タップして変更`}

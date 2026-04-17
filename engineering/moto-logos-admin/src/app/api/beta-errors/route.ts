@@ -17,28 +17,19 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-    let query: FirebaseFirestore.Query = adminDb.collection(
-      COLLECTIONS.BETA_ERRORS
-    );
+    // 複合インデックス不要: orderByのみで取得し、フィルタはメモリ内で実行
+    const query = adminDb
+      .collection(COLLECTIONS.BETA_ERRORS)
+      .orderBy('createdAt', 'desc')
+      .limit(limit * 5);
 
-    if (status) query = query.where('status', '==', status);
-    if (appVersion) query = query.where('appVersion', '==', appVersion);
+    const snapshot = await query.get();
 
-    query = query.orderBy('createdAt', 'desc');
+    let filtered = snapshot.docs;
+    if (status) filtered = filtered.filter((d) => (d.data().status || 'open') === status);
+    if (appVersion) filtered = filtered.filter((d) => d.data().appVersion === appVersion);
 
-    if (cursor) {
-      const cursorDoc = await adminDb
-        .collection(COLLECTIONS.BETA_ERRORS)
-        .doc(cursor)
-        .get();
-      if (cursorDoc.exists) {
-        query = query.startAfter(cursorDoc);
-      }
-    }
-
-    const snapshot = await query.limit(limit + 1).get();
-    const hasMore = snapshot.docs.length > limit;
-    const docs = hasMore ? snapshot.docs.slice(0, limit) : snapshot.docs;
+    const docs = filtered.slice(0, limit);
 
     const errors: BetaErrorResponse[] = docs.map((doc) => {
       const data = doc.data();
@@ -57,7 +48,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const nextCursor = hasMore ? docs[docs.length - 1].id : null;
+    const nextCursor = filtered.length > limit ? docs[docs.length - 1].id : null;
 
     return NextResponse.json({ errors, nextCursor });
   } catch (error) {

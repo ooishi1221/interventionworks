@@ -50,10 +50,11 @@ import {
   reportSpotGood,
   reportSpotFull,
   reportSpotClosed,
+  reportParked,
   incrementViewCount,
   fetchSpotsInRegion,
 } from '../firebase/firestoreService';
-import { getFirstVehicle } from '../db/database';
+import { getFirstVehicle, addFootprint, startParking } from '../db/database';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
@@ -102,6 +103,7 @@ interface Props {
   onClose: () => void;
   onSetDestination?: (spot: ParkingPin) => void;
   onSpotSelect?: (spot: ParkingPin) => void;
+  onSpotUpdated?: () => void;
 }
 
 function fmtDist(m: number): string {
@@ -115,7 +117,7 @@ interface NearbySpot {
 }
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -315,6 +317,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
       const bike = await getFirstVehicle();
       await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined, undefined, bike?.name);
 
+      // 停められた → 温度UP + 足跡 + 駐車セッション開始
+      if (matched) {
+        reportParked(spotId).catch((e) => captureError(e, { context: 'sheet_report_parked', spotId }));
+        addFootprint(spotId, spot.name, spot.latitude, spot.longitude, 'parked');
+        startParking(spotId, spot.name, spot.latitude, spot.longitude, bike?.id);
+      } else {
+        const fpType = correction === 'full' ? 'full' : correction === 'closed' ? 'closed' : correction === 'wrong_price' ? 'wrong_price' : correction === 'wrong_cc' ? 'wrong_cc' : 'failed';
+        addFootprint(spotId, spot.name, spot.latitude, spot.longitude, fpType);
+      }
+
       // ローカル記録
       AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
       logActivityLocal('report', `${spot.name}に${matched ? '停めた' : '停められなかった'}`);
@@ -328,6 +340,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect 
       setAlreadyVoted(true);
       setReportModalOpen(false);
       resetReportModal();
+      onSpotUpdated?.();
       await loadAll();
     } catch (e: unknown) {
       captureError(e, { context: 'submitReport' });

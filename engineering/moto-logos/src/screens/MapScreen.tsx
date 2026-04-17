@@ -44,13 +44,15 @@ import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
 import * as Notifications from 'expo-notifications';
 
-// GPS取得前の初期表示: 日本全体（東京偏りを感じさせない）
-const JAPAN_CENTER: Region = {
-  latitude: 36.0,
-  longitude: 138.0,
-  latitudeDelta: 12,
-  longitudeDelta: 12,
+// GPS取得前のフォールバック: 東京中心（首都圏ユーザーが大半）
+const TOKYO_FALLBACK: Region = {
+  latitude: 35.6812,
+  longitude: 139.7671,
+  latitudeDelta: 0.15,
+  longitudeDelta: 0.15,
 };
+
+const LAST_LOCATION_KEY = 'moto_logos_last_location';
 
 const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#636366';
@@ -154,8 +156,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const user = useUser();
   const tutorial = useTutorial();
   const mapRef = useRef<MapView>(null);
+  const [initialRegion, setInitialRegion] = useState<Region>(TOKYO_FALLBACK);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
+  const [gpsLoading, setGpsLoading]       = useState(true);
   const [emptyDismissed, setEmptyDismissed] = useState(false);
   const [selected, setSelected]           = useState<ParkingPin | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
@@ -190,6 +194,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── ライブフィード設定 ──────────────────────────────
   const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
+  const [nearbyExpanded, setNearbyExpanded] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem('moto_logos_live_feed').then((v) => setLiveFeedEnabled(v !== 'false'));
   }, []);
@@ -254,33 +259,47 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [refreshTrigger]);
 
-  // 初回: 位置情報取得 → そのエリアのスポットを取得
+  // 初回: 前回位置を復元 → GPS取得 → そのエリアのスポットを取得
   useEffect(() => {
     (async () => {
+      // 前回位置を復元（GPS取得前に表示）
+      try {
+        const saved = await AsyncStorage.getItem(LAST_LOCATION_KEY);
+        if (saved) {
+          const { lat, lon } = JSON.parse(saved);
+          const savedRegion: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.04, longitudeDelta: 0.04 };
+          setInitialRegion(savedRegion);
+          mapRef.current?.animateToRegion(savedRegion, 0);
+          fetchSpotsForRegion(savedRegion);
+        }
+      } catch { /* ignore */ }
+
+      // GPS取得
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         setLocationGranted(true);
         try {
           const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-          const initRegion: Region = {
+          const gpsRegion: Region = {
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
             latitudeDelta: 0.04,
             longitudeDelta: 0.04,
           };
-          mapRef.current?.animateToRegion(initRegion, 800);
-          fetchSpotsForRegion(initRegion);
+          mapRef.current?.animateToRegion(gpsRegion, 800);
+          fetchSpotsForRegion(gpsRegion);
+          // 現在位置を保存（次回起動時の初期表示用）
+          AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ lat: loc.coords.latitude, lon: loc.coords.longitude }));
         } catch (e) {
           captureError(e, { context: 'initialLocation' });
-          // GPS取得失敗 → 東京でフォールバック
-          fetchSpotsForRegion(JAPAN_CENTER);
+          fetchSpotsForRegion(TOKYO_FALLBACK);
         }
       } else {
-        // 位置情報拒否 → 東京中心でフェッチ + ユーザーに通知
         setLocationDenied(true);
-        fetchSpotsForRegion(JAPAN_CENTER);
+        fetchSpotsForRegion(TOKYO_FALLBACK);
       }
+      setGpsLoading(false);
     })();
     logActivity();
   }, []);
@@ -460,7 +479,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   }, [userCC]);
 
   // ── 最後に変化完了した region を保持（再検索ボタン用）
-  const currentRegionRef = useRef<Region>(JAPAN_CENTER);
+  const currentRegionRef = useRef<Region>(initialRegion);
 
   // ── カメラ移動追跡 + エリア自動再検索 ──────────────
   const autoFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -805,11 +824,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   return (
     <View style={styles.container}>
-      {loading && (
+      {(loading || gpsLoading) && (
         <View style={styles.loadingOverlay} pointerEvents="none">
           <View style={styles.loadingBadge}>
             <ActivityIndicator size="small" color={SYS_BLUE} />
-            <Text style={styles.loadingText}>スポット読み込み中...</Text>
+            <Text style={styles.loadingText}>{gpsLoading ? '現在地を取得中...' : 'スポット読み込み中...'}</Text>
           </View>
         </View>
       )}
@@ -849,7 +868,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       <ClusteredMapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        initialRegion={JAPAN_CENTER}
+        initialRegion={initialRegion}
         showsUserLocation={locationGranted}
         showsMyLocationButton={false}
         showsCompass={false}
@@ -909,7 +928,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── ライブフィード（上部） ────────────────────── */}
-      {!selected && !searchVisible && liveFeedEnabled && <LiveFeed />}
+      {!selected && !searchVisible && liveFeedEnabled && !nearbyExpanded && <LiveFeed />}
 
       {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
       {!selected && !searchVisible && (
@@ -936,6 +955,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           ccFilterEnabled={ccFilterEnabled}
           userCC={userCC}
           onToggleCcFilter={onToggleCcFilter}
+          onExpandedChange={setNearbyExpanded}
         />
       )}
 
@@ -1011,6 +1031,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             spot={selected}
             onClose={() => setSelected(null)}
             onSetDestination={setDestination}
+            onSpotUpdated={handleProximitySpotUpdated}
           />
         </View>
       )}

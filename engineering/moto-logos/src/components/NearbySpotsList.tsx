@@ -44,6 +44,7 @@ interface Props {
   ccFilterEnabled?: boolean;
   userCC?: UserCC;
   onToggleCcFilter?: (enabled: boolean) => void;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 function TempDot({ spot }: { spot: ParkingPin }) {
@@ -59,7 +60,7 @@ function ccDisplayLabel(cc: UserCC): string {
   return '大型';
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -84,6 +85,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onLocationPress, on
   const toggle = () => {
     const next = !expanded;
     setExpanded(next);
+    onExpandedChange?.(next);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.spring(expandAnim, {
       toValue: next ? 1 : 0,

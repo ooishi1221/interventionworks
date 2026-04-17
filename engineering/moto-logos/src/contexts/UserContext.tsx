@@ -79,11 +79,12 @@ export function UserProvider({ nickname, children }: { nickname: string; childre
           await ensureUserDocument(authUid, nickname || 'ライダー');
           setBetaUser(authUid);
           setState({ userId: authUid, authProvider: provider, isLinked: true });
-        } else if (!isLinked && oldDeviceId) {
-          // 匿名 + 既存 deviceId → 旧ユーザー。deviceId を継続
-          await ensureUserDocument(oldDeviceId, nickname || 'ライダー');
-          setBetaUser(oldDeviceId);
-          setState({ userId: oldDeviceId, authProvider: 'anonymous', isLinked: false });
+        } else if (!isLinked && oldDeviceId && oldDeviceId !== authUid) {
+          // 匿名 + 旧 deviceId → auth.uid に移行
+          await migrateUserData(oldDeviceId, authUid);
+          await ensureUserDocument(authUid, nickname || 'ライダー');
+          setBetaUser(authUid);
+          setState({ userId: authUid, authProvider: 'anonymous', isLinked: false });
         } else {
           // 新規ユーザー → auth.uid を最初から使用
           await AsyncStorage.setItem(DEVICE_ID_KEY, authUid);
