@@ -25,7 +25,7 @@ import { Colors, Spacing, FontSize } from '../constants/theme';
 import { getFirstVehicle, insertVehicle, updateVehicle } from '../db/database';
 import { syncBikeToFirestore } from '../firebase/firestoreService';
 import { captureError } from '../utils/sentry';
-import { pickPhotoFromCamera } from '../utils/photoPicker';
+import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
 import { useUser } from '../contexts/UserContext';
 
 const C = { ...Colors, orange: Colors.accent };
@@ -71,9 +71,12 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
     });
   }, []);
 
-  const pickPhoto = async () => {
-    const uri = await pickPhotoFromCamera();
-    if (uri) setPhotoUri(uri);
+  const pickPhoto = () => {
+    Alert.alert('愛車の写真', '', [
+      { text: 'アルバムから選ぶ', onPress: async () => { const uri = await pickPhotoFromLibrary(); if (uri) setPhotoUri(uri); } },
+      { text: '撮影する',        onPress: async () => { const uri = await pickPhotoFromCamera();   if (uri) setPhotoUri(uri); } },
+      { text: 'キャンセル', style: 'cancel' },
+    ]);
   };
 
   const handleSave = async () => {
@@ -134,7 +137,7 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
             <Image source={{ uri: photoUri }} style={s.photo} />
           ) : (
             <View style={s.photoPlaceholder}>
-              <Ionicons name="camera" size={32} color={C.sub} />
+              <Ionicons name="images" size={32} color={C.sub} />
               <Text style={s.photoText}>愛車の写真を追加</Text>
             </View>
           )}

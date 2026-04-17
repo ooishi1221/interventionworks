@@ -252,6 +252,7 @@ export async function addUserSpotToFirestore(
     ...(spot.openHours    != null && { openHours:       spot.openHours }),
     viewCount: 0, goodCount: 0, badReportCount: 0,
     status: 'active', verificationLevel: 'community', source: 'user',
+    createdBy: getFirebaseAuth().currentUser?.uid ?? '',
     updatedAt: now, lastVerifiedAt: now, createdAt: now,
   });
   await setDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`), data);
@@ -560,10 +561,11 @@ export async function purgeTestData(): Promise<{ spots: number; reviews: number 
   let spotCount = 0;
   let reviewCount = 0;
 
-  // --- ユーザー作成スポットを削除 ---
+  // --- 自分が作成したスポットを削除 ---
   const spotsQ = query(
     collection(db, COLLECTIONS.SPOTS),
     where('source', '==', 'user'),
+    where('createdBy', '==', userId),
   );
   const spotsSnap = await getDocs(spotsQ);
 

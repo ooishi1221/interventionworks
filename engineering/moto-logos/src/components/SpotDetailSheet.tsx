@@ -168,6 +168,9 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   // Fullscreen photo
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
 
+  // ナビ選択モーダル
+  const [navModalOpen, setNavModalOpen] = useState(false);
+
   // 周辺スポット（案内開始後に表示）
   const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
@@ -230,27 +233,35 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     const name = encodeURIComponent(spot.name);
     const newLink = `ynavigation://v1/route?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}&type=drive`;
     const oldLink = `yjnavicar://v1/map?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
-    const web     = `https://map.yahoo.co.jp/app/navi?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
     try {
       if (await Linking.canOpenURL(newLink)) { await Linking.openURL(newLink); return; }
       if (await Linking.canOpenURL(oldLink)) { await Linking.openURL(oldLink); return; }
     } catch (e) { captureError(e, { context: 'yahoo_navi_deeplink' }); }
-    Linking.openURL(web).catch((e) => captureError(e, { context: 'yahoo_navi' }));
+    // アプリ未インストール → ストアへ誘導
+    const store = Platform.select({
+      android: 'https://play.google.com/store/apps/details?id=jp.co.yahoo.android.apps.navi',
+      ios: 'https://apps.apple.com/jp/app/yahoo-%E3%82%AB%E3%83%BC%E3%83%8A%E3%83%93/id890808217',
+    });
+    Alert.alert(
+      'Yahoo!カーナビ',
+      'アプリがインストールされていません',
+      [
+        { text: 'ストアを開く', onPress: () => { if (store) Linking.openURL(store); } },
+        { text: 'OK', style: 'cancel' },
+      ],
+    );
+  };
+
+  const handleCopyAddress = async () => {
+    const t = spot.address ? `${spot.name}\n${spot.address}` : `${spot.name}\n${spot.latitude}, ${spot.longitude}`;
+    await Clipboard.setStringAsync(t);
+    Alert.alert('コピーしました', spot.address ?? `${spot.latitude}, ${spot.longitude}`);
   };
 
   const handleNav = () => {
     // 「ここ行く」→ 到着検知の起点
     onSetDestination?.(spot);
-    Alert.alert('案内開始', spot.name, [
-      { text: 'Googleマップ',   onPress: openGoogleMaps },
-      { text: 'Yahoo!カーナビ', onPress: openYahooNavi },
-      { text: '住所をコピー',   onPress: async () => {
-          const t = spot.address ? `${spot.name}\n${spot.address}` : `${spot.name}\n${spot.latitude}, ${spot.longitude}`;
-          await Clipboard.setStringAsync(t);
-          Alert.alert('コピーしました', spot.address ?? `${spot.latitude}, ${spot.longitude}`);
-        }},
-      { text: 'キャンセル', style: 'cancel' },
-    ]);
+    setNavModalOpen(true);
   };
 
   // ── 報告: 写真ピッカー（カメラ） ──────────────────────
@@ -349,6 +360,56 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
 
   return (
     <>
+      {/* ── ナビ選択モーダル ────────────────────── */}
+      <Modal
+        visible={navModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setNavModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.navModalOverlay}
+          activeOpacity={1}
+          onPress={() => setNavModalOpen(false)}
+        >
+          <View style={styles.navModalContent}>
+            <Text style={styles.navModalTitle}>案内開始</Text>
+            <Text style={styles.navModalSub} numberOfLines={2}>{spot.name}</Text>
+
+            <TouchableOpacity
+              style={styles.navModalOption}
+              onPress={() => { setNavModalOpen(false); openGoogleMaps(); }}
+            >
+              <Ionicons name="navigate-circle" size={22} color={C.blue} />
+              <Text style={styles.navModalOptionText}>Googleマップ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navModalOption}
+              onPress={() => { setNavModalOpen(false); openYahooNavi(); }}
+            >
+              <Ionicons name="car" size={22} color="#FF0033" />
+              <Text style={styles.navModalOptionText}>Yahoo!カーナビ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navModalOption}
+              onPress={() => { setNavModalOpen(false); handleCopyAddress(); }}
+            >
+              <Ionicons name="copy-outline" size={22} color={C.sub} />
+              <Text style={styles.navModalOptionText}>住所をコピー</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navModalCancel}
+              onPress={() => setNavModalOpen(false)}
+            >
+              <Text style={styles.navModalCancelText}>キャンセル</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* フルスクリーン写真 */}
       {fullPhoto && (
         <Modal transparent animationType="fade" visible onRequestClose={() => setFullPhoto(null)}>
@@ -1020,4 +1081,14 @@ const styles = StyleSheet.create({
   fullscreenBg:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   fullscreenImage: { width: '100%', height: '80%' },
   fullscreenClose: { position: 'absolute', top: 56, right: 20 },
+
+  // Nav modal
+  navModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  navModalContent: { backgroundColor: C.sheet, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36 },
+  navModalTitle: { color: C.text, fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  navModalSub: { color: C.sub, fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 16 },
+  navModalOption: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+  navModalOptionText: { color: C.text, fontSize: 16 },
+  navModalCancel: { marginTop: 12, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: C.card },
+  navModalCancelText: { color: C.sub, fontSize: 15, fontWeight: '600' },
 });

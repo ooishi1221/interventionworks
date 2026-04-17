@@ -7,7 +7,9 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update: if request.auth != null;
-      allow delete: if false;
+      allow delete: if request.auth != null
+                   && resource.data.source == 'user'
+                   && resource.data.createdBy == request.auth.uid;
     }
 
     // reviews: 認証済みユーザーのみ。更新・削除は本人のみ
