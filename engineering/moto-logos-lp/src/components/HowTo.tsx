@@ -23,7 +23,7 @@ export default function HowTo() {
   return (
     <section className="section howto">
       <div className="container">
-        <h2 className="section-title reveal">参加のしかた</h2>
+        <h2 className="section-title reveal"><span className="accent">クローズドβテスト</span>の参加方法</h2>
         <div className="howto-steps">
           {steps.map((s, i) => (
             <div key={s.num} className="howto-step reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
