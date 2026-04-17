@@ -85,6 +85,9 @@ Firebase Auth Custom Claims でロールを管理。
 | セキュリティ | `/security` | 異常検知・複数アカウント・写真確認キュー・BAN解除申請（4タブ） |
 | 通知管理 | `/notifications` | お知らせ投稿・一覧・編集・削除・並び替え + 一斉通知・エリア別セグメント通知 |
 | 監査ログ | `/audit-log` | 管理操作の完全な監査証跡（targetId フィルタ対応） |
+| 事前登録者 | `/beta-signups` | LP経由の事前登録者一覧 + 残枠表示 + 招待ステータス管理（未招待/招待済み/参加中） |
+| βフィードバック | `/beta-feedback` | βテスターからのフィードバック一覧 + タイプ別フィルタ（bug/opinion/confused）+ ステータス管理 + 写真表示 |
+| βエラー | `/beta-errors` | 自動エラー報告一覧 + スタックトレース展開 + ステータス管理（未対応/既知/対応中/修正済み） |
 | ロール管理 | `/roles` | 管理者ロールの付与・変更（super_admin専用） |
 
 ## API エンドポイント
@@ -116,7 +119,14 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/announcements` | お知らせ管理（GET: 一覧（sortOrder対応） / POST: 投稿 → アプリ内表示） |
 | `/api/announcements/[id]` | お知らせ個別操作（PUT: 編集 / DELETE: 削除） |
 | `/api/inquiries` | お問い合わせ一覧（GET: アプリから送信された問い合わせ） |
+| `/api/beta-signups` | 事前登録者一覧（GET: ステータスフィルタ + 総数 + ページネーション） |
+| `/api/beta-signups/[id]/status` | 招待ステータス変更（POST: pending/invited/active） |
+| `/api/beta-feedback` | βフィードバック一覧（GET: status/typeフィルタ + ページネーション） |
+| `/api/beta-feedback/[id]/status` | フィードバックステータス変更（POST: open/in_progress/resolved） |
+| `/api/beta-errors` | βエラー一覧（GET: status/appVersionフィルタ + ページネーション） |
+| `/api/beta-errors/[id]/status` | エラーステータス変更（POST: open/known/in_progress/fixed） |
 | `/api/cron/stale-spots` | 6ヶ月→pending + 12ヶ月+goodCount=0→closed（Vercel Cron 毎日3:00 UTC） |
+| `/api/cron/retention-notify` | リテンション通知 — 到着まとめ + 閲覧インパクト（Vercel Cron 毎日10:00 UTC） |
 
 ## Firestore コレクション
 
@@ -131,3 +141,7 @@ Firebase Auth Custom Claims でロールを管理。
 - `push_tokens` — Expo Push トークン（deviceId をキー）
 - `announcements` — アプリ内お知らせ（title, body, sortOrder, createdAt）
 - `inquiries` — お問い合わせ（userId, category, message, status）
+- `beta_signups` — 事前登録者（email, source, invitationStatus, createdAt）
+- `beta_feedback` — βフィードバック（userId, message, feedbackType, photoUrl, deviceModel, appVersion, status）
+- `beta_errors` — βエラー（message, context, userId, deviceModel, appVersion, stack, status）
+- `retention_log` — リテンション通知デデュプログ（userId, spotId, type, totalViews）
