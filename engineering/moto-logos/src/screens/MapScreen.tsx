@@ -136,6 +136,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const { state: proximityState, getNearbyAlternatives } = useProximityState({
     spots: allSpotsRaw,
     enabled: proximityEnabled,
+    loading,
   });
 
   // ── 到着検知 ────────────────────────────────────────────

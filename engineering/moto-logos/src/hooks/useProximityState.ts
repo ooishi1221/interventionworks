@@ -16,7 +16,7 @@ import { haversineMeters } from '../utils/distance';
 
 // ── 定数 ──────────────────────────────────────────────
 const NEARBY_THRESHOLD_M = 50;
-const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h
+const COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2h（自動出発と同期）
 const LOCATION_INTERVAL_MS = 15_000; // GPS ポーリング間隔
 const LOCATION_DISTANCE_M = 30; // 最小移動距離
 
@@ -34,6 +34,7 @@ export type ProximityState =
 interface UseProximityStateOpts {
   spots: ParkingPin[];
   enabled: boolean; // SpotDetailSheet 表示中は false
+  loading?: boolean; // スポット読み込み中は no-spots を抑制
 }
 
 // ── クールダウン管理 ──────────────────────────────────
@@ -48,7 +49,7 @@ export async function markReported(spotId: string): Promise<void> {
 }
 
 // ── フック本体 ─────────────────────────────────────────
-export function useProximityState({ spots, enabled }: UseProximityStateOpts) {
+export function useProximityState({ spots, enabled, loading }: UseProximityStateOpts) {
   const [state, setState] = useState<ProximityState>({ kind: 'normal' });
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -100,7 +101,7 @@ export function useProximityState({ spots, enabled }: UseProximityStateOpts) {
   // 100m以上動いた場合のみフル再計算してCPU節約
   useEffect(() => {
     if (!enabled || !userLocation || spots.length === 0) {
-      if (enabled && userLocation && spots.length === 0) {
+      if (enabled && userLocation && spots.length === 0 && !loading) {
         setState({ kind: 'no-spots' });
       } else if (!enabled) {
         setState({ kind: 'normal' });

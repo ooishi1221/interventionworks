@@ -37,9 +37,6 @@ import { ParkingPin, Review } from '../types';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
 import { haversineMeters } from '../utils/distance';
 import {
-  addFavorite,
-  removeFavorite,
-  getAllFavorites,
   incrementStat,
   logActivityLocal,
 } from '../db/database';
@@ -155,10 +152,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     })
   ).current;
 
-  // Favorites
-  const [isFav, setIsFav]           = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
-
   // Reports (旧 reviews)
   const [reports, setReports]           = useState<Review[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
@@ -181,18 +174,15 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
 
   // レポート送信後のリフレッシュ用
   const loadAll = useCallback(async () => {
-    const src = spot.source as 'seed' | 'user';
     setReportsLoading(true);
-    const [favs, r, prev] = await Promise.all([
-      getAllFavorites(),
+    const [r, prev] = await Promise.all([
       fetchReviews(spot.id, 'date'),
       AsyncStorage.getItem(`vote_${spot.id}`),
     ]);
-    setIsFav(favs.some((f) => f.spotId === spot.id && f.source === src));
     setReports(r);
     setAlreadyVoted(!!prev);
     setReportsLoading(false);
-  }, [spot.id, spot.source]);
+  }, [spot.id]);
 
   // ── 初期ロード（spot変更時は前のリクエストを無視） ───────
   useEffect(() => {
@@ -211,15 +201,12 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     }
 
     let stale = false;
-    const src = spot.source as 'seed' | 'user';
     setReportsLoading(true);
     Promise.all([
-      getAllFavorites(),
       fetchReviews(spot.id, 'date'),
       AsyncStorage.getItem(`vote_${spot.id}`),
-    ]).then(([favs, r, prev]) => {
+    ]).then(([r, prev]) => {
       if (stale) return;
-      setIsFav(favs.some((f) => f.spotId === spot.id && f.source === src));
       setReports(r);
       setAlreadyVoted(!!prev);
       setReportsLoading(false);
@@ -227,18 +214,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     incrementViewCount(spot.id);
     return () => { stale = true; };
   }, [spot.id, tutorial.active]);
-
-  // ── お気に入りトグル ──────────────────────────────────
-  const toggleFav = async () => {
-    setFavLoading(true);
-    const src = spot.source as 'seed' | 'user';
-    try {
-      if (isFav) { await removeFavorite(spot.id, src); setIsFav(false); }
-      else       { await addFavorite(spot.id, src);    setIsFav(true);  }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) { captureError(e, { context: 'toggle_favorite' }); }
-    setFavLoading(false);
-  };
 
   // ── ナビゲーション ────────────────────────────────────
   const openGoogleMaps = () => {
@@ -583,16 +558,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
                 <Ionicons name="close-circle" size={28} color={C.sub} />
               </TouchableOpacity>
               <Text style={styles.spotName} numberOfLines={2}>{spot.name}</Text>
-              <TouchableOpacity
-                style={styles.favBtn}
-                onPress={toggleFav}
-                disabled={favLoading}
-                accessibilityLabel={isFav ? 'お気に入りから削除' : 'お気に入りに追加'}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isFav }}
-              >
-                <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={26} color={C.pink} />
-              </TouchableOpacity>
             </View>
 
             {/* バッジ */}
@@ -927,7 +892,6 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   closeBtn: { padding: 2, marginTop: -1 },
   spotName: { color: C.text, fontSize: FontSize.lg, fontWeight: '700', flex: 1, lineHeight: 26 },
-  favBtn:   { padding: 6, marginTop: -2 },
 
   // Badges
   badgeRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },

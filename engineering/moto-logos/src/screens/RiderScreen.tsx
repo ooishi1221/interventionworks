@@ -23,7 +23,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
-  getAllFavorites,
   getFirstVehicle,
   getFootprints,
   getUniqueFootprintLocations,
@@ -34,7 +33,6 @@ import {
   type ParkingSession,
 } from '../db/database';
 import { reportDeparted } from '../firebase/firestoreService';
-import { FavoritesListModal } from './FavoritesListModal';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle } from '../types';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
@@ -112,7 +110,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
   const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
   const [activeSession, setActiveSession] = useState<ParkingSession | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [favModalOpen, setFavModalOpen] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -144,15 +141,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     setRefreshing(false);
   }, [loadData]);
 
-  // 「出発した」→ endParking
-  const handleEndParking = useCallback(async () => {
-    if (!activeSession) return;
-    await endParking(activeSession.id);
-    reportDeparted(activeSession.spotId).catch((e) => captureError(e, { context: 'manual_depart', spotId: activeSession.spotId })); // リアルタイム空き状況 (#79)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setActiveSession(null);
-    loadData();
-  }, [activeSession, loadData]);
 
   // 地図のリージョンを足跡から計算
   const mapRegion = useMemo<Region>(() => {
@@ -257,7 +245,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
           <Text style={s.impactText}>{impactMessage}</Text>
         </View>
 
-        {/* ── 2.5 駐車中カード ──────────────────── */}
+        {/* ── 2.5 駐車中カード（表示のみ、出発は自動検知） ── */}
         {activeSession && (
           <View style={s.parkingCard}>
             <View style={s.parkingCardLeft}>
@@ -270,16 +258,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
                 <Text style={s.parkingElapsed}>{formatElapsed(activeSession.startedAt)}経過</Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={s.parkingEndBtn}
-              onPress={handleEndParking}
-              activeOpacity={0.7}
-              accessibilityLabel="出発した"
-              accessibilityRole="button"
-              accessibilityHint="駐車を終了して出発を記録します"
-            >
-              <Text style={s.parkingEndText}>出発した</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -342,11 +320,21 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
                 {showDate && (
                   <Text style={s.diaryDate}>{formatDiaryDate(fp.createdAt)}</Text>
                 )}
-                <View
+                <TouchableOpacity
                   style={s.diaryItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    onGoToSpot?.({
+                      id: fp.spotId,
+                      name: fp.spotName,
+                      latitude: fp.latitude,
+                      longitude: fp.longitude,
+                      source: 'seed',
+                    } as ParkingPin);
+                  }}
                   accessible
-                  accessibilityLabel={`${formatTime(fp.createdAt)}、${fp.spotName}${style.label}`}
-                  accessibilityRole="text"
+                  accessibilityLabel={`${formatTime(fp.createdAt)}、${fp.spotName}${style.label}。タップでマップに移動`}
+                  accessibilityRole="button"
                 >
                   <View style={[s.diaryDot, { backgroundColor: style.color }]}>
                     <Ionicons name={style.icon} size={12} color="#fff" />
@@ -360,7 +348,8 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
                     </Text>
                     <Text style={s.diaryTime}>{formatTime(fp.createdAt)}</Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={14} color={C.sub} />
+                </TouchableOpacity>
               </View>
             );
           })
@@ -370,11 +359,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
       </ScrollView>
 
       {/* ── モーダル ─────────────────────────────── */}
-      <FavoritesListModal
-        visible={favModalOpen}
-        onClose={() => { setFavModalOpen(false); loadData(); }}
-        onGoToSpot={onGoToSpot}
-      />
       <SpotsListModal
         visible={spotsModalOpen}
         onClose={() => { setSpotsModalOpen(false); loadData(); onDataChanged?.(); }}
@@ -518,12 +502,6 @@ const s = StyleSheet.create({
   parkingLabel: { color: '#30D158', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   parkingSpotName: { color: '#F2F2F7', fontSize: 15, fontWeight: '600', marginTop: 1 },
   parkingElapsed: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
-  parkingEndBtn: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 10,
-  },
-  parkingEndText: { color: '#F2F2F7', fontSize: 13, fontWeight: '600' },
 
   // ── Footprint Map ──
   mapContainer: {
