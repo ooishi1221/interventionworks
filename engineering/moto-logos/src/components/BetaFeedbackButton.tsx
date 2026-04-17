@@ -1,7 +1,7 @@
 /**
  * BetaFeedbackButton — β期間限定フィードバックボタン
  *
- * フローティングボタン → モーダル → カテゴリ選択 + テキスト + 任意写真 → Firestore → Slack通知
+ * 左下フローティングピル（黄色 + テキスト「報告」）→ モーダル → カテゴリ + テキスト + 写真 → Firestore → Slack
  */
 import React, { useCallback, useState } from 'react';
 import {
@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -40,6 +41,7 @@ const CATEGORIES: { type: FeedbackType; icon: string; label: string }[] = [
 
 const TAB_BAR_H = Platform.OS === 'android' ? 56 : 82;
 const BOTTOM_BASE = TAB_BAR_H + 2;
+const WARN_YELLOW = '#FFD60A';
 
 export function BetaFeedbackButton() {
   const user = useUser();
@@ -65,7 +67,6 @@ export function BetaFeedbackButton() {
 
   const handleClose = useCallback(() => {
     setOpen(false);
-    // 少し遅延してリセット（閉じアニメ中に見えないように）
     setTimeout(reset, 300);
   }, [reset]);
 
@@ -85,9 +86,10 @@ export function BetaFeedbackButton() {
 
     try {
       let photoUrl: string | undefined;
-      if (photoUri && user?.userId) {
+      if (photoUri) {
         try {
-          photoUrl = await uploadReviewPhoto(photoUri, user.userId, 'feedback');
+          const uid = user?.userId || 'anon';
+          photoUrl = await uploadReviewPhoto(photoUri, uid, 'feedback');
         } catch (e) {
           captureError(e, { context: 'beta_feedback_photo' });
         }
@@ -107,28 +109,30 @@ export function BetaFeedbackButton() {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSending(false);
       setSent(true);
-      setTimeout(handleClose, 1200);
+      setTimeout(handleClose, 1500);
     } catch (e) {
+      setSending(false);
       captureError(e, { context: 'beta_feedback_send' });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('送信に失敗しました', 'ネットワークを確認してもう一度お試しください');
     }
-    setSending(false);
   }, [feedbackType, message, photoUri, user, handleClose]);
 
   const canSend = feedbackType && message.trim().length > 0 && !sending;
 
   return (
     <>
-      {/* ── フローティングボタン ──────────────────────── */}
+      {/* ── フローティングピル（左下・黄色） ─────────── */}
       <TouchableOpacity
         style={s.fab}
         onPress={handleOpen}
         activeOpacity={0.8}
-        accessibilityLabel="フィードバックを送る"
+        accessibilityLabel="バグ報告・フィードバックを送る"
         accessibilityRole="button"
       >
-        <Ionicons name="chatbubble-ellipses" size={20} color="#F2F2F7" />
+        <Ionicons name="warning" size={16} color="#000" />
+        <Text style={s.fabText}>報告</Text>
       </TouchableOpacity>
 
       {/* ── モーダル ──────────────────────────────────── */}
@@ -146,15 +150,13 @@ export function BetaFeedbackButton() {
 
           <View style={s.sheet}>
             {sent ? (
-              /* ── 送信完了 ─────────────────────────── */
               <View style={s.sentView}>
                 <Ionicons name="checkmark-circle" size={48} color={C.success} />
-                <Text style={s.sentText}>ありがとう!</Text>
+                <Text style={s.sentTitle}>送信しました!</Text>
+                <Text style={s.sentSub}>確認して対応します</Text>
               </View>
             ) : (
-              /* ── フォーム ──────────────────────────── */
               <>
-                {/* ヘッダー */}
                 <View style={s.header}>
                   <Text style={s.title}>フィードバック</Text>
                   <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
@@ -162,7 +164,6 @@ export function BetaFeedbackButton() {
                   </TouchableOpacity>
                 </View>
 
-                {/* カテゴリ */}
                 <View style={s.categoryRow}>
                   {CATEGORIES.map((cat) => {
                     const active = feedbackType === cat.type;
@@ -184,7 +185,6 @@ export function BetaFeedbackButton() {
                   })}
                 </View>
 
-                {/* テキスト入力 */}
                 <TextInput
                   style={s.input}
                   placeholder="どんなことでも教えてください"
@@ -196,7 +196,6 @@ export function BetaFeedbackButton() {
                   textAlignVertical="top"
                 />
 
-                {/* 写真 */}
                 {photoUri ? (
                   <View style={s.photoRow}>
                     <Image source={{ uri: photoUri }} style={s.photoThumb} />
@@ -217,7 +216,6 @@ export function BetaFeedbackButton() {
                   </View>
                 )}
 
-                {/* 送信 */}
                 <TouchableOpacity
                   style={[s.sendBtn, !canSend && s.sendBtnDisabled]}
                   onPress={handleSend}
@@ -240,35 +238,32 @@ export function BetaFeedbackButton() {
 }
 
 const s = StyleSheet.create({
-  // ── FAB ────────────────────────────────────
   fab: {
     position: 'absolute',
-    right: 14,
-    bottom: BOTTOM_BASE + 72,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    left: 14,
+    bottom: BOTTOM_BASE + 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(28,28,30,0.88)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
+    gap: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: WARN_YELLOW,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
     zIndex: 5,
   },
+  fabText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '800',
+  },
 
-  // ── Modal ──────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    flex: 1,
-  },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { flex: 1 },
   sheet: {
     backgroundColor: C.surface,
     borderTopLeftRadius: 20,
@@ -279,26 +274,16 @@ const s = StyleSheet.create({
     maxHeight: '80%',
   },
 
-  // ── Header ─────────────────────────────────
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  title: {
-    color: C.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  title: { color: C.text, fontSize: 18, fontWeight: '700' },
   closeBtn: { padding: 4 },
 
-  // ── Category ───────────────────────────────
-  categoryRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
+  categoryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   categoryChip: {
     flex: 1,
     flexDirection: 'row',
@@ -311,20 +296,10 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  categoryActive: {
-    borderColor: C.accent,
-    backgroundColor: `${C.accent}15`,
-  },
-  categoryText: {
-    color: C.sub,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoryTextActive: {
-    color: C.accent,
-  },
+  categoryActive: { borderColor: C.accent, backgroundColor: `${C.accent}15` },
+  categoryText: { color: C.sub, fontSize: 14, fontWeight: '600' },
+  categoryTextActive: { color: C.accent },
 
-  // ── Input ──────────────────────────────────
   input: {
     backgroundColor: C.card,
     borderRadius: 12,
@@ -337,12 +312,7 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // ── Photo ──────────────────────────────────
-  photoActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
+  photoActions: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   photoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -354,24 +324,11 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  photoBtnText: {
-    color: C.sub,
-    fontSize: 13,
-  },
-  photoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  photoThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
-  },
+  photoBtnText: { color: C.sub, fontSize: 13 },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  photoThumb: { width: 60, height: 60, borderRadius: 10 },
   photoRemove: { padding: 4 },
 
-  // ── Send ───────────────────────────────────
   sendBtn: {
     backgroundColor: C.accent,
     borderRadius: 14,
@@ -379,25 +336,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
   },
-  sendBtnDisabled: {
-    opacity: 0.4,
-  },
-  sendText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  sendBtnDisabled: { opacity: 0.4 },
+  sendText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
-  // ── Sent ───────────────────────────────────
-  sentView: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  sentText: {
-    color: C.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  sentView: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 8 },
+  sentTitle: { color: C.text, fontSize: 18, fontWeight: '700' },
+  sentSub: { color: C.sub, fontSize: 14 },
 });
