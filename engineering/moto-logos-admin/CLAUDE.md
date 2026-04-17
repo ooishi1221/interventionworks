@@ -35,6 +35,7 @@
 | 状態管理 | TanStack Query + TanStack Table |
 | 認証 | Firebase Auth (メール/パスワード) + セッションCookie |
 | バックエンド | Firebase Admin SDK (Next.js API Routes) |
+| AI解析 | Google Gemini API（gemini-2.5-flash-lite） |
 | ホスティング | Vercel（`npx vercel deploy --prod`） |
 
 ## ローカル開発
