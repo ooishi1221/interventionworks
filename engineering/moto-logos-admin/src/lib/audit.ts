@@ -6,7 +6,7 @@ interface AuditLogParams {
   adminId: string;
   adminEmail: string;
   action: string;
-  targetType: 'spot' | 'user' | 'review' | 'admin';
+  targetType: 'spot' | 'user' | 'review' | 'admin' | 'beta_signup' | 'beta_feedback' | 'beta_error';
   targetId: string;
   reason?: string;
   previousState: Record<string, unknown>;

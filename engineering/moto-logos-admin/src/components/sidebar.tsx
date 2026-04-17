@@ -16,6 +16,9 @@ const NAV_ITEMS = [
 { href: '/security', label: 'セキュリティ', icon: '🔒' },
   { href: '/notifications', label: '通知管理', icon: '🔔' },
   { href: '/audit-log', label: '監査ログ', icon: '📋' },
+  { href: '/beta-signups', label: '事前登録者', icon: '📝' },
+  { href: '/beta-feedback', label: 'βフィードバック', icon: '💬' },
+  { href: '/beta-errors', label: 'βエラー', icon: '🚨' },
   { href: '/roles', label: 'ロール管理', icon: '🔑', requireRole: 'super_admin' as const },
   { href: '/dev-tools', label: '開発ツール', icon: '🛠️', requireRole: 'super_admin' as const },
 ];

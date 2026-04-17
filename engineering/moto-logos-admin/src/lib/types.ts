@@ -128,6 +128,94 @@ export interface ModerationLog {
 }
 
 // ─────────────────────────────────────────────────────
+// beta_signups コレクション（事前登録）
+// ─────────────────────────────────────────────────────
+
+export type InvitationStatus = 'pending' | 'invited' | 'active';
+
+export interface FirestoreBetaSignup {
+  email: string;
+  source: string;
+  invitationStatus?: InvitationStatus;
+  createdAt: FirebaseFirestore.Timestamp;
+}
+
+export interface BetaSignupResponse {
+  id: string;
+  email: string;
+  source: string;
+  invitationStatus: InvitationStatus;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────
+// beta_feedback コレクション（βフィードバック）
+// ─────────────────────────────────────────────────────
+
+export type BetaFeedbackType = 'bug' | 'opinion' | 'confused';
+export type BetaFeedbackStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface FirestoreBetaFeedback {
+  userId: string;
+  message: string;
+  feedbackType: BetaFeedbackType;
+  photoUrl?: string;
+  deviceModel: string;
+  os: string;
+  osVersion: string;
+  appVersion: string;
+  status?: BetaFeedbackStatus;
+  createdAt: FirebaseFirestore.Timestamp;
+}
+
+export interface BetaFeedbackResponse {
+  id: string;
+  userId: string;
+  message: string;
+  feedbackType: BetaFeedbackType;
+  photoUrl?: string;
+  deviceModel: string;
+  os: string;
+  osVersion: string;
+  appVersion: string;
+  status: BetaFeedbackStatus;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────
+// beta_errors コレクション（βエラー）
+// ─────────────────────────────────────────────────────
+
+export type BetaErrorStatus = 'open' | 'known' | 'in_progress' | 'fixed';
+
+export interface FirestoreBetaError {
+  message: string;
+  context?: string;
+  userId?: string;
+  deviceModel: string;
+  os: string;
+  osVersion: string;
+  appVersion: string;
+  stack?: string;
+  status?: BetaErrorStatus;
+  createdAt: FirebaseFirestore.Timestamp;
+}
+
+export interface BetaErrorResponse {
+  id: string;
+  message: string;
+  context?: string;
+  userId?: string;
+  deviceModel: string;
+  os: string;
+  osVersion: string;
+  appVersion: string;
+  stack?: string;
+  status: BetaErrorStatus;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────────────
 // コレクションパス定数
 // ─────────────────────────────────────────────────────
 
@@ -142,6 +230,9 @@ export const COLLECTIONS = {
   PUSH_TOKENS: 'push_tokens',
   NOTIFICATION_TEMPLATES: 'notification_templates',
   SCHEDULED_NOTIFICATIONS: 'scheduled_notifications',
+  BETA_SIGNUPS: 'beta_signups',
+  BETA_FEEDBACK: 'beta_feedback',
+  BETA_ERRORS: 'beta_errors',
 } as const;
 
 // ─────────────────────────────────────────────────────
