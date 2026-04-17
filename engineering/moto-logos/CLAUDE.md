@@ -333,6 +333,24 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - Firestore バッチ読み取り: `where('__name__', 'in', [...])` は10件チャンク分割必須（Firestore制約）
 - N+1 クエリ禁止: 複数ドキュメント取得は `Promise.all` で並列化
 
+### βフィードバック基盤
+
+**2層構成でβテスターのエラー・意見をキャッチ:**
+
+| 層 | トリガー | コレクション | 仕組み |
+|---|---------|------------|--------|
+| 自動 | `captureError()` 発火 | `beta_errors` | エラー発生 → 端末情報+userId自動収集 → Firestore → Slack即時通知。60秒レート制限 |
+| 任意 | 左下「報告」ボタン | `beta_feedback` | カテゴリ3択（バグ/意見/わからない）+ テキスト + 任意写真 → Firestore → Slack通知 |
+
+**関連ファイル:**
+- `src/utils/sentry.ts` — `captureError()` 内で `_writeBetaError()` をfire-and-forget呼び出し。`setBetaUser(userId)` でユーザー識別
+- `src/components/BetaFeedbackButton.tsx` — フローティングピル + モーダルUI
+- Slack Bot `src/firestore-watcher.js` — firebase-admin で両コレクションを onSnapshot 監視
+
+**Slack通知フォーマット:**
+- エラー: `🚨 Beta Error` + エラーメッセージ + context + 端末情報 + スタックトレース
+- フィードバック: `💬 Beta Feedback [カテゴリ]` + メッセージ + 写真 + 端末情報
+
 ### NGワードフィルタ
 
 - `src/utils/ng-filter.ts` でクライアント側フィルタ（即時フィードバック用）
@@ -528,6 +546,8 @@ eas update --branch preview
 | ~~Googleマップ検索復帰~~ | ~~P1~~ | **実装済み（#137）** — セッション保存 + 15分リマインダー + 復帰カード（実機検証待ち） |
 | ~~アプリ内広域検索~~ | ~~P1~~ | **実装済み** — 15km圏スポット取得 + 最寄り表示 |
 | ~~ソーシャルログイン~~ | ~~P1~~ | **実装済み（#130）** — Apple/Google Sign-In + 匿名→リンク昇格 + データ移行 + ナッジカード |
+| ~~βエラー自動通知~~ | ~~P0~~ | **実装済み** — captureError → Firestore `beta_errors` → Slack即時通知。端末情報+userId自動収集、60秒レート制限 |
+| ~~βフィードバックボタン~~ | ~~P0~~ | **実装済み** — 左下フローティングピル「報告」→ モーダル（バグ/意見/わからない + テキスト + 写真）→ Firestore `beta_feedback` → Slack通知 |
 | コールドスタート対策 | P1 | **未着手（#135）** — 「知ってるのにない」離脱防止。データ拡充 + チュートリアル後ツールチップ |
 | 警察ガイドデータ取り込み | P1 | **未着手（#136）** — PDFスキャン→OCR→ジオコーディング→Firestore投入 |
 | 看板OCR | P1 | **保留** — コスト考慮。管理画面で人力入力に変更 |
