@@ -177,13 +177,25 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       // 既存データとマージ（新エリア分を追加、同一IDは上書き、遠方を除外）
       setAllSpotsRaw((prev) => {
         const map = new Map(prev.map((s) => [s.id, s]));
-        for (const s of fetched) map.set(s.id, s);
+        let changed = false;
+        for (const s of fetched) {
+          const existing = map.get(s.id);
+          if (!existing || existing.updatedAt !== s.updatedAt
+              || existing.currentParked !== s.currentParked
+              || existing.lastArrivedAt !== s.lastArrivedAt) {
+            map.set(s.id, s);
+            changed = true;
+          }
+        }
+        if (!changed) return prev; // 変更なし → 同じ参照で再レンダー回避
         const all = Array.from(map.values());
         if (all.length <= 500) return all;
-        all.sort((a, b) =>
-          haversineMeters(region.latitude, region.longitude, a.latitude, a.longitude) -
-          haversineMeters(region.latitude, region.longitude, b.latitude, b.longitude)
-        );
+        // 距離を事前計算してソート（比較関数内の重複haversine排除）
+        const dist = new Map<string, number>();
+        for (const s of all) {
+          dist.set(s.id, haversineMeters(region.latitude, region.longitude, s.latitude, s.longitude));
+        }
+        all.sort((a, b) => dist.get(a.id)! - dist.get(b.id)!);
         return all.slice(0, 500);
       });
     } catch (e) {

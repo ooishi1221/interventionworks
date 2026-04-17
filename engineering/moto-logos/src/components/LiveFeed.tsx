@@ -80,6 +80,7 @@ export function LiveFeed() {
     return () => {
       mounted = false;
       if (timerRef.current) clearTimeout(timerRef.current);
+      translateY.stopAnimation(); // native側のorphanedアニメーションも停止
     };
   }, []);
 

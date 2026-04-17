@@ -55,6 +55,8 @@ export function useProximityState({ spots, enabled, loading }: UseProximityState
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastCalcLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const cooldownCacheRef = useRef<Map<string, { result: boolean; at: number }>>(new Map());
+  // state更新済み位置を保持し、小移動での無駄な再レンダーを防ぐ
+  const lastStatePosRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   // GPS 監視開始/停止
   useEffect(() => {
@@ -78,9 +80,15 @@ export function useProximityState({ spots, enabled, loading }: UseProximityState
           distanceInterval: LOCATION_DISTANCE_M,
         },
         (loc) => {
-          if (!cancelled) {
-            setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+          if (cancelled) return;
+          const newPos = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          // 50m未満の移動はstate更新をスキップ → 再レンダー抑制
+          const prev = lastStatePosRef.current;
+          if (prev && haversineMeters(prev.latitude, prev.longitude, newPos.latitude, newPos.longitude) < 50) {
+            return;
           }
+          lastStatePosRef.current = newPos;
+          setUserLocation(newPos);
         },
       );
       if (cancelled) {
@@ -131,15 +139,22 @@ export function useProximityState({ spots, enabled, loading }: UseProximityState
       if (!nearestSpot || cancelled) return;
 
       if (nearestDist <= NEARBY_THRESHOLD_M) {
-        // クールダウンチェック（キャッシュ付き、60秒有効）
+        // クールダウンチェック（キャッシュ付き、60秒有効、1時間TTLで自動evict）
+        const now = Date.now();
         const cached = cooldownCacheRef.current.get(nearestSpot.id);
         let cooling: boolean;
-        if (cached && Date.now() - cached.at < 60_000) {
+        if (cached && now - cached.at < 60_000) {
           cooling = cached.result;
         } else {
           cooling = await isCoolingDown(nearestSpot.id);
           if (cancelled) return;
-          cooldownCacheRef.current.set(nearestSpot.id, { result: cooling, at: Date.now() });
+          cooldownCacheRef.current.set(nearestSpot.id, { result: cooling, at: now });
+          // 1時間超の古いエントリを掃除（キャッシュ肥大化防止）
+          if (cooldownCacheRef.current.size > 50) {
+            for (const [key, val] of cooldownCacheRef.current) {
+              if (now - val.at > 3_600_000) cooldownCacheRef.current.delete(key);
+            }
+          }
         }
         if (cooling) {
           setState({ kind: 'normal' });

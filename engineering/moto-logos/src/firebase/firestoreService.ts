@@ -211,7 +211,7 @@ export async function fetchSpotsInRegion(
  * geohash フィールドがないスポットも取得できる。
  */
 export async function fetchAllSpots(): Promise<ParkingPin[]> {
-  const snap = await getDocs(collection(db, COLLECTIONS.SPOTS));
+  const snap = await getDocs(query(collection(db, COLLECTIONS.SPOTS), limit(5000)));
   return snap.docs.map((d) => docToPin(d));
 }
 
@@ -294,15 +294,21 @@ export async function incrementViewCount(spotId: string): Promise<void> {
 
 export async function getMySpotsTotalViews(localSpotIds: string[]): Promise<number> {
   if (localSpotIds.length === 0) return 0;
-  const { getDoc } = await import('firebase/firestore');
-  const results = await Promise.all(
-    localSpotIds.map((id) =>
-      getDoc(doc(db, COLLECTIONS.SPOTS, id))
-        .then((snap) => (snap.exists() ? ((snap.data().viewCount as number) ?? 0) : 0))
-        .catch((e) => { captureError(e, { context: 'spot_views_fetch', spotId: id }); return 0; })
-    )
-  );
-  return results.reduce((sum, v) => sum + v, 0);
+  const { getDocs: gd, query: q, where: w, documentId } = await import('firebase/firestore');
+  let total = 0;
+  // Firestore 'in' は最大10件 → チャンク分割
+  for (let i = 0; i < localSpotIds.length; i += 10) {
+    const chunk = localSpotIds.slice(i, i + 10);
+    try {
+      const snap = await gd(q(collection(db, COLLECTIONS.SPOTS), w(documentId(), 'in', chunk)));
+      for (const d of snap.docs) {
+        total += ((d.data().viewCount as number) ?? 0);
+      }
+    } catch (e) {
+      captureError(e, { context: 'spot_views_batch', chunk: chunk.join(',') });
+    }
+  }
+  return total;
 }
 
 // ─────────────────────────────────────────────────────
