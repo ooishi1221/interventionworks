@@ -78,7 +78,8 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 | ファイル | 用途 |
 |---------|------|
 | `hero-bg.jpg` | Hero・FinalCta背景（夜の東京 + バイク） |
-| `rider-journey.jpg` | Philosophy背景・PhotoBreak（夕暮れライダー） |
+| `rider-journey.jpg` | Philosophy背景（夕暮れライダー） |
+| `photo-break-bike.jpg` | PhotoBreak（夜の路地 + バイク、アンバー照明） |
 | `app-mockup-map.jpg` | FAQ背景（ダークマップビジュアル） |
 | `logo-mark.jpg` | ロゴマーク（マップピン × タイヤ痕） |
 | `app-screenshot.png` | Hero iPhoneモック（ライブフィード付き地図） |

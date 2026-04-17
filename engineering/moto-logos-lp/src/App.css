@@ -777,6 +777,7 @@
     align-items: center;
     flex: 1;
     gap: var(--space-md);
+    padding: 0 var(--space-lg);
   }
   .step-connector {
     display: block;

@@ -16,7 +16,11 @@ export default function StickyHeader() {
           className="btn-primary sticky-header-btn"
           onClick={(e) => {
             e.preventDefault()
-            document.getElementById('beta-form')?.scrollIntoView({ behavior: 'smooth' })
+            const el = document.getElementById('beta-form')
+            if (el) {
+              const y = el.getBoundingClientRect().top + window.scrollY - 80
+              window.scrollTo({ top: y, behavior: 'smooth' })
+            }
           }}
         >
           βテスターに参加する

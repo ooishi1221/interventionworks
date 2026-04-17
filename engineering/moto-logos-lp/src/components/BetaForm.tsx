@@ -48,7 +48,7 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
     return (
       <div className={`beta-form-result ${compact ? 'compact' : ''}`}>
         <span className="beta-form-check">&#10003;</span>
-        <p className="beta-form-msg">登録完了！数日以内に招待リンクをお届けします。</p>
+        <p className="beta-form-msg">登録しました。βテスト開始時に招待リンクをお届けします。</p>
       </div>
     )
   }
