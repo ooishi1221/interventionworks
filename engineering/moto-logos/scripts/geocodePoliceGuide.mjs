@@ -37,63 +37,44 @@ if (isResume && existsSync(OUTPUT)) {
 }
 
 // ─── Nominatim ジオコーディング ──────────────────────
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-const USER_AGENT = 'MotoLogos-DataImport/1.0 (ooishi.y@wit-one.co.jp)';
+// 国土地理院 ジオコーディングAPI（無料、日本住所に最適）
+const GSI_URL = 'https://msearch.gsi.go.jp/address-search/AddressSearch';
 
 async function geocode(ward, address) {
-  // 東京都のwardは区、多摩地域は市町村
-  const isWard = ward.endsWith('区');
-  const fullAddress = isWard
-    ? `東京都${ward}${address}`
-    : `東京都${ward}${address}`;
+  // 住所の前処理: 括弧内の補足情報を除去
+  const cleanAddr = address.replace(/[\(（].*?[\)）]/g, '').trim();
+  const fullAddress = `東京都${ward}${cleanAddr}`;
 
-  const params = new URLSearchParams({
-    q: fullAddress,
-    format: 'json',
-    countrycodes: 'jp',
-    limit: '1',
-    addressdetails: '0',
-  });
+  // Step 1: フルアドレスで検索
+  const result = await gsiSearch(fullAddress);
+  if (result) return { ...result, fallback: false };
 
-  const res = await fetch(`${NOMINATIM_URL}?${params}`, {
-    headers: { 'User-Agent': USER_AGENT },
-  });
-
-  if (!res.ok) {
-    console.error(`  HTTP ${res.status} for "${fullAddress}"`);
-    return null;
+  // Step 2: 番号を除去して再検索（「2丁目23番16号」→「2丁目」）
+  const simpleAddr = cleanAddr.replace(/\d+番.*$/, '').trim();
+  if (simpleAddr !== cleanAddr) {
+    const result2 = await gsiSearch(`東京都${ward}${simpleAddr}`);
+    if (result2) return { ...result2, fallback: false };
   }
 
-  const data = await res.json();
-  if (data.length === 0) {
-    // フォールバック: ward名だけで検索（粗い座標でもないよりマシ）
-    const fallbackParams = new URLSearchParams({
-      q: `東京都${ward}`,
-      format: 'json',
-      countrycodes: 'jp',
-      limit: '1',
-    });
-    const fbRes = await fetch(`${NOMINATIM_URL}?${fallbackParams}`, {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    if (fbRes.ok) {
-      const fbData = await fbRes.json();
-      if (fbData.length > 0) {
-        return {
-          lat: parseFloat(fbData[0].lat),
-          lon: parseFloat(fbData[0].lon),
-          fallback: true,
-        };
-      }
-    }
+  // Step 3: ward名だけで検索（粗い座標、フォールバック）
+  const result3 = await gsiSearch(`東京都${ward}`);
+  if (result3) return { ...result3, fallback: true };
+
+  return null;
+}
+
+async function gsiSearch(query) {
+  const params = new URLSearchParams({ q: query });
+  try {
+    const res = await fetch(`${GSI_URL}?${params}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.length === 0) return null;
+    const [lon, lat] = data[0].geometry.coordinates;
+    return { lat, lon };
+  } catch {
     return null;
   }
-
-  return {
-    lat: parseFloat(data[0].lat),
-    lon: parseFloat(data[0].lon),
-    fallback: false,
-  };
 }
 
 function sleep(ms) {
@@ -155,8 +136,8 @@ for (let i = 0; i < spots.length; i++) {
     `(成功: ${success}, フォールバック: ${fallbackCount}, 失敗: ${failed})`
   );
 
-  // レート制限: 1秒待機
-  await sleep(1100);
+  // レート制限: 国土地理院は緩めだが礼儀として300ms待機
+  await sleep(300);
 
   // 100件ごとに中間保存（クラッシュ対策）
   if ((i + 1) % 100 === 0) {
