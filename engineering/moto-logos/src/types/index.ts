@@ -23,8 +23,10 @@ export interface ParkingPin {
   updatedAt?: string; // ISO8601
   /** リアルタイム駐車中台数（概算） */
   currentParked?: number;
-  /** 最後にライダーが到着した日時（温度計算用） */
+  /** 最後にライダーが到着した日時 */
   lastArrivedAt?: string; // ISO8601
+  /** 最後にライダーが「停めた」を確認した日時（霧鮮度計算用） */
+  lastConfirmedAt?: string; // ISO8601
   /** ゲリラスポット（公式DBにない隠れ駐輪場） */
   isGuerrilla?: boolean;
 }
@@ -59,6 +61,8 @@ export interface Review {
   /** Firestore ドキュメント ID（Firestore 由来のレビューのみ） */
   firestoreId?: string;
   spotId: string;
+  /** 投稿者の userId（自分のノート表示用フィルタ） */
+  userId?: string | null;
   source: 'seed' | 'user';
   score: number;
   comment: string | null;

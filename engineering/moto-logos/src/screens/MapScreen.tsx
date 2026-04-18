@@ -14,7 +14,7 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { Marker, Region, Circle } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
@@ -31,7 +31,6 @@ import { captureError } from '../utils/sentry';
 import { pickPhotoFromCamera } from '../utils/photoPicker';
 import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
-import { LiveFeed } from '../components/LiveFeed';
 import { useProximityState } from '../hooks/useProximityState';
 import { useArrivalDetection } from '../hooks/useArrivalDetection';
 import { ProximityContextCard } from '../components/ProximityContextCard';
@@ -67,27 +66,24 @@ interface GmapsSearchSession {
   startedAt: number;
 }
 
-import { TEMP_STYLE, spotTemperature } from '../utils/temperature';
+import { FRESHNESS_STYLE, spotFreshness } from '../utils/freshness';
 
-function markerColor(spot: ParkingPin): string {
-  const temp = spotTemperature(spot);
-  if (temp !== 'cold') return TEMP_STYLE[temp].color;
-  return SYS_GRAY;
-}
-
-// ─── 温度ピン ─────────────────────────────────────────
+// ─── スポットピン（鮮度で色+透明度） ──────────────────
 const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; wide?: boolean }) {
-  const color = markerColor(spot);
+  const fresh = spotFreshness(spot);
+  const isClear = fresh === 'clear';
+  const isFoggy = fresh === 'foggy';
 
   if (wide) {
-    return <View style={[styles.pinDot, { backgroundColor: color }]} />;
+    return <View style={[styles.pinDot, isClear ? styles.pinDotClear : styles.pinDotFoggy]} />;
   }
 
+  const pinStyle = isClear ? styles.pinClear : isFoggy ? styles.pinFoggyLarge : styles.pinHazyLarge;
+  const iconOpacity = isClear ? 1.0 : isFoggy ? 0.5 : 0.8;
+
   return (
-    <View style={[styles.pinLarge, { backgroundColor: color }]}>
-      <Text style={styles.pinLargeText}>
-        {(spot.currentParked ?? 0) > 0 ? `${spot.currentParked}` : 'P'}
-      </Text>
+    <View style={[styles.pinLarge, pinStyle]}>
+      <Ionicons name="bicycle" size={15} color={`rgba(255,255,255,${iconOpacity})`} />
     </View>
   );
 });
@@ -153,12 +149,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   useEffect(() => () => { if (miscTimerRef.current) clearTimeout(miscTimerRef.current); }, []);
   const [areaSummary, setAreaSummary]         = useState<AreaSummary | null>(null);
 
-  // ── ライブフィード設定 ──────────────────────────────
-  const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
   const [nearbyExpanded, setNearbyExpanded] = useState(false);
-  useEffect(() => {
-    AsyncStorage.getItem('moto_logos_live_feed').then((v) => setLiveFeedEnabled(v !== 'false'));
-  }, []);
+
 
 
   const lastFetchRegionRef = useRef<Region | null>(null);
@@ -727,6 +719,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     return tutorial.active ? [tutorial.dummySpot, ...base] : base;
   }, [allSpotsRaw, ccFilterEnabled, userCC, tutorial.active, tutorial.dummySpot]);
 
+  // 確認済みスポット（霧の穴を開ける対象）
+  const clearedSpots = useMemo(
+    () => allSpots.filter((s) => spotFreshness(s) === 'clear'),
+    [allSpots],
+  );
+
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
   const prevTutorialActive = useRef(tutorial.active);
   useEffect(() => {
@@ -892,6 +890,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             <SpotPin spot={spot} wide={wideZoom} />
           </Marker>
         ))}
+        {/* 晴れ円: 確認済みスポット周囲 */}
+        {clearedSpots.map((spot) => (
+          <Circle
+            key={`clear_${spot.id}`}
+            center={{ latitude: spot.latitude, longitude: spot.longitude }}
+            radius={250}
+            fillColor="rgba(48,209,88,0.06)"
+            strokeColor="rgba(48,209,88,0.18)"
+            strokeWidth={1}
+          />
+        ))}
       </ClusteredMapView>
 
       {/* 暗幕は SearchOverlay が担当 */}
@@ -909,9 +918,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           </View>
         </View>
       )}
-
-      {/* ── ライブフィード（上部） ────────────────────── */}
-      {!selected && !searchVisible && liveFeedEnabled && !nearbyExpanded && <LiveFeed />}
 
       {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
       {!selected && !searchVisible && (
@@ -1177,14 +1183,45 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
   pinLarge: {
-    width: 34, height: 34, borderRadius: 5,
+    width: 34, height: 34, borderRadius: 17,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)',
   },
   pinLargeText: { fontSize: 13, color: '#fff', fontWeight: '800' },
   pinDot: {
-    width: 24, height: 24, borderRadius: 12,
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)',
+    width: 22, height: 22, borderRadius: 11,
+  },
+  // 確認済み（clear）
+  pinClear: {
+    backgroundColor: '#30D158',
+    borderWidth: 2, borderColor: '#fff',
+    shadowColor: '#30D158',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  pinDotClear: {
+    backgroundColor: '#30D158',
+    borderWidth: 2, borderColor: '#fff',
+    shadowColor: '#30D158',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  // 霧（foggy）
+  pinFoggyLarge: {
+    backgroundColor: 'rgba(80,80,85,0.6)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+  },
+  pinDotFoggy: {
+    backgroundColor: 'rgba(80,80,85,0.5)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+  },
+  // やや古い（hazy）
+  pinHazyLarge: {
+    backgroundColor: 'rgba(255,159,10,0.5)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 

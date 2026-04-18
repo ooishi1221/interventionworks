@@ -20,7 +20,7 @@ import { ParkingPin, UserCC } from '../types';
 import { NearbySpotInfo } from '../hooks/useProximityState';
 import { useTutorial } from '../contexts/TutorialContext';
 import { Colors } from '../constants/theme';
-import { spotTemperature, temperatureLabel, TEMP_STYLE } from '../utils/temperature';
+import { spotFreshness, freshnessLabel, FRESHNESS_STYLE } from '../utils/freshness';
 
 const C = Colors;
 
@@ -46,10 +46,10 @@ interface Props {
   onExpandedChange?: (expanded: boolean) => void;
 }
 
-function TempDot({ spot }: { spot: ParkingPin }) {
-  const temp = spotTemperature(spot);
-  const color = TEMP_STYLE[temp].color;
-  return <View style={[styles.tempDot, { backgroundColor: color }]} />;
+function FreshDot({ spot }: { spot: ParkingPin }) {
+  const fresh = spotFreshness(spot);
+  const { color, opacity } = FRESHNESS_STYLE[fresh];
+  return <View style={[styles.tempDot, { backgroundColor: color, opacity }]} />;
 }
 
 function ccDisplayLabel(cc: UserCC): string {
@@ -165,7 +165,7 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
                 style={styles.inlineItem}
               >
                 <Text style={styles.inlineRank}>1</Text>
-                <TempDot spot={items[0].spot} />
+                <FreshDot spot={items[0].spot} />
                 <Text style={styles.inlineName} numberOfLines={1}>
                   {items[0].spot.name}
                 </Text>
@@ -218,8 +218,8 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
       {/* ── 展開リスト（サマリーモード中は非表示） ──────── */}
       {!areaSummary && <Animated.View style={[styles.expandedList, { maxHeight: listHeight, opacity: listOpacity }]}>
         {items.map((item, i) => {
-          const temp = spotTemperature(item.spot);
-          const tempColor = TEMP_STYLE[temp].color;
+          const fresh = spotFreshness(item.spot);
+          const freshColor = FRESHNESS_STYLE[fresh].color;
           return (
             <TouchableOpacity
               key={item.spot.id}
@@ -228,9 +228,9 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
               activeOpacity={0.7}
             >
               <Text style={styles.expandedRank}>{i + 1}</Text>
-              <TempDot spot={item.spot} />
+              <FreshDot spot={item.spot} />
               <Text style={styles.expandedName} numberOfLines={1}>{item.spot.name}</Text>
-              <Text style={[styles.expandedTempLabel, { color: tempColor }]}>{temperatureLabel(temp)}</Text>
+              <Text style={[styles.expandedTempLabel, { color: freshColor }]}>{freshnessLabel(fresh)}</Text>
               <Text style={styles.expandedDist}>{fmtDist(item.distanceM)}</Text>
             </TouchableOpacity>
           );

@@ -479,7 +479,7 @@ export async function getExploredPrefectures(): Promise<number> {
 
 // --- Activity Log ---
 
-export type ActivityType = 'spot' | 'review' | 'report' | 'favorite';
+export type ActivityType = 'spot' | 'review' | 'report' | 'favorite' | 'spot_view';
 
 export interface ActivityLogEntry {
   id: number;
@@ -606,6 +606,14 @@ export async function getFootprintCount(): Promise<number> {
     'SELECT COUNT(*) as count FROM footprints;',
   );
   return row?.count ?? 0;
+}
+
+export async function getFootprintsBySpot(spotId: string): Promise<Footprint[]> {
+  const db = getDatabase();
+  return db.getAllAsync<Footprint>(
+    'SELECT * FROM footprints WHERE spotId = ? ORDER BY createdAt DESC LIMIT 10;',
+    [spotId],
+  );
 }
 
 export async function getUniqueFootprintLocations(): Promise<Footprint[]> {

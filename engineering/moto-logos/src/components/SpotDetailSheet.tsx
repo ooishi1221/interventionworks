@@ -1,11 +1,11 @@
 /**
- * SpotDetailSheet v2 — 情報ゾーン / アクションゾーン分離 + 停められた/停められなかった報告
+ * SpotDetailSheet v3 — ワンショット + 自分のノート
  *
- * 上: 情報ゾーン（スクロール） — 名称・バッジ・写真・住所・料金・過去の報告
- * 下: アクションゾーン（固定） — 案内開始・報告する・シェア
- * 星評価廃止 → 「停められた/停められなかった」で体験を共有
+ * 上: 情報ゾーン（スクロール） — 名称・バッジ・自分のノート・写真・住所・料金・みんなの足跡
+ * 下: アクションゾーン（固定） — 案内開始・📷ワンショット・シェア
+ * 「停めた✓」ボタン → 📷ワンショット（写真1枚で確認 + 自分のノートに保存）
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
   Platform,
   Alert,
   ScrollView,
-  TextInput,
   Image,
   FlatList,
   Dimensions,
@@ -34,28 +33,24 @@ import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review } from '../types';
-import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
-import { haversineMeters } from '../utils/distance';
+import { pickPhotoFromCamera } from '../utils/photoPicker';
 import {
   incrementStat,
   logActivityLocal,
+  getFootprintsBySpot,
 } from '../db/database';
+import type { Footprint } from '../db/database';
 import {
   addReview,
   fetchReviews,
-  fetchSpotCounts,
-  reportSpotGood,
-  reportSpotFull,
-  reportSpotClosed,
   reportParked,
   incrementViewCount,
-  fetchSpotsInRegion,
 } from '../firebase/firestoreService';
 import { getFirstVehicle, addFootprint, startParking } from '../db/database';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
-import { spotTemperature, temperatureLabel, lastArrivedText, TEMP_STYLE } from '../utils/temperature';
+import { spotFreshness, freshnessLabel, lastConfirmedText, FRESHNESS_STYLE } from '../utils/freshness';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -84,16 +79,6 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type CorrectionType = 'full' | 'closed' | 'wrong_price' | 'wrong_cc' | 'other';
-
-const CORRECTION_OPTIONS: { id: CorrectionType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { id: 'full',        label: '満車だった',     icon: 'time',          color: C.orange },
-  { id: 'closed',      label: '閉鎖されていた', icon: 'close-circle',  color: C.red },
-  { id: 'wrong_price', label: '料金が違う',     icon: 'cash-outline',  color: C.orange },
-  { id: 'wrong_cc',    label: '排気量制限が違う', icon: 'speedometer-outline', color: C.orange },
-  { id: 'other',       label: 'その他',         icon: 'ellipsis-horizontal', color: C.sub },
-];
-
 // ─── Props ────────────────────────────────────────────
 interface Props {
   spot: ParkingPin;
@@ -103,15 +88,6 @@ interface Props {
   onSpotUpdated?: () => void;
 }
 
-function fmtDist(m: number): string {
-  if (m < 1000) return `${Math.round(m)}m先`;
-  return `${(m / 1000).toFixed(1)}km先`;
-}
-
-interface NearbySpot {
-  spot: ParkingPin;
-  distanceM: number;
-}
 
 // ─── メインコンポーネント ──────────────────────────────
 export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated }: Props) {
@@ -156,14 +132,12 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   const [reports, setReports]           = useState<Review[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
 
-  // Report modal
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportStep, setReportStep]           = useState<'ask' | 'matched' | 'unmatched'>('ask');
-  const [correction, setCorrection]           = useState<CorrectionType | null>(null);
-  const [reportComment, setReportComment]     = useState('');
-  const [reportPhoto, setReportPhoto]         = useState<string | null>(null);
-  const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [alreadyVoted, setAlreadyVoted]       = useState(false);
+  // ワンショット
+  const [shotUploading, setShotUploading] = useState(false);
+  const [hasShot, setHasShot]             = useState(false);
+
+  // 自分の足跡（自分のノート）
+  const [myFootprints, setMyFootprints] = useState<Footprint[]>([]);
 
   // Fullscreen photo
   const [fullPhoto, setFullPhoto] = useState<string | null>(null);
@@ -171,19 +145,17 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   // ナビ選択モーダル
   const [navModalOpen, setNavModalOpen] = useState(false);
 
-  // 周辺スポット（案内開始後に表示）
-  const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([]);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
-
-  // レポート送信後のリフレッシュ用
+  // ワンショット後のリフレッシュ用
   const loadAll = useCallback(async () => {
     setReportsLoading(true);
-    const [r, prev] = await Promise.all([
+    const [r, prev, fp] = await Promise.all([
       fetchReviews(spot.id, 'date'),
       AsyncStorage.getItem(`vote_${spot.id}`),
+      getFootprintsBySpot(spot.id),
     ]);
     setReports(r);
-    setAlreadyVoted(!!prev);
+    setHasShot(!!prev);
+    setMyFootprints(fp);
     setReportsLoading(false);
   }, [spot.id]);
 
@@ -198,7 +170,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
           { id: 903, spotId: spot.id, source: 'seed', score: 0, comment: '[full] 土日は満車多い', photoUri: null, createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() },
         ]);
       });
-      setAlreadyVoted(false);
+      setHasShot(false);
       setReportsLoading(false);
       return;
     }
@@ -211,10 +183,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     ]).then(([r, prev]) => {
       if (stale) return;
       setReports(r);
-      setAlreadyVoted(!!prev);
+      setHasShot(!!prev);
       setReportsLoading(false);
     });
     incrementViewCount(spot.id);
+    logActivityLocal('spot_view', `${spot.name}を表示`);
     return () => { stale = true; };
   }, [spot.id, tutorial.active]);
 
@@ -263,93 +236,51 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
     setNavModalOpen(true);
   };
 
-  // ── 報告: 写真ピッカー（カメラ） ──────────────────────
-  const pickReportPhoto = async () => {
+  // ── ワンショット: カメラ → アップロード → 鮮度更新 ─────
+  const handleOneShot = async () => {
+    if (hasShot || shotUploading) return;
     const uri = await pickPhotoFromCamera();
-    if (uri) setReportPhoto(uri);
-  };
+    if (!uri) return; // キャンセル
 
-  // ── 報告: 写真ピッカー（アルバム） ────────────────────
-  const pickReportPhotoFromAlbum = async () => {
-    const uri = await pickPhotoFromLibrary();
-    if (uri) setReportPhoto(uri);
-  };
-
-  // ── 報告: 送信 ────────────────────────────────────────
-  const submitReport = async (matched: boolean) => {
     let userId = user?.userId;
     if (!userId) {
       userId = await AsyncStorage.getItem('moto_logos_device_id') ?? undefined;
     }
     if (!userId) { Alert.alert('エラー', 'ユーザー情報を読み込めません。アプリを再起動してください。'); return; }
-    setReportSubmitting(true);
+
+    setShotUploading(true);
     try {
-      const spotId = spot.id;
-      const comment = matched
-        ? reportComment.trim() || undefined
-        : `[${correction ?? 'other'}] ${reportComment.trim()}`.trim();
-
-      // Firestore にステータス反映
-      if (matched) {
-        await reportSpotGood(spotId).catch((e) => captureError(e, { context: 'report_matched' }));
-      } else if (correction === 'full') {
-        await reportSpotFull(spotId).catch((e) => captureError(e, { context: 'report_full' }));
-      } else if (correction === 'closed') {
-        await reportSpotClosed(spotId).catch((e) => captureError(e, { context: 'report_closed' }));
-      }
-
-      // 足跡として保存（score: 1=停めた, 0=停められなかった）
       const bike = await getFirstVehicle();
-      await addReview(spotId, userId, matched ? 1 : 0, comment, reportPhoto ?? undefined, undefined, bike?.name);
 
-      // 停められた → 温度UP + 足跡 + 駐車セッション開始
-      if (matched) {
-        reportParked(spotId).catch((e) => captureError(e, { context: 'sheet_report_parked', spotId }));
-        addFootprint(spotId, spot.name, spot.latitude, spot.longitude, 'parked');
-        startParking(spotId, spot.name, spot.latitude, spot.longitude, bike?.id);
-      } else {
-        const fpType = correction === 'full' ? 'full' : correction === 'closed' ? 'closed' : correction === 'wrong_price' ? 'wrong_price' : correction === 'wrong_cc' ? 'wrong_cc' : 'failed';
-        addFootprint(spotId, spot.name, spot.latitude, spot.longitude, fpType);
-      }
+      // Firestore review + Storage アップロード（既存関数を再利用）
+      await addReview(spot.id, userId, 1, undefined, uri, undefined, bike?.name);
+
+      // 鮮度更新（副産物）
+      reportParked(spot.id).catch((e) => captureError(e, { context: 'oneshot_parked', spotId: spot.id }));
+
+      // ローカル足跡 + 駐車セッション
+      addFootprint(spot.id, spot.name, spot.latitude, spot.longitude, 'parked');
+      startParking(spot.id, spot.name, spot.latitude, spot.longitude, bike?.id);
 
       // ローカル記録
-      AsyncStorage.setItem(`vote_${spotId}`, matched ? 'matched' : correction ?? 'unmatched');
-      logActivityLocal('report', `${spot.name}に${matched ? '停めた' : '停められなかった'}`);
+      AsyncStorage.setItem(`vote_${spot.id}`, 'matched');
+      logActivityLocal('report', `${spot.name}をワンショット`);
       incrementStat('reports');
 
-      Haptics.notificationAsync(matched
-        ? Haptics.NotificationFeedbackType.Success
-        : Haptics.NotificationFeedbackType.Warning
-      );
-
-      setAlreadyVoted(true);
-      setReportModalOpen(false);
-      resetReportModal();
+      // フィードバック
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setHasShot(true);
       onSpotUpdated?.();
       await loadAll();
     } catch (e: unknown) {
-      captureError(e, { context: 'submitReport' });
+      captureError(e, { context: 'oneshot' });
       const message = e instanceof Error ? e.message : String(e);
-      Alert.alert('送信に失敗しました', message);
+      Alert.alert('保存に失敗しました', message);
+    } finally {
+      setShotUploading(false);
+      // 一時ファイル削除
+      FileSystem.deleteAsync(uri, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' }));
     }
-    setReportSubmitting(false);
-  };
-
-  const resetReportModal = () => {
-    setReportStep('ask');
-    setCorrection(null);
-    setReportComment('');
-    if (reportPhoto) FileSystem.deleteAsync(reportPhoto, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' }));
-    setReportPhoto(null);
-  };
-
-  const openReportModal = () => {
-    if (alreadyVoted) {
-      Alert.alert('記録済み', 'このスポットは既に記録済みです');
-      return;
-    }
-    resetReportModal();
-    setReportModalOpen(true);
   };
 
   // ─────────────────────────────────────────────────────
@@ -426,171 +357,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
         </Modal>
       )}
 
-      {/* ── 報告モーダル（停められた/停められなかった） ── */}
-      <Modal
-        visible={reportModalOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => { setReportModalOpen(false); resetReportModal(); }}
-      >
-        <View style={styles.reportOverlay}>
-          <TouchableOpacity style={styles.reportOverlayTap} activeOpacity={1} onPress={() => { setReportModalOpen(false); resetReportModal(); }} />
-          <View style={styles.reportSheet}>
-            {/* ステップ1: 停められた？ */}
-            {reportStep === 'ask' && (
-              <View style={styles.reportCenter}>
-                <Text style={styles.reportQuestion}>ここに停めた？</Text>
-                <Text style={styles.reportHint}>{spot.name}</Text>
-                <View style={{ height: 24 }} />
-                <View style={styles.reportChoiceRow}>
-                  <TouchableOpacity
-                    style={styles.reportMatchedBtn}
-                    onPress={() => setReportStep('matched')}
-                    activeOpacity={0.8}
-                    accessibilityLabel="停めた"
-                    accessibilityRole="button"
-                    accessibilityHint="ここに駐車できたことを記録します"
-                  >
-                    <Ionicons name="thumbs-up" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>停めた</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.reportUnmatchedBtn}
-                    onPress={() => setReportStep('unmatched')}
-                    activeOpacity={0.8}
-                    accessibilityLabel="停められなかった"
-                    accessibilityRole="button"
-                    accessibilityHint="駐車できなかったことを記録します"
-                  >
-                    <Ionicons name="thumbs-down" size={28} color="#fff" />
-                    <Text style={styles.reportChoiceText}>停められなかった</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity style={styles.reportCancelLink} onPress={() => { setReportModalOpen(false); resetReportModal(); }}>
-                  <Text style={styles.reportCancelText}>キャンセル</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* ステップ2a: 停められた → ひとこと + 写真（任意） */}
-            {reportStep === 'matched' && (
-              <View style={styles.reportFormContent}>
-                <View style={styles.reportMatchedBadge}>
-                  <Ionicons name="thumbs-up" size={20} color={C.green} />
-                  <Text style={[styles.reportBadgeText, { color: C.green }]}>ここに停めた！</Text>
-                </View>
-                <Text style={styles.reportFormHint}>ひとことや写真を残せます（任意）</Text>
-                <TextInput
-                  style={styles.reportInput}
-                  placeholder="例: 空きあり、停めやすかった"
-                  placeholderTextColor="rgba(255,255,255,0.25)"
-                  value={reportComment}
-                  onChangeText={setReportComment}
-                  multiline
-                  blurOnSubmit
-                />
-                {reportPhoto ? (
-                  <View style={styles.reportPhotoPreview}>
-                    <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' })); setReportPhoto(null); }}>
-                      <Ionicons name="close-circle" size={22} color={C.red} />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={styles.reportPhotoBtnRow}>
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                      <Ionicons name="camera-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>撮影する</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhotoFromAlbum}>
-                      <Ionicons name="images-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>アルバムから</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <TouchableOpacity
-                  style={[styles.reportSubmitBtn, { backgroundColor: C.green }]}
-                  onPress={() => submitReport(true)}
-                  disabled={reportSubmitting}
-                  activeOpacity={0.8}
-                >
-                  {reportSubmitting
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.reportSubmitText}>送信する</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
-                  <Text style={styles.reportCancelText}>戻る</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* ステップ2b: ダメだった → 何があった？ + ひとこと + 写真 */}
-            {reportStep === 'unmatched' && (
-              <ScrollView contentContainerStyle={styles.reportFormContent} keyboardShouldPersistTaps="handled">
-                <View style={styles.reportUnmatchedBadge}>
-                  <Ionicons name="thumbs-down" size={20} color={C.orange} />
-                  <Text style={[styles.reportBadgeText, { color: C.orange }]}>何があった？</Text>
-                </View>
-                <View style={styles.correctionGrid}>
-                  {CORRECTION_OPTIONS.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.id}
-                      style={[styles.correctionBtn, correction === opt.id && { borderColor: opt.color, backgroundColor: `${opt.color}18` }]}
-                      onPress={() => setCorrection(opt.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name={opt.icon} size={18} color={correction === opt.id ? opt.color : C.sub} />
-                      <Text style={[styles.correctionLabel, correction === opt.id && { color: opt.color }]}>{opt.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <TextInput
-                  style={styles.reportInput}
-                  placeholder="詳細があれば（任意）"
-                  placeholderTextColor="rgba(255,255,255,0.25)"
-                  value={reportComment}
-                  onChangeText={setReportComment}
-                  multiline
-                  blurOnSubmit
-                />
-                {reportPhoto ? (
-                  <View style={styles.reportPhotoPreview}>
-                    <Image source={{ uri: reportPhoto }} style={styles.reportPhotoThumb} />
-                    <TouchableOpacity style={styles.reportPhotoRemove} onPress={() => { FileSystem.deleteAsync(reportPhoto!, { idempotent: true }).catch((e) => captureError(e, { context: 'temp_file_cleanup' })); setReportPhoto(null); }}>
-                      <Ionicons name="close-circle" size={22} color={C.red} />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={styles.reportPhotoBtnRow}>
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhoto}>
-                      <Ionicons name="camera-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>撮影する</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.reportPhotoBtn} onPress={pickReportPhotoFromAlbum}>
-                      <Ionicons name="images-outline" size={18} color={C.blue} />
-                      <Text style={styles.reportPhotoBtnText}>アルバムから</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <TouchableOpacity
-                  style={[styles.reportSubmitBtn, { backgroundColor: C.orange }, !correction && { opacity: 0.4 }]}
-                  onPress={() => submitReport(false)}
-                  disabled={reportSubmitting || !correction}
-                  activeOpacity={0.8}
-                >
-                  {reportSubmitting
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.reportSubmitText}>記録する</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setReportStep('ask')} style={styles.reportBackLink}>
-                  <Text style={styles.reportCancelText}>戻る</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
-
       {/* シート */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrapper} pointerEvents="box-none">
         <Animated.View ref={sheetRef} style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
@@ -655,11 +421,14 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
                   <Text style={styles.badgeText}>今{spot.currentParked}台が駐車中</Text>
                 </View>
               )}
-              <TemperatureBadge spot={spot} />
+              <FreshnessBadge spot={spot} />
             </View>
 
-            {/* 温度テキスト（足跡の鮮度） */}
-            <TemperatureText spot={spot} />
+            {/* 鮮度テキスト */}
+            <FreshnessText spot={spot} />
+
+            {/* 自分のノート（写真 + 足跡） */}
+            <MyNotes reports={reports} footprints={myFootprints} userId={user?.userId ?? null} onPhotoTap={setFullPhoto} />
 
             {/* 写真ギャラリー */}
             {photos.length > 0 ? (
@@ -746,16 +515,18 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
               <Text style={styles.footerNavText}>案内開始</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.footerReportBtn, alreadyVoted && { opacity: 0.5 }]}
-              onPress={openReportModal}
+              style={[styles.footerShotBtn, (hasShot || shotUploading) && { opacity: 0.5 }]}
+              onPress={handleOneShot}
               activeOpacity={0.8}
-              accessibilityLabel={alreadyVoted ? '記録済み' : '足跡を残す'}
+              accessibilityLabel={hasShot ? '撮影済み' : 'ワンショット'}
               accessibilityRole="button"
-              accessibilityHint="このスポットに停められたか記録します"
-              accessibilityState={{ disabled: alreadyVoted }}
+              accessibilityHint="カメラで写真を撮り、自分のノートに保存します"
+              accessibilityState={{ disabled: hasShot || shotUploading }}
             >
-              <Ionicons name="chatbubble-ellipses" size={17} color="#fff" />
-              <Text style={styles.footerReportText}>{alreadyVoted ? '記録済み' : '足跡を残す'}</Text>
+              {shotUploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name={hasShot ? 'checkmark-circle' : 'camera'} size={17} color="#fff" />}
+              <Text style={styles.footerShotText}>{hasShot ? '撮影済み' : 'ワンショット'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.footerShareBtn}
@@ -777,11 +548,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   );
 }
 
-// ─── 温度バッジ（足跡の鮮度） ─────────────────────────
-function TemperatureBadge({ spot }: { spot: ParkingPin }) {
-  const temp = spotTemperature(spot);
-  const color = TEMP_STYLE[temp].color;
-  const label = temperatureLabel(temp);
+// ─── 鮮度バッジ（霧の状態） ─────────────────────────
+function FreshnessBadge({ spot }: { spot: ParkingPin }) {
+  const fresh = spotFreshness(spot);
+  const color = FRESHNESS_STYLE[fresh].color;
+  const label = freshnessLabel(fresh);
   return (
     <View style={[styles.badge, { backgroundColor: `${color}18`, borderWidth: StyleSheet.hairlineWidth, borderColor: `${color}44` }]}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, marginRight: 4 }} />
@@ -790,16 +561,67 @@ function TemperatureBadge({ spot }: { spot: ParkingPin }) {
   );
 }
 
-// ─── 温度テキスト（「Xh前にライダーが利用」/「最初の足跡を残せます」） ──
-function TemperatureText({ spot }: { spot: ParkingPin }) {
-  const temp = spotTemperature(spot);
-  const text = lastArrivedText(spot);
-  const color = temp === 'cold' ? C.accent : TEMP_STYLE[temp].color;
-  const icon = temp === 'cold' ? 'footsteps-outline' : 'time-outline';
+// ─── 鮮度テキスト（「X日前に確認」/「まだ誰も確認していません」） ──
+function FreshnessText({ spot }: { spot: ParkingPin }) {
+  const fresh = spotFreshness(spot);
+  const text = lastConfirmedText(spot);
+  const color = fresh === 'foggy' ? C.accent : FRESHNESS_STYLE[fresh].color;
+  const icon = fresh === 'foggy' ? 'footsteps-outline' : 'checkmark-circle-outline';
   return (
     <View style={styles.temperatureRow}>
       <Ionicons name={icon as 'time-outline'} size={14} color={color} />
       <Text style={[styles.temperatureText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+// ─── 自分のノート（自分の写真 + 足跡回数） ─────────────
+function MyNotes({ reports, footprints, userId, onPhotoTap }: {
+  reports: Review[];
+  footprints: Footprint[];
+  userId: string | null;
+  onPhotoTap: (uri: string) => void;
+}) {
+  // 自分の写真付きレビューを抽出
+  const myPhotos = useMemo(() => {
+    if (!userId) return [];
+    return reports.filter((r) => r.userId === userId && r.photoUri);
+  }, [reports, userId]);
+
+  if (myPhotos.length === 0 && footprints.length === 0) return null;
+
+  return (
+    <View style={styles.myMemoSection}>
+      <Text style={styles.myMemoLabel}>自分のノート</Text>
+      {myPhotos.length > 0 && (
+        <FlatList
+          horizontal
+          data={myPhotos}
+          keyExtractor={(r) => `my_${r.firestoreId ?? r.id}`}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.myNotePhotos}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => onPhotoTap(item.photoUri!)} activeOpacity={0.85}>
+              <View>
+                <Image source={{ uri: item.photoUri! }} style={styles.myNoteThumb} />
+                <View style={styles.myNoteDateBadge}>
+                  <Text style={styles.myNoteDateText}>
+                    {new Date(item.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+      {footprints.length > 0 && (
+        <View style={styles.myMemoCard}>
+          <Ionicons name="footsteps" size={14} color={C.green} />
+          <Text style={styles.myMemoText}>
+            {footprints.length}回停めた（最終: {new Date(footprints[0].createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}）
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -960,9 +782,15 @@ const styles = StyleSheet.create({
   badgeText:      { color: '#fff', fontSize: 12, fontWeight: '600' },
   badgeTextMuted: { color: C.sub, fontSize: 12 },
 
-  // Temperature
+  // Freshness
   temperatureRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   temperatureText: { fontSize: 13, fontWeight: '500' },
+
+  // 自分のメモ
+  myMemoSection: { marginTop: 12 },
+  myMemoLabel: { fontSize: 11, color: C.sub, fontWeight: '600', marginBottom: 6 },
+  myMemoCard: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(48,209,88,0.08)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  myMemoText: { fontSize: 12, color: C.text, fontWeight: '500' },
 
   // Meta
   metaRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10 },
@@ -1010,71 +838,22 @@ const styles = StyleSheet.create({
     backgroundColor: C.blue, borderRadius: 14, paddingVertical: 14,
   },
   footerNavText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
-  footerReportBtn: {
+  footerShotBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     backgroundColor: '#FF6B00', borderRadius: 14, paddingVertical: 14,
   },
-  footerReportText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
+  footerShotText: { color: '#fff', fontSize: FontSize.md, fontWeight: '600' },
   footerShareBtn: {
     width: 50, alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(10,132,255,0.12)', borderRadius: 14,
     borderWidth: 1, borderColor: 'rgba(10,132,255,0.3)',
   },
 
-  // Report modal
-  reportOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  reportOverlayTap: { flex: 1 },
-  reportSheet: { backgroundColor: C.sheet, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: SCREEN_H * 0.7, minHeight: 300 },
-  reportCenter: { alignItems: 'center', padding: 32 },
-  reportQuestion: { color: C.text, fontSize: 22, fontWeight: '800' },
-  reportHint: { color: C.sub, fontSize: 13, marginTop: 6 },
-  reportChoiceRow: { flexDirection: 'row', gap: 16 },
-  reportMatchedBtn: {
-    alignItems: 'center', gap: 8, backgroundColor: 'rgba(48,209,88,0.18)',
-    borderWidth: 1, borderColor: 'rgba(48,209,88,0.4)', borderRadius: 16,
-    paddingVertical: 20, paddingHorizontal: 32,
-  },
-  reportUnmatchedBtn: {
-    alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,159,10,0.18)',
-    borderWidth: 1, borderColor: 'rgba(255,159,10,0.4)', borderRadius: 16,
-    paddingVertical: 20, paddingHorizontal: 32,
-  },
-  reportChoiceText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  reportCancelLink: { marginTop: 20, paddingVertical: 8 },
-  reportCancelText: { color: C.sub, fontSize: 14 },
-  reportBackLink: { alignItems: 'center', paddingVertical: 8, marginTop: 4 },
-
-  // Report form (step 2)
-  reportFormContent: { padding: 24, gap: 16 },
-  reportMatchedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' },
-  reportUnmatchedBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' },
-  reportBadgeText: { fontSize: 18, fontWeight: '800' },
-  reportFormHint: { color: C.sub, fontSize: 13, textAlign: 'center' },
-  reportInput: {
-    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 14,
-    color: C.text, fontSize: 14, minHeight: 60,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
-  },
-  correctionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  correctionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
-    borderWidth: 1, borderColor: C.border, backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  correctionLabel: { color: C.sub, fontSize: 13, fontWeight: '600' },
-  reportPhotoBtnRow: {
-    flexDirection: 'row', gap: 8,
-  },
-  reportPhotoBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(10,132,255,0.35)',
-  },
-  reportPhotoBtnText: { color: C.blue, fontSize: 13, fontWeight: '500' },
-  reportPhotoPreview: { position: 'relative' },
-  reportPhotoThumb: { width: '100%', height: 140, borderRadius: 10 },
-  reportPhotoRemove: { position: 'absolute', top: 6, right: 6 },
-  reportSubmitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  reportSubmitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  // 自分のノート写真
+  myNotePhotos: { gap: 8, paddingVertical: 4 },
+  myNoteThumb:  { width: 100, height: 74, borderRadius: 10, backgroundColor: C.card },
+  myNoteDateBadge: { position: 'absolute', bottom: 3, left: 3, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  myNoteDateText:  { color: '#fff', fontSize: 9, fontWeight: '600' },
 
   // Fullscreen
   fullscreenBg:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },

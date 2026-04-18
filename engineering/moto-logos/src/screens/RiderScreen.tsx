@@ -1,8 +1,8 @@
 /**
- * RiderScreen v4 — 足跡地図 + 日記タイムライン
+ * RiderScreen v5 — 足跡地図 + 自分のノート + 日記タイムライン
  *
  * 上部: 愛車写真付きHeroカード
- * 中部: 足跡マップ（自分が停めた場所にピン）
+ * 中部: 足跡マップ + 自分のノート（写真ギャラリー）
  * 下部: 日記形式の活動タイムライン
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,6 +15,8 @@ import {
   TouchableOpacity,
   ImageBackground,
   TextInput,
+  Image,
+  FlatList,
   Dimensions,
 } from 'react-native';
 import Constants from 'expo-constants';
@@ -32,9 +34,10 @@ import {
   type Footprint,
   type ParkingSession,
 } from '../db/database';
-import { reportDeparted } from '../firebase/firestoreService';
+import { reportDeparted, fetchUserPhotos } from '../firebase/firestoreService';
+import { useUser } from '../contexts/UserContext';
 import { SpotsListModal } from './SpotsListModal';
-import { ParkingPin, Vehicle } from '../types';
+import { ParkingPin, Vehicle, Review } from '../types';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { Colors } from '../constants/theme';
 import { captureError } from '../utils/sentry';
@@ -105,10 +108,12 @@ interface Props {
 }
 
 export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname }: Props) {
+  const user = useUser();
   const [bike, setBike] = useState<Vehicle | null>(null);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
   const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
   const [activeSession, setActiveSession] = useState<ParkingSession | null>(null);
+  const [myPhotos, setMyPhotos] = useState<Review[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
 
@@ -131,7 +136,12 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     setUniqueLocations(uloc);
     setActiveSession(session);
 
-  }, []);
+    // 自分のノート（写真付きレビュー）
+    const uid = user?.userId;
+    if (uid) {
+      fetchUserPhotos(uid).then(setMyPhotos).catch((e) => captureError(e, { context: 'fetch_user_photos' }));
+    }
+  }, [user?.userId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -172,6 +182,13 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     ? [bike.name || bike.manufacturer, bike.year ? `${bike.year}` : null].filter(Boolean).join(' · ')
     : null;
   const ccLabel = bike?.cc !== undefined ? CC_LABEL[String(bike.cc)] : null;
+
+  // spotId → spotName マッピング（写真にスポット名を表示するため）
+  const spotNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const fp of footprints) map.set(fp.spotId, fp.spotName);
+    return map;
+  }, [footprints]);
 
   // インパクトメッセージ
   const impactMessage = (() => {
@@ -304,7 +321,46 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
           )}
         </View>
 
-        {/* ── 4. 日記タイムライン ─────────────────── */}
+        {/* ── 4. 自分のノート（写真ギャラリー） ──── */}
+        {myPhotos.length > 0 && (
+          <>
+            <Text style={s.sectionTitle}>自分のノート</Text>
+            <FlatList
+              horizontal
+              data={myPhotos}
+              keyExtractor={(r) => `note_${r.firestoreId ?? r.id}`}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.noteList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={s.noteCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    onGoToSpot?.({
+                      id: item.spotId,
+                      name: spotNameMap.get(item.spotId) ?? '',
+                      latitude: 0,
+                      longitude: 0,
+                      source: 'seed',
+                    } as ParkingPin);
+                  }}
+                >
+                  <Image source={{ uri: item.photoUri! }} style={s.notePhoto} />
+                  <View style={s.noteInfo}>
+                    <Text style={s.noteSpotName} numberOfLines={1}>
+                      {spotNameMap.get(item.spotId) ?? item.spotId}
+                    </Text>
+                    <Text style={s.noteDate}>
+                      {new Date(item.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </>
+        )}
+
+        {/* ── 5. 日記タイムライン ─────────────────── */}
         <Text style={s.sectionTitle}>足跡日記</Text>
         {footprints.length === 0 ? (
           <View style={s.emptyActivity}>
@@ -537,6 +593,18 @@ const s = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: 10, marginLeft: 18,
   },
+
+  // ── My Notes (Photos) ──
+  noteList: { paddingHorizontal: 16, gap: 10, marginBottom: 24 },
+  noteCard: {
+    width: 140, borderRadius: 12, overflow: 'hidden',
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+  },
+  notePhoto: { width: 140, height: 100 },
+  noteInfo: { padding: 8, gap: 2 },
+  noteSpotName: { color: C.text, fontSize: 12, fontWeight: '600' },
+  noteDate: { color: C.sub, fontSize: 10 },
 
   // ── Diary Timeline ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },

@@ -138,6 +138,7 @@ function docToPin(d: { id: string; data: () => Record<string, unknown> }): Parki
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
     currentParked,
     lastArrivedAt: (data.currentParkedAt as Timestamp | undefined)?.toDate().toISOString(),
+    lastConfirmedAt: ((data.lastVerifiedAt as Timestamp | undefined) ?? (data.currentParkedAt as Timestamp | undefined))?.toDate().toISOString(),
     isGuerrilla:  (data.isGuerrilla as boolean | undefined) ?? undefined,
   };
 }
@@ -359,6 +360,7 @@ export async function reportParked(spotId: string): Promise<void> {
   await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
     currentParked: increment(1),
     currentParkedAt: Timestamp.now(),
+    lastVerifiedAt: Timestamp.now(),
   });
 }
 
@@ -397,6 +399,7 @@ export async function fetchReviews(
       id:          0,
       firestoreId: d.id,
       spotId:      data.spotId as string,
+      userId:      (data.userId as string) ?? null,
       source:      'seed' as const,
       score:       data.score as number,
       comment:     (data.comment as string) ?? null,
@@ -420,6 +423,38 @@ export async function fetchReviewSummary(spotId: string): Promise<ReviewSummary 
   if (reviews.length === 0) return null;
   const avg = reviews.reduce((s, r) => s + r.score, 0) / reviews.length;
   return { avg: Math.round(avg * 10) / 10, count: reviews.length };
+}
+
+/** ユーザーの写真付きレビューを取得（自分のノート用） */
+export async function fetchUserPhotos(userId: string): Promise<Review[]> {
+  const q = query(
+    collection(db, COLLECTIONS.REVIEWS),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc'),
+    limit(50),
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      const urls = data.photoUrls as string[] | undefined;
+      if (!urls?.length) return null;
+      const ts = data.createdAt as Timestamp | undefined;
+      return {
+        id:          0,
+        firestoreId: d.id,
+        spotId:      data.spotId as string,
+        userId:      userId,
+        source:      'seed' as const,
+        score:       data.score as number,
+        comment:     (data.comment as string) ?? null,
+        photoUri:    urls[0],
+        vehicleName: (data.vehicleName as string) ?? null,
+        photoTag:    (data.photoTag as string | undefined) as Review['photoTag'] ?? null,
+        createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
+      } satisfies Review;
+    })
+    .filter((r): r is Review => r !== null);
 }
 
 export async function addReview(

@@ -32,24 +32,17 @@ interface Props {
 
 export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTutorial }: Props) {
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [liveFeedEnabled, setLiveFeedEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
   const [purging, setPurging] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('moto_logos_push_enabled').then((v) => setPushEnabled(v !== 'false'));
-    AsyncStorage.getItem('moto_logos_live_feed').then((v) => setLiveFeedEnabled(v !== 'false'));
     AsyncStorage.getItem('moto_logos_third_party_consent').then((v) => setThirdParty(v === 'true'));
   }, []);
 
   const togglePush = (val: boolean) => {
     setPushEnabled(val);
     AsyncStorage.setItem('moto_logos_push_enabled', val ? 'true' : 'false');
-  };
-
-  const toggleLiveFeed = (val: boolean) => {
-    setLiveFeedEnabled(val);
-    AsyncStorage.setItem('moto_logos_live_feed', val ? 'true' : 'false');
   };
 
   const toggleThirdParty = (val: boolean) => {
@@ -153,14 +146,6 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
               <Text style={s.rowLabel}>プッシュ通知</Text>
             </View>
             <Switch value={pushEnabled} onValueChange={togglePush} trackColor={{ true: C.accent }} />
-          </View>
-          <View style={s.separator} />
-          <View style={s.row}>
-            <View style={s.rowLeft}>
-              <Ionicons name="pulse-outline" size={20} color={C.blue} />
-              <Text style={s.rowLabel}>ライブフィード</Text>
-            </View>
-            <Switch value={liveFeedEnabled} onValueChange={toggleLiveFeed} trackColor={{ true: C.accent }} />
           </View>
         </View>
 
