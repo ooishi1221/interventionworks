@@ -104,6 +104,7 @@ interface Props {
   ccFilterEnabled?: boolean;
   onToggleCcFilter?: (enabled: boolean) => void;
   focusSpot?: ParkingPin | null;
+  focusReviewId?: string;
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
   onGoToSettings?: () => void;
@@ -112,7 +113,7 @@ interface Props {
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings, onNotificationsPress },
+  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, onGoToSettings, onNotificationsPress },
   ref
 ) {
   const user = useUser();
@@ -1047,6 +1048,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onSetDestination={setDestination}
             onSpotUpdated={handleProximitySpotUpdated}
             onOneshotCeremony={handleOneshotCeremony}
+            highlightReviewId={focusReviewId}
           />
         </View>
       )}

@@ -95,11 +95,12 @@ interface Props {
   onSpotSelect?: (spot: ParkingPin) => void;
   onSpotUpdated?: () => void;
   onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
+  highlightReviewId?: string;
 }
 
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated, onOneshotCeremony }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -473,9 +474,21 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
             ) : reports.length > 0 ? (
               <View style={styles.reportsSection}>
                 <Text style={styles.sectionLabel}>みんなの足跡</Text>
-                {reports.map((r) => (
-                  <ReportCard key={r.firestoreId ?? String(r.id)} report={r} onPhotoTap={setFullPhoto} />
-                ))}
+                {reports.map((r) => {
+                  const isHighlight = !!(highlightReviewId && r.firestoreId === highlightReviewId);
+                  return (
+                    <View
+                      key={r.firestoreId ?? String(r.id)}
+                      style={isHighlight ? styles.highlightWrap : undefined}
+                      onLayout={isHighlight ? (e) => {
+                        const y = e.nativeEvent.layout.y;
+                        setTimeout(() => scrollRef.current?.scrollTo({ y: y + 200, animated: true }), 400);
+                      } : undefined}
+                    >
+                      <ReportCard report={r} onPhotoTap={setFullPhoto} />
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
 
@@ -864,4 +877,10 @@ const styles = StyleSheet.create({
   navModalOptionText: { color: C.text, fontSize: 16 },
   navModalCancel: { marginTop: 12, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: C.card },
   navModalCancelText: { color: C.sub, fontSize: 15, fontWeight: '600' },
+  highlightWrap: {
+    borderWidth: 2,
+    borderColor: C.accent,
+    borderRadius: 14,
+    marginHorizontal: -2,
+  },
 });

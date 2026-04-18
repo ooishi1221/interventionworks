@@ -105,6 +105,7 @@ function App() {
   const [userCC, setUserCC]         = useState<UserCC>(125); // デフォルト: 原付二種
   const [ccFilterEnabled, setCcFilterEnabled] = useState(true); // デフォルトON
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
+  const [focusReviewId, setFocusReviewId] = useState<string | undefined>(undefined);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const [riderSub, setRiderSub] = useState<'main' | 'mybike' | 'settings' | 'inquiry' | 'legal'>('main');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -237,7 +238,8 @@ function App() {
     );
   }
 
-  const handleGoToSpot = (spot: ParkingPin) => {
+  const handleGoToSpot = (spot: ParkingPin, reviewId?: string) => {
+    setFocusReviewId(reviewId);
     setFocusSpot(spot);
     setTab('map');
   };
@@ -276,7 +278,8 @@ function App() {
                 ccFilterEnabled={ccFilterEnabled}
                 onToggleCcFilter={toggleCcFilter}
                 focusSpot={focusSpot}
-                onFocusConsumed={() => setFocusSpot(null)}
+                focusReviewId={focusReviewId}
+                onFocusConsumed={() => { setFocusSpot(null); setFocusReviewId(undefined); }}
                 refreshTrigger={mapRefreshTrigger}
                 onGoToSettings={() => { setTab('rider'); setRiderSub('settings'); }}
                 onNotificationsPress={() => setShowNotifications((v) => !v)}

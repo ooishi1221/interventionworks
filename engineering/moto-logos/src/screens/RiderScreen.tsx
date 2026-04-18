@@ -76,13 +76,16 @@ function isSameDay(a: string, b: string): boolean {
   return a.slice(0, 10) === b.slice(0, 10);
 }
 
-function formatCoarseTime(iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days === 0) return '今日';
-  if (days === 1) return '昨日';
-  if (days < 7) return '今週';
-  if (days < 30) return '今月';
-  return `${Math.ceil(days / 30)}か月前`;
+function formatOneshotTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  if (sameYear) return `${month}/${day} ${h}:${m}`;
+  return `${d.getFullYear()}/${month}/${day} ${h}:${m}`;
 }
 
 // ─── 東京デフォルトリージョン ────────────────────────
@@ -94,7 +97,7 @@ const TOKYO_REGION: Region = {
 };
 
 interface Props {
-  onGoToSpot?: (spot: ParkingPin) => void;
+  onGoToSpot?: (spot: ParkingPin, reviewId?: string) => void;
   onDataChanged?: () => void;
   onOpenMyBike?: () => void;
   onOpenSettings?: () => void;
@@ -188,7 +191,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
     return `${count}か所に足跡を残した`;
   })();
 
-  const visiblePhotos = showAllPhotos ? myPhotos : myPhotos.slice(0, 5);
+  const visiblePhotos = showAllPhotos ? myPhotos : myPhotos.slice(0, 9);
 
   return (
     <View style={s.safe}>
@@ -273,34 +276,38 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
           </View>
         ) : (
           <>
-            {visiblePhotos.map((item) => (
-              <TouchableOpacity
-                key={`os_${item.firestoreId ?? item.id}`}
-                style={s.oneshotCard}
-                activeOpacity={0.8}
-                onPress={() => {
-                  onGoToSpot?.({
-                    id: item.spotId,
-                    name: spotNameMap.get(item.spotId) ?? '',
-                    latitude: 0,
-                    longitude: 0,
-                    source: 'seed',
-                  } as ParkingPin);
-                }}
-              >
-                <Image source={{ uri: item.photoUri! }} style={s.oneshotPhoto} />
-                <View style={s.oneshotInfo}>
-                  <Text style={s.oneshotSpotName} numberOfLines={1}>
-                    {spotNameMap.get(item.spotId) ?? item.spotId}
-                  </Text>
-                  <Text style={s.oneshotTime}>{formatCoarseTime(item.createdAt)}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={14} color={C.sub} />
-              </TouchableOpacity>
-            ))}
-            {!showAllPhotos && myPhotos.length > 5 && (
+            <View style={s.oneshotGrid}>
+              {visiblePhotos.map((item) => (
+                <TouchableOpacity
+                  key={`os_${item.firestoreId ?? item.id}`}
+                  style={s.oneshotCell}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    onGoToSpot?.({
+                      id: item.spotId,
+                      name: spotNameMap.get(item.spotId) ?? '',
+                      latitude: 0,
+                      longitude: 0,
+                      source: 'seed',
+                    } as ParkingPin, item.firestoreId);
+                  }}
+                >
+                  <Image source={{ uri: item.photoUri! }} style={s.oneshotThumb} />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.7)']}
+                    style={s.oneshotOverlay}
+                  >
+                    <Text style={s.oneshotCellName} numberOfLines={1}>
+                      {spotNameMap.get(item.spotId) ?? item.spotId}
+                    </Text>
+                    <Text style={s.oneshotCellTime}>{formatOneshotTime(item.createdAt)}</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {!showAllPhotos && myPhotos.length > 9 && (
               <TouchableOpacity style={s.showMoreBtn} onPress={() => setShowAllPhotos(true)} activeOpacity={0.7}>
-                <Text style={s.showMoreText}>もっと見る（残り{myPhotos.length - 5}件）</Text>
+                <Text style={s.showMoreText}>もっと見る（残り{myPhotos.length - 9}件）</Text>
               </TouchableOpacity>
             )}
           </>
@@ -542,21 +549,25 @@ const s = StyleSheet.create({
   noteSpotName: { color: C.text, fontSize: 12, fontWeight: '600' },
   noteDate: { color: C.sub, fontSize: 10 },
 
-  // ── Oneshot Cards ──
+  // ── Oneshot Grid ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  oneshotCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginHorizontal: 16, marginBottom: 10,
-    padding: 10,
-    backgroundColor: C.card,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+  oneshotGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: 1,
   },
-  oneshotPhoto: { width: 80, height: 80, borderRadius: 10 },
-  oneshotInfo: { flex: 1, gap: 4 },
-  oneshotSpotName: { color: C.text, fontSize: 14, fontWeight: '600' },
-  oneshotTime: { color: C.sub, fontSize: 12 },
+  oneshotCell: {
+    width: Math.floor((SCREEN_W - 2) / 3), // 1px gap × 2 = 2px
+    aspectRatio: 1,
+    overflow: 'hidden',
+  },
+  oneshotThumb: { width: '100%', height: '100%' },
+  oneshotOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingHorizontal: 6, paddingBottom: 5, paddingTop: 16,
+  },
+  oneshotCellName: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  oneshotCellTime: { color: 'rgba(255,255,255,0.7)', fontSize: 9 },
   showMoreBtn: {
     alignItems: 'center', paddingVertical: 12,
     marginHorizontal: 16,
