@@ -233,20 +233,10 @@ function App() {
   /** タブ押下ハンドラ */
   const handleTabPress = (id: Tab) => {
     if (id === 'search') {
-      // サーチタブの2段階動作
-      if (tab !== 'map' && tab !== 'search') {
-        // 他画面からサーチ → まずマップに切り替えて周辺検索
-        setTab('map');
-        setSearchPhase('nearby');
-        setTimeout(() => mapScreenRef.current?.searchNearby(), 100);
-      } else if (searchPhase === 'idle') {
-        setTab('map');
-        setSearchPhase('nearby');
-        mapScreenRef.current?.searchNearby();
-      } else if (searchPhase === 'nearby') {
-        setSearchPhase('text');
-        mapScreenRef.current?.openTextSearch();
-      }
+      // サーチタブ → 直接テキスト検索（周辺検索はMAP右下フロートボタンに移動）
+      setTab('map');
+      setSearchPhase('text');
+      mapScreenRef.current?.openTextSearch();
       return;
     }
 

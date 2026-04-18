@@ -51,29 +51,30 @@ export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Pro
           ) : (
             <Text style={styles.title}>近くのスポット</Text>
           )}
-          {onClear && (
-            <TouchableOpacity onPress={onClear} style={styles.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close" size={14} color={C.sub} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={onClear} style={styles.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={14} color={C.sub} />
+          </TouchableOpacity>
         </View>
 
         {/* リスト */}
-        {items.map((item, i) => {
-          const fresh = spotFreshness(item.spot);
-          const freshColor = FRESHNESS_STYLE[fresh].color;
+        {items.map((item) => {
+          const { spot } = item;
+          const price = spot.isFree ? '無料' : spot.priceInfo ? spot.priceInfo : spot.pricePerHour ? `¥${spot.pricePerHour}/h` : null;
+          const cap = spot.capacity ? `${spot.capacity}台` : null;
           return (
             <TouchableOpacity
-              key={item.spot.id}
+              key={spot.id}
               style={styles.row}
-              onPress={() => onSpotPress?.(item.spot)}
+              onPress={() => onSpotPress?.(spot)}
               activeOpacity={0.7}
             >
-              <Text style={styles.rank}>{i + 1}</Text>
-              <FreshDot spot={item.spot} />
-              <Text style={styles.name} numberOfLines={1}>{item.spot.name}</Text>
-              <Text style={[styles.freshLabel, { color: freshColor }]}>{freshnessLabel(fresh)}</Text>
-              <Text style={styles.dist}>{fmtDist(item.distanceM)}</Text>
+              <View style={styles.rowTop}>
+                <FreshDot spot={spot} />
+                <Text style={styles.dist}>{fmtDist(item.distanceM)}</Text>
+                {price && <Text style={styles.price}>{price}</Text>}
+                {cap && <Text style={styles.cap}>{cap}</Text>}
+              </View>
+              <Text style={styles.name} numberOfLines={1}>{spot.name}</Text>
             </TouchableOpacity>
           );
         })}
@@ -130,35 +131,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   row: {
+    paddingVertical: 10,
+    gap: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
-    gap: 8,
-  },
-  rank: {
-    color: C.accent,
-    fontSize: 13,
-    fontWeight: '800',
-    width: 16,
-    textAlign: 'center',
+    gap: 10,
   },
   freshDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  name: {
-    flex: 1,
-    color: C.text,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  freshLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   dist: {
+    color: C.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  price: {
+    color: C.accent,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  cap: {
     color: C.sub,
     fontSize: 13,
+    fontWeight: '600',
+  },
+  name: {
+    color: C.sub,
+    fontSize: 12,
+    marginLeft: 20,
   },
 });

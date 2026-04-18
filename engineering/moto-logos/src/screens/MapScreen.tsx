@@ -189,6 +189,31 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [fetchSpotsForRegion]);
 
+  // ── 周辺検索（フロートボタン + ref共用） ──────────────
+  const doSearchNearby = useCallback(async () => {
+    let lat = lastLocationRef.current?.latitude;
+    let lon = lastLocationRef.current?.longitude;
+    if (!lat || !lon) {
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        lat = loc.coords.latitude;
+        lon = loc.coords.longitude;
+        lastLocationRef.current = { latitude: lat, longitude: lon };
+      } catch {
+        return;
+      }
+    }
+    const region: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.06, longitudeDelta: 0.06 };
+    const freshSpots = await fetchSpotsForRegion(region);
+    const filtered = filterByCC(freshSpots, userCC);
+    const sorted = filtered
+      .map(s => ({ spot: s, distanceM: haversineMeters(lat!, lon!, s.latitude, s.longitude) }))
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, 3);
+    setSearchResults(sorted);
+    setSearchAreaName(null);
+  }, [fetchSpotsForRegion, userCC]);
+
   // ── ワンショットセレモニー ────────────────────────────
   const ceremonyCooldown = useRef(false);
   const handleOneshotCeremony = useCallback(async (data: { photoUri: string; spotName: string }) => {
@@ -317,33 +342,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
       quickReportRef.current();
     },
-    searchNearby: async () => {
-      let lat = lastLocationRef.current?.latitude;
-      let lon = lastLocationRef.current?.longitude;
-      if (!lat || !lon) {
-        try {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          lat = loc.coords.latitude;
-          lon = loc.coords.longitude;
-          lastLocationRef.current = { latitude: lat, longitude: lon };
-        } catch {
-          return;
-        }
-      }
-      const region: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.06, longitudeDelta: 0.06 };
-      const freshSpots = await fetchSpotsForRegion(region);
-      const filtered = filterByCC(freshSpots, userCC);
-      const sorted = filtered
-        .map(s => ({ spot: s, distanceM: haversineMeters(lat!, lon!, s.latitude, s.longitude) }))
-        .sort((a, b) => a.distanceM - b.distanceM)
-        .slice(0, 3);
-      setSearchResults(sorted);
-      setSearchAreaName(null);
-    },
+    searchNearby: doSearchNearby,
     openTextSearch: () => {
       setSearchVisible(true);
     },
-  }), [locationGranted, fetchSpotsForRegion, userCC]);
+  }), [locationGranted, fetchSpotsForRegion, doSearchNearby]);
 
   // お気に入りからのジャンプ
   useEffect(() => {
@@ -793,7 +796,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
 
       {/* ── サーチ結果リスト（フローティング） ──────────── */}
-      {searchPhase === 'nearby' && searchResults.length > 0 && !selected && (
+      {searchResults.length > 0 && !selected && (
         <SearchResultsList
           items={searchResults}
           areaName={searchAreaName}
@@ -817,6 +820,26 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {!selected && !searchVisible && <LinkNudgeCard />}
 
       {/* ── βフィードバックボタン ───────────────────────── */}
+      {/* ── 周辺検索フロートボタン（右下） ──────────────── */}
+      {!searchVisible && !selected && (
+        <TouchableOpacity
+          style={[styles.nearbyFab, searchResults.length > 0 && styles.nearbyFabActive]}
+          onPress={() => {
+            if (searchResults.length > 0) {
+              setSearchResults([]);
+              setSearchAreaName(null);
+              onSearchPhaseChange?.('idle');
+            } else {
+              onSearchPhaseChange?.('nearby');
+              doSearchNearby();
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name={searchResults.length > 0 ? 'close' : 'locate-outline'} size={28} color="#0A84FF" />
+        </TouchableOpacity>
+      )}
+
       {!searchVisible && !selected && <BetaFeedbackButton />}
 
       {/* ── 検索オーバーレイ（未来検索） ────────────────── */}
@@ -907,6 +930,31 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontSize: 15,
     fontWeight: '500',
+  },
+
+  // ── 周辺検索フロートボタン ──────────────────────────
+  nearbyFab: {
+    position: 'absolute',
+    right: 16,
+    bottom: BOTTOM_BASE + 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 5,
+  },
+
+  nearbyFabActive: {
+    borderColor: 'rgba(10,132,255,0.4)',
   },
 
   // ── 詳細シート背景（タップで閉じる） ────────────────
