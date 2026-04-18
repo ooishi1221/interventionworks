@@ -423,6 +423,9 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
             {/* 鮮度テキスト */}
             <FreshnessText spot={spot} />
 
+            {/* 情報更新日 */}
+            <InfoUpdatedAt spot={spot} />
+
             {/* 写真ギャラリー */}
             {photos.length > 0 ? (
               <View style={styles.gallerySection}>
@@ -577,6 +580,29 @@ function FreshnessText({ spot }: { spot: ParkingPin }) {
     <View style={styles.temperatureRow}>
       <Ionicons name={icon as 'time-outline'} size={14} color={color} />
       <Text style={[styles.temperatureText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+// ─── 情報更新日（「情報更新: 2026-04-17」） ─────────────
+function InfoUpdatedAt({ spot }: { spot: ParkingPin }) {
+  const dateStr = spot.updatedAt;
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  let label: string;
+  if (diffDays === 0) label = '今日更新';
+  else if (diffDays === 1) label = '昨日更新';
+  else if (diffDays < 30) label = `${diffDays}日前に更新`;
+  else if (diffDays < 365) label = `${Math.floor(diffDays / 30)}ヶ月前に更新`;
+  else label = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} 更新`;
+  return (
+    <View style={styles.temperatureRow}>
+      <Ionicons name="document-text-outline" size={14} color={C.sub} />
+      <Text style={[styles.temperatureText, { color: C.sub }]}>情報 {label}</Text>
     </View>
   );
 }
