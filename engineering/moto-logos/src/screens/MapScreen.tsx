@@ -28,7 +28,7 @@ import { insertUserSpot, getFirstVehicle } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { captureError } from '../utils/sentry';
-import { pickPhotoFromCamera } from '../utils/photoPicker';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
 import { useProximityState } from '../hooks/useProximityState';
@@ -116,6 +116,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 ) {
   const user = useUser();
   const tutorial = useTutorial();
+  const { showPicker, PickerSheet } = usePhotoPicker();
   const mapRef = useRef<MapView>(null);
   const [initialRegion, setInitialRegion] = useState<Region>(TOKYO_FALLBACK);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
@@ -517,7 +518,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const { latitude, longitude } = loc.coords;
 
       // 2. カメラ起動（使えない場合はライブラリから選択）
-      const photoUri = await pickPhotoFromCamera();
+      const photoUri = await showPicker();
       if (!photoUri) return;
 
       // 3. 住所を自動取得
@@ -1029,6 +1030,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           />
         </View>
       )}
+      <PickerSheet />
     </View>
   );
 }); // forwardRef 終端

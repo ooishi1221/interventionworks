@@ -20,7 +20,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
-import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import {
   reportSpotGood,
   reportParked,
@@ -78,6 +78,7 @@ export function ProximityContextCard({
 }: Props) {
   const user = useUser();
   const tutorial = useTutorial();
+  const { showPicker, PickerSheet } = usePhotoPicker();
 
   // アニメーション
   const slideAnim = useRef(new Animated.Value(200)).current; // 下からスライドイン
@@ -213,27 +214,16 @@ export function ProximityContextCard({
     setPhase('thanks');
   }, [reportedSpotId, user]);
 
-  // ── 看板メモ（カメラ撮影） ────────────────────────────
-  const handleSnapPhoto = useCallback(async () => {
+  // ── 看板メモ（ボトムシートで撮影/フォルダ選択） ────────
+  const handlePickPhoto = useCallback(async () => {
     try {
-      const uri = await pickPhotoFromCamera();
+      const uri = await showPicker();
       await uploadPhotoAndFinish(uri);
     } catch (e) {
-      captureError(e, { context: 'proximity_snap_photo' });
+      captureError(e, { context: 'proximity_pick_photo' });
       setPhase('thanks');
     }
-  }, [uploadPhotoAndFinish]);
-
-  // ── 看板メモ（アルバムから選択） ──────────────────────
-  const handlePickFromAlbum = useCallback(async () => {
-    try {
-      const uri = await pickPhotoFromLibrary();
-      await uploadPhotoAndFinish(uri);
-    } catch (e) {
-      captureError(e, { context: 'proximity_pick_album' });
-      setPhase('thanks');
-    }
-  }, [uploadPhotoAndFinish]);
+  }, [showPicker, uploadPhotoAndFinish]);
 
   // ── 写真スキップ → 足跡完了 ──────────────────────────
   const skipPhoto = useCallback(() => {
@@ -319,19 +309,11 @@ export function ProximityContextCard({
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.snapBtn]}
-                onPress={handleSnapPhoto}
+                onPress={handlePickPhoto}
                 activeOpacity={0.8}
               >
                 <Ionicons name="camera" size={22} color="#fff" />
-                <Text style={styles.actionText}>パシャ</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.albumBtn]}
-                onPress={handlePickFromAlbum}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="images" size={22} color="#fff" />
-                <Text style={styles.actionText}>アルバム</Text>
+                <Text style={styles.actionText}>写真を追加</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
@@ -485,6 +467,7 @@ export function ProximityContextCard({
         )}
 
       </View>
+      <PickerSheet />
     </Animated.View>
   );
 }

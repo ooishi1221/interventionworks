@@ -23,7 +23,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db, getFirebaseAuth } from '../firebase/config';
-import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { uploadReviewPhoto } from '../utils/image-upload';
 import { captureError } from '../utils/sentry';
 import { Colors } from '../constants/theme';
@@ -72,15 +72,12 @@ export function BetaFeedbackButton() {
     setTimeout(reset, 300);
   }, [reset]);
 
-  const handlePickCamera = useCallback(async () => {
-    const uri = await pickPhotoFromCamera();
-    if (uri) setPhotoUri(uri);
-  }, []);
+  const { showPicker, PickerSheet } = usePhotoPicker();
 
-  const handlePickAlbum = useCallback(async () => {
-    const uri = await pickPhotoFromLibrary();
+  const handlePickPhoto = useCallback(async () => {
+    const uri = await showPicker();
     if (uri) setPhotoUri(uri);
-  }, []);
+  }, [showPicker]);
 
   const handleSend = useCallback(async () => {
     if (!feedbackType || !message.trim()) return;
@@ -207,13 +204,9 @@ export function BetaFeedbackButton() {
                   </View>
                 ) : (
                   <View style={s.photoActions}>
-                    <TouchableOpacity style={s.photoBtn} onPress={handlePickCamera}>
+                    <TouchableOpacity style={s.photoBtn} onPress={handlePickPhoto}>
                       <Ionicons name="camera-outline" size={18} color={C.sub} />
-                      <Text style={s.photoBtnText}>撮影</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.photoBtn} onPress={handlePickAlbum}>
-                      <Ionicons name="image-outline" size={18} color={C.sub} />
-                      <Text style={s.photoBtnText}>アルバム</Text>
+                      <Text style={s.photoBtnText}>写真を追加</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -235,6 +228,7 @@ export function BetaFeedbackButton() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      <PickerSheet />
     </>
   );
 }

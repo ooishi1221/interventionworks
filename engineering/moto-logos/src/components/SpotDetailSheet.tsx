@@ -33,7 +33,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review } from '../types';
-import { pickPhotoFromCamera } from '../utils/photoPicker';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import {
   incrementStat,
   logActivityLocal,
@@ -102,6 +102,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
+  const { showPicker, PickerSheet } = usePhotoPicker();
   const navBtnRef = useRef<View>(null);
   const sheetRef = useRef<View>(null);
 
@@ -241,7 +242,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   // ── ワンショット: カメラ → アップロード → 鮮度更新 ─────
   const handleOneShot = async () => {
     if (shotUploading) return;
-    const uri = await pickPhotoFromCamera();
+    const uri = await showPicker();
     if (!uri) return; // キャンセル
 
     let userId = user?.userId;
@@ -536,6 +537,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+      <PickerSheet />
     </>
   );
 }

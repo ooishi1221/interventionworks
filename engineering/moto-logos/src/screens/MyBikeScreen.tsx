@@ -25,7 +25,7 @@ import { Colors, Spacing, FontSize } from '../constants/theme';
 import { getFirstVehicle, insertVehicle, updateVehicle } from '../db/database';
 import { syncBikeToFirestore } from '../firebase/firestoreService';
 import { captureError } from '../utils/sentry';
-import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { useUser } from '../contexts/UserContext';
 
 const C = { ...Colors, orange: Colors.accent };
@@ -71,12 +71,11 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
     });
   }, []);
 
-  const pickPhoto = () => {
-    Alert.alert('愛車の写真', '', [
-      { text: 'アルバムから選ぶ', onPress: async () => { const uri = await pickPhotoFromLibrary(); if (uri) setPhotoUri(uri); } },
-      { text: '撮影する',        onPress: async () => { const uri = await pickPhotoFromCamera();   if (uri) setPhotoUri(uri); } },
-      { text: 'キャンセル', style: 'cancel' },
-    ]);
+  const { showPicker, PickerSheet } = usePhotoPicker();
+
+  const pickPhoto = async () => {
+    const uri = await showPicker();
+    if (uri) setPhotoUri(uri);
   };
 
   const handleSave = async () => {
@@ -185,6 +184,7 @@ export function MyBikeScreen({ userCC, onChangeCC, onBack }: Props) {
           <FormRow label="カラー" placeholder="例: レッド" value={color} onChangeText={setColor} />
         </View>
       </ScrollView>
+      <PickerSheet />
     </View>
   );
 }
