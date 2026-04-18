@@ -17,6 +17,10 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Constants from 'expo-constants';
 import MapView, { Marker, Region } from 'react-native-maps';
@@ -86,6 +90,10 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
   const [topSpots, setTopSpots] = useState<TopSpot[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [photoPage, setPhotoPage] = useState(1);
+  const [nicknameModal, setNicknameModal] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [bikeNameModal, setBikeNameModal] = useState(false);
+  const [bikeNameInput, setBikeNameInput] = useState('');
   const PHOTOS_PER_PAGE = 15; // 3×5
 
   const loadData = useCallback(async () => {
@@ -131,6 +139,19 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       captureError(e, { context: 'change_bike_photo' });
     }
   }, [bike, showPicker, user?.userId, onDataChanged]);
+
+  // バイク名変更
+  const handleChangeBikeName = useCallback(async (name: string) => {
+    if (!bike) return;
+    try {
+      await updateVehicle(bike.id, { ...bike, name });
+      setBike({ ...bike, name });
+      const uid = user?.userId;
+      if (uid) syncBikeToFirestore(uid, { ...bike, name }).catch(() => {});
+    } catch (e) {
+      captureError(e, { context: 'change_bike_name' });
+    }
+  }, [bike, user?.userId]);
 
   // CC変更
   const handleChangeCC = useCallback(async (cc: UserCC) => {
@@ -221,6 +242,19 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
         scrollEventThrottle={400}
       >
 
+        {/* ── ⓪ ニックネーム ─────────────────────────── */}
+        <TouchableOpacity
+          style={s.nicknameRow}
+          onPress={() => {
+            setNicknameInput(nickname || '');
+            setNicknameModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={s.nicknameName}>{nickname || 'ライダー名を設定'}</Text>
+          <Ionicons name="pencil" size={14} color={C.sub} />
+        </TouchableOpacity>
+
         {/* ── ① バイク写真カード ──────────────────────── */}
         <Text style={s.sectionTitle}>マイバイク</Text>
         <TouchableOpacity
@@ -236,6 +270,17 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
               <Text style={s.photoPlaceholderText}>タップして写真を設定</Text>
             </View>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={s.bikeNameRow}
+          onPress={() => {
+            setBikeNameInput(bike?.name || '');
+            setBikeNameModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={s.bikeNameText}>{bike?.name || '車種名を入力'}</Text>
+          <Ionicons name="pencil" size={12} color={C.sub} />
         </TouchableOpacity>
 
         {/* ── ② 排気量選択 ────────────────────────────── */}
@@ -385,6 +430,89 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
         <View style={{ height: 60 }} />
       </ScrollView>
       <PickerSheet />
+
+      {/* ── ニックネーム編集モーダル ── */}
+      <Modal visible={nicknameModal} transparent animationType="fade" onRequestClose={() => setNicknameModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
+          <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setNicknameModal(false)}>
+            <TouchableOpacity activeOpacity={1} style={s.modalCard} onPress={() => {}}>
+              <Text style={s.modalTitle}>ライダー名</Text>
+              <TextInput
+                style={s.modalInput}
+                value={nicknameInput}
+                onChangeText={setNicknameInput}
+                placeholder="名前を入力"
+                placeholderTextColor={C.sub}
+                autoFocus
+                maxLength={20}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (nicknameInput.trim()) {
+                    onChangeNickname?.(nicknameInput.trim());
+                    setNicknameModal(false);
+                  }
+                }}
+              />
+              <View style={s.modalBtnRow}>
+                <TouchableOpacity style={s.modalBtnCancel} onPress={() => setNicknameModal(false)}>
+                  <Text style={s.modalBtnCancelText}>キャンセル</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.modalBtnSave, !nicknameInput.trim() && { opacity: 0.4 }]}
+                  disabled={!nicknameInput.trim()}
+                  onPress={() => {
+                    onChangeNickname?.(nicknameInput.trim());
+                    setNicknameModal(false);
+                  }}
+                >
+                  <Text style={s.modalBtnSaveText}>保存</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+      {/* ── 車種名編集モーダル ── */}
+      <Modal visible={bikeNameModal} transparent animationType="fade" onRequestClose={() => setBikeNameModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalOverlay}>
+          <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setBikeNameModal(false)}>
+            <TouchableOpacity activeOpacity={1} style={s.modalCard} onPress={() => {}}>
+              <Text style={s.modalTitle}>車種名</Text>
+              <TextInput
+                style={s.modalInput}
+                value={bikeNameInput}
+                onChangeText={setBikeNameInput}
+                placeholder="例: CBR650R"
+                placeholderTextColor={C.sub}
+                autoFocus
+                maxLength={30}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (bikeNameInput.trim()) {
+                    handleChangeBikeName(bikeNameInput.trim());
+                    setBikeNameModal(false);
+                  }
+                }}
+              />
+              <View style={s.modalBtnRow}>
+                <TouchableOpacity style={s.modalBtnCancel} onPress={() => setBikeNameModal(false)}>
+                  <Text style={s.modalBtnCancelText}>キャンセル</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.modalBtnSave, !bikeNameInput.trim() && { opacity: 0.4 }]}
+                  disabled={!bikeNameInput.trim()}
+                  onPress={() => {
+                    handleChangeBikeName(bikeNameInput.trim());
+                    setBikeNameModal(false);
+                  }}
+                >
+                  <Text style={s.modalBtnSaveText}>保存</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -394,6 +522,21 @@ const TOP_CARD_W = Math.floor((SCREEN_W - 16 * 2 - 8 * 2) / 3);
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   content: { paddingBottom: 20 },
+
+  // ── ⓪ ニックネーム ──
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingTop: 20,
+    paddingBottom: 4,
+  },
+  nicknameName: {
+    color: C.text,
+    fontSize: 20,
+    fontWeight: '700',
+  },
 
   // ── ① バイク写真カード ──
   photoCard: {
@@ -418,6 +561,19 @@ const s = StyleSheet.create({
   photoPlaceholderText: {
     color: C.sub,
     fontSize: 13,
+  },
+
+  bikeNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  bikeNameText: {
+    color: C.sub,
+    fontSize: 14,
   },
 
   // ── ② 排気量選択 ──
@@ -567,6 +723,66 @@ const s = StyleSheet.create({
     borderRadius: 10,
   },
   mapBadgeText: { color: C.text, fontSize: 12, fontWeight: '700' },
+  // ── ニックネームモーダル ──
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: SCREEN_W - 64,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 24,
+    gap: 16,
+  },
+  modalTitle: {
+    color: C.text,
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  modalInput: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: C.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    paddingHorizontal: 16,
+    color: C.text,
+    fontSize: 16,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalBtnCancel: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surface,
+  },
+  modalBtnCancelText: {
+    color: C.sub,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  modalBtnSave: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.accent,
+  },
+  modalBtnSaveText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
   markerDot: {
     width: 24,
     height: 24,

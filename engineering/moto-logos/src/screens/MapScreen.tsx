@@ -93,10 +93,12 @@ interface Props {
   refreshTrigger?: number;
   searchPhase?: SearchPhase;
   onSearchPhaseChange?: (phase: SearchPhase) => void;
+  ceremonyEnabled?: boolean;
+  nickname?: string;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange },
+  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange, ceremonyEnabled = true, nickname },
   ref
 ) {
   const user = useUser();
@@ -193,10 +195,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     if (ceremonyCooldown.current) return;
     ceremonyCooldown.current = true;
     setSelected(null); // シートを先に閉じて地図を見せる
+    if (!ceremonyEnabled) {
+      // 演出OFF → セレモニーをスキップ
+      setTimeout(() => { ceremonyCooldown.current = false; }, 1000);
+      return;
+    }
     const count = await getFootprintCount().catch(() => 0);
     setCeremony({ ...data, footprintCount: count });
     setTimeout(() => { ceremonyCooldown.current = false; }, 3500);
-  }, []);
+  }, [ceremonyEnabled]);
 
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
@@ -560,7 +567,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       // 5. 写真をレビューとしてアップロード（バイク情報付き）
       if (user) {
         const bike = await getFirstVehicle();
-        addReview(`user_${localId}`, user.userId, 0, undefined, photoUri, undefined, bike?.name).catch((e) => {
+        addReview(`user_${localId}`, user.userId, 1, undefined, photoUri, undefined, bike?.name, undefined, nickname).catch((e) => {
           captureError(e, { context: 'quickReport_photo' });
         });
       }
@@ -843,6 +850,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onSpotUpdated={handleProximitySpotUpdated}
             onOneshotCeremony={handleOneshotCeremony}
             highlightReviewId={focusReviewId}
+            nickname={nickname}
           />
         </View>
       )}

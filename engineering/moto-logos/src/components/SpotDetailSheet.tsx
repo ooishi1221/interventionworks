@@ -95,11 +95,12 @@ interface Props {
   onSpotUpdated?: () => void;
   onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
   highlightReviewId?: string;
+  nickname?: string;
 }
 
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId, nickname }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -255,7 +256,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
       const bike = await getFirstVehicle();
 
       // Firestore review + Storage アップロード（既存関数を再利用）
-      await addReview(spot.id, userId, 1, undefined, uri, undefined, bike?.name);
+      await addReview(spot.id, userId, 1, undefined, uri, undefined, bike?.name, undefined, nickname);
 
       // 鮮度更新（副産物）
       reportParked(spot.id).catch((e) => captureError(e, { context: 'oneshot_parked', spotId: spot.id }));
@@ -748,8 +749,10 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
         )}
         <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
       </View>
-      {report.vehicleName ? (
-        <Text style={styles.reportCardVehicle}>{report.vehicleName} で記録</Text>
+      {(report.nickname || report.vehicleName) ? (
+        <Text style={styles.reportCardVehicle}>
+          {[report.nickname, report.vehicleName].filter(Boolean).join(' — ')}
+        </Text>
       ) : null}
       {cleanComment ? (
         <Text style={styles.reportCardComment}>{cleanComment}</Text>

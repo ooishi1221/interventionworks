@@ -371,6 +371,7 @@ export async function fetchReviews(
       comment:     (data.comment as string) ?? null,
       photoUri:    (data.photoUrls as string[])?.[0] ?? null,
       vehicleName: (data.vehicleName as string) ?? null,
+      nickname:    (data.nickname as string) ?? null,
       photoTag:    (data.photoTag as string | undefined) as Review['photoTag'] ?? null,
       createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
     };
@@ -416,6 +417,7 @@ export async function fetchUserPhotos(userId: string): Promise<Review[]> {
         comment:     (data.comment as string) ?? null,
         photoUri:    urls[0],
         vehicleName: (data.vehicleName as string) ?? null,
+      nickname:    (data.nickname as string) ?? null,
         photoTag:    (data.photoTag as string | undefined) as Review['photoTag'] ?? null,
         mapUpdateStatus: (data.mapUpdateStatus as Review['mapUpdateStatus']) ?? undefined,
         mapUpdateAnalysis: (data.mapUpdateAnalysis as Review['mapUpdateAnalysis']) ?? undefined,
@@ -437,6 +439,7 @@ export async function addReview(
   onUploadProgress?: (progress: number) => void,
   vehicleName?: string,
   photoTag?: PhotoTag,
+  nickname?: string,
 ): Promise<void> {
   // NG ワードチェック（クライアント側即時フィードバック）
   if (comment && isNgWord(comment)) {
@@ -457,6 +460,7 @@ export async function addReview(
     score,
     ...(comment  != null && comment !== '' && { comment }),
     ...(vehicleName && { vehicleName }),
+    ...(nickname && { nickname }),
     photoUrls,
     ...(photoTag && { photoTag }),
     goodCount: 0,

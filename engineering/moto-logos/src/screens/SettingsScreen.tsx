@@ -30,9 +30,11 @@ interface Props {
   onOpenNotifications?: () => void;
   onStartTutorial?: () => void;
   unreadCount?: number;
+  ceremonyEnabled?: boolean;
+  onToggleCeremony?: (val: boolean) => void;
 }
 
-export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotifications, onStartTutorial, unreadCount = 0 }: Props) {
+export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotifications, onStartTutorial, unreadCount = 0, ceremonyEnabled, onToggleCeremony }: Props) {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
   const [purging, setPurging] = useState(false);
@@ -148,6 +150,18 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
               <Text style={s.rowLabel}>プッシュ通知</Text>
             </View>
             <Switch value={pushEnabled} onValueChange={togglePush} trackColor={{ true: C.accent }} />
+          </View>
+        </View>
+
+        {/* 体験 */}
+        <Text style={s.sectionTitle}>体験</Text>
+        <View style={s.card}>
+          <View style={s.row}>
+            <View style={s.rowLeft}>
+              <Ionicons name="sparkles-outline" size={20} color={C.blue} />
+              <Text style={s.rowLabel}>カメラ演出</Text>
+            </View>
+            <Switch value={ceremonyEnabled ?? true} onValueChange={(val) => onToggleCeremony?.(val)} trackColor={{ true: C.accent }} />
           </View>
         </View>
 

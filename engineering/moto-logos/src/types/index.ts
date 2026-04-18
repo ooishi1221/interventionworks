@@ -79,6 +79,8 @@ export interface Review {
   photoUri: string | null;
   /** 報告時のバイク車種名（例: 「CBR650R」） */
   vehicleName?: string | null;
+  /** 投稿者のライダー名 */
+  nickname?: string | null;
   /** 写真タグ（看板 / 入口 / その他） */
   photoTag?: 'sign' | 'entrance' | 'general' | null;
   /** AI解析ステータス（Admin側で解析→適用） */

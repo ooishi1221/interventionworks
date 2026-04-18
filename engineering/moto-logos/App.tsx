@@ -30,7 +30,7 @@ import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
 import { useImpactNotification } from './src/hooks/useImpactNotification';
 import { FontSize, Spacing } from './src/constants/theme';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from './src/firebase/config';
 import { ParkingPin, UserCC } from './src/types';
 import { getFirstVehicle, getFootprintCount } from './src/db/database';
@@ -115,6 +115,7 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [footprintCount, setFootprintCount] = useState(0);
   const [bikePhotoUrl, setBikePhotoUrl] = useState<string | null>(null);
+  const [ceremonyEnabled, setCeremonyEnabled] = useState(true);
   const mapScreenRef = useRef<MapScreenHandle>(null);
   const oneShotBtnRef = useRef<View>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -149,6 +150,9 @@ function App() {
       if (v?.cc !== undefined) setUserCC(v.cc);
       setBikePhotoUrl(v?.photoUrl ?? null);
     }).catch(() => {});
+    AsyncStorage.getItem('moto_logos_ceremony_enabled').then((v) => {
+      if (v !== null) setCeremonyEnabled(v !== 'false');
+    });
   }, [status]);
 
   // ── 足跡カウント ──────────────────────────────────────
@@ -210,6 +214,18 @@ function App() {
     setTab('map');
     setTutorialVisible(true);
   }, []);
+
+  // ── セレモニー演出トグル ──────────────────────────────
+  const handleToggleCeremony = useCallback((val: boolean) => {
+    setCeremonyEnabled(val);
+    AsyncStorage.setItem('moto_logos_ceremony_enabled', val ? 'true' : 'false');
+    // Firestore に ON/OFF 切り替えを記録（β計測）
+    addDoc(collection(db, 'ceremony_toggles'), {
+      enabled: val,
+      userId: nickname || 'unknown',
+      createdAt: Timestamp.now(),
+    }).catch(() => {});
+  }, [nickname]);
 
   // ── デジタルヤエー: 足跡の影響通知 (#104) ────────────
   useImpactNotification();
@@ -314,6 +330,8 @@ function App() {
                 refreshTrigger={mapRefreshTrigger}
                 searchPhase={searchPhase}
                 onSearchPhaseChange={setSearchPhase}
+                ceremonyEnabled={ceremonyEnabled}
+                nickname={nickname}
               />
             </View>
             {tab === 'rider' && (
@@ -347,6 +365,8 @@ function App() {
                   onStartTutorial={startTutorial}
                   onBack={() => setTab('map')}
                   unreadCount={unreadCount}
+                  ceremonyEnabled={ceremonyEnabled}
+                  onToggleCeremony={handleToggleCeremony}
                 />
               )
             )}
