@@ -120,13 +120,6 @@ export interface FirestoreSpot {
   lastVerifiedAt:    Timestamp;
   /** 作成日時 */
   createdAt:         Timestamp;
-  /**
-   * リアルタイム駐車中台数（概算）。
-   * reportParked で +1、reportDeparted で -1。
-   */
-  currentParked?:    number;
-  /** 最後に currentParked が更新された日時（24h自動期限切れ判定用） */
-  currentParkedAt?:  Timestamp;
   /** ゲリラスポット（公式DBにない隠れ駐輪場） */
   isGuerrilla?:      boolean;
 }

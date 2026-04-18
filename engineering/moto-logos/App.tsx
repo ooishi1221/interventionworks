@@ -95,7 +95,7 @@ const SYS_GRAY    = '#636366';
 const TAB_BG      = '#1C1C1E';
 const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
-type Tab = 'map' | 'settings';
+type Tab = 'map' | 'rider';
 
 const ACCENT_ORANGE = '#FF6B00';
 
@@ -106,12 +106,9 @@ function App() {
   const [ccFilterEnabled, setCcFilterEnabled] = useState(true); // デフォルトON
   const [focusSpot, setFocusSpot]   = useState<ParkingPin | null>(null);
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
-  const [settingsSub, setSettingsSub] = useState<'main' | 'inquiry' | 'legal'>('main');
-  const [riderSub, setRiderSub] = useState<'main' | 'mybike'>('main');
-  const [showRider, setShowRider]   = useState(false);
+  const [riderSub, setRiderSub] = useState<'main' | 'mybike' | 'settings' | 'inquiry' | 'legal'>('main');
   const [showNotifications, setShowNotifications] = useState(false);
   const [footprintCount, setFootprintCount] = useState(0);
-  const seenFootprintCount = useRef(0); // RiderScreen を開いた時点のカウント
   const [bikePhotoUrl, setBikePhotoUrl] = useState<string | null>(null);
   const mapScreenRef = useRef<MapScreenHandle>(null);
   const oneShotBtnRef = useRef<View>(null);
@@ -160,11 +157,7 @@ function App() {
   // ── 足跡カウント（アバターバッジ用） ──────────────────
   useEffect(() => {
     if (status !== 'ready') return;
-    getFootprintCount().then((c) => {
-      setFootprintCount(c);
-      // 初回ロード時は既読扱い（起動時バッジ0）
-      if (seenFootprintCount.current === 0) seenFootprintCount.current = c;
-    }).catch(() => {});
+    getFootprintCount().then(setFootprintCount).catch(() => {});
   }, [status, mapRefreshTrigger]);
 
   // ── 利用規約同意 ───────────────────────────────────
@@ -213,7 +206,6 @@ function App() {
    *  - 他タブ2度押し → マップに戻る
    */
   const handleTabPress = (id: Tab) => {
-    if (showRider) setShowRider(false);
     if (showNotifications) setShowNotifications(false);
     if (id === tab) {
       if (id === 'map') {
@@ -222,7 +214,7 @@ function App() {
         setTab('map');
       }
     } else {
-      if (id === 'settings') setSettingsSub('main');
+      if (id === 'rider') setRiderSub('main');
       setTab(id);
     }
   };
@@ -247,7 +239,6 @@ function App() {
 
   const handleGoToSpot = (spot: ParkingPin) => {
     setFocusSpot(spot);
-    setShowRider(false);
     setTab('map');
   };
 
@@ -277,7 +268,7 @@ function App() {
 
           <View style={styles.content}>
             {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
-            <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' && !showRider ? 'auto' : 'none'}>
+            <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
               <MapScreen
                 ref={mapScreenRef}
                 userCC={userCC}
@@ -287,44 +278,39 @@ function App() {
                 focusSpot={focusSpot}
                 onFocusConsumed={() => setFocusSpot(null)}
                 refreshTrigger={mapRefreshTrigger}
-                onGoToSettings={() => setTab('settings')}
-                onAvatarPress={() => { setShowRider((v) => { if (!v) { setRiderSub('main'); seenFootprintCount.current = footprintCount; } return !v; }); }}
-                footprintCount={footprintCount - seenFootprintCount.current}
+                onGoToSettings={() => { setTab('rider'); setRiderSub('settings'); }}
                 onNotificationsPress={() => setShowNotifications((v) => !v)}
-                bikePhotoUrl={bikePhotoUrl}
               />
             </View>
-            {showRider && (
+            {showNotifications && (
+              <NotificationsScreen onBack={() => setShowNotifications(false)} />
+            )}
+            {tab === 'rider' && (
               riderSub === 'mybike' ? (
                 <MyBikeScreen
                   userCC={userCC}
                   onChangeCC={(cc) => setUserCC(cc)}
                   onBack={() => { setRiderSub('main'); getFirstVehicle().then((v) => setBikePhotoUrl(v?.photoUrl ?? null)).catch(() => {}); }}
                 />
+              ) : riderSub === 'settings' ? (
+                <SettingsScreen
+                  onOpenLegal={() => setRiderSub('legal')}
+                  onOpenInquiry={() => setRiderSub('inquiry')}
+                  onStartTutorial={startTutorial}
+                  onBack={() => setRiderSub('main')}
+                />
+              ) : riderSub === 'inquiry' ? (
+                <InquiryScreen onBack={() => setRiderSub('settings')} />
+              ) : riderSub === 'legal' ? (
+                <LegalScreen mode="view" onBack={() => setRiderSub('settings')} />
               ) : (
                 <RiderScreen
                   onGoToSpot={handleGoToSpot}
                   onDataChanged={() => { setMapRefreshTrigger((n) => n + 1); getFootprintCount().then(setFootprintCount).catch(() => {}); }}
                   onOpenMyBike={() => setRiderSub('mybike')}
+                  onOpenSettings={() => setRiderSub('settings')}
                   nickname={nickname}
                   onChangeNickname={saveNickname}
-                  onBack={() => setShowRider(false)}
-                />
-              )
-            )}
-            {showNotifications && (
-              <NotificationsScreen onBack={() => setShowNotifications(false)} />
-            )}
-            {tab === 'settings' && (
-              settingsSub === 'inquiry' ? (
-                <InquiryScreen onBack={() => setSettingsSub('main')} />
-              ) : settingsSub === 'legal' ? (
-                <LegalScreen mode="view" onBack={() => setSettingsSub('main')} />
-              ) : (
-                <SettingsScreen
-                  onOpenLegal={() => setSettingsSub('legal')}
-                  onOpenInquiry={() => setSettingsSub('inquiry')}
-                  onStartTutorial={startTutorial}
                 />
               )
             )}
@@ -339,11 +325,11 @@ function App() {
                 activeOpacity={0.6}
               >
                 <Ionicons
-                  name={tab === 'map' && !showRider && !showNotifications ? 'map' : 'map-outline'}
+                  name={tab === 'map' && !showNotifications ? 'map' : 'map-outline'}
                   size={24}
-                  color={tab === 'map' && !showRider && !showNotifications ? SYS_BLUE : SYS_GRAY}
+                  color={tab === 'map' && !showNotifications ? SYS_BLUE : SYS_GRAY}
                 />
-                <Text style={[styles.tabLabel, tab === 'map' && !showRider && !showNotifications && styles.tabLabelActive]}>
+                <Text style={[styles.tabLabel, tab === 'map' && !showNotifications && styles.tabLabelActive]}>
                   マップ
                 </Text>
               </TouchableOpacity>
@@ -364,19 +350,19 @@ function App() {
                 </TouchableOpacity>
               </View>
 
-              {/* 設定タブ（右） */}
+              {/* ライダーノートタブ（右） */}
               <TouchableOpacity
                 style={styles.tabItem}
-                onPress={() => handleTabPress('settings')}
+                onPress={() => handleTabPress('rider')}
                 activeOpacity={0.6}
               >
                 <Ionicons
-                  name={tab === 'settings' ? 'settings' : 'settings-outline'}
+                  name={tab === 'rider' ? 'person' : 'person-outline'}
                   size={24}
-                  color={tab === 'settings' ? SYS_BLUE : SYS_GRAY}
+                  color={tab === 'rider' ? SYS_BLUE : SYS_GRAY}
                 />
-                <Text style={[styles.tabLabel, tab === 'settings' && styles.tabLabelActive]}>
-                  設定
+                <Text style={[styles.tabLabel, tab === 'rider' && styles.tabLabelActive]}>
+                  ノート
                 </Text>
               </TouchableOpacity>
             </View>

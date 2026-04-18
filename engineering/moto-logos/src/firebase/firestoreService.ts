@@ -102,22 +102,8 @@ function stripUndef<T extends object>(obj: T): T {
   ) as T;
 }
 
-/** 24時間（ミリ秒） — currentParked の自動期限切れ閾値 */
-const PARKED_EXPIRY_MS = 24 * 60 * 60 * 1000;
-
 function docToPin(d: { id: string; data: () => Record<string, unknown> }): ParkingPin {
   const data = d.data();
-
-  // currentParked: 24h以上更新がなければ 0 とみなす
-  let currentParked: number | undefined;
-  const rawParked = (data.currentParked as number | undefined) ?? 0;
-  if (rawParked > 0) {
-    const parkedAt = data.currentParkedAt as Timestamp | undefined;
-    if (parkedAt && Date.now() - parkedAt.toDate().getTime() < PARKED_EXPIRY_MS) {
-      currentParked = rawParked;
-    }
-    // 24h超過 → undefined（0扱い）
-  }
 
   return {
     id:           d.id,
@@ -136,9 +122,7 @@ function docToPin(d: { id: string; data: () => Record<string, unknown> }): Parki
     paymentIC:    data.payment?.icCard,
     paymentQR:    data.payment?.qrCode,
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
-    currentParked,
-    lastArrivedAt: (data.currentParkedAt as Timestamp | undefined)?.toDate().toISOString(),
-    lastConfirmedAt: ((data.lastVerifiedAt as Timestamp | undefined) ?? (data.currentParkedAt as Timestamp | undefined))?.toDate().toISOString(),
+    lastConfirmedAt: (data.lastVerifiedAt as Timestamp | undefined)?.toDate().toISOString(),
     isGuerrilla:  (data.isGuerrilla as boolean | undefined) ?? undefined,
   };
 }
@@ -164,7 +148,7 @@ export async function fetchSpotsInRegion(
     latitudeDelta: number;
     longitudeDelta: number;
   },
-  maxResults = 500
+  maxResults = 200
 ): Promise<ParkingPin[]> {
   const bounds = geohashQueryBounds(region);
   const spotsCol = collection(db, COLLECTIONS.SPOTS);
@@ -348,32 +332,14 @@ export async function reportSpotClosed(spotId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────
-// リアルタイム空き状況 — 「今ここに停めた / 出た」(#79)
+// 鮮度更新 — ワンショット撮影の副産物
 // ─────────────────────────────────────────────────────
 
-/**
- * 「停めた」→ currentParked を +1 し、タイムスタンプを更新。
- * カウンターは概算で構わない。
- */
+/** ワンショット撮影時に鮮度（lastVerifiedAt）を更新する */
 export async function reportParked(spotId: string): Promise<void> {
-  const { updateDoc, increment } = await import('firebase/firestore');
+  const { updateDoc } = await import('firebase/firestore');
   await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
-    currentParked: increment(1),
-    currentParkedAt: Timestamp.now(),
     lastVerifiedAt: Timestamp.now(),
-  });
-}
-
-/**
- * 「出発した」→ currentParked を -1（最小 0）。
- * Firestore の increment(-1) は 0 以下になり得るため、
- * 読み取り側（docToPin）で 0 未満をカットしている。
- */
-export async function reportDeparted(spotId: string): Promise<void> {
-  const { updateDoc, increment } = await import('firebase/firestore');
-  await updateDoc(doc(db, COLLECTIONS.SPOTS, spotId), {
-    currentParked: increment(-1),
-    currentParkedAt: Timestamp.now(),
   });
 }
 
@@ -427,14 +393,14 @@ export async function fetchReviewSummary(spotId: string): Promise<ReviewSummary 
 
 /** ユーザーの写真付きレビューを取得（自分のノート用） */
 export async function fetchUserPhotos(userId: string): Promise<Review[]> {
+  // composite index (userId + createdAt) がない場合に備え、orderByなしでクエリ
   const q = query(
     collection(db, COLLECTIONS.REVIEWS),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc'),
-    limit(50),
+    limit(100),
   );
   const snap = await getDocs(q);
-  return snap.docs
+  const results = snap.docs
     .map((d) => {
       const data = d.data();
       const urls = data.photoUrls as string[] | undefined;
@@ -454,7 +420,10 @@ export async function fetchUserPhotos(userId: string): Promise<Review[]> {
         createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
       } satisfies Review;
     })
-    .filter((r): r is Review => r !== null);
+    .filter((r): r is NonNullable<typeof r> => r !== null) as Review[];
+  // クライアント側で日付降順ソート
+  results.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return results.slice(0, 50);
 }
 
 export async function addReview(

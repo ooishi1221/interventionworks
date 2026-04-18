@@ -21,11 +21,7 @@ export interface ParkingPin {
   paymentIC?: boolean;
   paymentQR?: boolean;
   updatedAt?: string; // ISO8601
-  /** リアルタイム駐車中台数（概算） */
-  currentParked?: number;
-  /** 最後にライダーが到着した日時 */
-  lastArrivedAt?: string; // ISO8601
-  /** 最後にライダーが「停めた」を確認した日時（霧鮮度計算用） */
+  /** 最後にワンショットで確認された日時（鮮度計算用） */
   lastConfirmedAt?: string; // ISO8601
   /** ゲリラスポット（公式DBにない隠れ駐輪場） */
   isGuerrilla?: boolean;

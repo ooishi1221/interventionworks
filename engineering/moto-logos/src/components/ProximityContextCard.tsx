@@ -23,12 +23,10 @@ import { ParkingPin } from '../types';
 import { pickPhotoFromCamera, pickPhotoFromLibrary } from '../utils/photoPicker';
 import {
   reportSpotGood,
-  reportSpotFull,
-  reportSpotClosed,
   reportParked,
   addReview,
 } from '../firebase/firestoreService';
-import { incrementStat, logActivityLocal, getFirstVehicle, addFootprint, startParking } from '../db/database';
+import { incrementStat, logActivityLocal, getFirstVehicle, addFootprint } from '../db/database';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
 import { useTutorial } from '../contexts/TutorialContext';
@@ -42,21 +40,9 @@ import {
 import { Colors } from '../constants/theme';
 const C = { ...Colors, card: Colors.cardElevated };
 
-type CorrectionType = 'full' | 'closed' | 'wrong_price' | 'wrong_cc' | 'other';
-
-const CORRECTION_OPTIONS: { id: CorrectionType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'full',        label: '満車',      icon: 'time' },
-  { id: 'closed',      label: '閉鎖',      icon: 'close-circle' },
-  { id: 'wrong_price', label: '料金違う',   icon: 'cash-outline' },
-  { id: 'wrong_cc',    label: 'CC制限違う', icon: 'speedometer-outline' },
-  { id: 'other',       label: 'その他',     icon: 'ellipsis-horizontal' },
-];
-
-
 // ── Props ─────────────────────────────────────────────
 interface Props {
   proximityState: ProximityState;
-  getNearbyAlternatives: (excludeId?: string, max?: number) => NearbySpotInfo[];
   onQuickReport: () => void; // FAB と同じ登録フロー
   onSpotUpdated?: () => void; // 報告後に allSpotsRaw を更新
   onWideAreaSearch?: () => void; // アプリ内広域検索（SearchOverlay を開く）
@@ -83,7 +69,6 @@ function ccLabel(maxCC: number | null): string {
 // ── メインコンポーネント ──────────────────────────────
 export function ProximityContextCard({
   proximityState,
-  getNearbyAlternatives,
   onQuickReport,
   onSpotUpdated,
   onWideAreaSearch,
@@ -110,7 +95,7 @@ export function ProximityContextCard({
 
   // カード内部状態
   const [phase, setPhase] = useState<
-    'initial' | 'photo' | 'thanks' | 'alternatives'
+    'initial' | 'photo' | 'thanks'
     | 'search-choice' | 'welcome-back'
   >('initial');
 
@@ -124,20 +109,6 @@ export function ProximityContextCard({
 
   // 表示中のスポット（nearby の場合）
   const nearbySpot = effectiveState.kind === 'nearby' ? effectiveState.nearest : null;
-
-  // 初回ヒント: 「停められなかった」の使い方を一度だけ表示
-  const [showBadHint, setShowBadHint] = useState(false);
-  useEffect(() => {
-    if (!visible || effectiveState.kind !== 'nearby' || isTutorialReport) return;
-    AsyncStorage.getItem('proximity_bad_hint_shown').then((v) => {
-      if (!v) setShowBadHint(true);
-    });
-  }, [visible, effectiveState.kind, isTutorialReport]);
-
-  const dismissBadHint = useCallback(() => {
-    setShowBadHint(false);
-    AsyncStorage.setItem('proximity_bad_hint_shown', '1');
-  }, []);
 
   // チュートリアルステップ変更時にカード状態をリセット
   useEffect(() => {
@@ -214,8 +185,7 @@ export function ProximityContextCard({
       logActivityLocal('report', `${nearbySpot.spot.name}に停めた`);
       incrementStat('reports');
       addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'parked');
-      startParking(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, bike?.id);
-      reportParked(spotId).catch((e) => captureError(e, { context: 'proximity_report_parked', spotId })); // リアルタイム空き状況 (#79)
+      reportParked(spotId).catch((e) => captureError(e, { context: 'proximity_report_parked', spotId }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setReportedSpotId(spotId);
       setPhase('thanks');
@@ -275,63 +245,8 @@ export function ProximityContextCard({
     setPhase('initial');
   }, []);
 
-  // ── 報告: ダメだった → 即記録 + 「他を探す」表示 ───
-  const handleBad = useCallback(async () => {
-    if (!nearbySpot || submitting) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const spotId = nearbySpot.spot.id;
-    let userId = user?.userId;
-    if (!userId) userId = (await AsyncStorage.getItem('moto_logos_device_id')) ?? undefined;
-    if (userId) {
-      const bike = await getFirstVehicle();
-      addReview(spotId, userId, 0, undefined, undefined, undefined, bike?.name).catch((e) =>
-        captureError(e, { context: 'proximity_report_bad' })
-      );
-      AsyncStorage.setItem(`vote_${spotId}`, 'unmatched');
-      markReported(spotId);
-      logActivityLocal('report', `${nearbySpot.spot.name}で停められなかった`);
-      incrementStat('reports');
-      addFootprint(spotId, nearbySpot.spot.name, nearbySpot.spot.latitude, nearbySpot.spot.longitude, 'failed');
-    }
-    onSpotUpdated?.();
-    setPhase('alternatives');
-  }, [nearbySpot, user, submitting, onSpotUpdated]);
-
-  // ── 理由の追加送信（alternatives表示中に「ついでに」選択） ──
-  const submitCorrection = useCallback(async (correction: CorrectionType) => {
-    if (!nearbySpot) return;
-    const spotId = nearbySpot.spot.id;
-    try {
-      if (correction === 'full') {
-        await reportSpotFull(spotId);
-      } else if (correction === 'closed') {
-        await reportSpotClosed(spotId);
-      }
-      // vote を理由で上書き
-      await AsyncStorage.setItem(`vote_${spotId}`, correction);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) {
-      captureError(e, { context: 'proximity_correction' });
-    }
-  }, [nearbySpot]);
 
 
-
-  // ── ナビ起動 ────────────────────────────────────────
-  const openNav = useCallback((spot: ParkingPin) => {
-    const url = Platform.select({
-      ios: `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
-      android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
-    }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`;
-    Linking.openURL(url).catch(() =>
-      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`),
-    );
-  }, []);
-
-  // ── 候補リスト ──────────────────────────────────────
-  const alternatives = nearbySpot
-    ? getNearbyAlternatives(nearbySpot.spot.id, 5)
-    : getNearbyAlternatives(undefined, 5);
 
   if (!visible) return null;
 
@@ -362,9 +277,9 @@ export function ProximityContextCard({
                 onPress={handleGood}
                 activeOpacity={0.8}
                 disabled={submitting}
-                accessibilityLabel="停めた"
+                accessibilityLabel="ワンショット"
                 accessibilityRole="button"
-                accessibilityHint="ここに駐車できたことを記録します"
+                accessibilityHint="写真を撮って足跡を残します"
               >
                 {tutorial.isStep('report-good') && (
                   <Animated.View
@@ -385,29 +300,10 @@ export function ProximityContextCard({
                     pointerEvents="none"
                   />
                 )}
-                <Ionicons name="thumbs-up" size={22} color="#fff" />
-                <Text style={styles.actionText}>停めた</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.badBtn]}
-                onPress={handleBad}
-                activeOpacity={0.8}
-                disabled={submitting}
-                accessibilityLabel="停められなかった"
-                accessibilityRole="button"
-                accessibilityHint="駐車できなかったことを記録します"
-              >
-                <Ionicons name="thumbs-down" size={22} color="#fff" />
-                <Text style={styles.actionText}>停められなかった</Text>
+                <Ionicons name="camera" size={22} color="#fff" />
+                <Text style={styles.actionText}>ワンショット</Text>
               </TouchableOpacity>
             </View>
-            {showBadHint && phase === 'initial' && (
-              <TouchableOpacity onPress={dismissBadHint} activeOpacity={0.7}>
-                <Text style={styles.badHint}>
-                  停められなかったら 👎 で近くの別の場所を探せます
-                </Text>
-              </TouchableOpacity>
-            )}
           </>
         )}
 
@@ -588,50 +484,6 @@ export function ProximityContextCard({
           </>
         )}
 
-        {/* ── 「他を探す」候補リスト + 理由チップ ────────── */}
-        {phase === 'alternatives' && (
-          <>
-            <Text style={styles.altTitle}>近くのスポット</Text>
-            {alternatives.length === 0 ? (
-              <Text style={styles.altEmpty}>近くにスポットが見つかりません</Text>
-            ) : (
-              alternatives.map((alt) => (
-                <TouchableOpacity
-                  key={alt.spot.id}
-                  style={styles.altRow}
-                  onPress={() => openNav(alt.spot)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="location-outline" size={16} color={C.accent} />
-                  <Text style={styles.altName} numberOfLines={1}>{alt.spot.name}</Text>
-                  <Text style={styles.altDist}>{formatDistance(alt.distanceM)}</Text>
-                  <Ionicons name="navigate" size={16} color={C.blue} />
-                </TouchableOpacity>
-              ))
-            )}
-            {/* 理由チップ（ついでに教えてくれたら） */}
-            <Text style={styles.correctionHint}>何があった？（任意）</Text>
-            <View style={styles.correctionGrid}>
-              {CORRECTION_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={styles.correctionChip}
-                  onPress={() => submitCorrection(opt.id)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name={opt.icon} size={16} color={C.sub} />
-                  <Text style={styles.correctionChipText}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              onPress={() => setPhase('initial')}
-              style={styles.backLink}
-            >
-              <Text style={styles.backText}>閉じる</Text>
-            </TouchableOpacity>
-          </>
-        )}
       </View>
     </Animated.View>
   );

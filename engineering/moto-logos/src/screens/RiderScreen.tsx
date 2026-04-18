@@ -1,8 +1,8 @@
 /**
- * RiderScreen v5 — 足跡地図 + 自分のノート + 日記タイムライン
+ * RiderScreen v5 — 足跡地図 + ライダーノート + 日記タイムライン
  *
  * 上部: 愛車写真付きHeroカード
- * 中部: 足跡マップ + 自分のノート（写真ギャラリー）
+ * 中部: 足跡マップ + ライダーノート（写真ギャラリー）
  * 下部: 日記形式の活動タイムライン
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -28,13 +28,9 @@ import {
   getFirstVehicle,
   getFootprints,
   getUniqueFootprintLocations,
-  getActiveParkingSession,
-  endParking,
-  expireOldParkingSessions,
   type Footprint,
-  type ParkingSession,
 } from '../db/database';
-import { reportDeparted, fetchUserPhotos } from '../firebase/firestoreService';
+import { fetchUserPhotos } from '../firebase/firestoreService';
 import { useUser } from '../contexts/UserContext';
 import { SpotsListModal } from './SpotsListModal';
 import { ParkingPin, Vehicle, Review } from '../types';
@@ -55,7 +51,7 @@ const CC_LABEL: Record<string, string> = {
 
 // ─── 足跡タイプ別のアイコン/カラー ───────────────────
 const FOOTPRINT_STYLE: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
-  parked: { icon: 'footsteps', color: C.green, label: 'に停めた' },
+  parked: { icon: 'camera', color: C.green, label: 'をワンショット' },
   full:   { icon: 'alert-circle', color: '#FF453A', label: 'は満車だった' },
   closed: { icon: 'close-circle', color: '#636366', label: 'は閉鎖していた' },
   wrong_price: { icon: 'cash-outline', color: '#FFD60A', label: 'で料金が違った' },
@@ -80,15 +76,13 @@ function isSameDay(a: string, b: string): boolean {
   return a.slice(0, 10) === b.slice(0, 10);
 }
 
-function formatElapsed(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return 'たった今';
-  if (min < 60) return `${min}分`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}時間${min % 60 > 0 ? `${min % 60}分` : ''}`;
-  const d = Math.floor(hr / 24);
-  return `${d}日`;
+function formatCoarseTime(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days === 0) return '今日';
+  if (days === 1) return '昨日';
+  if (days < 7) return '今週';
+  if (days < 30) return '今月';
+  return `${Math.ceil(days / 30)}か月前`;
 }
 
 // ─── 東京デフォルトリージョン ────────────────────────
@@ -103,44 +97,40 @@ interface Props {
   onGoToSpot?: (spot: ParkingPin) => void;
   onDataChanged?: () => void;
   onOpenMyBike?: () => void;
+  onOpenSettings?: () => void;
   nickname?: string;
   onChangeNickname?: (name: string) => void;
-  onBack?: () => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname, onBack }: Props) {
+export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSettings, nickname, onChangeNickname }: Props) {
   const user = useUser();
   const [bike, setBike] = useState<Vehicle | null>(null);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
   const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
-  const [activeSession, setActiveSession] = useState<ParkingSession | null>(null);
   const [myPhotos, setMyPhotos] = useState<Review[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [spotsModalOpen, setSpotsModalOpen] = useState(false);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   const loadData = useCallback(async () => {
-    // 2h超過セッションを自動出発 (#110)
-    const AUTO_DEPART_MS = 2 * 60 * 60 * 1000;
-    const expired = await expireOldParkingSessions(AUTO_DEPART_MS);
-    for (const s of expired) {
-      reportDeparted(s.spotId).catch((e) => captureError(e, { context: 'auto_depart' }));
-    }
-
-    const [vehicle, fp, uloc, session] = await Promise.all([
+    const [vehicle, fp, uloc] = await Promise.all([
       getFirstVehicle(),
       getFootprints(50),
       getUniqueFootprintLocations(),
-      getActiveParkingSession(),
     ]);
     setBike(vehicle);
     setFootprints(fp);
     setUniqueLocations(uloc);
-    setActiveSession(session);
 
-    // 自分のノート（写真付きレビュー）
+    // ライダーノート（写真付きレビュー）
     const uid = user?.userId;
     if (uid) {
-      fetchUserPhotos(uid).then(setMyPhotos).catch((e) => captureError(e, { context: 'fetch_user_photos' }));
+      try {
+        const photos = await fetchUserPhotos(uid);
+        setMyPhotos(photos);
+      } catch (e) {
+        captureError(e, { context: 'fetch_user_photos' });
+      }
     }
   }, [user?.userId]);
 
@@ -198,20 +188,24 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
     return `${count}か所に足跡を残した`;
   })();
 
+  const visiblePhotos = showAllPhotos ? myPhotos : myPhotos.slice(0, 5);
+
   return (
     <View style={s.safe}>
-      {/* ── 戻るボタン ─────────────────────────────── */}
-      {onBack && (
-        <TouchableOpacity
-          style={s.backBtn}
-          onPress={onBack}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="chevron-back" size={24} color={C.text} />
-          <Text style={s.backBtnText}>マップ</Text>
-        </TouchableOpacity>
-      )}
+      {/* ── ヘッダーバー ─────────────────────────────── */}
+      <View style={s.headerBar}>
+        <Text style={s.headerTitle}>ライダーノート</Text>
+        {onOpenSettings && (
+          <TouchableOpacity
+            onPress={onOpenSettings}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={s.settingsBtn}
+          >
+            <Ionicons name="settings-outline" size={24} color={C.text} />
+          </TouchableOpacity>
+        )}
+      </View>
 
       <ScrollView
         contentContainerStyle={s.content}
@@ -270,160 +264,99 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
           )}
         </View>
 
-        {/* ── 2. インパクトメッセージ ──────────────── */}
-        <View style={s.impactRow}>
-          <Ionicons name="footsteps" size={16} color={C.accent} />
-          <Text style={s.impactText}>{impactMessage}</Text>
-        </View>
-
-        {/* ── 2.5 駐車中カード（表示のみ、出発は自動検知） ── */}
-        {activeSession && (
-          <View style={s.parkingCard}>
-            <View style={s.parkingCardLeft}>
-              <View style={s.parkingPulse}>
-                <Ionicons name="location" size={18} color={C.green} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.parkingLabel}>駐車中</Text>
-                <Text style={s.parkingSpotName} numberOfLines={1}>{activeSession.spotName}</Text>
-                <Text style={s.parkingElapsed}>{formatElapsed(activeSession.startedAt)}経過</Text>
-              </View>
-            </View>
+        {/* ── 2. ワンショットカード（メインコンテンツ） ── */}
+        <Text style={s.sectionTitle}>ワンショット</Text>
+        {myPhotos.length === 0 ? (
+          <View style={s.emptyActivity}>
+            <Ionicons name="camera" size={24} color={C.accent} />
+            <Text style={s.emptyText}>ワンショットで最初の1枚を撮ろう</Text>
           </View>
-        )}
-
-        {/* ── 3. 足跡マップ ───────────────────────── */}
-        <View style={s.mapContainer} accessibilityLabel={`足跡マップ。${uniqueLocations.length}か所に足跡あり`} accessibilityRole="image">
-          <MapView
-            style={s.map}
-            region={mapRegion}
-            customMapStyle={DARK_MAP_STYLE}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            pointerEvents="none"
-          >
-            {uniqueLocations.map((fp) => {
-              const style = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
-              return (
-                <Marker
-                  key={fp.id}
-                  coordinate={{ latitude: fp.latitude, longitude: fp.longitude }}
-                  tracksViewChanges={false}
-                >
-                  <View style={[s.markerDot, { backgroundColor: style.color }]}>
-                    <Ionicons name={style.icon} size={12} color="#fff" />
-                  </View>
-                </Marker>
-              );
-            })}
-          </MapView>
-
-          {uniqueLocations.length === 0 && (
-            <View style={s.mapEmptyOverlay}>
-              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
-              <Text style={s.mapEmptyText}>まだ足跡がない</Text>
-            </View>
-          )}
-
-          {/* 足跡カウント */}
-          {uniqueLocations.length > 0 && (
-            <View style={s.mapBadge}>
-              <Text style={s.mapBadgeText}>{uniqueLocations.length}か所</Text>
-            </View>
-          )}
-        </View>
-
-        {/* ── 4. 自分のノート（写真ギャラリー） ──── */}
-        {myPhotos.length > 0 && (
+        ) : (
           <>
-            <Text style={s.sectionTitle}>自分のノート</Text>
-            <FlatList
-              horizontal
-              data={myPhotos}
-              keyExtractor={(r) => `note_${r.firestoreId ?? r.id}`}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.noteList}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={s.noteCard}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    onGoToSpot?.({
-                      id: item.spotId,
-                      name: spotNameMap.get(item.spotId) ?? '',
-                      latitude: 0,
-                      longitude: 0,
-                      source: 'seed',
-                    } as ParkingPin);
-                  }}
-                >
-                  <Image source={{ uri: item.photoUri! }} style={s.notePhoto} />
-                  <View style={s.noteInfo}>
-                    <Text style={s.noteSpotName} numberOfLines={1}>
-                      {spotNameMap.get(item.spotId) ?? item.spotId}
-                    </Text>
-                    <Text style={s.noteDate}>
-                      {new Date(item.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
-                    </Text>
+            {visiblePhotos.map((item) => (
+              <TouchableOpacity
+                key={`os_${item.firestoreId ?? item.id}`}
+                style={s.oneshotCard}
+                activeOpacity={0.8}
+                onPress={() => {
+                  onGoToSpot?.({
+                    id: item.spotId,
+                    name: spotNameMap.get(item.spotId) ?? '',
+                    latitude: 0,
+                    longitude: 0,
+                    source: 'seed',
+                  } as ParkingPin);
+                }}
+              >
+                <Image source={{ uri: item.photoUri! }} style={s.oneshotPhoto} />
+                <View style={s.oneshotInfo}>
+                  <Text style={s.oneshotSpotName} numberOfLines={1}>
+                    {spotNameMap.get(item.spotId) ?? item.spotId}
+                  </Text>
+                  <Text style={s.oneshotTime}>{formatCoarseTime(item.createdAt)}</Text>
+                  <View style={s.aiBadge}>
+                    <Ionicons name="sparkles" size={10} color={C.accent} />
+                    <Text style={s.aiBadgeText}>AI分析</Text>
                   </View>
-                </TouchableOpacity>
-              )}
-            />
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={C.sub} />
+              </TouchableOpacity>
+            ))}
+            {!showAllPhotos && myPhotos.length > 5 && (
+              <TouchableOpacity style={s.showMoreBtn} onPress={() => setShowAllPhotos(true)} activeOpacity={0.7}>
+                <Text style={s.showMoreText}>もっと見る（残り{myPhotos.length - 5}件）</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
 
-        {/* ── 5. 日記タイムライン ─────────────────── */}
-        <Text style={s.sectionTitle}>足跡日記</Text>
-        {footprints.length === 0 ? (
-          <View style={s.emptyActivity}>
-            <Ionicons name="footsteps" size={24} color={C.accent} />
-            <Text style={s.emptyText}>スポットに行って足跡を残そう{'\n'}あなたの軌跡がここに刻まれます</Text>
+        {/* ── 3. 足跡サマリー ─────────────────────── */}
+        <View style={s.footprintSummary}>
+          <View style={s.impactRow}>
+            <Ionicons name="footsteps" size={16} color={C.accent} />
+            <Text style={s.impactText}>{impactMessage}</Text>
           </View>
-        ) : (
-          footprints.map((fp, i) => {
-            const showDate = i === 0 || !isSameDay(footprints[i - 1].createdAt, fp.createdAt);
-            const style = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
-            return (
-              <View key={fp.id}>
-                {showDate && (
-                  <Text style={s.diaryDate}>{formatDiaryDate(fp.createdAt)}</Text>
-                )}
-                <TouchableOpacity
-                  style={s.diaryItem}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    onGoToSpot?.({
-                      id: fp.spotId,
-                      name: fp.spotName,
-                      latitude: fp.latitude,
-                      longitude: fp.longitude,
-                      source: 'seed',
-                    } as ParkingPin);
-                  }}
-                  accessible
-                  accessibilityLabel={`${formatTime(fp.createdAt)}、${fp.spotName}${style.label}。タップでマップに移動`}
-                  accessibilityRole="button"
-                >
-                  <View style={[s.diaryDot, { backgroundColor: style.color }]}>
-                    <Ionicons name={style.icon} size={12} color="#fff" />
-                  </View>
-                  {i < footprints.length - 1 && isSameDay(fp.createdAt, footprints[i + 1]?.createdAt) && (
-                    <View style={s.diaryLine} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.diaryText}>
-                      {fp.spotName}{style.label}
-                    </Text>
-                    <Text style={s.diaryTime}>{formatTime(fp.createdAt)}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={14} color={C.sub} />
-                </TouchableOpacity>
+          <View style={s.mapContainer} accessibilityLabel={`足跡マップ。${uniqueLocations.length}か所に足跡あり`} accessibilityRole="image">
+            <MapView
+              style={s.map}
+              region={mapRegion}
+              customMapStyle={DARK_MAP_STYLE}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              pointerEvents="none"
+            >
+              {uniqueLocations.map((fp) => {
+                const fStyle = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
+                return (
+                  <Marker
+                    key={fp.id}
+                    coordinate={{ latitude: fp.latitude, longitude: fp.longitude }}
+                    tracksViewChanges={false}
+                  >
+                    <View style={[s.markerDot, { backgroundColor: fStyle.color }]}>
+                      <Ionicons name={fStyle.icon} size={12} color="#fff" />
+                    </View>
+                  </Marker>
+                );
+              })}
+            </MapView>
+
+            {uniqueLocations.length === 0 && (
+              <View style={s.mapEmptyOverlay}>
+                <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
+                <Text style={s.mapEmptyText}>まだ足跡がない</Text>
               </View>
-            );
-          })
-        )}
+            )}
+
+            {uniqueLocations.length > 0 && (
+              <View style={s.mapBadge}>
+                <Text style={s.mapBadgeText}>{uniqueLocations.length}か所</Text>
+              </View>
+            )}
+          </View>
+        </View>
 
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -499,17 +432,22 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
-  backBtn: {
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 2,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  backBtnText: {
-    color: C.blue,
-    fontSize: 16,
-    fontWeight: '500',
+  headerTitle: {
+    color: C.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  settingsBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   content: { paddingBottom: 20 },
 
@@ -523,7 +461,7 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
-  heroBg: { width: '100%', height: 220 },
+  heroBg: { width: '100%', height: 160 },
   heroBgImage: { borderRadius: 20 },
   heroOverlay: { flex: 1, justifyContent: 'flex-end', padding: 20 },
   heroNoBg: {
@@ -558,40 +496,16 @@ const s = StyleSheet.create({
   // ── Impact Message ──
   impactRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginHorizontal: 16, marginTop: 20, marginBottom: 16,
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: 'rgba(255,107,0,0.08)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,107,0,0.2)',
+    paddingHorizontal: 16, paddingVertical: 12,
   },
   impactText: { color: C.accent, fontSize: 14, fontWeight: '700', flex: 1, lineHeight: 20 },
 
   // ── Parking Active Card ──
-  parkingCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginHorizontal: 16, marginBottom: 16,
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: 'rgba(48,209,88,0.10)',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(48,209,88,0.3)',
-  },
-  parkingCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  parkingPulse: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(48,209,88,0.15)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  parkingLabel: { color: '#30D158', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  parkingSpotName: { color: '#F2F2F7', fontSize: 15, fontWeight: '600', marginTop: 1 },
-  parkingElapsed: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
-
   // ── Footprint Map ──
   mapContainer: {
-    marginHorizontal: 16, marginBottom: 24,
-    borderRadius: 16, overflow: 'hidden',
-    height: 200,
+    overflow: 'hidden',
+    height: 120,
     backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
   },
   map: { flex: 1 },
   mapEmptyOverlay: {
@@ -632,26 +546,42 @@ const s = StyleSheet.create({
   noteSpotName: { color: C.text, fontSize: 12, fontWeight: '600' },
   noteDate: { color: C.sub, fontSize: 10 },
 
-  // ── Diary Timeline ──
+  // ── Oneshot Cards ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  diaryDate: {
-    color: C.text, fontSize: 16, fontWeight: '700',
-    marginLeft: 18, marginTop: 16, marginBottom: 8,
+  oneshotCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 16, marginBottom: 10,
+    padding: 10,
+    backgroundColor: C.card,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
   },
-  diaryItem: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    marginBottom: 14, marginHorizontal: 16,
+  oneshotPhoto: { width: 80, height: 80, borderRadius: 10 },
+  oneshotInfo: { flex: 1, gap: 4 },
+  oneshotSpotName: { color: C.text, fontSize: 14, fontWeight: '600' },
+  oneshotTime: { color: C.sub, fontSize: 12 },
+  aiBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)',
+    opacity: 0.4,
   },
-  diaryDot: {
-    width: 28, height: 28, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
+  aiBadgeText: { color: C.accent, fontSize: 10, fontWeight: '600' },
+  showMoreBtn: {
+    alignItems: 'center', paddingVertical: 12,
+    marginHorizontal: 16,
   },
-  diaryLine: {
-    position: 'absolute', left: 29, top: 30,
-    width: 2, height: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  showMoreText: { color: C.blue, fontSize: 13, fontWeight: '600' },
+
+  // ── Footprint Summary ──
+  footprintSummary: {
+    marginHorizontal: 16, marginTop: 24,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
   },
-  diaryText: { color: C.text, fontSize: 14, lineHeight: 20 },
-  diaryTime: { color: C.sub, fontSize: 11, marginTop: 2 },
 });

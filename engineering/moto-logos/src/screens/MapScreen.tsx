@@ -19,7 +19,7 @@ import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
@@ -71,19 +71,22 @@ import { FRESHNESS_STYLE, spotFreshness } from '../utils/freshness';
 // ─── スポットピン（鮮度で色+透明度） ──────────────────
 const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; wide?: boolean }) {
   const fresh = spotFreshness(spot);
-  const isClear = fresh === 'clear';
-  const isFoggy = fresh === 'foggy';
+
+  const dotStyle = fresh === 'clear' ? styles.pinDotClear
+    : fresh === 'hazy' ? styles.pinDotHazy
+    : styles.pinDotFoggy;
 
   if (wide) {
-    return <View style={[styles.pinDot, isClear ? styles.pinDotClear : styles.pinDotFoggy]} />;
+    return <View style={[styles.pinDot, dotStyle]} />;
   }
 
-  const pinStyle = isClear ? styles.pinClear : isFoggy ? styles.pinFoggyLarge : styles.pinHazyLarge;
-  const iconOpacity = isClear ? 1.0 : isFoggy ? 0.5 : 0.8;
+  const pinStyle = fresh === 'clear' ? styles.pinClear
+    : fresh === 'hazy' ? styles.pinHazyLarge
+    : styles.pinFoggyLarge;
 
   return (
     <View style={[styles.pinLarge, pinStyle]}>
-      <Ionicons name="bicycle" size={15} color={`rgba(255,255,255,${iconOpacity})`} />
+      <MaterialCommunityIcons name="motorbike" size={17} color="#fff" />
     </View>
   );
 });
@@ -103,14 +106,12 @@ interface Props {
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
   onGoToSettings?: () => void;
-  onAvatarPress?: () => void;
-  footprintCount?: number;
+
   onNotificationsPress?: () => void;
-  bikePhotoUrl?: string | null;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings, onAvatarPress, footprintCount, onNotificationsPress, bikePhotoUrl },
+  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings, onNotificationsPress },
   ref
 ) {
   const user = useUser();
@@ -178,8 +179,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         for (const s of fetched) {
           const existing = map.get(s.id);
           if (!existing || existing.updatedAt !== s.updatedAt
-              || existing.currentParked !== s.currentParked
-              || existing.lastArrivedAt !== s.lastArrivedAt) {
+              || existing.lastConfirmedAt !== s.lastConfirmedAt) {
             map.set(s.id, s);
             changed = true;
           }
@@ -235,6 +235,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   // 初回: 前回位置を復元 → GPS取得 → そのエリアのスポットを取得
   useEffect(() => {
     (async () => {
+      let hasSavedRegion = false;
+
       // 前回位置を復元（GPS取得前に表示）
       try {
         const saved = await AsyncStorage.getItem(LAST_LOCATION_KEY);
@@ -243,7 +245,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           const savedRegion: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.04, longitudeDelta: 0.04 };
           setInitialRegion(savedRegion);
           mapRef.current?.animateToRegion(savedRegion, 0);
-          fetchSpotsForRegion(savedRegion);
+          await fetchSpotsForRegion(savedRegion);
+          hasSavedRegion = true;
         }
       } catch { /* ignore */ }
 
@@ -261,16 +264,21 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             longitudeDelta: 0.04,
           };
           mapRef.current?.animateToRegion(gpsRegion, 800);
-          fetchSpotsForRegion(gpsRegion);
-          // 現在位置を保存（次回起動時の初期表示用）
+          // 保存位置と近い場合は再fetchスキップ（二重読み込み防止）
+          if (!hasSavedRegion || haversineMeters(
+            gpsRegion.latitude, gpsRegion.longitude,
+            initialRegion.latitude, initialRegion.longitude,
+          ) > 500) {
+            fetchSpotsForRegion(gpsRegion);
+          }
           AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ lat: loc.coords.latitude, lon: loc.coords.longitude }));
         } catch (e) {
           captureError(e, { context: 'initialLocation' });
-          fetchSpotsForRegion(TOKYO_FALLBACK);
+          if (!hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
         }
       } else {
         setLocationDenied(true);
-        fetchSpotsForRegion(TOKYO_FALLBACK);
+        if (!hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
       }
       setGpsLoading(false);
     })();
@@ -733,10 +741,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     return tutorial.active ? [tutorial.dummySpot, ...base] : base;
   }, [allSpotsRaw, ccFilterEnabled, userCC, tutorial.active, tutorial.dummySpot]);
 
-  // 確認済みスポット（霧の穴を開ける対象）
+  // 確認済みスポット（鮮度clear）— 広域ズームでは描画しない
   const clearedSpots = useMemo(
-    () => allSpots.filter((s) => spotFreshness(s) === 'clear'),
-    [allSpots],
+    () => wideZoom ? [] : allSpots.filter((s) => spotFreshness(s) === 'clear'),
+    [allSpots, wideZoom],
   );
 
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
@@ -948,10 +956,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           userCC={userCC}
           onToggleCcFilter={onToggleCcFilter}
           onExpandedChange={setNearbyExpanded}
-          onAvatarPress={onAvatarPress}
-          footprintCount={footprintCount}
           onNotificationsPress={onNotificationsPress}
-          bikePhotoUrl={bikePhotoUrl}
+          onSettingsPress={onGoToSettings}
         />
       )}
 
@@ -959,7 +965,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {!selected && !searchVisible && (
         <ProximityContextCard
           proximityState={proximityState}
-          getNearbyAlternatives={getNearbyAlternatives}
           onQuickReport={handleQuickReport}
           onSpotUpdated={handleProximitySpotUpdated}
           onWideAreaSearch={handleWideAreaSearch}
@@ -1199,7 +1204,7 @@ const styles = StyleSheet.create({
   pinDot: {
     width: 22, height: 22, borderRadius: 11,
   },
-  // 確認済み（clear）
+  // 確認済み（clear）— ビビッドグリーン
   pinClear: {
     backgroundColor: '#30D158',
     borderWidth: 2, borderColor: '#fff',
@@ -1218,19 +1223,23 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
   },
-  // 霧（foggy）
+  // やや古い（hazy）— ミューテッドグリーン
+  pinHazyLarge: {
+    backgroundColor: '#7A9E7E',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+  },
+  pinDotHazy: {
+    backgroundColor: '#7A9E7E',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+  },
+  // 未確認（foggy）— ニュートラルグレー
   pinFoggyLarge: {
-    backgroundColor: 'rgba(80,80,85,0.6)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: '#636366',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
   },
   pinDotFoggy: {
-    backgroundColor: 'rgba(80,80,85,0.5)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-  },
-  // やや古い（hazy）
-  pinHazyLarge: {
-    backgroundColor: 'rgba(255,159,10,0.5)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: '#636366',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 

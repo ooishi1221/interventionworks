@@ -14,16 +14,59 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as SpotStatus | null;
     const verification = searchParams.get('verification') as VerificationLevel | null;
     const source = searchParams.get('source') as 'seed' | 'user' | null;
+    const search = searchParams.get('search')?.toLowerCase().trim() || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
     const cursor = searchParams.get('cursor');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
+    // 検索時はFirestoreから全件取得してサーバー側フィルタ
+    if (search) {
+      let query: FirebaseFirestore.Query = adminDb.collection(COLLECTIONS.SPOTS);
+      if (status) query = query.where('status', '==', status);
+      if (source) query = query.where('source', '==', source);
+
+      const snapshot = await query.get();
+      let spots: SpotResponse[] = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name,
+            address: data.address,
+            status: data.status,
+            verificationLevel: data.verificationLevel,
+            source: data.source,
+            goodCount: data.goodCount,
+            badReportCount: data.badReportCount,
+            viewCount: data.viewCount,
+            isFree: data.isFree,
+            pricePerHour: data.pricePerHour,
+            updatedAt: data.updatedAt?.toDate().toISOString() || '',
+            createdAt: data.createdAt?.toDate().toISOString() || '',
+          };
+        })
+        .filter((s) => s.name?.toLowerCase().includes(search) || s.address?.toLowerCase().includes(search));
+
+      // ソート
+      spots.sort((a, b) => {
+        const va = (a as unknown as Record<string, unknown>)[sortBy] ?? '';
+        const vb = (b as unknown as Record<string, unknown>)[sortBy] ?? '';
+        const cmp = String(va).localeCompare(String(vb));
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+
+      return NextResponse.json({ spots, nextCursor: null, total: spots.length });
+    }
+
+    // 通常のページネーション
     let query: FirebaseFirestore.Query = adminDb.collection(COLLECTIONS.SPOTS);
 
     if (status) query = query.where('status', '==', status);
     if (verification) query = query.where('verificationLevel', '==', verification);
     if (source) query = query.where('source', '==', source);
 
-    query = query.orderBy('createdAt', 'desc');
+    query = query.orderBy(sortBy, sortOrder);
 
     if (cursor) {
       const cursorDoc = await adminDb.collection(COLLECTIONS.SPOTS).doc(cursor).get();

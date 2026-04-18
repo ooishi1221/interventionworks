@@ -21,6 +21,8 @@ function SpotDetailModal({ spotId, onClose, onSaved }: { spotId: string; onClose
   const [detail, setDetail] = useState<SpotResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({
     priceInfo: '',
     openHours: '',
@@ -78,6 +80,16 @@ function SpotDetailModal({ spotId, onClose, onSaved }: { spotId: string; onClose
       body: JSON.stringify(body),
     });
     setSaving(false);
+    if (res.ok) {
+      onSaved();
+      onClose();
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const res = await fetch(`/api/spots/${spotId}`, { method: 'DELETE' });
+    setDeleting(false);
     if (res.ok) {
       onSaved();
       onClose();
@@ -206,6 +218,35 @@ function SpotDetailModal({ spotId, onClose, onSaved }: { spotId: string; onClose
                 キャンセル
               </button>
             </div>
+
+            {/* 削除 */}
+            <div className="mt-4 pt-4 border-t border-border">
+              {confirmDelete ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-danger">関連レビューも完全に削除されます</span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-3 py-1.5 text-xs font-medium bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? '削除中...' : '本当に削除'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground"
+                  >
+                    やめる
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-xs text-danger/60 hover:text-danger transition-colors"
+                >
+                  このスポットを削除
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -219,12 +260,18 @@ export default function SpotsPage() {
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ created?: number; updated?: number; skipped?: number; errors: string[] } | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const canEdit = user?.role === 'super_admin' || user?.role === 'moderator';
 
@@ -290,10 +337,30 @@ export default function SpotsPage() {
     setBulkLoading(false);
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    const res = await fetch('/api/spots/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spotIds: Array.from(selectedIds) }),
+    });
+    if (res.ok) {
+      setSpots((prev) => prev.filter((s) => !selectedIds.has(s.id)));
+      setSelectedIds(new Set());
+    }
+    setBulkLoading(false);
+    setConfirmBulkDelete(false);
+  };
+
   const fetchSpots = useCallback(async (cursor?: string) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set('status', statusFilter);
+    if (sourceFilter) params.set('source', sourceFilter);
+    if (searchQuery) params.set('search', searchQuery);
+    params.set('sortBy', sortBy);
+    params.set('sortOrder', sortOrder);
     if (cursor) params.set('cursor', cursor);
     params.set('limit', '20');
 
@@ -302,11 +369,30 @@ export default function SpotsPage() {
     setSpots(cursor ? (prev) => [...prev, ...data.spots] : data.spots);
     setNextCursor(data.nextCursor);
     setLoading(false);
-  }, [statusFilter]);
+  }, [statusFilter, sourceFilter, searchQuery, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchSpots();
   }, [fetchSpots]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchInput);
+  };
+
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const sortIcon = (field: string) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   const handleStatusChange = async (spotId: string, newStatus: SpotStatus) => {
     const res = await fetch(`/api/spots/${spotId}`, {
@@ -324,8 +410,26 @@ export default function SpotsPage() {
     <div>
       <h1 className="text-xl font-bold mb-6">スポット管理</h1>
 
-      {/* Filters & Actions */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* Search & Filters */}
+      <form onSubmit={handleSearch} className="flex items-center gap-3 mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="名前・住所で検索"
+            className="pl-3 pr-8 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-text-secondary/50 w-56"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-foreground text-sm"
+            >
+              ×
+            </button>
+          )}
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -335,6 +439,15 @@ export default function SpotsPage() {
           <option value="active">Active</option>
           <option value="pending">Pending</option>
           <option value="closed">Closed</option>
+        </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground"
+        >
+          <option value="">全ソース</option>
+          <option value="seed">Seed</option>
+          <option value="user">User</option>
         </select>
 
         <div className="ml-auto flex gap-2">
@@ -357,7 +470,7 @@ export default function SpotsPage() {
             </>
           )}
         </div>
-      </div>
+      </form>
 
       {/* Import Result */}
       {importResult && (
@@ -390,8 +503,34 @@ export default function SpotsPage() {
               </button>
             ))}
           </div>
+          <div className="border-l border-border/50 pl-2">
+            {confirmBulkDelete ? (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={bulkLoading}
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1.5 text-xs font-medium bg-danger text-white rounded-lg hover:bg-danger/90 disabled:opacity-50"
+                >
+                  {bulkLoading ? '削除中...' : `${selectedIds.size}件を完全削除`}
+                </button>
+                <button
+                  onClick={() => setConfirmBulkDelete(false)}
+                  className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground"
+                >
+                  やめる
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmBulkDelete(true)}
+                className="px-3 py-1.5 text-xs font-medium text-danger/70 hover:text-danger transition-colors"
+              >
+                削除
+              </button>
+            )}
+          </div>
           <button
-            onClick={() => setSelectedIds(new Set())}
+            onClick={() => { setSelectedIds(new Set()); setConfirmBulkDelete(false); }}
             className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground"
           >
             選択解除
@@ -414,13 +553,13 @@ export default function SpotsPage() {
                   />
                 </th>
               )}
-              <th className="text-left px-4 py-3 font-medium">名前</th>
+              <th className="text-left px-4 py-3 font-medium cursor-pointer hover:text-accent select-none" onClick={() => toggleSort('name')}>名前{sortIcon('name')}</th>
               <th className="text-left px-4 py-3 font-medium">ステータス</th>
               <th className="text-left px-4 py-3 font-medium">検証レベル</th>
-              <th className="text-left px-4 py-3 font-medium">ソース</th>
-              <th className="text-right px-4 py-3 font-medium">Good</th>
+              <th className="text-left px-4 py-3 font-medium cursor-pointer hover:text-accent select-none" onClick={() => toggleSort('source')}>ソース{sortIcon('source')}</th>
+              <th className="text-right px-4 py-3 font-medium cursor-pointer hover:text-accent select-none" onClick={() => toggleSort('goodCount')}>Good{sortIcon('goodCount')}</th>
               <th className="text-right px-4 py-3 font-medium">Bad</th>
-              <th className="text-left px-4 py-3 font-medium">更新日</th>
+              <th className="text-left px-4 py-3 font-medium cursor-pointer hover:text-accent select-none" onClick={() => toggleSort('updatedAt')}>更新日{sortIcon('updatedAt')}</th>
               {canEdit && <th className="px-4 py-3 font-medium">操作</th>}
             </tr>
           </thead>

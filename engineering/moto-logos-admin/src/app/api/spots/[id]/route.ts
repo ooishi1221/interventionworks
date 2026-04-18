@@ -4,7 +4,7 @@ import { requireAuth, hasMinimumRole } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { checkNgWords } from '@/lib/ng-words';
 import { COLLECTIONS } from '@/lib/types';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, WriteBatch } from 'firebase-admin/firestore';
 
 // ─────────────────────────────────────────────────────
 // Geohash エンコード（座標更新時に自動再計算）
@@ -173,6 +173,59 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal error';
+    const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await requireAuth('moderator');
+    const { id } = await context.params;
+
+    const docRef = adminDb.collection(COLLECTIONS.SPOTS).doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: 'スポットが見つかりません' }, { status: 404 });
+    }
+
+    const spotData = doc.data()!;
+
+    // 関連レビューを削除
+    const reviewsSnap = await adminDb
+      .collection(COLLECTIONS.REVIEWS)
+      .where('spotId', '==', id)
+      .get();
+
+    // Firestore batch は500件制限なのでチャンク分割
+    const docs = [docRef, ...reviewsSnap.docs.map((d) => d.ref)];
+    for (let i = 0; i < docs.length; i += 500) {
+      const batch: WriteBatch = adminDb.batch();
+      docs.slice(i, i + 500).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
+
+    await writeAuditLog({
+      adminId: user.uid,
+      adminEmail: user.email,
+      action: 'spot.delete',
+      targetType: 'spot',
+      targetId: id,
+      previousState: {
+        name: spotData.name,
+        status: spotData.status,
+        source: spotData.source,
+        reviewCount: reviewsSnap.size,
+      },
+      newState: { deleted: true },
+    });
+
+    return NextResponse.json({ success: true, deletedReviews: reviewsSnap.size });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

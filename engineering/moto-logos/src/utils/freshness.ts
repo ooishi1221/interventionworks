@@ -1,10 +1,8 @@
 /**
- * 霧鮮度ユーティリティ — Fog of War システム
+ * 鮮度ユーティリティ
  *
- * ライダーが「停めた」を確認するとスポットの霧が晴れる。
- * 時間経過で霧が戻る。lastConfirmedAt の経過時間で3段階。
- *
- * 旧: temperature.ts（時間単位の5段階温度）→ 月単位の3段階鮮度に置換
+ * ワンショット撮影の副産物として lastVerifiedAt が更新される。
+ * 経過時間で3段階: clear（1ヶ月）→ hazy（3ヶ月）→ foggy
  */
 import { ParkingPin } from '../types';
 
@@ -22,15 +20,15 @@ export const FRESHNESS_THRESHOLDS: { freshness: SpotFreshness; maxMs: number }[]
 // ── スタイル ─────────────────────────────────────────────
 
 export const FRESHNESS_STYLE: Record<SpotFreshness, { color: string; opacity: number }> = {
-  clear: { color: '#30D158', opacity: 1.0 },   // 緑 — 確認済み（光る）
-  hazy:  { color: '#FF9F0A', opacity: 0.55 },  // アンバー — やや古い
-  foggy: { color: '#636366', opacity: 0.3 },    // 暗グレー — 霧の中（ほぼ消えかけ）
+  clear: { color: '#30D158', opacity: 1.0 },   // ビビッドグリーン — 最近の足跡
+  hazy:  { color: '#7A9E7E', opacity: 1.0 },   // ミューテッドグリーン — 褪せた足跡
+  foggy: { color: '#636366', opacity: 1.0 },    // ニュートラルグレー — 未踏
 };
 
 // ── 算出 ─────────────────────────────────────────────────
 
 export function spotFreshness(spot: ParkingPin): SpotFreshness {
-  const src = spot.lastConfirmedAt ?? spot.lastArrivedAt;
+  const src = spot.lastConfirmedAt;
   if (!src) return 'foggy';
   const age = Date.now() - new Date(src).getTime();
   for (const t of FRESHNESS_THRESHOLDS) {
@@ -52,16 +50,14 @@ export function freshnessLabel(fresh: SpotFreshness): string {
 // ── テキスト ─────────────────────────────────────────────
 
 export function lastConfirmedText(spot: ParkingPin): string {
-  const src = spot.lastConfirmedAt ?? spot.lastArrivedAt;
+  const src = spot.lastConfirmedAt;
   if (!src) return 'まだ誰も確認していません';
   const age = Date.now() - new Date(src).getTime();
-  const mins = Math.floor(age / 60000);
-  if (mins < 1) return 'たった今確認されました';
-  if (mins < 60) return `${mins}分前に確認`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}時間前に確認`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}日前に確認`;
+  const days = Math.floor(age / (24 * 60 * 60 * 1000));
+  if (days === 0) return '今日確認されました';
+  if (days === 1) return '昨日確認されました';
+  if (days < 7) return '今週確認されました';
+  if (days < 30) return '今月確認されました';
   const months = Math.floor(days / 30);
   if (months < 12) return `${months}ヶ月前に確認`;
   return 'まだ誰も確認していません';

@@ -45,10 +45,8 @@ interface Props {
   userCC?: UserCC;
   onToggleCcFilter?: (enabled: boolean) => void;
   onExpandedChange?: (expanded: boolean) => void;
-  onAvatarPress?: () => void;
-  footprintCount?: number;
   onNotificationsPress?: () => void;
-  bikePhotoUrl?: string | null;
+  onSettingsPress?: () => void;
 }
 
 function FreshDot({ spot }: { spot: ParkingPin }) {
@@ -64,7 +62,7 @@ function ccDisplayLabel(cc: UserCC): string {
   return '大型';
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange, onAvatarPress, footprintCount, onNotificationsPress, bikePhotoUrl }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange, onNotificationsPress, onSettingsPress }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -123,29 +121,18 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
   return (
     <View style={styles.container} pointerEvents="box-none">
       <Animated.View ref={barRef} style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
-        {/* ── アバター（バイク写真 or デフォルトアイコン） ── */}
-        {onAvatarPress && (
+        {/* ── 設定ボタン（左端） ── */}
+        {onSettingsPress && (
           <TouchableOpacity
-            style={styles.avatarBtn}
+            style={styles.settingsBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onAvatarPress();
+              onSettingsPress();
             }}
             activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            {bikePhotoUrl ? (
-              <Image source={{ uri: bikePhotoUrl }} style={styles.avatarPhoto} />
-            ) : (
-              <Ionicons name="person-circle" size={32} color={C.sub} />
-            )}
-            {(footprintCount ?? 0) > 0 && (
-              <View style={styles.avatarBadge}>
-                <Text style={styles.avatarBadgeText}>
-                  {(footprintCount ?? 0) > 99 ? '99+' : footprintCount}
-                </Text>
-              </View>
-            )}
+            <Ionicons name="settings-outline" size={15} color={C.sub} />
           </TouchableOpacity>
         )}
 
@@ -316,6 +303,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  settingsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
   // ── 検索ボタン ────────────────────────────────────
   searchBtn: {
     width: 32,

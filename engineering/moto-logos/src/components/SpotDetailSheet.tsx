@@ -46,7 +46,7 @@ import {
   reportParked,
   incrementViewCount,
 } from '../firebase/firestoreService';
-import { getFirstVehicle, addFootprint, startParking } from '../db/database';
+import { getFirstVehicle, addFootprint } from '../db/database';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 import { useUser } from '../contexts/UserContext';
@@ -75,8 +75,16 @@ function markerColor(spot: ParkingPin): string {
 }
 
 function formatDate(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diffMs = now - then;
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (days === 0) return '今日';
+  if (days === 1) return '昨日';
+  if (days < 7) return '今週';
+  if (days < 30) return '今月';
   const d = new Date(iso);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月`;
 }
 
 // ─── Props ────────────────────────────────────────────
@@ -134,7 +142,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
 
   // ワンショット
   const [shotUploading, setShotUploading] = useState(false);
-  const [hasShot, setHasShot]             = useState(false);
+
 
   // 自分の足跡（自分のノート）
   const [myFootprints, setMyFootprints] = useState<Footprint[]>([]);
@@ -148,13 +156,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   // ワンショット後のリフレッシュ用
   const loadAll = useCallback(async () => {
     setReportsLoading(true);
-    const [r, prev, fp] = await Promise.all([
+    const [r, fp] = await Promise.all([
       fetchReviews(spot.id, 'date'),
-      AsyncStorage.getItem(`vote_${spot.id}`),
       getFootprintsBySpot(spot.id),
     ]);
     setReports(r);
-    setHasShot(!!prev);
     setMyFootprints(fp);
     setReportsLoading(false);
   }, [spot.id]);
@@ -170,20 +176,16 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
           { id: 903, spotId: spot.id, source: 'seed', score: 0, comment: '[full] 土日は満車多い', photoUri: null, createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() },
         ]);
       });
-      setHasShot(false);
+
       setReportsLoading(false);
       return;
     }
 
     let stale = false;
     setReportsLoading(true);
-    Promise.all([
-      fetchReviews(spot.id, 'date'),
-      AsyncStorage.getItem(`vote_${spot.id}`),
-    ]).then(([r, prev]) => {
+    fetchReviews(spot.id, 'date').then((r) => {
       if (stale) return;
       setReports(r);
-      setHasShot(!!prev);
       setReportsLoading(false);
     });
     incrementViewCount(spot.id);
@@ -238,7 +240,7 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
 
   // ── ワンショット: カメラ → アップロード → 鮮度更新 ─────
   const handleOneShot = async () => {
-    if (hasShot || shotUploading) return;
+    if (shotUploading) return;
     const uri = await pickPhotoFromCamera();
     if (!uri) return; // キャンセル
 
@@ -258,9 +260,8 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
       // 鮮度更新（副産物）
       reportParked(spot.id).catch((e) => captureError(e, { context: 'oneshot_parked', spotId: spot.id }));
 
-      // ローカル足跡 + 駐車セッション
+      // ローカル足跡
       addFootprint(spot.id, spot.name, spot.latitude, spot.longitude, 'parked');
-      startParking(spot.id, spot.name, spot.latitude, spot.longitude, bike?.id);
 
       // ローカル記録
       AsyncStorage.setItem(`vote_${spot.id}`, 'matched');
@@ -269,7 +270,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
 
       // フィードバック
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setHasShot(true);
       onSpotUpdated?.();
       await loadAll();
     } catch (e: unknown) {
@@ -416,19 +416,11 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
-              {(spot.currentParked ?? 0) > 0 && (
-                <View style={[styles.badge, { backgroundColor: C.green }]}>
-                  <Text style={styles.badgeText}>今{spot.currentParked}台が駐車中</Text>
-                </View>
-              )}
               <FreshnessBadge spot={spot} />
             </View>
 
             {/* 鮮度テキスト */}
             <FreshnessText spot={spot} />
-
-            {/* 自分のノート（写真 + 足跡） */}
-            <MyNotes reports={reports} footprints={myFootprints} userId={user?.userId ?? null} onPhotoTap={setFullPhoto} />
 
             {/* 写真ギャラリー */}
             {photos.length > 0 ? (
@@ -515,18 +507,18 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
               <Text style={styles.footerNavText}>案内開始</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.footerShotBtn, (hasShot || shotUploading) && { opacity: 0.5 }]}
+              style={[styles.footerShotBtn, shotUploading && { opacity: 0.5 }]}
               onPress={handleOneShot}
               activeOpacity={0.8}
-              accessibilityLabel={hasShot ? '撮影済み' : 'ワンショット'}
+              accessibilityLabel="ワンショット"
               accessibilityRole="button"
               accessibilityHint="カメラで写真を撮り、自分のノートに保存します"
-              accessibilityState={{ disabled: hasShot || shotUploading }}
+              accessibilityState={{ disabled: shotUploading }}
             >
               {shotUploading
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name={hasShot ? 'checkmark-circle' : 'camera'} size={17} color="#fff" />}
-              <Text style={styles.footerShotText}>{hasShot ? '撮影済み' : 'ワンショット'}</Text>
+                : <Ionicons name="camera" size={17} color="#fff" />}
+              <Text style={styles.footerShotText}>ワンショット</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.footerShareBtn}
@@ -723,13 +715,13 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
       <View style={styles.reportCardTop}>
         {isMatched && (
           <View style={styles.reportCardBadge}>
-            <Ionicons name="thumbs-up" size={13} color={C.green} />
-            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>停めた</Text>
+            <Ionicons name="camera" size={13} color={C.green} />
+            <Text style={[styles.reportCardBadgeText, { color: C.green }]}>ワンショット</Text>
           </View>
         )}
         {isUnmatched && (
           <View style={styles.reportCardBadge}>
-            <Ionicons name="thumbs-down" size={13} color={correctionInfo?.color ?? C.orange} />
+            <Ionicons name="alert-circle" size={13} color={correctionInfo?.color ?? C.orange} />
             <Text style={[styles.reportCardBadgeText, { color: correctionInfo?.color ?? C.orange }]}>
               {correctionInfo?.label ?? '停められなかった'}
             </Text>

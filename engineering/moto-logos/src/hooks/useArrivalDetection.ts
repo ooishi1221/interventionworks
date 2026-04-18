@@ -14,8 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { ParkingPin } from '../types';
-import { fetchReviews, reportParked, reportDeparted } from '../firebase/firestoreService';
-import { addFootprint, startParking, getFirstVehicle, expireOldParkingSessions } from '../db/database';
+import { fetchReviews, reportParked } from '../firebase/firestoreService';
+import { addFootprint, getFirstVehicle } from '../db/database';
 import { captureError } from '../utils/sentry';
 import { haversineMeters } from '../utils/distance';
 
@@ -104,18 +104,10 @@ export function useArrivalDetection() {
             arrivedRef.current = true;
             const spot = destination.spot;
 
-            // ── 古いセッションを自動終了してから新規開始 (#110) ──
-            expireOldParkingSessions(2 * 60 * 60 * 1000).then((expired) => {
-              for (const s of expired) reportDeparted(s.spotId).catch((e) => captureError(e, { context: 'auto_expire_departed', spotId: s.spotId }));
-            }).catch((e) => captureError(e, { context: 'expire_old_sessions' }));
-
-            // ── 自動で温度UP + 足跡記録（ボタン不要）──
+            // ── 自動で鮮度更新 + 足跡記録（ボタン不要）──
             reportParked(spot.id).catch((e) => captureError(e, { context: 'auto_report_parked' }));
             addFootprint(spot.id, spot.name, spot.latitude, spot.longitude, 'parked')
               .catch((e) => captureError(e, { context: 'auto_footprint' }));
-            getFirstVehicle().then((bike) =>
-              startParking(spot.id, spot.name, spot.latitude, spot.longitude, bike?.id)
-            ).catch((e) => captureError(e, { context: 'auto_parking_session' }));
 
             await sendArrivalNotification(spot);
             // 到着したら行き先をクリア
