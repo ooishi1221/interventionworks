@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 38,
+    height: 44,
     gap: 8,
   },
   rank: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   freshLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
   },
   dist: {

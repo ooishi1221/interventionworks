@@ -1,11 +1,11 @@
 /**
- * RiderScreen v6 — ライダーノート
+ * RiderScreen v7 — ライダーノート
  *
  * ① バイク写真カード（タップで変更）
  * ② 排気量選択（4択）
- * ③ お気に入りTOP3（ワンショット数順）
- * ④ ワンショット履歴（3列グリッド）
- * ⑤ ワンショットマップ
+ * ③ よく撮ってるスポットTOP3（ワンショット数順）
+ * ④ ワンショット履歴（3列グリッド）← ファーストビュー化
+ * ⑤ ワンショットマップ（180pt、最下部）
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -256,10 +256,10 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           })}
         </View>
 
-        {/* ── ③ お気に入りTOP3 ───────────────────────── */}
+        {/* ── ③ よく撮ってるスポットTOP3 ─────────────── */}
         {topSpots.length > 0 && (
           <>
-            <Text style={s.sectionTitle}>お気に入り</Text>
+            <Text style={s.sectionTitle}>よく撮ってるスポット</Text>
             <View style={s.topGrid}>
               {topSpots.map((ts) => {
                 const photoUri = topSpotPhotos.get(ts.spotId);
@@ -299,44 +299,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           </>
         )}
 
-        {/* ── ④ ワンショットマップ ───────────────────── */}
-        <Text style={s.sectionTitle}>ワンショットマップ</Text>
-        <View style={s.mapCard}>
-          <MapView
-            style={s.map}
-            initialRegion={mapRegion}
-            region={mapRegion}
-            customMapStyle={DARK_MAP_STYLE}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            pointerEvents="none"
-          >
-            {oneshotLocations.map((loc) => (
-              <Marker
-                key={loc.spotId}
-                coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-                pinColor="#FF453A"
-              />
-            ))}
-          </MapView>
-
-          {oneshotLocations.length === 0 && (
-            <View style={s.mapEmptyOverlay}>
-              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
-              <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
-            </View>
-          )}
-
-          {oneshotLocations.length > 0 && (
-            <View style={s.mapBadge}>
-              <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
-            </View>
-          )}
-        </View>
-
-        {/* ── ⑤ ワンショット履歴 ─────────────────────── */}
+        {/* ── ④ ワンショット履歴 ─────────────────────── */}
         <Text style={s.sectionTitle}>ワンショット</Text>
         {myPhotos.length === 0 ? (
           <View style={s.emptyActivity}>
@@ -381,6 +344,43 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
             )}
           </>
         )}
+
+        {/* ── ⑤ ワンショットマップ ───────────────────── */}
+        <Text style={s.sectionTitle}>ワンショットマップ</Text>
+        <View style={s.mapCard}>
+          <MapView
+            style={s.map}
+            initialRegion={mapRegion}
+            region={mapRegion}
+            customMapStyle={DARK_MAP_STYLE}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            pointerEvents="none"
+          >
+            {oneshotLocations.map((loc) => (
+              <Marker
+                key={loc.spotId}
+                coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+                pinColor="#FF453A"
+              />
+            ))}
+          </MapView>
+
+          {oneshotLocations.length === 0 && (
+            <View style={s.mapEmptyOverlay}>
+              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
+              <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
+            </View>
+          )}
+
+          {oneshotLocations.length > 0 && (
+            <View style={s.mapBadge}>
+              <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
+            </View>
+          )}
+        </View>
 
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -459,10 +459,10 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 10,
     marginLeft: 18,
-    marginTop: 24,
+    marginTop: 16,
   },
 
-  // ── ③ お気に入りTOP3 ──
+  // ── ③ よく撮ってるスポットTOP3 ──
   topGrid: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -508,7 +508,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── ④ ワンショット履歴 ──
+  // ── ④ ワンショット履歴（TOP3直後、マップの前） ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
   oneshotGrid: {
@@ -544,7 +544,7 @@ const s = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 16,
     overflow: 'hidden',
-    height: 280,
+    height: 180,
     backgroundColor: C.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,

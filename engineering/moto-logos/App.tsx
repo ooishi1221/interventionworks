@@ -362,7 +362,7 @@ function App() {
               >
                 <Ionicons
                   name={tab === 'map' ? 'home' : 'home-outline'}
-                  size={28}
+                  size={32}
                   color={tab === 'map' ? SYS_BLUE : SYS_GRAY}
                 />
               </TouchableOpacity>
@@ -375,7 +375,7 @@ function App() {
               >
                 <Ionicons
                   name={searchPhase !== 'idle' ? 'search' : 'search-outline'}
-                  size={28}
+                  size={32}
                   color={searchPhase !== 'idle' ? SYS_BLUE : SYS_GRAY}
                 />
               </TouchableOpacity>
@@ -410,7 +410,7 @@ function App() {
                 ) : (
                   <Ionicons
                     name={tab === 'rider' ? 'person' : 'person-outline'}
-                    size={28}
+                    size={32}
                     color={tab === 'rider' ? SYS_BLUE : SYS_GRAY}
                   />
                 )}
@@ -425,7 +425,7 @@ function App() {
                 <View>
                   <Ionicons
                     name={tab === 'settings' ? 'settings' : 'settings-outline'}
-                    size={28}
+                    size={32}
                     color={tab === 'settings' ? SYS_BLUE : SYS_GRAY}
                   />
                   {unreadCount > 0 && <View style={styles.unreadDot} />}
@@ -480,10 +480,10 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'android' ? 68 : 64,
   },
   avatarRing: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2.5,
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
@@ -492,9 +492,9 @@ const styles = StyleSheet.create({
     borderColor: SYS_BLUE,
   },
   avatarImg: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 31,
+    height: 31,
+    borderRadius: 15.5,
   },
   unreadDot: {
     position: 'absolute' as const,

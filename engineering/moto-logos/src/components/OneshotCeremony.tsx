@@ -3,10 +3,10 @@
  *
  * シーケンス:
  *   0ms    白フラッシュ + 大振動
- *   200ms  写真フレームがドロップイン（spring）
- *   600ms  トーストテキストがフェードイン
- *   2500ms 写真が縮小+下に移動（地図に吸い込まれる）+ 背景フェードアウト
- *   3000ms onComplete()
+ *   120ms  写真フレームがドロップイン（spring）
+ *   350ms  トーストテキストがフェードイン
+ *   1800ms 写真が縮小+下に移動（地図に吸い込まれる）+ 背景フェードアウト
+ *   2250ms onComplete()
  *
  * タップで即スキップ可能
  */
@@ -97,14 +97,14 @@ export function OneshotCeremony({ visible, photoUri, spotName, footprintCount, o
 
     // Flash: 0 → 1 → 0
     Animated.sequence([
-      Animated.timing(flashOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-      Animated.timing(flashOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(flashOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(flashOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start();
 
     // Background fade in
     Animated.timing(bgOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
 
-    // Photo drop-in (delayed 200ms)
+    // Photo drop-in (delayed 120ms)
     const dropTimer = setTimeout(() => {
       Animated.spring(photoScale, {
         toValue: 1,
@@ -112,18 +112,18 @@ export function OneshotCeremony({ visible, photoUri, spotName, footprintCount, o
         friction: 7,
         useNativeDriver: true,
       }).start();
-    }, 200);
+    }, 120);
 
-    // Text fade in (delayed 600ms)
+    // Text fade in (delayed 350ms)
     Animated.timing(textOpacity, {
       toValue: 1,
       duration: 300,
-      delay: 600,
+      delay: 350,
       useNativeDriver: true,
     }).start();
 
-    // Auto-dismiss after 2500ms
-    fadeTimer.current = setTimeout(dismiss, 2500);
+    // Auto-dismiss after 1800ms
+    fadeTimer.current = setTimeout(dismiss, 1800);
 
     return () => {
       clearTimeout(dropTimer);
