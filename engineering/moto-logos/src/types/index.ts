@@ -51,6 +51,20 @@ export interface Favorite {
   createdAt: string;
 }
 
+/** AI解析ステータス（Admin Gemini 解析パイプライン） */
+export type MapUpdateStatus = 'pending' | 'analyzed' | 'applied' | 'skipped';
+
+/** Gemini AI 解析結果（看板写真から抽出された構造化データ） */
+export interface GeminiAnalysisResult {
+  priceInfo?: string;
+  openHours?: string;
+  parkingCapacity?: number;
+  isFree?: boolean;
+  payment?: { cash: boolean; icCard: boolean; qrCode: boolean };
+  capacity?: { is50only: boolean; upTo125: boolean; upTo400: boolean; isLargeOk: boolean };
+  confidence: number;
+}
+
 /** ユーザー投稿レビュー（コメント・写真対応） */
 export interface Review {
   id: number;
@@ -67,6 +81,10 @@ export interface Review {
   vehicleName?: string | null;
   /** 写真タグ（看板 / 入口 / その他） */
   photoTag?: 'sign' | 'entrance' | 'general' | null;
+  /** AI解析ステータス（Admin側で解析→適用） */
+  mapUpdateStatus?: MapUpdateStatus;
+  /** Gemini AI 解析結果 */
+  mapUpdateAnalysis?: GeminiAnalysisResult;
   createdAt: string;
 }
 

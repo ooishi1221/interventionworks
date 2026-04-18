@@ -294,10 +294,6 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
                     {spotNameMap.get(item.spotId) ?? item.spotId}
                   </Text>
                   <Text style={s.oneshotTime}>{formatCoarseTime(item.createdAt)}</Text>
-                  <View style={s.aiBadge}>
-                    <Ionicons name="sparkles" size={10} color={C.accent} />
-                    <Text style={s.aiBadgeText}>AI分析</Text>
-                  </View>
                 </View>
                 <Ionicons name="chevron-forward" size={14} color={C.sub} />
               </TouchableOpacity>
@@ -561,15 +557,6 @@ const s = StyleSheet.create({
   oneshotInfo: { flex: 1, gap: 4 },
   oneshotSpotName: { color: C.text, fontSize: 14, fontWeight: '600' },
   oneshotTime: { color: C.sub, fontSize: 12 },
-  aiBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1, borderColor: 'rgba(255,107,0,0.3)',
-    opacity: 0.4,
-  },
-  aiBadgeText: { color: C.accent, fontSize: 10, fontWeight: '600' },
   showMoreBtn: {
     alignItems: 'center', paddingVertical: 12,
     marginHorizontal: 16,

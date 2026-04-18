@@ -417,6 +417,8 @@ export async function fetchUserPhotos(userId: string): Promise<Review[]> {
         photoUri:    urls[0],
         vehicleName: (data.vehicleName as string) ?? null,
         photoTag:    (data.photoTag as string | undefined) as Review['photoTag'] ?? null,
+        mapUpdateStatus: (data.mapUpdateStatus as Review['mapUpdateStatus']) ?? undefined,
+        mapUpdateAnalysis: (data.mapUpdateAnalysis as Review['mapUpdateAnalysis']) ?? undefined,
         createdAt:   ts?.toDate().toISOString() ?? new Date().toISOString(),
       } satisfies Review;
     })

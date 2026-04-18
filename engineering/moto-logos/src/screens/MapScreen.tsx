@@ -24,9 +24,10 @@ import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
 import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity, reportParked } from '../firebase/firestoreService';
-import { insertUserSpot, getFirstVehicle } from '../db/database';
+import { insertUserSpot, getFirstVehicle, getFootprintCount } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
+import { OneshotCeremony } from '../components/OneshotCeremony';
 import { captureError } from '../utils/sentry';
 import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { haversineMeters } from '../utils/distance';
@@ -150,6 +151,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [searchText, setSearchText]           = useState('');
   const [searching, setSearching]             = useState(false);
   const [searchResultMsg, setSearchResultMsg] = useState<string | null>(null);
+  const [ceremony, setCeremony] = useState<{
+    photoUri: string; spotName: string; footprintCount: number;
+  } | null>(null);
 
   // setTimeout リーク防止用 ref
   const miscTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -214,6 +218,22 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       fetchSpotsForRegion(lastFetchRegionRef.current);
     }
   }, [fetchSpotsForRegion]);
+
+  // ── ワンショットセレモニー ────────────────────────────
+  const ceremonyCooldown = useRef(false);
+  const handleOneshotCeremony = useCallback(async (data: { photoUri: string; spotName: string }) => {
+    if (ceremonyCooldown.current) return;
+    ceremonyCooldown.current = true;
+    setSelected(null); // シートを先に閉じて地図を見せる
+    const count = await getFootprintCount().catch(() => 0);
+    setCeremony({ ...data, footprintCount: count });
+    setTimeout(() => { ceremonyCooldown.current = false; }, 3500);
+  }, []);
+
+  const handleCeremonyComplete = useCallback(() => {
+    setCeremony(null);
+    setSelected(null);
+  }, []);
 
   // refreshTrigger 変化時 → 全置換で再取得（削除されたスポットもマップから消える）
   const prevTrigger = useRef(refreshTrigger);
@@ -570,9 +590,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         latitude, longitude,
         latitudeDelta: 0.005, longitudeDelta: 0.005,
       }, 600);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSearchResultMsg('スポットを共有しました!');
-      miscTimerRef.current = setTimeout(() => setSearchResultMsg(null), 3000);
+      // セレモニー演出（ハプティックはセレモニー内）
+      handleOneshotCeremony({ photoUri, spotName: name });
     } catch (e: unknown) {
       captureError(e, { context: 'quickReport' });
       const message = e instanceof Error ? e.message : String(e);
@@ -1027,10 +1046,18 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onClose={() => setSelected(null)}
             onSetDestination={setDestination}
             onSpotUpdated={handleProximitySpotUpdated}
+            onOneshotCeremony={handleOneshotCeremony}
           />
         </View>
       )}
       <PickerSheet />
+      <OneshotCeremony
+        visible={!!ceremony}
+        photoUri={ceremony?.photoUri ?? null}
+        spotName={ceremony?.spotName ?? ''}
+        footprintCount={ceremony?.footprintCount ?? 0}
+        onComplete={handleCeremonyComplete}
+      />
     </View>
   );
 }); // forwardRef 終端

@@ -141,7 +141,7 @@ export function useArrivalDetection() {
  */
 async function sendArrivalNotification(spot: ParkingPin): Promise<void> {
   try {
-    // 看板写真があるかチェック → あれば軽い通知、なければ写真を促す
+    // 写真の有無で通知を出し分け
     let hasPhoto = false;
     try {
       const reviews = await fetchReviews(spot.id);
@@ -152,11 +152,11 @@ async function sendArrivalNotification(spot: ParkingPin): Promise<void> {
 
     const title = hasPhoto
       ? `${spot.name}に到着`
-      : `📸 ${spot.name}の看板、メモしとく？`;
+      : `📸 ${spot.name} — ワンショットで刻む？`;
 
     const body = hasPhoto
       ? '足跡が刻まれました'
-      : '次のライダーの道しるべになります';
+      : '';
 
     await Notifications.scheduleNotificationAsync({
       content: {

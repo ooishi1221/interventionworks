@@ -94,11 +94,12 @@ interface Props {
   onSetDestination?: (spot: ParkingPin) => void;
   onSpotSelect?: (spot: ParkingPin) => void;
   onSpotUpdated?: () => void;
+  onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
 }
 
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated, onOneshotCeremony }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -269,8 +270,8 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
       logActivityLocal('report', `${spot.name}をワンショット`);
       incrementStat('reports');
 
-      // フィードバック
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // セレモニー演出をトリガー（ハプティックはセレモニー内で実行）
+      onOneshotCeremony?.({ photoUri: uri, spotName: spot.name });
       onSpotUpdated?.();
       await loadAll();
     } catch (e: unknown) {
