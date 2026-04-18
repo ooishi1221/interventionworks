@@ -11,8 +11,6 @@ import {
   Keyboard,
   Dimensions,
   Linking,
-  AppState,
-  AppStateStatus,
 } from 'react-native';
 import MapView, { Marker, Region, Circle } from 'react-native-maps';
 import ClusteredMapView from 'react-native-map-clustering';
@@ -23,7 +21,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
-import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity, reportParked } from '../firebase/firestoreService';
+import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
 import { insertUserSpot, getFirstVehicle, getFootprintCount } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
@@ -32,15 +30,11 @@ import { captureError } from '../utils/sentry';
 import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
-import { useProximityState } from '../hooks/useProximityState';
-import { useArrivalDetection } from '../hooks/useArrivalDetection';
-import { ProximityContextCard } from '../components/ProximityContextCard';
-import { NearbySpotsList, AreaSummary } from '../components/NearbySpotsList';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
+import { SearchResultsList } from '../components/SearchResultsList';
 import { useTutorial } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
-import * as Notifications from 'expo-notifications';
 
 // GPS取得前のフォールバック: 東京中心（首都圏ユーザーが大半）
 const TOKYO_FALLBACK: Region = {
@@ -54,18 +48,6 @@ const LAST_LOCATION_KEY = 'moto_logos_last_location';
 
 const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#8E8E93';
-
-// ── Googleマップ検索復帰 ──────────────────────────────
-const GMAPS_SEARCH_KEY = 'moto_logos_gmaps_search';
-const GMAPS_NOTIF_ID_KEY = 'moto_logos_gmaps_notif_id';
-const GMAPS_SEARCH_TTL = 24 * 60 * 60 * 1000; // 24時間
-const GMAPS_REMINDER_DELAY = 15 * 60; // 15分（秒）
-
-interface GmapsSearchSession {
-  lat: number;
-  lon: number;
-  startedAt: number;
-}
 
 import { FRESHNESS_STYLE, spotFreshness } from '../utils/freshness';
 
@@ -96,24 +78,25 @@ const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; 
 export interface MapScreenHandle {
   resetView: () => void;
   triggerOneShot: () => void;
+  searchNearby: () => void;
+  openTextSearch: () => void;
 }
+
+type SearchPhase = 'idle' | 'nearby' | 'text';
 
 interface Props {
   userCC: UserCC;
   onChangeCC?: (cc: UserCC) => void;
-  ccFilterEnabled?: boolean;
-  onToggleCcFilter?: (enabled: boolean) => void;
   focusSpot?: ParkingPin | null;
   focusReviewId?: string;
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
-  onGoToSettings?: () => void;
-
-  onNotificationsPress?: () => void;
+  searchPhase?: SearchPhase;
+  onSearchPhaseChange?: (phase: SearchPhase) => void;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, onGoToSettings, onNotificationsPress },
+  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange },
   ref
 ) {
   const user = useUser();
@@ -132,21 +115,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [wideZoom, setWideZoom]               = useState(true);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
-  // ── Googleマップ検索復帰 ─────────────────────────────
-  const [welcomeBackVisible, setWelcomeBackVisible] = useState(false);
-  const appStateRef = useRef(AppState.currentState);
-
-  // ── 近接コンテキストカード (#90) ────────────────────
-  const proximityEnabled = !selected && locationGranted;
-  const { state: proximityState, getNearbyAlternatives } = useProximityState({
-    spots: allSpotsRaw,
-    enabled: proximityEnabled,
-    loading,
-  });
-
-  // ── 到着検知 ────────────────────────────────────────────
-  const { setDestination } = useArrivalDetection();
-
   // ── 検索 ──────────────────────────────────────────────
   const [searchVisible, setSearchVisible]     = useState(false);
   const [searchText, setSearchText]           = useState('');
@@ -159,11 +127,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   // setTimeout リーク防止用 ref
   const miscTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (miscTimerRef.current) clearTimeout(miscTimerRef.current); }, []);
-  const [areaSummary, setAreaSummary]         = useState<AreaSummary | null>(null);
 
-  const [nearbyExpanded, setNearbyExpanded] = useState(false);
-
-
+  // ── サーチ結果（最寄りリスト用） ──────────────────────
+  const [searchResults, setSearchResults] = useState<{ spot: ParkingPin; distanceM: number }[]>([]);
+  const [searchAreaName, setSearchAreaName] = useState<string | null>(null);
 
   const lastFetchRegionRef = useRef<Region | null>(null);
 
@@ -343,7 +310,33 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
       quickReportRef.current();
     },
-  }), [locationGranted, fetchSpotsForRegion]);
+    searchNearby: async () => {
+      let lat = lastLocationRef.current?.latitude;
+      let lon = lastLocationRef.current?.longitude;
+      if (!lat || !lon) {
+        try {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          lat = loc.coords.latitude;
+          lon = loc.coords.longitude;
+          lastLocationRef.current = { latitude: lat, longitude: lon };
+        } catch {
+          return;
+        }
+      }
+      const region: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.06, longitudeDelta: 0.06 };
+      const freshSpots = await fetchSpotsForRegion(region);
+      const filtered = filterByCC(freshSpots, userCC);
+      const sorted = filtered
+        .map(s => ({ spot: s, distanceM: haversineMeters(lat!, lon!, s.latitude, s.longitude) }))
+        .sort((a, b) => a.distanceM - b.distanceM)
+        .slice(0, 3);
+      setSearchResults(sorted);
+      setSearchAreaName(null);
+    },
+    openTextSearch: () => {
+      setSearchVisible(true);
+    },
+  }), [locationGranted, fetchSpotsForRegion, userCC]);
 
   // お気に入りからのジャンプ
   useEffect(() => {
@@ -394,7 +387,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setLocationGranted(true);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     const { latitude, longitude } = loc.coords;
-    const all = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
+    const all = filterByCC(allSpotsRaw, userCC);
     if (all.length === 0) return;
     let nearest = all[0];
     let minDist = haversineMeters(latitude, longitude, nearest.latitude, nearest.longitude);
@@ -443,7 +436,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       const freshSpots = await fetchSpotsForRegion(searchRegion);
 
       // 検索地点周辺のスポット件数を通知
-      const filtered = ccFilterEnabled ? filterByCC(freshSpots, userCC) : freshSpots;
+      const filtered = filterByCC(freshSpots, userCC);
       const nearby = filtered
         .map((s) => ({ spot: s, dist: haversineMeters(latitude, longitude, s.latitude, s.longitude) }))
         .sort((a, b) => a.dist - b.dist);
@@ -482,18 +475,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     mapRef.current?.animateToRegion(searchRegion, 800);
 
     const freshSpots = await fetchSpotsForRegion(searchRegion);
-    const filtered = ccFilterEnabled ? filterByCC(freshSpots, userCC) : freshSpots;
-    const NEARBY_RADIUS = 3000;
-    const nearbyCount = filtered
-      .filter(s => haversineMeters(result.latitude, result.longitude, s.latitude, s.longitude) <= NEARBY_RADIUS)
-      .length;
+    const filtered = filterByCC(freshSpots, userCC);
+    const sorted = filtered
+      .map(s => ({ spot: s, distanceM: haversineMeters(result.latitude, result.longitude, s.latitude, s.longitude) }))
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, 3);
 
-    setAreaSummary({
-      areaName: result.areaName,
-      spotCount: nearbyCount,
-    });
+    setSearchResults(sorted);
+    setSearchAreaName(result.areaName);
+    onSearchPhaseChange?.('nearby');
     setSearching(false);
-  }, [userCC]);
+  }, [userCC, onSearchPhaseChange]);
 
   // ── 最後に変化完了した region を保持（再検索ボタン用）
   const currentRegionRef = useRef<Region>(initialRegion);
@@ -602,165 +594,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   };
   quickReportRef.current = handleQuickReport;
 
-  // ── Googleマップ検索起動 ──────────────────────────────
-  const handleGoogleMapsSearch = useCallback(async () => {
-    let lat = lastLocationRef.current?.latitude;
-    let lon = lastLocationRef.current?.longitude;
-    if (!lat || !lon) {
-      try {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        lat = loc.coords.latitude;
-        lon = loc.coords.longitude;
-      } catch (e) {
-        captureError(e, { context: 'gmaps_search_location' });
-        lat = 35.6812; lon = 139.7671; // フォールバック: 東京駅
-      }
-    }
-
-    // セッション保存
-    const session: GmapsSearchSession = { lat, lon, startedAt: Date.now() };
-    await AsyncStorage.setItem(GMAPS_SEARCH_KEY, JSON.stringify(session));
-
-    // 15分後のバックアップ通知をスケジュール
-    try {
-      const notifId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'バイク駐車場、見つかった？',
-          body: '見つけた場所をモトロゴに登録すると、次のライダーの道しるべになります',
-          sound: 'default',
-          data: { type: 'gmaps_reminder' },
-        },
-        trigger: { seconds: GMAPS_REMINDER_DELAY, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL },
-      });
-      await AsyncStorage.setItem(GMAPS_NOTIF_ID_KEY, notifId);
-    } catch (e) {
-      captureError(e, { context: 'gmaps_reminder_schedule' });
-    }
-
-    // Googleマップを開く
-    const query = encodeURIComponent('バイク 駐車場');
-    Linking.openURL(`https://www.google.com/maps/search/${query}/@${lat},${lon},15z`).catch((e) =>
-      captureError(e, { context: 'gmaps_open' }),
-    );
-  }, []);
-
-  // ── アプリ内広域検索（距離で最寄りを表示） ────────────
-  const handleWideAreaSearch = useCallback(async () => {
-    let lat = lastLocationRef.current?.latitude;
-    let lon = lastLocationRef.current?.longitude;
-    if (!lat || !lon) {
-      try {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        lat = loc.coords.latitude;
-        lon = loc.coords.longitude;
-      } catch (e) {
-        captureError(e, { context: 'wide_search_location' });
-        return;
-      }
-    }
-
-    // 広域リージョン（約15km圏）でスポット取得
-    const wideRegion: Region = {
-      latitude: lat, longitude: lon,
-      latitudeDelta: 0.25, longitudeDelta: 0.25,
-    };
-    mapRef.current?.animateToRegion(wideRegion, 800);
-    const freshSpots = await fetchSpotsForRegion(wideRegion);
-    const filtered = ccFilterEnabled ? filterByCC(freshSpots, userCC) : freshSpots;
-
-    if (__DEV__) {
-      Alert.alert('広域検索デバッグ', [
-        `座標: ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
-        `Firestore取得: ${freshSpots.length}件`,
-        `CCフィルタ: ${ccFilterEnabled ? 'ON' : 'OFF'} (userCC=${userCC})`,
-        `フィルタ後: ${filtered.length}件`,
-        `allSpotsRaw: ${allSpotsRaw.length}件`,
-      ].join('\n'));
-    }
-
-    const sorted = filtered
-      .map((s) => ({ spot: s, dist: haversineMeters(lat!, lon!, s.latitude, s.longitude) }))
-      .sort((a, b) => a.dist - b.dist);
-
-    if (sorted.length > 0) {
-      const nearest = sorted[0];
-      const km = (nearest.dist / 1000).toFixed(1);
-      setSearchResultMsg(`最寄り: ${nearest.spot.name}（${km}km先）`);
-      miscTimerRef.current = setTimeout(() => {
-        setSearchResultMsg(null);
-        setSelected(nearest.spot);
-      }, 1500);
-    } else {
-      setSearchResultMsg('広域にも登録済みのスポットがありません');
-      miscTimerRef.current = setTimeout(() => setSearchResultMsg(null), 3000);
-    }
-  }, [ccFilterEnabled, userCC, fetchSpotsForRegion]);
-
-  // ── Googleマップ復帰の dismiss ────────────────────────
-  const handleWelcomeBackDismiss = useCallback(async () => {
-    setWelcomeBackVisible(false);
-    await AsyncStorage.multiRemove([GMAPS_SEARCH_KEY, GMAPS_NOTIF_ID_KEY]);
-  }, []);
-
-  // ── AppState 復帰検知（Googleマップから戻ってきた？） ──
-  useEffect(() => {
-    // 起動時: 古いセッションをクリーンアップ
-    (async () => {
-      const raw = await AsyncStorage.getItem(GMAPS_SEARCH_KEY);
-      if (raw) {
-        try {
-          const session: GmapsSearchSession = JSON.parse(raw);
-          if (Date.now() - session.startedAt > GMAPS_SEARCH_TTL) {
-            await AsyncStorage.multiRemove([GMAPS_SEARCH_KEY, GMAPS_NOTIF_ID_KEY]);
-          }
-        } catch {
-          await AsyncStorage.multiRemove([GMAPS_SEARCH_KEY, GMAPS_NOTIF_ID_KEY]);
-        }
-      }
-    })();
-
-    const sub = AppState.addEventListener('change', async (next: AppStateStatus) => {
-      if (appStateRef.current.match(/inactive|background/) && next === 'active') {
-        try {
-          const raw = await AsyncStorage.getItem(GMAPS_SEARCH_KEY);
-          if (!raw) { appStateRef.current = next; return; }
-          const session: GmapsSearchSession = JSON.parse(raw);
-          if (Date.now() - session.startedAt > GMAPS_SEARCH_TTL) {
-            await AsyncStorage.multiRemove([GMAPS_SEARCH_KEY, GMAPS_NOTIF_ID_KEY]);
-            appStateRef.current = next;
-            return;
-          }
-          setWelcomeBackVisible(true);
-          // スケジュール済み通知をキャンセル
-          const notifId = await AsyncStorage.getItem(GMAPS_NOTIF_ID_KEY);
-          if (notifId) {
-            await Notifications.cancelScheduledNotificationAsync(notifId);
-            await AsyncStorage.removeItem(GMAPS_NOTIF_ID_KEY);
-          }
-        } catch (e) {
-          captureError(e, { context: 'gmaps_return_check' });
-        }
-      }
-      appStateRef.current = next;
-    });
-    return () => sub.remove();
-  }, []);
-
-  // ── 通知タップ復帰ハンドラー ──────────────────────────
-  useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      if (data?.type === 'gmaps_reminder') {
-        setWelcomeBackVisible(true);
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
   const allSpots = useMemo(() => {
-    const base = ccFilterEnabled ? filterByCC(allSpotsRaw, userCC) : allSpotsRaw;
+    const base = filterByCC(allSpotsRaw, userCC);
     return tutorial.active ? [tutorial.dummySpot, ...base] : base;
-  }, [allSpotsRaw, ccFilterEnabled, userCC, tutorial.active, tutorial.dummySpot]);
+  }, [allSpotsRaw, userCC, tutorial.active, tutorial.dummySpot]);
 
   // 確認済みスポット（鮮度clear）— 広域ズームでは描画しない
   const clearedSpots = useMemo(
@@ -817,10 +654,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   useEffect(() => {
     if (tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
-    }
-    // report フェーズに入ったらシートを閉じる（近接カードを表示するため）
-    if (tutorial.isStep('scene-report') || tutorial.isStep('report-good')) {
-      setSelected(null);
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
@@ -952,14 +785,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         </View>
       )}
 
-      {/* ── 最寄りスポットリスト（上部） ─────────────────── */}
-      {!selected && !searchVisible && (
-        <NearbySpotsList
-          alternatives={
-            tutorial.active && tutorial.phase === 'explore'
-              ? [{ spot: tutorial.dummySpot, distanceM: 120 }, ...getNearbyAlternatives(undefined, 2)]
-              : getNearbyAlternatives(undefined, 3)
-          }
+      {/* ── サーチ結果リスト（フローティング） ──────────── */}
+      {searchPhase === 'nearby' && searchResults.length > 0 && !selected && (
+        <SearchResultsList
+          items={searchResults}
+          areaName={searchAreaName}
           onSpotPress={(spot) => {
             mapRef.current?.animateToRegion({
               latitude: spot.latitude, longitude: spot.longitude,
@@ -967,52 +797,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             }, 800);
             miscTimerRef.current = setTimeout(() => setSelected(spot), 900);
           }}
-          onSearchPress={() => setSearchVisible(true)}
-          areaSummary={areaSummary}
-          onClearSearch={() => {
-            setAreaSummary(null);
+          onClear={() => {
+            setSearchResults([]);
+            setSearchAreaName(null);
+            onSearchPhaseChange?.('idle');
             goToCurrentLocation();
           }}
-          ccFilterEnabled={ccFilterEnabled}
-          userCC={userCC}
-          onToggleCcFilter={onToggleCcFilter}
-          onExpandedChange={setNearbyExpanded}
-          onNotificationsPress={onNotificationsPress}
-          onSettingsPress={onGoToSettings}
-        />
-      )}
-
-      {/* ── 近接コンテキストカード (#90) ─────────────────── */}
-      {!selected && !searchVisible && (
-        <ProximityContextCard
-          proximityState={proximityState}
-          onQuickReport={handleQuickReport}
-          onSpotUpdated={handleProximitySpotUpdated}
-          onWideAreaSearch={handleWideAreaSearch}
-          onGoogleMapsSearch={handleGoogleMapsSearch}
-          welcomeBackVisible={welcomeBackVisible}
-          onWelcomeBackDismiss={handleWelcomeBackDismiss}
         />
       )}
 
       {/* ── アカウント連携ナッジ ───────────────────────── */}
-      {!selected && !searchVisible && onGoToSettings && (
-        <LinkNudgeCard onGoToSettings={onGoToSettings} />
-      )}
-
-      {/* ── 検索ピル（タブバー直上） ─────────────────────── */}
-      {!searchVisible && !selected && (
-        <TouchableOpacity
-          style={styles.searchPill}
-          onPress={() => setSearchVisible(true)}
-          activeOpacity={0.8}
-          accessibilityLabel="スポットを検索"
-          accessibilityRole="button"
-        >
-          <Ionicons name="search" size={16} color="#8E8E93" />
-          <Text style={styles.searchPillText}>どこ行く？</Text>
-        </TouchableOpacity>
-      )}
+      {!selected && !searchVisible && <LinkNudgeCard />}
 
       {/* ── βフィードバックボタン ───────────────────────── */}
       {!searchVisible && !selected && <BetaFeedbackButton />}
@@ -1045,7 +840,6 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <SpotDetailSheet
             spot={selected}
             onClose={() => setSelected(null)}
-            onSetDestination={setDestination}
             onSpotUpdated={handleProximitySpotUpdated}
             onOneshotCeremony={handleOneshotCeremony}
             highlightReviewId={focusReviewId}

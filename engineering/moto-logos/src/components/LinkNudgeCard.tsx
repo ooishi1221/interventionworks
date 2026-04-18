@@ -21,7 +21,7 @@ import { getMyReviewCount } from '../firebase/firestoreService';
 const NUDGE_DISMISSED_KEY = 'moto_logos_link_nudge_dismissed';
 
 interface Props {
-  onGoToSettings: () => void;
+  onGoToSettings?: () => void;
 }
 
 export function LinkNudgeCard({ onGoToSettings }: Props) {
@@ -62,7 +62,7 @@ export function LinkNudgeCard({ onGoToSettings }: Props) {
 
   const handleLink = useCallback(() => {
     dismiss();
-    onGoToSettings();
+    onGoToSettings?.();
   }, [dismiss, onGoToSettings]);
 
   if (!visible) return null;

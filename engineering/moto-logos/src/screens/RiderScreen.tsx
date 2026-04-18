@@ -1,9 +1,11 @@
 /**
- * RiderScreen v5 — 足跡地図 + ライダーノート + 日記タイムライン
+ * RiderScreen v6 — ライダーノート
  *
- * 上部: 愛車写真付きHeroカード
- * 中部: 足跡マップ + ライダーノート（写真ギャラリー）
- * 下部: 日記形式の活動タイムライン
+ * ① バイク写真カード（タップで変更）
+ * ② 排気量選択（4択）
+ * ③ お気に入りTOP3（ワンショット数順）
+ * ④ ワンショット履歴（3列グリッド）
+ * ⑤ ワンショットマップ
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -13,10 +15,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  ImageBackground,
-  TextInput,
   Image,
-  FlatList,
   Dimensions,
 } from 'react-native';
 import Constants from 'expo-constants';
@@ -27,54 +26,28 @@ import * as Haptics from 'expo-haptics';
 import {
   getFirstVehicle,
   getFootprints,
-  getUniqueFootprintLocations,
+  getTopSpots,
+  updateVehicle,
   type Footprint,
+  type TopSpot,
 } from '../db/database';
-import { fetchUserPhotos } from '../firebase/firestoreService';
+import { fetchUserPhotos, syncBikeToFirestore } from '../firebase/firestoreService';
 import { useUser } from '../contexts/UserContext';
-import { SpotsListModal } from './SpotsListModal';
-import { ParkingPin, Vehicle, Review } from '../types';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
+import { ParkingPin, Vehicle, Review, UserCC } from '../types';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { Colors } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-
 const C = Colors;
 
-const CC_LABEL: Record<string, string> = {
-  '50': '原付',
-  '125': '125cc',
-  '400': '400cc',
-  'null': '大型',
-};
-
-// ─── 足跡タイプ別のアイコン/カラー ───────────────────
-const FOOTPRINT_STYLE: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }> = {
-  parked: { icon: 'camera', color: C.green, label: 'をワンショット' },
-  full:   { icon: 'alert-circle', color: '#FF453A', label: 'は満車だった' },
-  closed: { icon: 'close-circle', color: '#636366', label: 'は閉鎖していた' },
-  wrong_price: { icon: 'cash-outline', color: '#FFD60A', label: 'で料金が違った' },
-  wrong_cc:    { icon: 'speedometer-outline', color: C.orange, label: 'でCC制限が違った' },
-  failed: { icon: 'footsteps-outline', color: C.orange, label: 'で停められなかった' },
-};
-
-// ─── 日付フォーマット ────────────────────────────────
-function formatDiaryDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
-}
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-function isSameDay(a: string, b: string): boolean {
-  return a.slice(0, 10) === b.slice(0, 10);
-}
+const CC_OPTIONS: { value: UserCC; label: string }[] = [
+  { value: 50, label: '50cc' },
+  { value: 125, label: '125cc' },
+  { value: 400, label: '400cc' },
+  { value: null as unknown as UserCC, label: '大型' },
+];
 
 function formatOneshotTime(iso: string): string {
   const d = new Date(iso);
@@ -88,7 +61,6 @@ function formatOneshotTime(iso: string): string {
   return `${d.getFullYear()}/${month}/${day} ${h}:${m}`;
 }
 
-// ─── 東京デフォルトリージョン ────────────────────────
 const TOKYO_REGION: Region = {
   latitude: 35.6812,
   longitude: 139.7671,
@@ -99,33 +71,33 @@ const TOKYO_REGION: Region = {
 interface Props {
   onGoToSpot?: (spot: ParkingPin, reviewId?: string) => void;
   onDataChanged?: () => void;
-  onOpenMyBike?: () => void;
-  onOpenSettings?: () => void;
+  userCC?: UserCC;
+  onChangeCC?: (cc: UserCC) => void;
   nickname?: string;
   onChangeNickname?: (name: string) => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSettings, nickname, onChangeNickname }: Props) {
+export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nickname, onChangeNickname }: Props) {
   const user = useUser();
+  const { showPicker, PickerSheet } = usePhotoPicker();
   const [bike, setBike] = useState<Vehicle | null>(null);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
-  const [uniqueLocations, setUniqueLocations] = useState<Footprint[]>([]);
   const [myPhotos, setMyPhotos] = useState<Review[]>([]);
+  const [topSpots, setTopSpots] = useState<TopSpot[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [spotsModalOpen, setSpotsModalOpen] = useState(false);
-  const [showAllPhotos, setShowAllPhotos] = useState(false);
+  const [photoPage, setPhotoPage] = useState(1);
+  const PHOTOS_PER_PAGE = 15; // 3×5
 
   const loadData = useCallback(async () => {
-    const [vehicle, fp, uloc] = await Promise.all([
+    const [vehicle, fp, tops] = await Promise.all([
       getFirstVehicle(),
       getFootprints(50),
-      getUniqueFootprintLocations(),
+      getTopSpots(3),
     ]);
     setBike(vehicle);
     setFootprints(fp);
-    setUniqueLocations(uloc);
+    setTopSpots(tops);
 
-    // ライダーノート（写真付きレビュー）
     const uid = user?.userId;
     if (uid) {
       try {
@@ -145,20 +117,70 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
     setRefreshing(false);
   }, [loadData]);
 
+  // バイク写真変更
+  const handleChangePhoto = useCallback(async () => {
+    const uri = await showPicker();
+    if (!uri || !bike) return;
+    try {
+      await updateVehicle(bike.id, { ...bike, photoUrl: uri });
+      setBike({ ...bike, photoUrl: uri });
+      const uid = user?.userId;
+      if (uid) syncBikeToFirestore(uid, { ...bike, photoUrl: uri }).catch(() => {});
+      onDataChanged?.();
+    } catch (e) {
+      captureError(e, { context: 'change_bike_photo' });
+    }
+  }, [bike, showPicker, user?.userId, onDataChanged]);
 
-  // 地図のリージョンを足跡から計算
+  // CC変更
+  const handleChangeCC = useCallback(async (cc: UserCC) => {
+    onChangeCC?.(cc);
+    if (bike) {
+      try {
+        await updateVehicle(bike.id, { ...bike, cc });
+        setBike({ ...bike, cc });
+        const uid = user?.userId;
+        if (uid) syncBikeToFirestore(uid, { ...bike, cc }).catch(() => {});
+      } catch (e) {
+        captureError(e, { context: 'change_cc' });
+      }
+    }
+  }, [bike, onChangeCC, user?.userId]);
+
+  // spotId → spotName
+  const spotNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const fp of footprints) map.set(fp.spotId, fp.spotName);
+    return map;
+  }, [footprints]);
+
+  // ワンショットポイント（写真付きレビューがあるスポットのみ）
+  const oneshotLocations = useMemo(() => {
+    const coordMap = new Map<string, { latitude: number; longitude: number; spotName: string }>();
+    for (const fp of footprints) {
+      if (!coordMap.has(fp.spotId)) {
+        coordMap.set(fp.spotId, { latitude: fp.latitude, longitude: fp.longitude, spotName: fp.spotName });
+      }
+    }
+    const photoSpotIds = new Set(myPhotos.filter(p => p.photoUri).map(p => p.spotId));
+    return [...photoSpotIds]
+      .map(id => ({ spotId: id, ...coordMap.get(id)! }))
+      .filter(loc => loc.latitude != null);
+  }, [footprints, myPhotos]);
+
+  // 地図リージョン（ワンショットポイントベース）
   const mapRegion = useMemo<Region>(() => {
-    if (uniqueLocations.length === 0) return TOKYO_REGION;
-    if (uniqueLocations.length === 1) {
+    if (oneshotLocations.length === 0) return TOKYO_REGION;
+    if (oneshotLocations.length === 1) {
       return {
-        latitude: uniqueLocations[0].latitude,
-        longitude: uniqueLocations[0].longitude,
+        latitude: oneshotLocations[0].latitude,
+        longitude: oneshotLocations[0].longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
       };
     }
-    const lats = uniqueLocations.map((f) => f.latitude);
-    const lngs = uniqueLocations.map((f) => f.longitude);
+    const lats = oneshotLocations.map(l => l.latitude);
+    const lngs = oneshotLocations.map(l => l.longitude);
     const minLat = Math.min(...lats);
     const maxLat = Math.max(...lats);
     const minLng = Math.min(...lngs);
@@ -169,105 +191,152 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
       latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.02),
       longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.02),
     };
-  }, [uniqueLocations]);
+  }, [oneshotLocations]);
 
-  // バイク情報
-  const bikeLabel = bike
-    ? [bike.name || bike.manufacturer, bike.year ? `${bike.year}` : null].filter(Boolean).join(' · ')
-    : null;
-  const ccLabel = bike?.cc !== undefined ? CC_LABEL[String(bike.cc)] : null;
-
-  // spotId → spotName マッピング（写真にスポット名を表示するため）
-  const spotNameMap = useMemo(() => {
+  // TOP3のワンショット画像マッチ（spotIdごとの最新写真）
+  const topSpotPhotos = useMemo(() => {
     const map = new Map<string, string>();
-    for (const fp of footprints) map.set(fp.spotId, fp.spotName);
+    for (const ts of topSpots) {
+      const photo = myPhotos.find(p => p.spotId === ts.spotId && p.photoUri);
+      if (photo?.photoUri) map.set(ts.spotId, photo.photoUri);
+    }
     return map;
-  }, [footprints]);
+  }, [topSpots, myPhotos]);
 
-  // インパクトメッセージ
-  const impactMessage = (() => {
-    const count = uniqueLocations.length;
-    if (count === 0) return '最初の足跡を刻もう — スポットに行って記録するだけ';
-    return `${count}か所に足跡を残した`;
-  })();
-
-  const visiblePhotos = showAllPhotos ? myPhotos : myPhotos.slice(0, 9);
+  const visiblePhotos = myPhotos.slice(0, photoPage * PHOTOS_PER_PAGE);
+  const hasMorePhotos = myPhotos.length > visiblePhotos.length;
 
   return (
     <View style={s.safe}>
-      {/* ── ヘッダーバー ─────────────────────────────── */}
-      <View style={s.headerBar}>
-        <Text style={s.headerTitle}>ライダーノート</Text>
-        {onOpenSettings && (
-          <TouchableOpacity
-            onPress={onOpenSettings}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={s.settingsBtn}
-          >
-            <Ionicons name="settings-outline" size={24} color={C.text} />
-          </TouchableOpacity>
-        )}
-      </View>
-
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.blue} />}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 200 && hasMorePhotos) {
+            setPhotoPage((p) => p + 1);
+          }
+        }}
+        scrollEventThrottle={400}
       >
 
-        {/* ── 1. ライダーカード（Hero） ─────────────── */}
-        <View style={s.heroCard} accessibilityRole="summary" accessibilityLabel="ライダープロフィールカード">
+        {/* ── ① バイク写真カード ──────────────────────── */}
+        <Text style={s.sectionTitle}>マイバイク</Text>
+        <TouchableOpacity
+          style={s.photoCard}
+          onPress={handleChangePhoto}
+          activeOpacity={0.85}
+        >
           {bike?.photoUrl ? (
-            <ImageBackground
-              source={{ uri: bike.photoUrl }}
-              style={s.heroBg}
-              imageStyle={s.heroBgImage}
-            >
-              <LinearGradient
-                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
-                style={s.heroOverlay}
-              >
-                <HeroContent
-                  nickname={nickname}
-                  bikeLabel={bikeLabel}
-                  ccLabel={ccLabel}
-                  tagline={bike?.tagline}
-                  hasPhoto
-                  onChangeNickname={onChangeNickname}
-                />
-              </LinearGradient>
-            </ImageBackground>
+            <Image source={{ uri: bike.photoUrl }} style={s.photoImage} />
           ) : (
-            <View style={s.heroNoBg}>
-              <HeroContent
-                nickname={nickname}
-                bikeLabel={bikeLabel}
-                ccLabel={ccLabel}
-                tagline={bike?.tagline}
-                onChangeNickname={onChangeNickname}
+            <View style={s.photoPlaceholder}>
+              <MaterialCommunityIcons name="motorbike" size={40} color={C.accent} />
+              <Text style={s.photoPlaceholderText}>タップして写真を設定</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* ── ② 排気量選択 ────────────────────────────── */}
+        <Text style={s.sectionTitle}>排気量選択</Text>
+        <View style={s.ccRow}>
+          {CC_OPTIONS.map((opt) => {
+            const active = userCC === opt.value || (userCC === undefined && opt.value === null);
+            return (
+              <TouchableOpacity
+                key={String(opt.value)}
+                style={[s.ccBtn, active && s.ccBtnActive]}
+                onPress={() => { handleChangeCC(opt.value); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.ccText, active && s.ccTextActive]}>{opt.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* ── ③ お気に入りTOP3 ───────────────────────── */}
+        {topSpots.length > 0 && (
+          <>
+            <Text style={s.sectionTitle}>お気に入り</Text>
+            <View style={s.topGrid}>
+              {topSpots.map((ts) => {
+                const photoUri = topSpotPhotos.get(ts.spotId);
+                return (
+                  <TouchableOpacity
+                    key={ts.spotId}
+                    style={s.topCard}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      onGoToSpot?.({
+                        id: ts.spotId,
+                        name: ts.spotName,
+                        latitude: ts.latitude,
+                        longitude: ts.longitude,
+                        source: 'seed',
+                      } as ParkingPin);
+                    }}
+                  >
+                    {photoUri ? (
+                      <Image source={{ uri: photoUri }} style={s.topPhoto} />
+                    ) : (
+                      <View style={s.topPhotoPlaceholder}>
+                        <MaterialCommunityIcons name="motorbike" size={24} color={C.sub} />
+                      </View>
+                    )}
+                    <View style={s.topInfo}>
+                      <Text style={s.topName} numberOfLines={2}>{ts.spotName}</Text>
+                      <View style={s.topMeta}>
+                        <Ionicons name="camera" size={11} color={C.accent} />
+                        <Text style={s.topCount}>{ts.count}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* ── ④ ワンショットマップ ───────────────────── */}
+        <Text style={s.sectionTitle}>ワンショットマップ</Text>
+        <View style={s.mapCard}>
+          <MapView
+            style={s.map}
+            initialRegion={mapRegion}
+            region={mapRegion}
+            customMapStyle={DARK_MAP_STYLE}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            pointerEvents="none"
+          >
+            {oneshotLocations.map((loc) => (
+              <Marker
+                key={loc.spotId}
+                coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+                pinColor="#FF453A"
               />
+            ))}
+          </MapView>
+
+          {oneshotLocations.length === 0 && (
+            <View style={s.mapEmptyOverlay}>
+              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
+              <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
             </View>
           )}
 
-          {onOpenMyBike && (
-            <TouchableOpacity
-              style={s.editBikeBtn}
-              onPress={() => { onOpenMyBike(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              activeOpacity={0.7}
-              accessibilityLabel={bike ? 'マイバイク編集' : '愛車を登録しよう'}
-              accessibilityRole="button"
-              accessibilityHint="マイバイクの情報を編集する画面を開きます"
-            >
-              <Ionicons name="create-outline" size={14} color={C.sub} />
-              <Text style={s.editBikeText}>
-                {bike ? 'マイバイク編集' : '愛車を登録しよう'}
-              </Text>
-            </TouchableOpacity>
+          {oneshotLocations.length > 0 && (
+            <View style={s.mapBadge}>
+              <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
+            </View>
           )}
         </View>
 
-        {/* ── 2. ワンショットカード（メインコンテンツ） ── */}
+        {/* ── ⑤ ワンショット履歴 ─────────────────────── */}
         <Text style={s.sectionTitle}>ワンショット</Text>
         {myPhotos.length === 0 ? (
           <View style={s.emptyActivity}>
@@ -305,281 +374,207 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, onOpenSet
                 </TouchableOpacity>
               ))}
             </View>
-            {!showAllPhotos && myPhotos.length > 9 && (
-              <TouchableOpacity style={s.showMoreBtn} onPress={() => setShowAllPhotos(true)} activeOpacity={0.7}>
-                <Text style={s.showMoreText}>もっと見る（残り{myPhotos.length - 9}件）</Text>
-              </TouchableOpacity>
+            {hasMorePhotos && (
+              <View style={s.loadingMore}>
+                <Text style={s.loadingMoreText}>スクロールでさらに表示</Text>
+              </View>
             )}
           </>
         )}
 
-        {/* ── 3. 足跡サマリー ─────────────────────── */}
-        <View style={s.footprintSummary}>
-          <View style={s.impactRow}>
-            <Ionicons name="footsteps" size={16} color={C.accent} />
-            <Text style={s.impactText}>{impactMessage}</Text>
-          </View>
-          <View style={s.mapContainer} accessibilityLabel={`足跡マップ。${uniqueLocations.length}か所に足跡あり`} accessibilityRole="image">
-            <MapView
-              style={s.map}
-              region={mapRegion}
-              customMapStyle={DARK_MAP_STYLE}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              rotateEnabled={false}
-              pitchEnabled={false}
-              pointerEvents="none"
-            >
-              {uniqueLocations.map((fp) => {
-                const fStyle = FOOTPRINT_STYLE[fp.type] ?? FOOTPRINT_STYLE.parked;
-                return (
-                  <Marker
-                    key={fp.id}
-                    coordinate={{ latitude: fp.latitude, longitude: fp.longitude }}
-                    tracksViewChanges={false}
-                  >
-                    <View style={[s.markerDot, { backgroundColor: fStyle.color }]}>
-                      <Ionicons name={fStyle.icon} size={12} color="#fff" />
-                    </View>
-                  </Marker>
-                );
-              })}
-            </MapView>
-
-            {uniqueLocations.length === 0 && (
-              <View style={s.mapEmptyOverlay}>
-                <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
-                <Text style={s.mapEmptyText}>まだ足跡がない</Text>
-              </View>
-            )}
-
-            {uniqueLocations.length > 0 && (
-              <View style={s.mapBadge}>
-                <Text style={s.mapBadgeText}>{uniqueLocations.length}か所</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
         <View style={{ height: 60 }} />
       </ScrollView>
-
-      {/* ── モーダル ─────────────────────────────── */}
-      <SpotsListModal
-        visible={spotsModalOpen}
-        onClose={() => { setSpotsModalOpen(false); loadData(); onDataChanged?.(); }}
-        onGoToSpot={onGoToSpot}
-      />
+      <PickerSheet />
     </View>
   );
 }
 
-// ─── Heroカード内コンテンツ ──────────────────────────
-function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChangeNickname }: {
-  nickname?: string; bikeLabel: string | null; ccLabel: string | null;
-  tagline?: string; hasPhoto?: boolean; onChangeNickname?: (name: string) => void;
-}) {
-  const [editing, setEditing] = useState(!nickname);
-  const [draft, setDraft] = useState(nickname ?? '');
-
-  const submitNickname = useCallback(() => {
-    if (draft.trim() && onChangeNickname) {
-      onChangeNickname(draft.trim());
-    }
-    setEditing(false);
-  }, [draft, onChangeNickname]);
-
-  return (
-    <View style={s.heroInner}>
-      {!hasPhoto && (
-        <View style={s.avatarCircle}>
-          <MaterialCommunityIcons name="motorbike" size={32} color={C.accent} />
-        </View>
-      )}
-      {editing ? (
-        <TextInput
-          style={s.nicknameInput}
-          placeholder="名前つけとく？"
-          placeholderTextColor={C.sub}
-          value={draft}
-          onChangeText={setDraft}
-          onSubmitEditing={submitNickname}
-          onBlur={submitNickname}
-          maxLength={20}
-          returnKeyType="done"
-          autoFocus
-        />
-      ) : (
-        <TouchableOpacity
-          onPress={() => {
-            setDraft(nickname ?? '');
-            setEditing(true);
-          }}
-          activeOpacity={0.7}
-          accessibilityLabel={`ニックネーム: ${nickname || 'ライダー'}。タップして変更`}
-          accessibilityRole="button"
-          accessibilityHint="ニックネームを変更するダイアログを開きます"
-        >
-          <Text style={s.heroName}>{nickname || 'ライダー'}</Text>
-        </TouchableOpacity>
-      )}
-      {bikeLabel && (
-        <Text style={s.heroBike}>
-          {bikeLabel}{ccLabel ? ` · ${ccLabel}` : ''}
-        </Text>
-      )}
-      {tagline ? <Text style={s.heroTagline}>{tagline}</Text> : null}
-    </View>
-  );
-}
+const TOP_CARD_W = Math.floor((SCREEN_W - 16 * 2 - 8 * 2) / 3);
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    color: C.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  settingsBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   content: { paddingBottom: 20 },
 
-  // ── Hero Card ──
-  heroCard: {
+  // ── ① バイク写真カード ──
+  photoCard: {
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 16,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: C.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
-  heroBg: { width: '100%', height: 160 },
-  heroBgImage: { borderRadius: 20 },
-  heroOverlay: { flex: 1, justifyContent: 'flex-end', padding: 20 },
-  heroNoBg: {
-    height: 200,
-    justifyContent: 'flex-end',
-    padding: 20,
-    backgroundColor: C.card,
+  photoImage: {
+    width: '100%',
+    height: 180,
   },
-  heroInner: { alignItems: 'center', gap: 4 },
-  avatarCircle: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: 'rgba(255,107,0,0.12)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,107,0,0.3)',
-    marginBottom: 6,
+  photoPlaceholder: {
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  heroName: { color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-  nicknameInput: {
-    color: C.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.5,
-    textAlign: 'center', borderBottomWidth: 1, borderBottomColor: C.accent,
-    paddingVertical: 4, minWidth: 160,
+  photoPlaceholderText: {
+    color: C.sub,
+    fontSize: 13,
   },
-  heroBike: { color: C.sub, fontSize: 14, fontWeight: '600', marginTop: 2 },
-  heroTagline: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontStyle: 'italic', marginTop: 4 },
-  editBikeBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border,
-  },
-  editBikeText: { color: C.sub, fontSize: 12, fontWeight: '500' },
 
-  // ── Impact Message ──
-  impactRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 12,
+  // ── ② 排気量選択 ──
+  ccRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 12,
+    gap: 8,
   },
-  impactText: { color: C.accent, fontSize: 14, fontWeight: '700', flex: 1, lineHeight: 20 },
-
-  // ── Parking Active Card ──
-  // ── Footprint Map ──
-  mapContainer: {
-    overflow: 'hidden',
-    height: 120,
-    backgroundColor: C.card,
+  ccBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
-  map: { flex: 1 },
-  mapEmptyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  ccBtnActive: {
+    backgroundColor: 'rgba(10,132,255,0.18)',
+    borderColor: 'rgba(10,132,255,0.5)',
   },
-  mapEmptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8 },
-  mapBadge: {
-    position: 'absolute', bottom: 10, right: 10,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 10,
+  ccText: {
+    color: C.sub,
+    fontSize: 13,
+    fontWeight: '600',
   },
-  mapBadgeText: { color: C.text, fontSize: 12, fontWeight: '700' },
-  markerDot: {
-    width: 24, height: 24, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
+  ccTextActive: {
+    color: C.blue,
   },
 
   // ── Section ──
   sectionTitle: {
-    color: C.sub, fontSize: 12, fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 0.5,
-    marginBottom: 10, marginLeft: 18,
+    color: C.sub,
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginLeft: 18,
+    marginTop: 24,
   },
 
-  // ── My Notes (Photos) ──
-  noteList: { paddingHorizontal: 16, gap: 10, marginBottom: 24 },
-  noteCard: {
-    width: 140, borderRadius: 12, overflow: 'hidden',
+  // ── ③ お気に入りTOP3 ──
+  topGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  topCard: {
+    width: TOP_CARD_W,
+    borderRadius: 12,
+    overflow: 'hidden',
     backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
-  notePhoto: { width: 140, height: 100 },
-  noteInfo: { padding: 8, gap: 2 },
-  noteSpotName: { color: C.text, fontSize: 12, fontWeight: '600' },
-  noteDate: { color: C.sub, fontSize: 10 },
+  topPhoto: {
+    width: '100%',
+    height: TOP_CARD_W,
+  },
+  topPhotoPlaceholder: {
+    width: '100%',
+    height: TOP_CARD_W,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surface,
+  },
+  topInfo: {
+    padding: 8,
+    gap: 4,
+  },
+  topName: {
+    color: C.text,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
+  topMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  topCount: {
+    color: C.accent,
+    fontSize: 11,
+    fontWeight: '700',
+  },
 
-  // ── Oneshot Grid ──
+  // ── ④ ワンショット履歴 ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
   oneshotGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 1,
   },
   oneshotCell: {
-    width: Math.floor((SCREEN_W - 2) / 3), // 1px gap × 2 = 2px
+    width: Math.floor((SCREEN_W - 2) / 3),
     aspectRatio: 1,
     overflow: 'hidden',
   },
   oneshotThumb: { width: '100%', height: '100%' },
   oneshotOverlay: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 6, paddingBottom: 5, paddingTop: 16,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 6,
+    paddingBottom: 5,
+    paddingTop: 16,
   },
   oneshotCellName: { color: '#fff', fontSize: 10, fontWeight: '600' },
   oneshotCellTime: { color: 'rgba(255,255,255,0.7)', fontSize: 9 },
-  showMoreBtn: {
-    alignItems: 'center', paddingVertical: 12,
-    marginHorizontal: 16,
+  loadingMore: {
+    alignItems: 'center',
+    paddingVertical: 14,
   },
-  showMoreText: { color: C.blue, fontSize: 13, fontWeight: '600' },
+  loadingMoreText: { color: C.sub, fontSize: 12 },
 
-  // ── Footprint Summary ──
-  footprintSummary: {
-    marginHorizontal: 16, marginTop: 24,
-    backgroundColor: C.card,
+  // ── ⑤ ワンショットマップ ──
+  mapCard: {
+    marginHorizontal: 16,
     borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth, borderColor: C.border,
+    height: 280,
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  map: { flex: 1 },
+  mapEmptyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  mapEmptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8 },
+  mapBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  mapBadgeText: { color: C.text, fontSize: 12, fontWeight: '700' },
+  markerDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF453A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
 });

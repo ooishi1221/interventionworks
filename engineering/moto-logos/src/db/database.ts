@@ -623,6 +623,26 @@ export async function getUniqueFootprintLocations(): Promise<Footprint[]> {
   );
 }
 
+export interface TopSpot {
+  spotId: string;
+  spotName: string;
+  latitude: number;
+  longitude: number;
+  count: number;
+}
+
+export async function getTopSpots(limit = 3): Promise<TopSpot[]> {
+  const db = getDatabase();
+  return db.getAllAsync<TopSpot>(
+    `SELECT spotId, spotName, latitude, longitude, COUNT(*) as count
+     FROM footprints WHERE type = 'parked'
+     GROUP BY spotId
+     ORDER BY count DESC
+     LIMIT ?;`,
+    [limit],
+  );
+}
+
 // --- Utility ---
 
 function haversineDistance(

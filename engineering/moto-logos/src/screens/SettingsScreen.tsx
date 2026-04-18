@@ -27,10 +27,12 @@ interface Props {
   onBack?: () => void;
   onOpenLegal: () => void;
   onOpenInquiry: () => void;
+  onOpenNotifications?: () => void;
   onStartTutorial?: () => void;
+  unreadCount?: number;
 }
 
-export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTutorial }: Props) {
+export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotifications, onStartTutorial, unreadCount = 0 }: Props) {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
   const [purging, setPurging] = useState(false);
@@ -164,6 +166,19 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onStartTuto
         {/* サポート */}
         <Text style={s.sectionTitle}>サポート</Text>
         <View style={s.card}>
+          {onOpenNotifications && (
+            <>
+              <TouchableOpacity style={s.row} onPress={onOpenNotifications}>
+                <View style={s.rowLeft}>
+                  <Ionicons name="notifications-outline" size={20} color={C.blue} />
+                  <Text style={s.rowLabel}>お知らせ</Text>
+                  {unreadCount > 0 && <View style={s.unreadBadge} />}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={C.sub} />
+              </TouchableOpacity>
+              <View style={s.separator} />
+            </>
+          )}
           <TouchableOpacity style={s.row} onPress={onOpenInquiry}>
             <View style={s.rowLeft}>
               <Ionicons name="chatbubble-outline" size={20} color={C.blue} />
@@ -290,6 +305,7 @@ const s = StyleSheet.create({
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   rowLabel: { color: C.text, fontSize: 15 },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginLeft: 48 },
+  unreadBadge: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF453A', marginLeft: 4 },
   version: { color: C.sub, fontSize: 12, textAlign: 'center', marginTop: 32 },
   credit: { color: C.sub, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
 });

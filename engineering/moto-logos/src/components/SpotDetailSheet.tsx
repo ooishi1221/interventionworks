@@ -91,7 +91,6 @@ function formatDate(iso: string): string {
 interface Props {
   spot: ParkingPin;
   onClose: () => void;
-  onSetDestination?: (spot: ParkingPin) => void;
   onSpotSelect?: (spot: ParkingPin) => void;
   onSpotUpdated?: () => void;
   onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
@@ -100,7 +99,7 @@ interface Props {
 
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -236,8 +235,6 @@ export function SpotDetailSheet({ spot, onClose, onSetDestination, onSpotSelect,
   };
 
   const handleNav = () => {
-    // 「ここ行く」→ 到着検知の起点
-    onSetDestination?.(spot);
     setNavModalOpen(true);
   };
 
