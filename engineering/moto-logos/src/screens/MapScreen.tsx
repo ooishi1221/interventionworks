@@ -91,6 +91,7 @@ const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; 
 /** App.tsx から ref 経由で呼び出せるメソッド */
 export interface MapScreenHandle {
   resetView: () => void;
+  triggerOneShot: () => void;
 }
 
 interface Props {
@@ -102,10 +103,14 @@ interface Props {
   onFocusConsumed?: () => void;
   refreshTrigger?: number;
   onGoToSettings?: () => void;
+  onAvatarPress?: () => void;
+  footprintCount?: number;
+  onNotificationsPress?: () => void;
+  bikePhotoUrl?: string | null;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings },
+  { userCC, onChangeCC, ccFilterEnabled = true, onToggleCcFilter, focusSpot, onFocusConsumed, refreshTrigger, onGoToSettings, onAvatarPress, footprintCount, onNotificationsPress, bikePhotoUrl },
   ref
 ) {
   const user = useUser();
@@ -301,6 +306,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           .catch((e) => captureError(e, { context: 'resetView' }));
       }
     },
+    triggerOneShot: () => {
+      if (tutorial.isStep('register-camera')) {
+        tutorial.advanceTutorial();
+        return;
+      }
+      quickReportRef.current();
+    },
   }), [locationGranted, fetchSpotsForRegion]);
 
   // お気に入りからのジャンプ
@@ -480,6 +492,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
 
   // ── クイックレポート「写真1枚で即登録」 ─────────────
+  const quickReportRef = useRef<() => void>(() => {});
   const [reportLoading, setReportLoading] = useState(false);
 
   const handleQuickReport = async () => {
@@ -558,6 +571,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
     setReportLoading(false);
   };
+  quickReportRef.current = handleQuickReport;
 
   // ── Googleマップ検索起動 ──────────────────────────────
   const handleGoogleMapsSearch = useCallback(async () => {
@@ -781,17 +795,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
-  // チュートリアル: カメラボタンの位置を登録
-  const cameraBtnRef = useRef<View>(null);
-  useEffect(() => {
-    if (tutorial.active && cameraBtnRef.current) {
-      setTimeout(() => {
-        cameraBtnRef.current?.measureInWindow((x, y, w, h) => {
-          if (w > 0) tutorial.registerTarget('camera-button', { x, y, w, h, borderRadius: 26 });
-        });
-      }, 500);
-    }
-  }, [tutorial.active, tutorial.stepIndex]);
+  // チュートリアル: カメラボタンの位置登録は App.tsx のタブバー側に移動済み
 
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -944,6 +948,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           userCC={userCC}
           onToggleCcFilter={onToggleCcFilter}
           onExpandedChange={setNearbyExpanded}
+          onAvatarPress={onAvatarPress}
+          footprintCount={footprintCount}
+          onNotificationsPress={onNotificationsPress}
+          bikePhotoUrl={bikePhotoUrl}
         />
       )}
 
@@ -966,24 +974,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         <LinkNudgeCard onGoToSettings={onGoToSettings} />
       )}
 
-      {/* ── カメラピル（下部: パシャで登録） ──────────────── */}
+      {/* ── 検索ピル（タブバー直上） ─────────────────────── */}
       {!searchVisible && !selected && (
         <TouchableOpacity
-          ref={cameraBtnRef}
-          style={styles.cameraPill}
-          onPress={() => {
-            if (tutorial.isStep('register-camera')) {
-              tutorial.advanceTutorial();
-              return;
-            }
-            handleQuickReport();
-          }}
+          style={styles.searchPill}
+          onPress={() => setSearchVisible(true)}
           activeOpacity={0.8}
-          accessibilityLabel="写真で新しいスポットを登録"
+          accessibilityLabel="スポットを検索"
           accessibilityRole="button"
-          accessibilityHint="カメラを起動して写真1枚でスポットを登録します"
         >
-          <Ionicons name="camera" size={20} color="#F2F2F7" />
+          <Ionicons name="search" size={16} color="#8E8E93" />
+          <Text style={styles.searchPillText}>どこ行く？</Text>
         </TouchableOpacity>
       )}
 
@@ -1041,16 +1042,19 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // ── カメラピル（下部） ─────────────────────────────
-  cameraPill: {
+  // ── 検索ピル（タブバー直上） ─────────────────────────
+  searchPill: {
     position: 'absolute',
-    right: 14,
-    bottom: BOTTOM_BASE + 10,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    bottom: BOTTOM_BASE + 12,
+    alignSelf: 'center',
+    left: 40,
+    right: 40,
+    height: 40,
+    borderRadius: 20,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     backgroundColor: 'rgba(28,28,30,0.88)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.08)',
@@ -1060,6 +1064,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
     zIndex: 5,
+  },
+  searchPillText: {
+    color: '#8E8E93',
+    fontSize: 15,
+    fontWeight: '500',
   },
 
   // ── 詳細シート背景（タップで閉じる） ────────────────

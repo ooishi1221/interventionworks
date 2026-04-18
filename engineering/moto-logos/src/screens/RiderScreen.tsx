@@ -105,9 +105,10 @@ interface Props {
   onOpenMyBike?: () => void;
   nickname?: string;
   onChangeNickname?: (name: string) => void;
+  onBack?: () => void;
 }
 
-export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname }: Props) {
+export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname, onChangeNickname, onBack }: Props) {
   const user = useUser();
   const [bike, setBike] = useState<Vehicle | null>(null);
   const [footprints, setFootprints] = useState<Footprint[]>([]);
@@ -199,6 +200,19 @@ export function RiderScreen({ onGoToSpot, onDataChanged, onOpenMyBike, nickname,
 
   return (
     <View style={s.safe}>
+      {/* ── 戻るボタン ─────────────────────────────── */}
+      {onBack && (
+        <TouchableOpacity
+          style={s.backBtn}
+          onPress={onBack}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="chevron-back" size={24} color={C.text} />
+          <Text style={s.backBtnText}>マップ</Text>
+        </TouchableOpacity>
+      )}
+
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
@@ -485,6 +499,18 @@ function HeroContent({ nickname, bikeLabel, ccLabel, tagline, hasPhoto, onChange
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  backBtnText: {
+    color: C.blue,
+    fontSize: 16,
+    fontWeight: '500',
+  },
   content: { paddingBottom: 20 },
 
   // ── Hero Card ──

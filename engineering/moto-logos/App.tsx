@@ -31,9 +31,24 @@ import { setupNotificationHandler, registerForPushNotifications } from './src/ut
 import { useImpactNotification } from './src/hooks/useImpactNotification';
 import { FontSize, Spacing } from './src/constants/theme';
 import { ParkingPin, UserCC } from './src/types';
-import { getFirstVehicle } from './src/db/database';
+import { getFirstVehicle, getFootprintCount } from './src/db/database';
 import { LogBox } from 'react-native';
 import { Text as RNText } from 'react-native';
+
+// ── チュートリアル: ワンショットボタンのターゲット登録 ──
+function OneShotTutorialTarget({ btnRef }: { btnRef: React.RefObject<View | null> }) {
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (!tutorial.active || !btnRef.current) return;
+    const timer = setTimeout(() => {
+      btnRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+        if (w > 0) tutorial.registerTarget('camera-button', { x, y, w, h, borderRadius: 32 });
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [tutorial.active, tutorial.stepIndex]);
+  return null;
+}
 
 // ── チュートリアルスキップボタン ──────────────────────
 function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
@@ -80,20 +95,9 @@ const SYS_GRAY    = '#636366';
 const TAB_BG      = '#1C1C1E';
 const TAB_BORDER  = 'rgba(255,255,255,0.12)';
 
-type Tab = 'map' | 'rider' | 'notifications' | 'settings';
+type Tab = 'map' | 'settings';
 
-type TabDef = {
-  id: Tab; label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconActive: keyof typeof Ionicons.glyphMap;
-};
-
-const TABS: TabDef[] = [
-  { id: 'map',           label: 'マップ',    icon: 'map-outline',           iconActive: 'map'           },
-  { id: 'rider',         label: 'ライダー',  icon: 'person-outline',        iconActive: 'person'        },
-  { id: 'notifications', label: 'お知らせ',  icon: 'notifications-outline', iconActive: 'notifications' },
-  { id: 'settings',      label: '設定',      icon: 'settings-outline',      iconActive: 'settings'      },
-];
+const ACCENT_ORANGE = '#FF6B00';
 
 function App() {
   const { status, error } = useDatabase();
@@ -104,7 +108,13 @@ function App() {
   const [mapRefreshTrigger, setMapRefreshTrigger] = useState(0);
   const [settingsSub, setSettingsSub] = useState<'main' | 'inquiry' | 'legal'>('main');
   const [riderSub, setRiderSub] = useState<'main' | 'mybike'>('main');
+  const [showRider, setShowRider]   = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [footprintCount, setFootprintCount] = useState(0);
+  const seenFootprintCount = useRef(0); // RiderScreen を開いた時点のカウント
+  const [bikePhotoUrl, setBikePhotoUrl] = useState<string | null>(null);
   const mapScreenRef = useRef<MapScreenHandle>(null);
+  const oneShotBtnRef = useRef<View>(null);
   const [authReady, setAuthReady] = useState(false);
 
   // ── 匿名認証（Firestoreアクセスに必須）─────────────
@@ -135,6 +145,7 @@ function App() {
     if (status !== 'ready') return;
     getFirstVehicle().then((v) => {
       if (v?.cc !== undefined) setUserCC(v.cc);
+      setBikePhotoUrl(v?.photoUrl ?? null);
     }).catch(() => {});
     AsyncStorage.getItem('moto_logos_cc_filter').then((v) => {
       if (v !== null) setCcFilterEnabled(v !== 'false');
@@ -145,6 +156,16 @@ function App() {
     setCcFilterEnabled(enabled);
     AsyncStorage.setItem('moto_logos_cc_filter', String(enabled));
   }, []);
+
+  // ── 足跡カウント（アバターバッジ用） ──────────────────
+  useEffect(() => {
+    if (status !== 'ready') return;
+    getFootprintCount().then((c) => {
+      setFootprintCount(c);
+      // 初回ロード時は既読扱い（起動時バッジ0）
+      if (seenFootprintCount.current === 0) seenFootprintCount.current = c;
+    }).catch(() => {});
+  }, [status, mapRefreshTrigger]);
 
   // ── 利用規約同意 ───────────────────────────────────
   const [legalConsented, setLegalConsented] = useState<boolean | null>(null);
@@ -192,17 +213,16 @@ function App() {
    *  - 他タブ2度押し → マップに戻る
    */
   const handleTabPress = (id: Tab) => {
+    if (showRider) setShowRider(false);
+    if (showNotifications) setShowNotifications(false);
     if (id === tab) {
-      // 同じタブを2度押し
       if (id === 'map') {
         mapScreenRef.current?.resetView();
       } else {
-        // ライダー/お知らせ/設定 → マップに戻る
         setTab('map');
       }
     } else {
-      if (id !== 'settings') setSettingsSub('main');
-      if (id !== 'rider') setRiderSub('main');
+      if (id === 'settings') setSettingsSub('main');
       setTab(id);
     }
   };
@@ -227,6 +247,7 @@ function App() {
 
   const handleGoToSpot = (spot: ParkingPin) => {
     setFocusSpot(spot);
+    setShowRider(false);
     setTab('map');
   };
 
@@ -256,7 +277,7 @@ function App() {
 
           <View style={styles.content}>
             {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
-            <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
+            <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' && !showRider ? 'auto' : 'none'}>
               <MapScreen
                 ref={mapScreenRef}
                 userCC={userCC}
@@ -267,27 +288,32 @@ function App() {
                 onFocusConsumed={() => setFocusSpot(null)}
                 refreshTrigger={mapRefreshTrigger}
                 onGoToSettings={() => setTab('settings')}
+                onAvatarPress={() => { setShowRider((v) => { if (!v) { setRiderSub('main'); seenFootprintCount.current = footprintCount; } return !v; }); }}
+                footprintCount={footprintCount - seenFootprintCount.current}
+                onNotificationsPress={() => setShowNotifications((v) => !v)}
+                bikePhotoUrl={bikePhotoUrl}
               />
             </View>
-            {tab === 'rider' && (
+            {showRider && (
               riderSub === 'mybike' ? (
                 <MyBikeScreen
                   userCC={userCC}
                   onChangeCC={(cc) => setUserCC(cc)}
-                  onBack={() => setRiderSub('main')}
+                  onBack={() => { setRiderSub('main'); getFirstVehicle().then((v) => setBikePhotoUrl(v?.photoUrl ?? null)).catch(() => {}); }}
                 />
               ) : (
                 <RiderScreen
                   onGoToSpot={handleGoToSpot}
-                  onDataChanged={() => setMapRefreshTrigger((n) => n + 1)}
+                  onDataChanged={() => { setMapRefreshTrigger((n) => n + 1); getFootprintCount().then(setFootprintCount).catch(() => {}); }}
                   onOpenMyBike={() => setRiderSub('mybike')}
                   nickname={nickname}
                   onChangeNickname={saveNickname}
+                  onBack={() => setShowRider(false)}
                 />
               )
             )}
-            {tab === 'notifications' && (
-              <NotificationsScreen />
+            {showNotifications && (
+              <NotificationsScreen onBack={() => setShowNotifications(false)} />
             )}
             {tab === 'settings' && (
               settingsSub === 'inquiry' ? (
@@ -306,32 +332,60 @@ function App() {
 
           <SafeAreaView style={styles.tabBarWrapper}>
             <View style={styles.tabBar}>
-              {TABS.map((t) => {
-                const isActive = tab === t.id;
-                return (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={styles.tabItem}
-                    onPress={() => handleTabPress(t.id)}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons
-                      name={isActive ? t.iconActive : t.icon}
-                      size={24}
-                      color={isActive ? SYS_BLUE : SYS_GRAY}
-                    />
-                    <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {/* マップタブ（左） */}
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => handleTabPress('map')}
+                activeOpacity={0.6}
+              >
+                <Ionicons
+                  name={tab === 'map' && !showRider && !showNotifications ? 'map' : 'map-outline'}
+                  size={24}
+                  color={tab === 'map' && !showRider && !showNotifications ? SYS_BLUE : SYS_GRAY}
+                />
+                <Text style={[styles.tabLabel, tab === 'map' && !showRider && !showNotifications && styles.tabLabelActive]}>
+                  マップ
+                </Text>
+              </TouchableOpacity>
+
+              {/* ── ワンショットボタン（中央突き出し） ─── */}
+              <View style={styles.oneShotWrapper}>
+                <TouchableOpacity
+                  ref={oneShotBtnRef}
+                  style={styles.oneShotBtn}
+                  onPress={() => {
+                    mapScreenRef.current?.triggerOneShot();
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityLabel="ワンショットで足跡を刻む"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="camera" size={28} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+
+              {/* 設定タブ（右） */}
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => handleTabPress('settings')}
+                activeOpacity={0.6}
+              >
+                <Ionicons
+                  name={tab === 'settings' ? 'settings' : 'settings-outline'}
+                  size={24}
+                  color={tab === 'settings' ? SYS_BLUE : SYS_GRAY}
+                />
+                <Text style={[styles.tabLabel, tab === 'settings' && styles.tabLabelActive]}>
+                  設定
+                </Text>
+              </TouchableOpacity>
             </View>
           </SafeAreaView>
 
           {/* ガイドツアー: スポットライト + 指示テキスト + スキップ */}
           <TutorialGuide />
           <TutorialSkipButton onSkip={finishTutorial} />
+          <OneShotTutorialTarget btnRef={oneShotBtnRef} />
 
           {/* チュートリアルオーバーレイ（セットアップ + 完了画面） */}
           <TutorialOverlay
@@ -366,11 +420,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: TAB_BORDER,
   },
-  tabBar: { flexDirection: 'row', height: Platform.OS === 'android' ? 56 : 52 },
+  tabBar: { flexDirection: 'row', height: Platform.OS === 'android' ? 56 : 52, alignItems: 'flex-end', justifyContent: 'space-around' },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    height: Platform.OS === 'android' ? 56 : 52,
     gap: 3,
   },
   tabLabel: {
@@ -382,6 +437,27 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: SYS_BLUE,
     fontWeight: '600',
+  },
+  // ── ワンショットボタン（中央突き出し） ────────────────
+  oneShotWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: Platform.OS === 'android' ? 56 : 52,
+  },
+  oneShotBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: ACCENT_ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Platform.OS === 'android' ? -4 : -6,
+    shadowColor: ACCENT_ORANGE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
 

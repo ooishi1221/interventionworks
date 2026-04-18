@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
+  Image,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +45,10 @@ interface Props {
   userCC?: UserCC;
   onToggleCcFilter?: (enabled: boolean) => void;
   onExpandedChange?: (expanded: boolean) => void;
+  onAvatarPress?: () => void;
+  footprintCount?: number;
+  onNotificationsPress?: () => void;
+  bikePhotoUrl?: string | null;
 }
 
 function FreshDot({ spot }: { spot: ParkingPin }) {
@@ -59,7 +64,7 @@ function ccDisplayLabel(cc: UserCC): string {
   return '大型';
 }
 
-export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange }: Props) {
+export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, areaSummary, onClearSearch, ccFilterEnabled, userCC, onToggleCcFilter, onExpandedChange, onAvatarPress, footprintCount, onNotificationsPress, bikePhotoUrl }: Props) {
   const tutorial = useTutorial();
   const items = useMemo(() => alternatives.slice(0, 3), [alternatives]);
   const [expanded, setExpanded] = useState(false);
@@ -111,27 +116,36 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
   });
   const barBottomRadius = expandAnim.interpolate({
     inputRange: [0, 0.3],
-    outputRange: [22, 0],
+    outputRange: [26, 0],
     extrapolate: 'clamp',
   });
 
   return (
     <View style={styles.container} pointerEvents="box-none">
       <Animated.View ref={barRef} style={[styles.bar, { borderBottomLeftRadius: barBottomRadius, borderBottomRightRadius: barBottomRadius }]}>
-        {/* ── CCフィルタトグル ─────────────────────────── */}
-        {userCC !== undefined && onToggleCcFilter && (
+        {/* ── アバター（バイク写真 or デフォルトアイコン） ── */}
+        {onAvatarPress && (
           <TouchableOpacity
-            style={[styles.ccFilterBtn, ccFilterEnabled && styles.ccFilterBtnActive]}
+            style={styles.avatarBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onToggleCcFilter(!ccFilterEnabled);
+              onAvatarPress();
             }}
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
           >
-            <Text style={[styles.ccFilterText, ccFilterEnabled && styles.ccFilterTextActive]}>
-              {ccDisplayLabel(userCC)}
-            </Text>
+            {bikePhotoUrl ? (
+              <Image source={{ uri: bikePhotoUrl }} style={styles.avatarPhoto} />
+            ) : (
+              <Ionicons name="person-circle" size={32} color={C.sub} />
+            )}
+            {(footprintCount ?? 0) > 0 && (
+              <View style={styles.avatarBadge}>
+                <Text style={styles.avatarBadgeText}>
+                  {(footprintCount ?? 0) > 99 ? '99+' : footprintCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         )}
 
@@ -186,8 +200,23 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
           </TouchableOpacity>
         )}
 
-        {/* ── 右端ボタン（検索 or クリア） ────────────── */}
-        {areaSummary ? (
+        {/* ── お知らせベル ──────────────────────────── */}
+        {onNotificationsPress && (
+          <TouchableOpacity
+            style={styles.searchBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onNotificationsPress();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="notifications-outline" size={15} color={C.sub} />
+          </TouchableOpacity>
+        )}
+
+        {/* ── エリアサマリー時のクリアボタン ────────────── */}
+        {areaSummary && (
           <TouchableOpacity
             style={styles.searchBtn}
             onPress={() => {
@@ -198,19 +227,6 @@ export function NearbySpotsList({ alternatives, onSpotPress, onSearchPress, area
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Ionicons name="close" size={15} color={C.sub} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            ref={searchBtnRef}
-            style={styles.searchBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onSearchPress?.();
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          >
-            <Ionicons name="search" size={15} color={C.text} />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -254,9 +270,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(28,28,30,0.88)',
-    borderRadius: 22,
-    height: 40,
-    paddingLeft: 12,
+    borderRadius: 26,
+    height: 48,
+    paddingLeft: 10,
     paddingRight: 12,
     gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
@@ -266,6 +282,38 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 6,
+  },
+
+  // ── アバター（バイク写真 or デフォルト） ────────────────
+  avatarBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPhoto: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  avatarBadgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '700',
   },
 
   // ── 検索ボタン ────────────────────────────────────
@@ -281,7 +329,7 @@ const styles = StyleSheet.create({
   // ── ヘッダータップ領域 ─────────────────────────────
   headerTap: {
     flex: 1,
-    height: 40,
+    height: 48,
     justifyContent: 'center',
   },
 
