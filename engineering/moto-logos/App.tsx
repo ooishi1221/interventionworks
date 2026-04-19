@@ -52,6 +52,21 @@ function OneShotTutorialTarget({ btnRef }: { btnRef: React.RefObject<View | null
   return null;
 }
 
+// ── チュートリアル: サーチタブのターゲット登録 ──
+function SearchTabTutorialTarget({ btnRef }: { btnRef: React.RefObject<View | null> }) {
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (!tutorial.active || !btnRef.current) return;
+    const timer = setTimeout(() => {
+      btnRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+        if (w > 0) tutorial.registerTarget('search-tab', { x, y, w, h, borderRadius: 8 });
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [tutorial.active, tutorial.stepIndex]);
+  return null;
+}
+
 // ── チュートリアルスキップボタン ──────────────────────
 function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
   const tutorial = useTutorial();
@@ -118,6 +133,7 @@ function App() {
   const [ceremonyEnabled, setCeremonyEnabled] = useState(true);
   const mapScreenRef = useRef<MapScreenHandle>(null);
   const oneShotBtnRef = useRef<View>(null);
+  const searchTabRef = useRef<View>(null);
   const [authReady, setAuthReady] = useState(false);
 
   // ── 匿名認証（Firestoreアクセスに必須）─────────────
@@ -379,6 +395,7 @@ function App() {
 
               {/* 🔍 サーチ */}
               <TouchableOpacity
+                ref={searchTabRef}
                 style={styles.tabItem}
                 onPress={() => handleTabPress('search')}
                 activeOpacity={0.6}
@@ -448,6 +465,7 @@ function App() {
           <TutorialGuide />
           <TutorialSkipButton onSkip={finishTutorial} />
           <OneShotTutorialTarget btnRef={oneShotBtnRef} />
+          <SearchTabTutorialTarget btnRef={searchTabRef} />
 
           {/* チュートリアルオーバーレイ（セットアップ + 完了画面） */}
           <TutorialOverlay

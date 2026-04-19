@@ -9,7 +9,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { ParkingPin } from '../types';
 
 // ─── ステップ定義 ──────────────────────────────────────
-export type TutorialPhase = 'setup' | 'explore' | 'report' | 'register' | 'complete' | 'inactive';
+export type TutorialPhase = 'setup' | 'explore' | 'register' | 'complete' | 'inactive';
 
 /** waitFor: ユーザーが何をしたら次に進むか */
 type WaitFor =
@@ -37,7 +37,7 @@ export const STEPS: StepDef[] = [
   // ── Phase: Setup ──────────────────────────────────
   { id: 'setup', phase: 'setup', instruction: '', target: null, waitFor: 'button' },
 
-  // ── Scene: 探す ───────────────────────────────────
+  // ── Scene 1: 探す ─────────────────────────────────
   {
     id: 'scene-explore',
     phase: 'explore',
@@ -50,10 +50,17 @@ export const STEPS: StepDef[] = [
 
   // ── Phase: Explore（探す） ────────────────────────
   {
-    id: 'explore-pillbar',
+    id: 'explore-nearby',
     phase: 'explore',
-    instruction: 'ここに最寄りのスポットが表示されます\nタップしてみましょう',
-    target: 'pillbar',
+    instruction: 'ここをタップすると\n近くのスポットが見つかります',
+    target: 'nearby-fab',
+    waitFor: 'tap-target',
+  },
+  {
+    id: 'explore-result',
+    phase: 'explore',
+    instruction: '気になるスポットをタップしてみましょう',
+    target: null,
     waitFor: 'tap-target',
   },
   {
@@ -63,44 +70,69 @@ export const STEPS: StepDef[] = [
     target: 'nav-button',
     waitFor: 'tap-target',
   },
-  // ── Scene: 足跡を残す ───────────────────────────────
-  {
-    id: 'scene-report',
-    phase: 'report',
-    instruction: '',
-    target: null,
-    waitFor: 'tap-anywhere',
-    sceneTitle: '到着したら自動で記録',
-    sceneIcon: 'location-outline',
-  },
 
-  // ── Phase: Report（足跡を残す） ─────────────────────
+  // ── Phase: Explore（検索を知る） ──────────────────
   {
-    id: 'report-good',
-    phase: 'report',
-    instruction: '近くのスポットが自動で表示されます\n「停めた」をタップしてみましょう',
-    target: null,
+    id: 'explore-search',
+    phase: 'explore',
+    instruction: '行き先を調べたい時はここ\nタップしてみましょう',
+    target: 'search-tab',
     waitFor: 'tap-target',
   },
+  {
+    id: 'explore-search-info',
+    phase: 'explore',
+    instruction: '人気エリアから選ぶだけで検索できます\n文字入力もOK',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'explore-search-result',
+    phase: 'explore',
+    instruction: '検索先のエリア周辺の\n最寄りスポットが表示されます',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
 
-  // ── Scene: 新規登録 ───────────────────────────────
+  // ── Scene 2: 足跡を刻む ───────────────────────────
   {
     id: 'scene-register',
     phase: 'register',
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
-    sceneTitle: '新しい場所を見つけたら',
+    sceneTitle: 'ワンショットで足跡を刻む',
     sceneIcon: 'camera-outline',
   },
 
-  // ── Phase: Register（新規登録） ───────────────────
+  // ── Phase: Register（足跡を刻む） ─────────────────
+  {
+    id: 'register-intro',
+    phase: 'register',
+    instruction: '検索で出てこないバイク置き場や\n料金のメモなどあれば\nカメラで撮影しよう',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
   {
     id: 'register-camera',
     phase: 'register',
-    instruction: '📸をタップで登録できます',
+    instruction: 'ワンショットボタンをタップ',
     target: 'camera-button',
     waitFor: 'tap-target',
+  },
+  {
+    id: 'register-ceremony',
+    phase: 'register',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'register-done',
+    phase: 'register',
+    instruction: 'ワンショットで残した写真は\n新しいスポット登録や情報更新され\n他のライダーにも表示されます',
+    target: null,
+    waitFor: 'tap-anywhere',
   },
 
   // ── Phase: Complete ───────────────────────────────
@@ -127,14 +159,64 @@ export const DUMMY_SPOT: ParkingPin = {
   updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前更新（青バッジ）
 };
 
-/** ユーザーの現在地付近にダミースポットを配置（近接カード用） */
-export function createNearbyDummySpot(userLat: number, userLon: number): ParkingPin {
-  return {
-    ...DUMMY_SPOT,
-    latitude: userLat + 0.0002, // ~20m north（近接カードが反応する距離）
-    longitude: userLon,
-  };
-}
+/** チュートリアル: 東京駅周辺の最寄り3件（FAB検索用） */
+export const TUTORIAL_NEARBY_RESULTS: { spot: ParkingPin; distanceM: number }[] = [
+  { spot: DUMMY_SPOT, distanceM: 120 },
+  {
+    spot: {
+      id: '_tutorial_spot_2', name: '日本橋駅前バイク駐車場',
+      latitude: 35.6825, longitude: 139.7740, maxCC: null,
+      isFree: false, capacity: 15, source: 'seed',
+      address: '東京都中央区日本橋1丁目', priceInfo: '¥100/30分',
+      updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    distanceM: 350,
+  },
+  {
+    spot: {
+      id: '_tutorial_spot_3', name: '京橋エドグラン駐輪場',
+      latitude: 35.6778, longitude: 139.7710, maxCC: 125,
+      isFree: true, capacity: 8, source: 'seed',
+      address: '東京都中央区京橋2丁目',
+      updatedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    distanceM: 580,
+  },
+];
+
+/** チュートリアル: 上野周辺の最寄り3件（テキスト検索デモ用） */
+export const TUTORIAL_SEARCH_RESULTS: { spot: ParkingPin; distanceM: number }[] = [
+  {
+    spot: {
+      id: '_tutorial_spot_ueno1', name: '上野駅前バイク駐車場',
+      latitude: 35.7138, longitude: 139.7770, maxCC: null,
+      isFree: false, capacity: 20, source: 'seed',
+      address: '東京都台東区上野7丁目', priceInfo: '¥150/h',
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    distanceM: 80,
+  },
+  {
+    spot: {
+      id: '_tutorial_spot_ueno2', name: 'アメ横バイク駐輪場',
+      latitude: 35.7100, longitude: 139.7745, maxCC: null,
+      isFree: false, capacity: 12, source: 'seed',
+      address: '東京都台東区上野4丁目',
+      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    distanceM: 250,
+  },
+  {
+    spot: {
+      id: '_tutorial_spot_ueno3', name: '上野公園口駐輪場',
+      latitude: 35.7155, longitude: 139.7735, maxCC: 125,
+      isFree: true, capacity: 25, source: 'seed',
+      address: '東京都台東区上野公園',
+      updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    distanceM: 420,
+  },
+];
 
 // ─── ターゲット矩形（スポットライト用） ──────────────────
 export interface TargetRect {

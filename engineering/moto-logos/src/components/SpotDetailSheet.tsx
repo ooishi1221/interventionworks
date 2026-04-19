@@ -506,7 +506,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
                   // チュートリアル: 実リンクを開かず説明テキストで進む
                   Alert.alert(
                     '案内開始',
-                    'GoogleマップやYahoo!カーナビに遷移します',
+                    'GoogleマップやYahoo!カーナビで案内が始まります',
                     [{ text: 'OK', onPress: () => tutorial.advanceTutorial() }],
                     { cancelable: false },
                   );

@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   Alert,
@@ -32,7 +33,7 @@ import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { SearchResultsList } from '../components/SearchResultsList';
-import { useTutorial } from '../contexts/TutorialContext';
+import { useTutorial, TUTORIAL_NEARBY_RESULTS, TUTORIAL_SEARCH_RESULTS, DUMMY_SPOT } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
 
@@ -116,6 +117,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [locationDenied, setLocationDenied]   = useState(false);
   const [wideZoom, setWideZoom]               = useState(true);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const nearbyFabRef = useRef<View>(null);
 
   // ── 検索 ──────────────────────────────────────────────
   const [searchVisible, setSearchVisible]     = useState(false);
@@ -233,7 +235,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
     setSelected(null);
-  }, []);
+    // チュートリアル: セレモニー完了で次ステップへ
+    if (tutorial.isStep('register-ceremony')) {
+      tutorial.advanceTutorial();
+    }
+  }, [tutorial]);
 
   // refreshTrigger 変化時 → 全置換で再取得（削除されたスポットもマップから消える）
   const prevTrigger = useRef(refreshTrigger);
@@ -337,16 +343,24 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     },
     triggerOneShot: () => {
       if (tutorial.isStep('register-camera')) {
-        tutorial.advanceTutorial();
+        // ダミーセレモニー発火 → 完了で次ステップへ
+        const asset = Image.resolveAssetSource(require('../../assets/tutorial-parking.jpg'));
+        setCeremony({ photoUri: asset.uri, spotName: DUMMY_SPOT.name, footprintCount: 1 });
+        tutorial.advanceTutorial(); // → register-ceremony (auto 3000ms)
         return;
       }
       quickReportRef.current();
     },
     searchNearby: doSearchNearby,
     openTextSearch: () => {
+      if (tutorial.isStep('explore-search')) {
+        setSearchVisible(true); // SearchOverlayを実際に開いて人気エリアを見せる
+        tutorial.advanceTutorial();
+        return;
+      }
       setSearchVisible(true);
     },
-  }), [locationGranted, fetchSpotsForRegion, doSearchNearby]);
+  }), [locationGranted, fetchSpotsForRegion, doSearchNearby, tutorial]);
 
   // お気に入りからのジャンプ
   useEffect(() => {
@@ -618,7 +632,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
   const prevTutorialActive = useRef(tutorial.active);
   useEffect(() => {
-    if (tutorial.isStep('explore-pillbar') || tutorial.isStep('scene-explore')) {
+    if (tutorial.isStep('explore-nearby') || tutorial.isStep('scene-explore')) {
       mapRef.current?.animateToRegion({
         latitude: tutorial.dummySpot.latitude,
         longitude: tutorial.dummySpot.longitude,
@@ -626,6 +640,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         longitudeDelta: 0.008,
       }, 800);
     }
+  }, [tutorial.active, tutorial.stepIndex]);
+
+  // チュートリアル: 周辺検索FABのターゲット登録
+  useEffect(() => {
+    if (!tutorial.active || !nearbyFabRef.current) return;
+    const measure = () => {
+      nearbyFabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+        if (w > 0) tutorial.registerTarget('nearby-fab', { x, y, w, h, borderRadius: 28 });
+      });
+    };
+    setTimeout(measure, 500);
   }, [tutorial.active, tutorial.stepIndex]);
 
   // チュートリアル終了後: GPS現在地に移動
@@ -660,10 +685,33 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     prevTutorialActive.current = tutorial.active;
   }, [tutorial.active]);
 
-  // チュートリアル: 詳細シート表示ステップで自動選択
+  // チュートリアル: ステップごとのUI制御
   useEffect(() => {
+    if (!tutorial.active) return;
+
+    // explore-nav: SpotDetailSheet 自動表示
     if (tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
+    }
+    // explore-search: シートと検索結果を閉じてサーチタブを露出
+    if (tutorial.isStep('explore-search')) {
+      setSelected(null);
+      setSearchResults([]);
+    }
+    // explore-search-result: SearchOverlay閉じて上野ダミー3件を注入 + 地図移動
+    if (tutorial.isStep('explore-search-result')) {
+      setSearchVisible(false);
+      setSearchResults(TUTORIAL_SEARCH_RESULTS);
+      setSearchAreaName('上野');
+      mapRef.current?.animateToRegion({
+        latitude: 35.7134, longitude: 139.7770,
+        latitudeDelta: 0.015, longitudeDelta: 0.015,
+      }, 800);
+    }
+    // scene-register: 検索結果を閉じてカメラボタンを露出
+    if (tutorial.isStep('scene-register')) {
+      setSelected(null);
+      setSearchResults([]);
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
@@ -806,6 +854,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
               latitudeDelta: 0.005, longitudeDelta: 0.005,
             }, 800);
             miscTimerRef.current = setTimeout(() => setSelected(spot), 900);
+            // チュートリアル: 結果タップで次のステップへ
+            if (tutorial.isStep('explore-result')) {
+              tutorial.advanceTutorial();
+            }
           }}
           onClear={() => {
             setSearchResults([]);
@@ -819,12 +871,18 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       {/* ── アカウント連携ナッジ ───────────────────────── */}
       {!selected && !searchVisible && <LinkNudgeCard />}
 
-      {/* ── βフィードバックボタン ───────────────────────── */}
       {/* ── 周辺検索フロートボタン（右下） ──────────────── */}
-      {!searchVisible && !selected && (
+      {(!searchVisible && !selected) && (
         <TouchableOpacity
+          ref={nearbyFabRef}
           style={[styles.nearbyFab, searchResults.length > 0 && styles.nearbyFabActive]}
           onPress={() => {
+            // チュートリアル: 東京駅周辺ダミー3件を注入
+            if (tutorial.isStep('explore-nearby')) {
+              setSearchResults(TUTORIAL_NEARBY_RESULTS);
+              tutorial.advanceTutorial();
+              return;
+            }
             if (searchResults.length > 0) {
               setSearchResults([]);
               setSearchAreaName(null);

@@ -125,6 +125,8 @@ export function TutorialGuide() {
   // exiting中はフェードアウトのため表示を維持
   if ((!active && !exiting) || phase === 'setup') return null;
   if (phase === 'complete' && !fadingToComplete) return null;
+  // セレモニー演出中はOneshotCeremonyが全面を担当
+  if (currentStep.id === 'register-ceremony') return null;
 
   // complete フェーズへのフェードアウト中: 暗幕のみ表示
   if (phase === 'complete' && fadingToComplete) {

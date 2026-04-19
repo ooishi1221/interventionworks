@@ -151,15 +151,15 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
       {showComplete && (
         <TouchableWithoutFeedback onPress={handleComplete}>
           <Animated.View style={[styles.fullCenter, { opacity: contentFade }]}>
-            <Ionicons name="flame" size={48} color="#FF9F0A" />
+            <Ionicons name="map" size={48} color="#FF9F0A" />
             <View style={{ height: 20 }} />
             <Text style={styles.heroText}>
-              あなたの足跡が{'\n'}次のライダーの道になる。
+              ワンショットを撮るほど{'\n'}地図が育つ。
             </Text>
             <View style={{ height: 48 }} />
             <View style={styles.primaryBtnGreen}>
-              <Text style={styles.primaryBtnText}>さあ、行こう</Text>
-              <Ionicons name="checkmark" size={18} color="#fff" />
+              <Text style={styles.primaryBtnText}>さあはじめよう！</Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
             </View>
           </Animated.View>
         </TouchableWithoutFeedback>
