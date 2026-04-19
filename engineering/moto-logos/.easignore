@@ -1,4 +1,25 @@
-scripts/data/
+# ─── 基本除外 (.gitignore 相当を明示) ─────────────
+# .easignore があると .gitignore は無視される仕様
+node_modules/
+.expo/
+dist/
+web-build/
+/ios
+/android
+*.tsbuildinfo
+
+# ─── 認証情報・環境変数 ────────────────────────
+.env*.local
+serviceAccount*.json
 scripts/moto-spotter-firebase-adminsdk-*.json
+*.pem
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ─── ビルドに不要なデータ ──────────────────────
+scripts/data/
 .DS_Store
 *.md
