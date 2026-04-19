@@ -35,7 +35,8 @@ export function AccountLinkCard() {
       // ユーザーがキャンセルした場合は無視
       if (err.code === 'ERR_REQUEST_CANCELED' || err.code === '1001') return;
       captureError(e, { context: 'link_apple' });
-      Alert.alert('連携に失敗しました', '時間をおいて再度お試しください。');
+      const msg = err.code ? `[${err.code}] ` : '';
+      Alert.alert('Apple連携に失敗', `${msg}${(e as Error)?.message ?? '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,8 @@ export function AccountLinkCard() {
       const err = e as { code?: string; message?: string };
       if (err.code === 'SIGN_IN_CANCELLED' || err.code === '12501') return;
       captureError(e, { context: 'link_google' });
-      Alert.alert('連携に失敗しました', '時間をおいて再度お試しください。');
+      const msg = err.code ? `[${err.code}] ` : '';
+      Alert.alert('Google連携に失敗', `${msg}${err.message ?? '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
