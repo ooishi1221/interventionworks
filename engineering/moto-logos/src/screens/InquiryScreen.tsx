@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUser } from '../contexts/UserContext';
+import { captureError } from '../utils/sentry';
 import { Colors } from '../constants/theme';
 
 const C = { ...Colors, card: Colors.cardElevated };
@@ -51,17 +52,22 @@ export function InquiryScreen({ onBack }: Props) {
     }
     setSending(true);
     try {
-      await addDoc(collection(db, 'inquiries'), {
+      const writePromise = addDoc(collection(db, 'inquiries'), {
         userId: user?.userId || 'anonymous',
         category,
         message: message.trim(),
         status: 'open',
         createdAt: Timestamp.now(),
       });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore write timeout (10s)')), 10_000),
+      );
+      await Promise.race([writePromise, timeout]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSent(true);
-    } catch {
-      Alert.alert('送信エラー', 'お問い合わせの送信に失敗しました');
+    } catch (e) {
+      captureError(e, { context: 'inquiry_send' });
+      Alert.alert('送信エラー', 'お問い合わせの送信に失敗しました。ネットワークを確認してください。');
     }
     setSending(false);
   };
