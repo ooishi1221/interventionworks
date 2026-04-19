@@ -7,8 +7,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
+  memoryLocalCache,
   Firestore,
 } from 'firebase/firestore';
 
@@ -25,24 +24,16 @@ const firebaseConfig = {
 const app: FirebaseApp =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-/**
- * Firestore インスタンス（永続キャッシュ付き）
- *
- * persistentLocalCache:
- *   - IndexedDB を使った永続オフラインキャッシュ
- *   - 一度取得したドキュメントはオフラインでも読める
- *   - Firestore Read カウントを大幅節約
- */
+// Firestore は memoryLocalCache を使用。
+// persistentLocalCache は IndexedDB 依存で RN 環境と非互換（特に newArch/Fabric）。
+// オフラインキャッシュは SQLite (spotsCache.ts) 側で担保する。
 let _db: Firestore | null = null;
 
 export function getDb(): Firestore {
   if (!_db) {
     try {
       _db = initializeFirestore(app, {
-        localCache: persistentLocalCache({
-          tabManager: persistentSingleTabManager({ forceOwnership: true }),
-          cacheSizeBytes: 50_000_000, // 50MB
-        }),
+        localCache: memoryLocalCache(),
       });
     } catch {
       // 既に初期化済み (Hot Reload 時) の場合は既存インスタンスを取得
@@ -105,7 +96,17 @@ export function getFirebaseAuth(): Auth {
  */
 export async function ensureAnonymousAuth(): Promise<User> {
   const auth = getFirebaseAuth();
-  if (auth.currentUser) return auth.currentUser;
+
+  // 既存ユーザーがいる場合: トークンを強制リフレッシュして有効性確認。
+  // 失敗時は再サインインにフォールバック（期限切れ・revoke 等）。
+  if (auth.currentUser) {
+    try {
+      await auth.currentUser.getIdToken(true);
+      return auth.currentUser;
+    } catch {
+      // fall through to re-sign-in
+    }
+  }
 
   return new Promise((resolve, reject) => {
     const unsub = onAuthStateChanged(auth, (user) => {

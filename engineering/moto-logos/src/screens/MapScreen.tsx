@@ -25,6 +25,11 @@ import { Spacing } from '../constants/theme';
 import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
 import { loadSpotsFromCacheIfFresh, syncSpotsCache, downloadAllSpotsToCache } from '../firebase/spotsCacheSync';
 import { readSpotsFromCache } from '../db/spotsCache';
+import { getFirebaseAuth } from '../firebase/config';
+
+// preview でも必ず Alert を表示するデバッグフラグ。0件問題の原因特定用。
+// 問題解決後は false に戻す。
+const DEBUG_ALERT = true;
 import { insertUserSpot, getFirstVehicle, getFootprintCount } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
@@ -151,6 +156,14 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     let fetched: ParkingPin[] = [];
     try {
       fetched = await fetchSpotsInRegion(region);
+      if (DEBUG_ALERT) {
+        const auth = getFirebaseAuth();
+        const uid = auth.currentUser?.uid?.slice(0, 8) ?? 'null';
+        Alert.alert(
+          'DEBUG fetch結果',
+          `uid=${uid}\nregion=${region.latitude.toFixed(3)},${region.longitude.toFixed(3)}\ndelta=${region.latitudeDelta.toFixed(3)}\nfetched=${fetched.length}件`,
+        );
+      }
       // 既存データとマージ（新エリア分を追加、同一IDは上書き、遠方を除外）
       setAllSpotsRaw((prev) => {
         const map = new Map(prev.map((s) => [s.id, s]));
@@ -176,8 +189,13 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       });
     } catch (e) {
       captureError(e, { context: 'fetchSpotsInRegion' });
-      if (__DEV__) {
-        Alert.alert('fetchSpots エラー', e instanceof Error ? e.message : String(e));
+      if (__DEV__ || DEBUG_ALERT) {
+        const auth = getFirebaseAuth();
+        const uid = auth.currentUser?.uid?.slice(0, 8) ?? 'null';
+        Alert.alert(
+          'fetchSpots エラー',
+          `uid=${uid}\n${e instanceof Error ? e.message : String(e)}`,
+        );
       }
     }
     setLoading(false);
