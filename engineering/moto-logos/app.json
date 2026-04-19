@@ -55,6 +55,7 @@
     },
     "android": {
       "package": "com.interventionworks.motologos",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1C1C1E"

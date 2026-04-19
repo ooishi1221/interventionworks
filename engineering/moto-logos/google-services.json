@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "984379160455",
+    "project_id": "moto-spotter",
+    "storage_bucket": "moto-spotter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:984379160455:android:af61b8a274a707a2858522",
+        "android_client_info": {
+          "package_name": "com.interventionworks.motologos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "984379160455-h5s903pc270fnovpo10qinktfvqud8vh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "984379160455-h5s903pc270fnovpo10qinktfvqud8vh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
