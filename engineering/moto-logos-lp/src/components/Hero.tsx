@@ -11,11 +11,11 @@ export default function Hero() {
         <section className="hero">
           <div className="hero-content">
             <h1>
-              俺たちは<span className="accent">ここにいる。</span>
+              写真1枚で<span className="accent">足跡を刻め。</span>
             </h1>
             <p className="hero-sub">
-              ライダーの足跡でできた地図を<br />
-              一緒につくらないか。
+              ワンショットが足跡になる。<br />
+              足跡が誰かの地図になる。
             </p>
             <div className="hero-form-row">
               <BetaForm compact />

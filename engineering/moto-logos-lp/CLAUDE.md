@@ -4,7 +4,7 @@
 
 **公開URL:** https://moto-logos.web.app  
 **目的:** クローズドβテスター募集。東京限定・先行100名。  
-**状態:** β募集LP（2026-04-17 デプロイ済み）
+**状態:** β募集LP（2026-04-19 ワンショット概念に全面刷新・デプロイ済み）
 
 ## 技術スタック
 
@@ -27,14 +27,14 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 
 | # | セクション | コンポーネント | 内容 |
 |---|-----------|---------------|------|
-| - | ヘッダー | `StickyCta.tsx` | 固定ヘッダー: ロゴ + LiveFeed通知 + βテスター参加ボタン |
+| - | ヘッダー | `StickyCta.tsx` | 固定ヘッダー: ロゴ + βテスター参加ボタン |
 | 1 | イントロ | `HeroIntro.tsx` | シネマティック演出「これは存在証明だ。」→ 黒幕が溶けてヒーローが現れる |
-| 2 | ヒーロー | `Hero.tsx` | Ken Burns背景 + h1「俺たちはここにいる。」+ β申し込みフォーム + iPhoneモック（常時表示、黒幕の奥から出現） |
-| 3 | 参加のしかた | `HowTo.tsx` | 3ステップ（メール申込→招待→足跡） |
+| 2 | ヒーロー | `Hero.tsx` | Ken Burns背景 + h1「写真1枚で足跡を刻め。」+ β申し込みフォーム + iPhoneモック |
+| 3 | 参加のしかた | `HowTo.tsx` | 3ステップ（メール申込→招待→ワンショットで足跡を刻む） |
 | 4 | βテスター特権 | `BetaPerks.tsx` | 3枚カード（FIRST FOOTPRINT / DIRECT LINE / WARM UP THE MAP） |
 | 5 | フィロソフィー | `Philosophy.tsx` | パララックス背景付き。車社会の地図→自分たちの地図 |
-| 6 | 写真帯 | `PhotoBreak.tsx` | ライダー走行写真 +「自分のメモが誰かの安心になる。」 |
-| 7 | コアバリュー | `CoreValues.tsx` | iPhoneスクショ付き交互レイアウト（FOOTPRINT / WARMTH / ALTRUISM） |
+| 6 | 写真帯 | `PhotoBreak.tsx` | ライダー走行写真 +「自分の1枚が誰かの地図になる。」 |
+| 7 | コアバリュー | `CoreValues.tsx` | iPhoneスクショ付き交互レイアウト（ONE SHOT / FRESHNESS / ALTRUISM） |
 | 8 | FAQ | `Faq.tsx` | 6問アコーディオン（β向け） |
 | 9 | 最終CTA | `FinalCta.tsx` | Ken Burns背景 + β申し込みフォーム |
 | 10 | 運営者情報 | `About.tsx` | DEVELOPED BY WitOne Inc. |
@@ -46,7 +46,6 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 |---------------|------|
 | `BetaForm.tsx` | メール入力フォーム。Firestore書き込み + 残枠リアルタイム表示 + 重複チェック |
 | `IPhoneFrame.tsx` | iPhoneフレーム（Dynamic Island + サイドボタン）。Hero・CoreValuesで共用 |
-| `LiveFeed.tsx` | ライダー通知ローテーション。ヘッダー内で表示 |
 
 ## カスタムフック
 
@@ -71,7 +70,6 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 - **パララックス:** Philosophy背景のスクロール速度差
 - **モック浮遊:** Heroのiphoneが上下にフロート（4秒周期）
 - **カードホバー:** BetaPerks・FAQカードのオレンジグロー + リフト
-- **LiveFeed:** 3.5秒ごとにライダー通知をフェード切り替え
 
 ## 画像アセット（`public/images/`）
 
@@ -82,10 +80,10 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 | `photo-break-bike.jpg` | PhotoBreak（夜の路地 + バイク、アンバー照明） |
 | `app-mockup-map.jpg` | FAQ背景（ダークマップビジュアル） |
 | `logo-mark.jpg` | ロゴマーク（マップピン × タイヤ痕） |
-| `app-screenshot.png` | Hero iPhoneモック（ライブフィード付き地図） |
-| `ss-map.png` | CoreValues 02 WARMTH（地図全景） |
-| `ss-detail.png` | CoreValues 01 FOOTPRINT（スポット詳細） |
-| `ss-report.png` | CoreValues 03 ALTRUISM（記録画面） |
+| `app-screenshot.png` | Hero iPhoneモック（※実機スクショ差し替え予定） |
+| `ss-map.png` | CoreValues 02 FRESHNESS（地図全景・※差し替え予定） |
+| `ss-detail.png` | CoreValues 01 ONE SHOT（スポット詳細・※差し替え予定） |
+| `ss-report.png` | CoreValues 03 ALTRUISM（記録画面・※差し替え予定） |
 
 ## デザインシステム（アプリと統一）
 
@@ -101,7 +99,9 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 ## トーン & メッセージング
 
 - 読点（、）は基本不使用。リズム重視
-- 呼称: タグライン「俺たちは」のみ。本文はニュートラル。「お前」「あなた」不使用
+- コアコンセプト: **ワンショット**（写真1枚で足跡を刻む。AIが分類。足跡が誰かの地図になる）
+- 「温度」「体温」メタファーは廃止。**鮮度**（clear/hazy/foggy）を使う
+- 本文はニュートラル。「お前」「あなた」不使用
 - 「報告してください」「貢献しよう」とは言わない
 - 「βテスト期間中は無償」（将来のマネタイズ余地を残す）
 - 機能説明より「存在の実感」を描写する

@@ -12,8 +12,8 @@ export default function BetaPerks() {
     },
     {
       label: 'WARM UP THE MAP',
-      headline: '東京中のスポットが足跡を待っている。',
-      body: 'OpenStreetMapと公式データから集めたバイク駐車場。データはある。あとはライダーの体温を注ぎ込むだけだ。',
+      headline: '1,300件のスポットが足跡を待っている。',
+      body: '公式データと警察ガイドから集めた東京のバイク駐車場。データはある。あとはライダーのワンショットで鮮度を灯すだけだ。',
     },
   ]
 

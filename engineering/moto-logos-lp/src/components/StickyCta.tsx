@@ -1,5 +1,3 @@
-import LiveFeed from './LiveFeed'
-
 export default function StickyHeader() {
   return (
     <header className="sticky-header">
@@ -7,9 +5,6 @@ export default function StickyHeader() {
         <div className="sticky-header-brand">
           <img src="/images/logo-mark.jpg" alt="" className="sticky-header-icon" />
           <span className="sticky-header-logo">MOTO-LOGOS</span>
-        </div>
-        <div className="sticky-header-feed">
-          <LiveFeed />
         </div>
         <a
           href="#beta-form"

@@ -6,7 +6,7 @@ export default function FinalCta() {
       <h2 className="reveal">
         この地図の<br /><span className="accent">最初のライダーになれ。</span>
       </h2>
-      <p className="reveal">足跡を待っているスポットがある。</p>
+      <p className="reveal">1,300件のスポットが最初のワンショットを待っている。</p>
       <div className="reveal">
         <BetaForm />
       </div>

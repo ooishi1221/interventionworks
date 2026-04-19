@@ -14,9 +14,9 @@ export default function HowTo() {
     },
     {
       num: '3',
-      icon: '👣',
-      title: '地図に足跡を残す',
-      text: '東京のライダーと一緒に最初の地図をつくろう。',
+      icon: '📸',
+      title: 'ワンショットで足跡を刻む',
+      text: '写真1枚撮るだけ。AIが判別して地図に足跡が刻まれる。',
     },
   ]
 

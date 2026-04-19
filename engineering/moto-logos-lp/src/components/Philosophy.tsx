@@ -18,8 +18,8 @@ export default function Philosophy() {
         <div className="philosophy-divider reveal-wipe-center"></div>
         <p className="philosophy-shift reveal">
           だから自分たちの地図をつくることにした。<br />
-          正確なデータベースじゃない。<br />
-          <strong>「ここにいたよ」</strong>というライダーの足跡が重なる地図。
+          写真1枚。それだけでいい。<br />
+          <strong>ワンショットが足跡になる。足跡が誰かの地図になる。</strong>
         </p>
       </div>
     </section>

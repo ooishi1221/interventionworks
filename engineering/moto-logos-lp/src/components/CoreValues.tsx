@@ -4,25 +4,25 @@ export default function CoreValues() {
   const values = [
     {
       num: '01',
-      label: 'FOOTPRINT',
-      headline: '停めたらメモる。それだけでいい。',
-      body: 'グローブしたまま写真1枚。住所は自動。停めた場所が地図にそっと刻まれる。報告じゃない。自分のメモだ。',
+      label: 'ONE SHOT',
+      headline: '撮るだけ。それが足跡になる。',
+      body: 'グローブしたまま写真1枚。AIが場所もカテゴリも判別する。ライダーは分類しない。撮るだけでいい。それだけで地図に足跡が刻まれる。',
       screenshot: '/images/ss-detail.png',
       alt: 'スポット詳細画面',
     },
     {
       num: '02',
-      label: 'WARMTH',
-      headline: '誰かがさっきここにいた。',
-      body: 'ライダーが停めた場所はピンが赤く脈打つ。時間が経てば冷めていく。温かいピンは「最近ここに仲間がいた」という証。見えない誰かの体温がこの地図には残っている。',
+      label: 'FRESHNESS',
+      headline: '情報は鮮度で語る。',
+      body: '最近ライダーが立ち寄った場所は鮮やかに光る。時間が経てば霞んでいく。鮮度が高い場所ほど信頼できる。誰かの足跡がそのまま情報の鮮度になる。',
       screenshot: '/images/ss-map.png',
       alt: 'マップ画面',
     },
     {
       num: '03',
       label: 'ALTRUISM',
-      headline: '自分のメモが誰かの安心になる。',
-      body: '「次に来るときのために」残したメモが知らない誰かを救っている。貢献しようなんて思わなくていい。自分のために残すだけでいい。',
+      headline: '自分の1枚が誰かの安心になる。',
+      body: '到着して撮った1枚が知らない誰かを救っている。貢献しようなんて思わなくていい。自分のために撮るだけでいい。',
       screenshot: '/images/ss-report.png',
       alt: '記録画面',
     },
@@ -33,7 +33,7 @@ export default function CoreValues() {
       <div className="container">
         <h2 className="section-title reveal">
           評価もランクも競争もない。<br />
-          あるのは<span className="accent">足跡</span>だけ。
+          あるのは<span className="accent">ワンショット</span>だけ。
         </h2>
         <div className="cv-list">
           {values.map((v, i) => (
