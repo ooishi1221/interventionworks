@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import type { UserSpot, Favorite, MaxCC, Review, ReviewSummary } from '../types';
+import { initSpotsCache } from './spotsCache';
 
 const DB_NAME = 'motopark_butler.db';
 
@@ -173,6 +174,7 @@ export async function initDatabase(): Promise<void> {
     try { await db.execAsync(sql); } catch { /* already exists */ }
   }
 
+  await initSpotsCache();
   await seedInitialData(db);
 }
 

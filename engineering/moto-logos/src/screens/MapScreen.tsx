@@ -23,6 +23,8 @@ import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
 import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } from '../firebase/firestoreService';
+import { loadSpotsFromCacheIfFresh, syncSpotsCache, downloadAllSpotsToCache } from '../firebase/spotsCacheSync';
+import { readSpotsFromCache } from '../db/spotsCache';
 import { insertUserSpot, getFirstVehicle, getFootprintCount } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
@@ -259,30 +261,57 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
   }, [refreshTrigger]);
 
-  // 初回: 前回位置を復元 → GPS取得 → そのエリアのスポットを取得
+  // 初回: キャッシュ即時表示 → AsyncStorage+GPS並列 → バックグラウンド同期
   useEffect(() => {
     (async () => {
-      let hasSavedRegion = false;
-
-      // 前回位置を復元（GPS取得前に表示）
+      // Phase 0: SQLite キャッシュから即時表示（<10ms）
+      let hasCache = false;
       try {
-        const saved = await AsyncStorage.getItem(LAST_LOCATION_KEY);
-        if (saved) {
-          const { lat, lon } = JSON.parse(saved);
-          const savedRegion: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.04, longitudeDelta: 0.04 };
-          setInitialRegion(savedRegion);
-          mapRef.current?.animateToRegion(savedRegion, 0);
-          await fetchSpotsForRegion(savedRegion);
-          hasSavedRegion = true;
+        const cachedSpots = await loadSpotsFromCacheIfFresh();
+        if (cachedSpots && cachedSpots.length > 0) {
+          setAllSpotsRaw(cachedSpots);
+          setLoading(false);
+          hasCache = true;
         }
       } catch { /* ignore */ }
 
-      // GPS取得
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
+      // Phase 1: AsyncStorage復元 + GPS許可を並列開始
+      const [savedData, permResult] = await Promise.all([
+        AsyncStorage.getItem(LAST_LOCATION_KEY).catch(() => null),
+        Location.requestForegroundPermissionsAsync().catch(() => ({ status: 'denied' as const })),
+      ]);
+
+      // Phase 2: 保存位置があれば地図移動 + Firestoreフェッチ（fire-and-forget）
+      let hasSavedRegion = false;
+      let savedLat = 0;
+      let savedLon = 0;
+      if (savedData) {
+        try {
+          const { lat, lon } = JSON.parse(savedData);
+          savedLat = lat;
+          savedLon = lon;
+          const savedRegion: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.04, longitudeDelta: 0.04 };
+          setInitialRegion(savedRegion);
+          mapRef.current?.animateToRegion(savedRegion, 0);
+          if (!hasCache) fetchSpotsForRegion(savedRegion); // fire-and-forget（awaitしない）
+          hasSavedRegion = true;
+        } catch { /* ignore */ }
+      }
+
+      if (!hasCache && !hasSavedRegion) {
+        fetchSpotsForRegion(TOKYO_FALLBACK); // fire-and-forget
+      }
+
+      // Phase 3: GPS取得（5秒タイムアウト）
+      if (permResult.status === 'granted') {
         setLocationGranted(true);
         try {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          const loc = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('GPS_TIMEOUT')), 5000),
+            ),
+          ]);
           lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
           const gpsRegion: Region = {
             latitude: loc.coords.latitude,
@@ -291,23 +320,30 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             longitudeDelta: 0.04,
           };
           mapRef.current?.animateToRegion(gpsRegion, 800);
-          // 保存位置と近い場合は再fetchスキップ（二重読み込み防止）
+          // 保存位置と近い場合は再fetchスキップ
           if (!hasSavedRegion || haversineMeters(
             gpsRegion.latitude, gpsRegion.longitude,
-            initialRegion.latitude, initialRegion.longitude,
+            savedLat, savedLon,
           ) > 500) {
-            fetchSpotsForRegion(gpsRegion);
+            if (!hasCache) fetchSpotsForRegion(gpsRegion);
           }
           AsyncStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ lat: loc.coords.latitude, lon: loc.coords.longitude }));
         } catch (e) {
-          captureError(e, { context: 'initialLocation' });
-          if (!hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
+          if (e instanceof Error && e.message === 'GPS_TIMEOUT') {
+            captureError(e, { context: 'gps_timeout' });
+          } else {
+            captureError(e, { context: 'initialLocation' });
+          }
+          if (!hasCache && !hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
         }
       } else {
         setLocationDenied(true);
-        if (!hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
+        if (!hasCache && !hasSavedRegion) fetchSpotsForRegion(TOKYO_FALLBACK);
       }
       setGpsLoading(false);
+
+      // Phase 4: バックグラウンドでキャッシュ更新（24h経過時のみ）
+      syncSpotsCache().catch((e) => captureError(e, { context: 'bg_cache_sync' }));
     })();
     logActivity();
   }, []);
@@ -635,6 +671,27 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     [allSpots, wideZoom],
   );
 
+  // チュートリアル中: セットアップphaseでバックグラウンドキャッシュDL
+  useEffect(() => {
+    if (!tutorial.active || tutorial.phase !== 'setup') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const count = await downloadAllSpotsToCache();
+        if (!cancelled && count > 0) {
+          const spots = await readSpotsFromCache();
+          if (!cancelled && spots.length > 0) {
+            setAllSpotsRaw(spots);
+            setLoading(false);
+          }
+        }
+      } catch (e) {
+        captureError(e, { context: 'tutorial_cache_download' });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tutorial.active, tutorial.phase]);
+
   // チュートリアル: 探すフェーズ開始でマップを東京駅に移動
   const prevTutorialActive = useRef(tutorial.active);
   useEffect(() => {
@@ -671,7 +728,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status === 'granted') {
             setLocationGranted(true);
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const loc = await Promise.race([
+              Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('GPS_TIMEOUT')), 5000),
+              ),
+            ]);
             lat = loc.coords.latitude;
             lng = loc.coords.longitude;
             lastLocationRef.current = { latitude: lat, longitude: lng };
