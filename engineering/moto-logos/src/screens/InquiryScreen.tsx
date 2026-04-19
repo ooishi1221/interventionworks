@@ -18,7 +18,7 @@ import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, getFirebaseAuth } from '../firebase/config';
 import { useUser } from '../contexts/UserContext';
 import { captureError } from '../utils/sentry';
 import { Colors } from '../constants/theme';
@@ -51,9 +51,15 @@ export function InquiryScreen({ onBack }: Props) {
       return;
     }
     setSending(true);
+    const authUser = getFirebaseAuth().currentUser;
+    if (!authUser) {
+      Alert.alert('認証エラー', 'ログインしていないため送信できません。アプリを再起動してください。');
+      setSending(false);
+      return;
+    }
     try {
       const writePromise = addDoc(collection(db, 'inquiries'), {
-        userId: user?.userId || 'anonymous',
+        userId: authUser.uid,
         category,
         message: message.trim(),
         status: 'open',

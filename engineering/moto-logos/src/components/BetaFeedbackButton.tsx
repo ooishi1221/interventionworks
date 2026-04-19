@@ -81,6 +81,11 @@ export function BetaFeedbackButton() {
 
   const handleSend = useCallback(async () => {
     if (!feedbackType || !message.trim()) return;
+    const authUser = getFirebaseAuth().currentUser;
+    if (!authUser) {
+      Alert.alert('認証エラー', 'ログインしていないため送信できません。アプリを再起動してください。');
+      return;
+    }
     setSending(true);
 
     try {
