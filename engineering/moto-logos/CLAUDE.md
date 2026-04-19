@@ -77,6 +77,7 @@ A: 検索で場所を見つける（足跡を消費）
 | 言語 | TypeScript 5.9（strict mode） |
 | クラウドDB | Firebase Firestore（オフライン永続キャッシュ有効）+ Firebase Storage（写真） |
 | ローカルDB | expo-sqlite（WAL モード、ユーザーデータ・評価・足跡・駐車履歴） |
+| 画像表示 | expo-image（ディスクキャッシュ + ネイティブデコード） |
 | 地図 | react-native-maps + react-native-map-clustering |
 | アニメーション | react-native-reanimated + react-native-gesture-handler |
 | 空間検索 | Geohash プレフィクスクエリ（自前実装、外部依存なし） |
@@ -181,6 +182,15 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - Storage パス: `reviews/{spotId}/{userId}_{timestamp}.jpg`
 - アップロード中はプログレスバーを表示
 - ローカル URI を直接 Firestore に保存しない
+
+### 画像表示（expo-image）
+
+- RN 標準 `Image` は使わない。全画像表示に `expo-image` の `Image` を使用（ディスクキャッシュ + ネイティブデコード）
+- `source` は文字列 URI を直接渡す（`source={uri}` / `{{ uri }}` 形式は不要）
+- サムネイル表示には `transition={200}` でフェードイン + `cachePolicy="disk"` を指定
+- `resizeMode` ではなく `contentFit` を使う（expo-image の API）
+- RiderScreen のワンショットグリッドは `FlatList` + `numColumns={3}` で仮想化（`.map()` で全件レンダーしない）
+- SpotDetailSheet のギャラリー FlatList には `initialNumToRender` / `maxToRenderPerBatch` / `removeClippedSubviews` / `getItemLayout` を必ず指定
 
 ### Firestore 運用
 
@@ -449,6 +459,7 @@ eas update --branch preview
 - **フッタータブバー（5アイテム）** — 🏠マップ / 🔍サーチ / 📸ワンショット（72pt突き出し）/ 丸アバター（ライダー）/ ⚙️設定。アイコンのみ・テキストなし。Instagram風デザイン
 - **SearchResultsList** — サーチタブ押下時に地図上部にフローティング表示。最寄り3件を鮮度ドット付きで表示。テキスト検索後はエリア名+×クリアボタン付き
 - **エリア自動再検索** — 地図を移動すると表示範囲の30%以上移動時に自動でスポット再取得（デバウンス800ms）
+- **wideZoomヒステリシス** — 広域モード切替は単一閾値ではなくバンド（0.04〜0.06）。境界帯では状態維持し、500ピンの一斉再レンダーを防止
 
 ### インタラクティブガイドツアー（ソシャゲ式チュートリアル）
 

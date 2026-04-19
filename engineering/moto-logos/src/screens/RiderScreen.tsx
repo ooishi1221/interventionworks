@@ -12,16 +12,16 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   RefreshControl,
   TouchableOpacity,
-  Image,
   Dimensions,
   Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -89,13 +89,10 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
   const [myPhotos, setMyPhotos] = useState<Review[]>([]);
   const [topSpots, setTopSpots] = useState<TopSpot[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [photoPage, setPhotoPage] = useState(1);
   const [nicknameModal, setNicknameModal] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
   const [bikeNameModal, setBikeNameModal] = useState(false);
   const [bikeNameInput, setBikeNameInput] = useState('');
-  const PHOTOS_PER_PAGE = 15; // 3×5
-
   const loadData = useCallback(async () => {
     const [vehicle, fp, tops] = await Promise.all([
       getFirstVehicle(),
@@ -224,211 +221,220 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
     return map;
   }, [topSpots, myPhotos]);
 
-  const visiblePhotos = myPhotos.slice(0, photoPage * PHOTOS_PER_PAGE);
-  const hasMorePhotos = myPhotos.length > visiblePhotos.length;
+  const CELL_SIZE = Math.floor((SCREEN_W - 2) / 3);
 
-  return (
-    <View style={s.safe}>
-      <ScrollView
-        contentContainerStyle={s.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.blue} />}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 200 && hasMorePhotos) {
-            setPhotoPage((p) => p + 1);
-          }
-        }}
-        scrollEventThrottle={400}
+  const getItemLayout = useCallback((_: unknown, index: number) => ({
+    length: CELL_SIZE + 1,
+    offset: (CELL_SIZE + 1) * Math.floor(index / 3),
+    index,
+  }), [CELL_SIZE]);
+
+  const renderOneshotItem = useCallback(({ item }: { item: Review }) => (
+    <TouchableOpacity
+      style={s.oneshotCell}
+      activeOpacity={0.85}
+      onPress={() => {
+        onGoToSpot?.({
+          id: item.spotId,
+          name: spotNameMap.get(item.spotId) ?? '',
+          latitude: 0,
+          longitude: 0,
+          source: 'seed',
+        } as ParkingPin, item.firestoreId);
+      }}
+    >
+      <Image source={item.photoUri!} style={s.oneshotThumb} transition={200} cachePolicy="disk" />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={s.oneshotOverlay}
       >
+        <Text style={s.oneshotCellName} numberOfLines={1}>
+          {spotNameMap.get(item.spotId) ?? item.spotId}
+        </Text>
+        <Text style={s.oneshotCellTime}>{formatOneshotTime(item.createdAt)}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  ), [spotNameMap, onGoToSpot]);
 
-        {/* ── ⓪ ニックネーム ─────────────────────────── */}
-        <TouchableOpacity
-          style={s.nicknameRow}
-          onPress={() => {
-            setNicknameInput(nickname || '');
-            setNicknameModal(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Text style={s.nicknameName}>{nickname || 'ライダー名を設定'}</Text>
-          <Ionicons name="pencil" size={14} color={C.sub} />
-        </TouchableOpacity>
+  const oneshotKeyExtractor = useCallback((item: Review) => `os_${item.firestoreId ?? item.id}`, []);
 
-        {/* ── ① バイク写真カード ──────────────────────── */}
-        <Text style={s.sectionTitle}>マイバイク</Text>
-        <TouchableOpacity
-          style={s.photoCard}
-          onPress={handleChangePhoto}
-          activeOpacity={0.85}
-        >
-          {bike?.photoUrl ? (
-            <Image source={{ uri: bike.photoUrl }} style={s.photoImage} />
-          ) : (
-            <View style={s.photoPlaceholder}>
-              <MaterialCommunityIcons name="motorbike" size={40} color={C.accent} />
-              <Text style={s.photoPlaceholderText}>タップして写真を設定</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.bikeNameRow}
-          onPress={() => {
-            setBikeNameInput(bike?.name || '');
-            setBikeNameModal(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Text style={s.bikeNameText}>{bike?.name || '車種名を入力'}</Text>
-          <Ionicons name="pencil" size={12} color={C.sub} />
-        </TouchableOpacity>
+  const listHeader = useMemo(() => (
+    <>
+      {/* ── ⓪ ニックネーム ─────────────────────────── */}
+      <TouchableOpacity
+        style={s.nicknameRow}
+        onPress={() => {
+          setNicknameInput(nickname || '');
+          setNicknameModal(true);
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={s.nicknameName}>{nickname || 'ライダー名を設定'}</Text>
+        <Ionicons name="pencil" size={14} color={C.sub} />
+      </TouchableOpacity>
 
-        {/* ── ② 排気量選択 ────────────────────────────── */}
-        <Text style={s.sectionTitle}>排気量選択</Text>
-        <View style={s.ccRow}>
-          {CC_OPTIONS.map((opt) => {
-            const active = userCC === opt.value || (userCC === undefined && opt.value === null);
-            return (
-              <TouchableOpacity
-                key={String(opt.value)}
-                style={[s.ccBtn, active && s.ccBtnActive]}
-                onPress={() => { handleChangeCC(opt.value); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                activeOpacity={0.7}
-              >
-                <Text style={[s.ccText, active && s.ccTextActive]}>{opt.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* ── ③ よく撮ってるスポットTOP3 ─────────────── */}
-        {topSpots.length > 0 && (
-          <>
-            <Text style={s.sectionTitle}>よく撮ってるスポット</Text>
-            <View style={s.topGrid}>
-              {topSpots.map((ts) => {
-                const photoUri = topSpotPhotos.get(ts.spotId);
-                return (
-                  <TouchableOpacity
-                    key={ts.spotId}
-                    style={s.topCard}
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      onGoToSpot?.({
-                        id: ts.spotId,
-                        name: ts.spotName,
-                        latitude: ts.latitude,
-                        longitude: ts.longitude,
-                        source: 'seed',
-                      } as ParkingPin);
-                    }}
-                  >
-                    {photoUri ? (
-                      <Image source={{ uri: photoUri }} style={s.topPhoto} />
-                    ) : (
-                      <View style={s.topPhotoPlaceholder}>
-                        <MaterialCommunityIcons name="motorbike" size={24} color={C.sub} />
-                      </View>
-                    )}
-                    <View style={s.topInfo}>
-                      <Text style={s.topName} numberOfLines={2}>{ts.spotName}</Text>
-                      <View style={s.topMeta}>
-                        <Ionicons name="camera" size={11} color={C.accent} />
-                        <Text style={s.topCount}>{ts.count}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
-        )}
-
-        {/* ── ④ ワンショット履歴 ─────────────────────── */}
-        <Text style={s.sectionTitle}>ワンショット</Text>
-        {myPhotos.length === 0 ? (
-          <View style={s.emptyActivity}>
-            <Ionicons name="camera" size={24} color={C.accent} />
-            <Text style={s.emptyText}>ワンショットで最初の1枚を撮ろう</Text>
-          </View>
+      {/* ── ① バイク写真カード ──────────────────────── */}
+      <Text style={s.sectionTitle}>マイバイク</Text>
+      <TouchableOpacity
+        style={s.photoCard}
+        onPress={handleChangePhoto}
+        activeOpacity={0.85}
+      >
+        {bike?.photoUrl ? (
+          <Image source={bike.photoUrl} style={s.photoImage} transition={200} cachePolicy="disk" />
         ) : (
-          <>
-            <View style={s.oneshotGrid}>
-              {visiblePhotos.map((item) => (
+          <View style={s.photoPlaceholder}>
+            <MaterialCommunityIcons name="motorbike" size={40} color={C.accent} />
+            <Text style={s.photoPlaceholderText}>タップして写真を設定</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={s.bikeNameRow}
+        onPress={() => {
+          setBikeNameInput(bike?.name || '');
+          setBikeNameModal(true);
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={s.bikeNameText}>{bike?.name || '車種名を入力'}</Text>
+        <Ionicons name="pencil" size={12} color={C.sub} />
+      </TouchableOpacity>
+
+      {/* ── ② 排気量選択 ────────────────────────────── */}
+      <Text style={s.sectionTitle}>排気量選択</Text>
+      <View style={s.ccRow}>
+        {CC_OPTIONS.map((opt) => {
+          const active = userCC === opt.value || (userCC === undefined && opt.value === null);
+          return (
+            <TouchableOpacity
+              key={String(opt.value)}
+              style={[s.ccBtn, active && s.ccBtnActive]}
+              onPress={() => { handleChangeCC(opt.value); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.ccText, active && s.ccTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* ── ③ よく撮ってるスポットTOP3 ─────────────── */}
+      {topSpots.length > 0 && (
+        <>
+          <Text style={s.sectionTitle}>よく撮ってるスポット</Text>
+          <View style={s.topGrid}>
+            {topSpots.map((ts) => {
+              const photoUri = topSpotPhotos.get(ts.spotId);
+              return (
                 <TouchableOpacity
-                  key={`os_${item.firestoreId ?? item.id}`}
-                  style={s.oneshotCell}
+                  key={ts.spotId}
+                  style={s.topCard}
                   activeOpacity={0.85}
                   onPress={() => {
                     onGoToSpot?.({
-                      id: item.spotId,
-                      name: spotNameMap.get(item.spotId) ?? '',
-                      latitude: 0,
-                      longitude: 0,
+                      id: ts.spotId,
+                      name: ts.spotName,
+                      latitude: ts.latitude,
+                      longitude: ts.longitude,
                       source: 'seed',
-                    } as ParkingPin, item.firestoreId);
+                    } as ParkingPin);
                   }}
                 >
-                  <Image source={{ uri: item.photoUri! }} style={s.oneshotThumb} />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.7)']}
-                    style={s.oneshotOverlay}
-                  >
-                    <Text style={s.oneshotCellName} numberOfLines={1}>
-                      {spotNameMap.get(item.spotId) ?? item.spotId}
-                    </Text>
-                    <Text style={s.oneshotCellTime}>{formatOneshotTime(item.createdAt)}</Text>
-                  </LinearGradient>
+                  {photoUri ? (
+                    <Image source={photoUri} style={s.topPhoto} transition={200} cachePolicy="disk" />
+                  ) : (
+                    <View style={s.topPhotoPlaceholder}>
+                      <MaterialCommunityIcons name="motorbike" size={24} color={C.sub} />
+                    </View>
+                  )}
+                  <View style={s.topInfo}>
+                    <Text style={s.topName} numberOfLines={2}>{ts.spotName}</Text>
+                    <View style={s.topMeta}>
+                      <Ionicons name="camera" size={11} color={C.accent} />
+                      <Text style={s.topCount}>{ts.count}</Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
-              ))}
-            </View>
-            {hasMorePhotos && (
-              <View style={s.loadingMore}>
-                <Text style={s.loadingMoreText}>スクロールでさらに表示</Text>
-              </View>
-            )}
-          </>
+              );
+            })}
+          </View>
+        </>
+      )}
+
+      {/* ── ④ ワンショット履歴ヘッダー ─────────────── */}
+      <Text style={s.sectionTitle}>ワンショット</Text>
+      {myPhotos.length === 0 && (
+        <View style={s.emptyActivity}>
+          <Ionicons name="camera" size={24} color={C.accent} />
+          <Text style={s.emptyText}>ワンショットで最初の1枚を撮ろう</Text>
+        </View>
+      )}
+    </>
+  ), [nickname, bike, userCC, topSpots, topSpotPhotos, myPhotos.length, handleChangePhoto, handleChangeCC, onGoToSpot]);
+
+  const listFooter = useMemo(() => (
+    <>
+      {/* ── ⑤ ワンショットマップ ───────────────────── */}
+      <Text style={s.sectionTitle}>ワンショットマップ</Text>
+      <View style={s.mapCard}>
+        <MapView
+          style={s.map}
+          initialRegion={mapRegion}
+          region={mapRegion}
+          customMapStyle={DARK_MAP_STYLE}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          pointerEvents="none"
+        >
+          {oneshotLocations.map((loc) => (
+            <Marker
+              key={loc.spotId}
+              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+              pinColor="#FF453A"
+            />
+          ))}
+        </MapView>
+
+        {oneshotLocations.length === 0 && (
+          <View style={s.mapEmptyOverlay}>
+            <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
+            <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
+          </View>
         )}
 
-        {/* ── ⑤ ワンショットマップ ───────────────────── */}
-        <Text style={s.sectionTitle}>ワンショットマップ</Text>
-        <View style={s.mapCard}>
-          <MapView
-            style={s.map}
-            initialRegion={mapRegion}
-            region={mapRegion}
-            customMapStyle={DARK_MAP_STYLE}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            pointerEvents="none"
-          >
-            {oneshotLocations.map((loc) => (
-              <Marker
-                key={loc.spotId}
-                coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-                pinColor="#FF453A"
-              />
-            ))}
-          </MapView>
+        {oneshotLocations.length > 0 && (
+          <View style={s.mapBadge}>
+            <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
+          </View>
+        )}
+      </View>
 
-          {oneshotLocations.length === 0 && (
-            <View style={s.mapEmptyOverlay}>
-              <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
-              <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
-            </View>
-          )}
+      <View style={{ height: 60 }} />
+    </>
+  ), [mapRegion, oneshotLocations]);
 
-          {oneshotLocations.length > 0 && (
-            <View style={s.mapBadge}>
-              <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={{ height: 60 }} />
-      </ScrollView>
+  return (
+    <View style={s.safe}>
+      <FlatList
+        data={myPhotos}
+        keyExtractor={oneshotKeyExtractor}
+        renderItem={renderOneshotItem}
+        numColumns={3}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.blue} />}
+        getItemLayout={getItemLayout}
+        initialNumToRender={9}
+        maxToRenderPerBatch={9}
+        windowSize={5}
+        removeClippedSubviews
+        columnWrapperStyle={s.oneshotRow}
+      />
       <PickerSheet />
 
       {/* ── ニックネーム編集モーダル ── */}
@@ -667,9 +673,7 @@ const s = StyleSheet.create({
   // ── ④ ワンショット履歴（TOP3直後、マップの前） ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  oneshotGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  oneshotRow: {
     gap: 1,
   },
   oneshotCell: {
@@ -689,12 +693,6 @@ const s = StyleSheet.create({
   },
   oneshotCellName: { color: '#fff', fontSize: 10, fontWeight: '600' },
   oneshotCellTime: { color: 'rgba(255,255,255,0.7)', fontSize: 9 },
-  loadingMore: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  loadingMoreText: { color: C.sub, fontSize: 12 },
-
   // ── ⑤ ワンショットマップ ──
   mapCard: {
     marginHorizontal: 16,

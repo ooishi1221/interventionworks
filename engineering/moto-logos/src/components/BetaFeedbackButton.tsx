@@ -13,10 +13,10 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
-  Image,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Device from 'expo-device';
@@ -197,7 +197,7 @@ export function BetaFeedbackButton() {
 
                 {photoUri ? (
                   <View style={s.photoRow}>
-                    <Image source={{ uri: photoUri }} style={s.photoThumb} />
+                    <Image source={photoUri} style={s.photoThumb} cachePolicy="disk" />
                     <TouchableOpacity onPress={() => setPhotoUri(null)} style={s.photoRemove}>
                       <Ionicons name="close-circle" size={22} color={C.danger} />
                     </TouchableOpacity>

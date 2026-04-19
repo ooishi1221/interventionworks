@@ -14,12 +14,12 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  Image,
   Animated,
   StyleSheet,
   Dimensions,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../constants/theme';
 
@@ -154,7 +154,7 @@ export function OneshotCeremony({ visible, photoUri, spotName, footprintCount, o
             styles.photoFrame,
             { transform: [{ scale: photoScale }, { translateY: photoTranslateY }] },
           ]}>
-            <Image source={{ uri: photoUri }} style={styles.photo} />
+            <Image source={photoUri} style={styles.photo} />
           </Animated.View>
           <Animated.Text style={[styles.toast, { opacity: textOpacity }]}>
             {toastText}

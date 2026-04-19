@@ -519,8 +519,14 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleRegionChangeComplete = (region: Region) => {
     currentRegionRef.current = region;
-    // latitudeDelta > 0.05 ≒ 約5km表示幅 → 広域モード
-    setWideZoom(region.latitudeDelta > 0.05);
+    // ヒステリシス付き広域モード切替（バタつき防止）
+    // wide→通常: 0.04以下、通常→wide: 0.06以上。境界帯(0.04〜0.06)では状態維持
+    const delta = region.latitudeDelta;
+    setWideZoom((prev) => {
+      if (prev && delta < 0.04) return false;
+      if (!prev && delta > 0.06) return true;
+      return prev;
+    });
     if (!lastFetchRegionRef.current) { lastFetchRegionRef.current = region; return; }
 
     // 前回取得リージョンから十分移動した場合のみ自動再検索（デバウンス 800ms）

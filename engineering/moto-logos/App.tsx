@@ -266,7 +266,7 @@ function App() {
       } else if (id === 'rider') {
         setTab('map');
       } else if (id === 'settings') {
-        setSettingsSub('main');
+        setTab('map');
       }
     } else {
       if (id === 'rider') setRiderSub('main');

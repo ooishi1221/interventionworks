@@ -16,7 +16,6 @@ import {
   Platform,
   Alert,
   ScrollView,
-  Image,
   FlatList,
   Dimensions,
   KeyboardAvoidingView,
@@ -24,6 +23,7 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
@@ -345,7 +345,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
       {fullPhoto && (
         <Modal transparent animationType="fade" visible onRequestClose={() => setFullPhoto(null)}>
           <TouchableOpacity style={styles.fullscreenBg} activeOpacity={1} onPress={() => setFullPhoto(null)}>
-            <Image source={{ uri: fullPhoto }} style={styles.fullscreenImage} resizeMode="contain" />
+            <Image source={fullPhoto} style={styles.fullscreenImage} contentFit="contain" />
             <TouchableOpacity
               style={styles.fullscreenClose}
               onPress={() => setFullPhoto(null)}
@@ -435,10 +435,15 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
                   keyExtractor={(r) => `photo_${r.firestoreId ?? r.id}`}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.galleryList}
+                  initialNumToRender={3}
+                  maxToRenderPerBatch={3}
+                  windowSize={3}
+                  removeClippedSubviews
+                  getItemLayout={(_, index) => ({ length: 138, offset: 138 * index, index })}
                   renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => setFullPhoto(item.photoUri!)} activeOpacity={0.85}>
                       <View>
-                        <Image source={{ uri: item.photoUri! }} style={styles.galleryThumb} />
+                        <Image source={item.photoUri!} style={styles.galleryThumb} transition={200} cachePolicy="disk" />
                         {item.photoTag && (
                           <View style={styles.photoTagBadge}>
                             <Text style={styles.photoTagText}>
@@ -632,10 +637,15 @@ function MyNotes({ reports, footprints, userId, onPhotoTap }: {
           keyExtractor={(r) => `my_${r.firestoreId ?? r.id}`}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.myNotePhotos}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={3}
+          removeClippedSubviews
+          getItemLayout={(_, index) => ({ length: 108, offset: 108 * index, index })}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => onPhotoTap(item.photoUri!)} activeOpacity={0.85}>
               <View>
-                <Image source={{ uri: item.photoUri! }} style={styles.myNoteThumb} />
+                <Image source={item.photoUri!} style={styles.myNoteThumb} transition={200} cachePolicy="disk" />
                 <View style={styles.myNoteDateBadge}>
                   <Text style={styles.myNoteDateText}>
                     {new Date(item.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
@@ -785,7 +795,7 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
       ) : null}
       {report.photoUri && (
         <TouchableOpacity onPress={() => onPhotoTap(report.photoUri!)} activeOpacity={0.85} style={{ marginTop: 8 }}>
-          <Image source={{ uri: report.photoUri }} style={styles.reportCardPhoto} />
+          <Image source={report.photoUri} style={styles.reportCardPhoto} transition={200} cachePolicy="disk" />
         </TouchableOpacity>
       )}
     </View>
