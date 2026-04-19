@@ -8,7 +8,7 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
   persistentLocalCache,
-  persistentMultipleTabManager,
+  persistentSingleTabManager,
   Firestore,
 } from 'firebase/firestore';
 
@@ -40,7 +40,7 @@ export function getDb(): Firestore {
     try {
       _db = initializeFirestore(app, {
         localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
+          tabManager: persistentSingleTabManager({ forceOwnership: true }),
           cacheSizeBytes: 50_000_000, // 50MB
         }),
       });
