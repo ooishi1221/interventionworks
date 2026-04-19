@@ -327,11 +327,13 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       style={s.oneshotCell}
       activeOpacity={0.85}
       onPress={() => {
+        const loc = oneshotLocations.find(l => l.spotId === item.spotId);
+        if (!loc) return;
         onGoToSpot?.({
           id: item.spotId,
-          name: spotNameMap.get(item.spotId) ?? '',
-          latitude: 0,
-          longitude: 0,
+          name: loc.spotName ?? spotNameMap.get(item.spotId) ?? '',
+          latitude: loc.latitude,
+          longitude: loc.longitude,
           source: 'seed',
         } as ParkingPin, item.firestoreId);
       }}
@@ -347,7 +349,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
         <Text style={s.oneshotCellTime}>{formatOneshotTime(item.createdAt)}</Text>
       </LinearGradient>
     </TouchableOpacity>
-  ), [spotNameMap, onGoToSpot]);
+  ), [spotNameMap, onGoToSpot, oneshotLocations]);
 
   const oneshotKeyExtractor = useCallback((item: Review) => `os_${item.firestoreId ?? item.id}`, []);
 
