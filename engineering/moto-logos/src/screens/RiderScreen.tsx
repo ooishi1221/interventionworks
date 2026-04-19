@@ -197,7 +197,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       await updateVehicle(bike.id, { ...bike, photoUrl: uri });
       setBike({ ...bike, photoUrl: uri });
       const uid = user?.userId;
-      if (uid) syncBikeToFirestore(uid, { ...bike, photoUrl: uri }).catch(() => {});
+      if (uid) syncBikeToFirestore(uid, { ...bike, photoUrl: uri }).catch((e) => captureError(e, { context: 'sync_bike_photo' }));
       onDataChanged?.();
     } catch (e) {
       captureError(e, { context: 'change_bike_photo' });
@@ -211,7 +211,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       await updateVehicle(bike.id, { ...bike, name });
       setBike({ ...bike, name });
       const uid = user?.userId;
-      if (uid) syncBikeToFirestore(uid, { ...bike, name }).catch(() => {});
+      if (uid) syncBikeToFirestore(uid, { ...bike, name }).catch((e) => captureError(e, { context: 'sync_bike_name' }));
     } catch (e) {
       captureError(e, { context: 'change_bike_name' });
     }
@@ -774,9 +774,9 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
                 autoFocus
                 maxLength={30}
                 returnKeyType="done"
-                onSubmitEditing={() => {
+                onSubmitEditing={async () => {
                   if (bikeNameInput.trim()) {
-                    handleChangeBikeName(bikeNameInput.trim());
+                    await handleChangeBikeName(bikeNameInput.trim());
                     setBikeNameModal(false);
                   }
                 }}
@@ -788,8 +788,8 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
                 <TouchableOpacity
                   style={[s.modalBtnSave, !bikeNameInput.trim() && { opacity: 0.4 }]}
                   disabled={!bikeNameInput.trim()}
-                  onPress={() => {
-                    handleChangeBikeName(bikeNameInput.trim());
+                  onPress={async () => {
+                    await handleChangeBikeName(bikeNameInput.trim());
                     setBikeNameModal(false);
                   }}
                 >

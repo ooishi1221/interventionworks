@@ -143,7 +143,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
    * 既存スポットにマージ（同一ID上書き）して重複なくピンを蓄積する。
    */
   const fetchSpotsForRegion = useCallback(async (region: Region): Promise<ParkingPin[]> => {
-    if (fetchingRef.current) return [];
+    if (fetchingRef.current) { setLoading(false); return []; }
     fetchingRef.current = true;
     setLoading(true);
     let fetched: ParkingPin[] = [];

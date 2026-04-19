@@ -31,16 +31,18 @@ export function usePhotoPicker() {
   }, []);
 
   const handleCamera = useCallback(async () => {
+    const resolver = resolverRef.current;
     setVisible(false);
     const uri = await pickPhotoFromCamera();
-    resolve(uri);
-  }, [resolve]);
+    if (resolver) { resolver(uri); resolverRef.current = null; }
+  }, []);
 
   const handleLibrary = useCallback(async () => {
+    const resolver = resolverRef.current;
     setVisible(false);
     const uri = await pickPhotoFromLibrary();
-    resolve(uri);
-  }, [resolve]);
+    if (resolver) { resolver(uri); resolverRef.current = null; }
+  }, []);
 
   const handleCancel = useCallback(() => {
     resolve(null);
