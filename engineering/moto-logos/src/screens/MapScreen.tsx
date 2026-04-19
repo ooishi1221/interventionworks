@@ -665,27 +665,28 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       // チュートリアルが終了した
       setSelected(null);
       (async () => {
+        let lat = TOKYO_FALLBACK.latitude;
+        let lng = TOKYO_FALLBACK.longitude;
         try {
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status === 'granted') {
             setLocationGranted(true);
             const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-            mapRef.current?.animateToRegion({
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-              latitudeDelta: 0.03,
-              longitudeDelta: 0.03,
-            }, 800);
-            // 現在地周辺のスポットをフェッチ
-            fetchSpotsForRegion({
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-              latitudeDelta: 0.06,
-              longitudeDelta: 0.06,
-            });
+            lat = loc.coords.latitude;
+            lng = loc.coords.longitude;
+            lastLocationRef.current = { latitude: lat, longitude: lng };
           }
-        } catch {}
+        } catch (e) {
+          captureError(e, { context: 'tutorial_end_gps' });
+        }
+        mapRef.current?.animateToRegion({
+          latitude: lat, longitude: lng,
+          latitudeDelta: 0.03, longitudeDelta: 0.03,
+        }, 800);
+        await fetchSpotsForRegion({
+          latitude: lat, longitude: lng,
+          latitudeDelta: 0.06, longitudeDelta: 0.06,
+        });
       })();
     }
     prevTutorialActive.current = tutorial.active;

@@ -234,9 +234,9 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
           </TouchableOpacity>
         </View>
 
-        {/* 開発者ツール */}
-        <Text style={s.sectionTitle}>開発者ツール</Text>
-        <View style={s.card}>
+        {/* 開発者ツール（開発ビルドのみ表示） */}
+        {__DEV__ && <Text style={s.sectionTitle}>開発者ツール</Text>}
+        {__DEV__ && <View style={s.card}>
           <TouchableOpacity style={s.row} onPress={handlePurgeTestData} disabled={purging}>
             <View style={s.rowLeft}>
               <Ionicons name="trash-outline" size={20} color={purging ? C.sub : '#FF453A'} />
@@ -294,7 +294,7 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
               <Text style={s.rowLabel}>アプリをリロード</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </View>}
 
         {/* バージョン & クレジット */}
         <Text style={s.version}>Moto-Logos v{version}</Text>
