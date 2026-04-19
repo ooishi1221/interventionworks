@@ -198,22 +198,35 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
   // ── ナビゲーション ────────────────────────────────────
   const openGoogleMaps = () => {
-    const url = Platform.select({
-      ios:     `comgooglemaps://?daddr=${spot.latitude},${spot.longitude}&directionsmode=driving`,
-      android: `google.navigation:q=${spot.latitude},${spot.longitude}`,
-    }) ?? `https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`;
-    Linking.openURL(url).catch(() =>
-      Linking.openURL(`https://maps.google.com/maps?daddr=${spot.latitude},${spot.longitude}`)
+    const lat = spot.latitude;
+    const lng = spot.longitude;
+    if (!lat || !lng) return;
+    // google.navigation: で直接ターンバイターンナビを開始
+    const directNav = `google.navigation:q=${lat},${lng}`;
+    Linking.openURL(directNav).catch(() =>
+      Linking.openURL(`https://maps.google.com/maps?daddr=${lat},${lng}`)
     );
   };
 
   const openYahooNavi = async () => {
-    const name = encodeURIComponent(spot.name);
-    const newLink = `ynavigation://v1/route?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}&type=drive`;
-    const oldLink = `yjnavicar://v1/map?lat=${spot.latitude}&lon=${spot.longitude}&name=${name}`;
-    // canOpenURL はAndroidで <queries> 未宣言だと常にfalseになるため、直接openURLを試す
-    try { await Linking.openURL(newLink); return; } catch { /* fall through */ }
-    try { await Linking.openURL(oldLink); return; } catch { /* fall through */ }
+    const lat = spot.latitude;
+    const lng = spot.longitude;
+    if (!lat || !lng) return;
+    const name = spot.name?.trim() ? encodeURIComponent(spot.name) : '';
+    const namePart = name ? `&name=${name}` : '';
+    const newLink = `ynavigation://v1/route?lat=${lat}&lon=${lng}${namePart}&type=drive`;
+    const oldLink = `yjnavicar://v1/map?lat=${lat}&lon=${lng}${namePart}`;
+    // iOS: canOpenURL で確認してから開く
+    if (Platform.OS === 'ios') {
+      const canNew = await Linking.canOpenURL(newLink);
+      if (canNew) { await Linking.openURL(newLink); return; }
+      const canOld = await Linking.canOpenURL(oldLink);
+      if (canOld) { await Linking.openURL(oldLink); return; }
+    } else {
+      // Android: canOpenURL が <queries> 未宣言だとfalseになるため直接試す
+      try { await Linking.openURL(newLink); return; } catch { /* fall through */ }
+      try { await Linking.openURL(oldLink); return; } catch { /* fall through */ }
+    }
     // 両方失敗 → 未インストール → ストアへ誘導
     const store = Platform.select({
       android: 'https://play.google.com/store/apps/details?id=jp.co.yahoo.android.apps.navi',
