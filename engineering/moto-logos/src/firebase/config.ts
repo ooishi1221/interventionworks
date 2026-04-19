@@ -50,7 +50,7 @@ export function getDb(): Firestore {
       _db = getFirestore(app);
     }
   }
-  return _db;
+  return _db!;
 }
 
 // 後方互換: 既存コードの `import { db }` をそのまま動かす

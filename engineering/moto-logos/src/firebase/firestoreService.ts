@@ -104,23 +104,24 @@ function stripUndef<T extends object>(obj: T): T {
 
 function docToPin(d: { id: string; data: () => Record<string, unknown> }): ParkingPin {
   const data = d.data();
+  const payment = data.payment as { cash?: boolean; icCard?: boolean; qrCode?: boolean } | undefined;
 
   return {
     id:           d.id,
-    name:         data.name,
+    name:         data.name as string,
     latitude:     (data.coordinate as GeoPoint).latitude,
     longitude:    (data.coordinate as GeoPoint).longitude,
     maxCC:        capacityToMaxCC(data.capacity as SpotCapacity),
-    isFree:       data.isFree,
-    capacity:     data.parkingCapacity ?? null,
+    isFree:       (data.isFree as boolean | null) ?? null,
+    capacity:     (data.parkingCapacity as number | undefined) ?? null,
     source:       data.source as 'seed' | 'user',
-    address:      data.address,
-    pricePerHour: data.pricePerHour,
-    priceInfo:    data.priceInfo,
-    openHours:    data.openHours,
-    paymentCash:  data.payment?.cash,
-    paymentIC:    data.payment?.icCard,
-    paymentQR:    data.payment?.qrCode,
+    address:      data.address as string | undefined,
+    pricePerHour: data.pricePerHour as number | undefined,
+    priceInfo:    data.priceInfo as string | undefined,
+    openHours:    data.openHours as string | undefined,
+    paymentCash:  payment?.cash,
+    paymentIC:    payment?.icCard,
+    paymentQR:    payment?.qrCode,
     updatedAt:    (data.updatedAt as Timestamp | undefined)?.toDate().toISOString(),
     lastConfirmedAt: (data.lastVerifiedAt as Timestamp | undefined)?.toDate().toISOString(),
     isGuerrilla:  (data.isGuerrilla as boolean | undefined) ?? undefined,
