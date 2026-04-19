@@ -7,7 +7,7 @@
  * ④ ワンショット履歴（3列グリッド）← ファーストビュー化
  * ⑤ ワンショットマップ（180pt、最下部）
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -39,7 +39,7 @@ import { fetchUserPhotos, syncBikeToFirestore } from '../firebase/firestoreServi
 import { useUser } from '../contexts/UserContext';
 import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { ParkingPin, Vehicle, Review, UserCC } from '../types';
-import { DARK_MAP_STYLE } from '../constants/mapStyle';
+import { DARK_MAP_STYLE, STAR_MAP_STYLE } from '../constants/mapStyle';
 import { Colors } from '../constants/theme';
 import { captureError } from '../utils/sentry';
 
@@ -72,6 +72,72 @@ const TOKYO_REGION: Region = {
   longitudeDelta: 0.15,
 };
 
+// ── 星図マーカー（3段階グロー） ──
+// ── 星図マーカー（3層同心円グロー、shadow不使用で安定描画） ──
+const StarMarker = React.memo(function StarMarker({ visitCount }: { visitCount: number }) {
+  const tier = visitCount >= 3 ? 3 : visitCount >= 2 ? 2 : 1;
+  const styles = STAR_TIERS[tier];
+  return (
+    <View style={styles.outer}>
+      <View style={styles.mid}>
+        <View style={styles.core} />
+      </View>
+    </View>
+  );
+});
+
+// 3段階 × 3層（outer: ぼんやり広がり / mid: 中間グロー / core: 明るい中心）
+const STAR_TIERS: Record<number, { outer: object; mid: object; core: object }> = {
+  1: {
+    outer: {
+      width: 22, height: 22, borderRadius: 11,
+      backgroundColor: 'rgba(255,240,220,0.08)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    mid: {
+      width: 12, height: 12, borderRadius: 6,
+      backgroundColor: 'rgba(255,240,220,0.18)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    core: {
+      width: 5, height: 5, borderRadius: 2.5,
+      backgroundColor: 'rgba(255,252,245,0.9)',
+    },
+  },
+  2: {
+    outer: {
+      width: 28, height: 28, borderRadius: 14,
+      backgroundColor: 'rgba(255,240,220,0.10)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    mid: {
+      width: 16, height: 16, borderRadius: 8,
+      backgroundColor: 'rgba(255,235,210,0.22)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    core: {
+      width: 7, height: 7, borderRadius: 3.5,
+      backgroundColor: 'rgba(255,250,240,0.95)',
+    },
+  },
+  3: {
+    outer: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: 'rgba(255,230,200,0.12)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    mid: {
+      width: 20, height: 20, borderRadius: 10,
+      backgroundColor: 'rgba(255,225,190,0.28)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    core: {
+      width: 9, height: 9, borderRadius: 4.5,
+      backgroundColor: '#FFFAF0',
+    },
+  },
+};
+
 interface Props {
   onGoToSpot?: (spot: ParkingPin, reviewId?: string) => void;
   onDataChanged?: () => void;
@@ -93,6 +159,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
   const [nicknameInput, setNicknameInput] = useState('');
   const [bikeNameModal, setBikeNameModal] = useState(false);
   const [bikeNameInput, setBikeNameInput] = useState('');
+  const [starMapModal, setStarMapModal] = useState(false);
   const loadData = useCallback(async () => {
     const [vehicle, fp, tops] = await Promise.all([
       getFirstVehicle(),
@@ -186,6 +253,15 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       .filter(loc => loc.latitude != null);
   }, [footprints, myPhotos]);
 
+  // スポットごとの訪問回数（星の光強度に使用）
+  const visitCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of myPhotos) {
+      if (p.photoUri) map.set(p.spotId, (map.get(p.spotId) ?? 0) + 1);
+    }
+    return map;
+  }, [myPhotos]);
+
   // 地図リージョン（ワンショットポイントベース）
   const mapRegion = useMemo<Region>(() => {
     if (oneshotLocations.length === 0) return TOKYO_REGION;
@@ -210,6 +286,23 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.02),
     };
   }, [oneshotLocations]);
+
+  // フルスクリーン星図の初期表示（最初の足跡にストリートレベルで寄せる）
+  const fullStarRegion = useMemo<Region>(() => {
+    if (oneshotLocations.length === 0) return mapRegion;
+    // 初訪問順で最初のスポット
+    const sorted = [...myPhotos].filter(p => p.photoUri).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    const firstSpotId = sorted[0]?.spotId;
+    const loc = oneshotLocations.find(l => l.spotId === firstSpotId) ?? oneshotLocations[0];
+    return {
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      latitudeDelta: 0.004,
+      longitudeDelta: 0.004,
+    };
+  }, [oneshotLocations, myPhotos, mapRegion]);
 
   // TOP3のワンショット画像マッチ（spotIdごとの最新写真）
   const topSpotPhotos = useMemo(() => {
@@ -258,112 +351,339 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
 
   const oneshotKeyExtractor = useCallback((item: Review) => `os_${item.firestoreId ?? item.id}`, []);
 
+  // 初訪問順の軌跡パス（同一スポット再訪はスキップ）
+  const firstVisitPath = useMemo(() => {
+    const seen = new Set<string>();
+    const path: { latitude: number; longitude: number }[] = [];
+    // myPhotos を createdAt 昇順にソートし、各スポットの初訪問だけ拾う
+    const sorted = [...myPhotos].filter(p => p.photoUri).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    const coordMap = new Map<string, { latitude: number; longitude: number }>();
+    for (const loc of oneshotLocations) {
+      coordMap.set(loc.spotId, { latitude: loc.latitude, longitude: loc.longitude });
+    }
+    for (const p of sorted) {
+      if (seen.has(p.spotId)) continue;
+      seen.add(p.spotId);
+      const coord = coordMap.get(p.spotId);
+      if (coord) path.push(coord);
+    }
+    return path;
+  }, [myPhotos, oneshotLocations]);
+
+  // 軌跡ライン（古い→新しいでフェードイン）
+  const trailSegments = useMemo(() => {
+    if (firstVisitPath.length < 2) return null;
+    const total = firstVisitPath.length - 1;
+    return firstVisitPath.slice(0, -1).map((_, i) => {
+      const opacity = 0.15 + (i / total) * 0.45; // 0.15 → 0.60
+      return (
+        <Polyline
+          key={`trail_${i}`}
+          coordinates={[firstVisitPath[i], firstVisitPath[i + 1]]}
+          strokeColor={`rgba(255,240,220,${opacity})`}
+          strokeWidth={3}
+        />
+      );
+    });
+  }, [firstVisitPath]);
+
+  // ── フルスクリーン軌跡アニメーション ──
+  const [trailProgress, setTrailProgress] = useState(-1);
+  const trailRafRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fullMapRef = useRef<MapView | null>(null);
+  const lastCameraSpotRef = useRef(0); // カメラ追従済みのスポット数
+  const SEGMENT_DURATION = 600;
+  const TICK_INTERVAL = 33;
+
+  useEffect(() => {
+    if (starMapModal && firstVisitPath.length >= 2) {
+      setTrailProgress(0);
+      lastCameraSpotRef.current = 0;
+      const total = firstVisitPath.length - 1;
+      const step = TICK_INTERVAL / SEGMENT_DURATION;
+      let progress = 0;
+      let lastCameraSeg = -1; // セグメント開始時カメラパン追跡
+
+      const tick = () => {
+        progress = Math.min(progress + step, total);
+        setTrailProgress(progress);
+
+        const seg = Math.floor(progress);
+        const map = fullMapRef.current;
+        if (!map) { /* noop */ }
+        // ── セグメント開始: 次のスポットへ向かってカメラがパン ──
+        else if (seg > lastCameraSeg && seg < total) {
+          lastCameraSeg = seg;
+          const from = firstVisitPath[seg];
+          const to = firstVisitPath[seg + 1];
+          // from → to の中点よりやや to 寄り（先読み感）
+          const lat = from.latitude * 0.3 + to.latitude * 0.7;
+          const lng = from.longitude * 0.3 + to.longitude * 0.7;
+          const dLat = Math.abs(to.latitude - from.latitude);
+          const dLng = Math.abs(to.longitude - from.longitude);
+          map.animateToRegion({
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: Math.max(dLat * 3, 0.005),
+            longitudeDelta: Math.max(dLng * 3, 0.005),
+          }, SEGMENT_DURATION);
+        }
+        // ── 全セグメント完了: 全体が収まるように引く ──
+        else if (progress >= total && lastCameraSeg < total) {
+          lastCameraSeg = total;
+          const lats = firstVisitPath.map(p => p.latitude);
+          const lngs = firstVisitPath.map(p => p.longitude);
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          const minLng = Math.min(...lngs);
+          const maxLng = Math.max(...lngs);
+          map.animateToRegion({
+            latitude: (minLat + maxLat) / 2,
+            longitude: (minLng + maxLng) / 2,
+            latitudeDelta: Math.max((maxLat - minLat) * 1.8, 0.008),
+            longitudeDelta: Math.max((maxLng - minLng) * 1.8, 0.008),
+          }, 800);
+        }
+
+        if (progress < total) {
+          trailRafRef.current = setTimeout(tick, TICK_INTERVAL);
+        }
+      };
+      trailRafRef.current = setTimeout(tick, 500);
+    } else {
+      setTrailProgress(-1);
+    }
+    return () => {
+      if (trailRafRef.current) clearTimeout(trailRafRef.current);
+    };
+  }, [starMapModal, firstVisitPath]);
+
+  // firstVisitPath の spotId 順マップ（星の点灯判定に使用）
+  const firstVisitSpotOrder = useMemo(() => {
+    const seen = new Set<string>();
+    const order: string[] = [];
+    const sorted = [...myPhotos].filter(p => p.photoUri).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    for (const p of sorted) {
+      if (seen.has(p.spotId)) continue;
+      seen.add(p.spotId);
+      order.push(p.spotId);
+    }
+    return order;
+  }, [myPhotos]);
+
+  // アニメーション中の軌跡セグメント（フルスクリーン用）
+  const animatedTrailSegments = useMemo(() => {
+    if (firstVisitPath.length < 2 || trailProgress <= 0) return null;
+    const total = firstVisitPath.length - 1;
+    const completedCount = Math.floor(trailProgress);
+    const partialFrac = trailProgress - completedCount;
+
+    const segments: React.ReactElement[] = [];
+    for (let i = 0; i < completedCount && i < total; i++) {
+      const opacity = 0.15 + (i / Math.max(total - 1, 1)) * 0.45;
+      segments.push(
+        <Polyline
+          key={`atrail_${i}`}
+          coordinates={[firstVisitPath[i], firstVisitPath[i + 1]]}
+          strokeColor={`rgba(255,240,220,${opacity})`}
+          strokeWidth={3}
+        />,
+      );
+    }
+    // 描画中セグメント（座標を補間）
+    if (completedCount < total && partialFrac > 0) {
+      const from = firstVisitPath[completedCount];
+      const to = firstVisitPath[completedCount + 1];
+      const mid = {
+        latitude: from.latitude + (to.latitude - from.latitude) * partialFrac,
+        longitude: from.longitude + (to.longitude - from.longitude) * partialFrac,
+      };
+      const opacity = 0.15 + (completedCount / Math.max(total - 1, 1)) * 0.45;
+      segments.push(
+        <Polyline
+          key={`atrail_${completedCount}`}
+          coordinates={[from, mid]}
+          strokeColor={`rgba(255,240,220,${opacity})`}
+          strokeWidth={3}
+        />,
+      );
+    }
+    return segments;
+  }, [firstVisitPath, trailProgress]);
+
+  // ミニカード用マーカー（常時全表示）
+  const starMapMarkers = useMemo(() => oneshotLocations.map((loc) => (
+    <Marker
+      key={`star_${loc.spotId}`}
+      coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+      anchor={{ x: 0.5, y: 0.5 }}
+      tracksViewChanges
+    >
+      <StarMarker visitCount={visitCountMap.get(loc.spotId) ?? 1} />
+    </Marker>
+  )), [oneshotLocations, visitCountMap]);
+
+  // フルスクリーン用マーカー（到達した星だけ点灯）
+  const animatedStarMarkers = useMemo(() => {
+    if (trailProgress < 0) return starMapMarkers; // Modal外では全表示
+    const reachedCount = Math.floor(trailProgress) + 1; // 最初の星は即表示
+    return oneshotLocations.map((loc) => {
+      const orderIndex = firstVisitSpotOrder.indexOf(loc.spotId);
+      const reached = orderIndex < 0 || orderIndex < reachedCount;
+      return (
+        <Marker
+          key={`star_${loc.spotId}`}
+          coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          tracksViewChanges
+          opacity={reached ? 1 : 0}
+        >
+          <StarMarker visitCount={reached ? (visitCountMap.get(loc.spotId) ?? 1) : 1} />
+        </Marker>
+      );
+    });
+  }, [oneshotLocations, visitCountMap, trailProgress, firstVisitSpotOrder, starMapMarkers]);
+
   const listHeader = useMemo(() => (
     <>
-      {/* ── ⓪ ニックネーム ─────────────────────────── */}
+      {/* ── ライダー名 ── */}
       <TouchableOpacity
         style={s.nicknameRow}
-        onPress={() => {
-          setNicknameInput(nickname || '');
-          setNicknameModal(true);
-        }}
+        onPress={() => { setNicknameInput(nickname || ''); setNicknameModal(true); }}
         activeOpacity={0.7}
       >
         <Text style={s.nicknameName}>{nickname || 'ライダー名を設定'}</Text>
-        <Ionicons name="pencil" size={14} color={C.sub} />
-      </TouchableOpacity>
-
-      {/* ── ① バイク写真カード ──────────────────────── */}
-      <Text style={s.sectionTitle}>マイバイク</Text>
-      <TouchableOpacity
-        style={s.photoCard}
-        onPress={handleChangePhoto}
-        activeOpacity={0.85}
-      >
-        {bike?.photoUrl ? (
-          <Image source={bike.photoUrl} style={s.photoImage} transition={200} cachePolicy="disk" />
-        ) : (
-          <View style={s.photoPlaceholder}>
-            <MaterialCommunityIcons name="motorbike" size={40} color={C.accent} />
-            <Text style={s.photoPlaceholderText}>タップして写真を設定</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={s.bikeNameRow}
-        onPress={() => {
-          setBikeNameInput(bike?.name || '');
-          setBikeNameModal(true);
-        }}
-        activeOpacity={0.7}
-      >
-        <Text style={s.bikeNameText}>{bike?.name || '車種名を入力'}</Text>
         <Ionicons name="pencil" size={12} color={C.sub} />
       </TouchableOpacity>
 
-      {/* ── ② 排気量選択 ────────────────────────────── */}
-      <Text style={s.sectionTitle}>排気量選択</Text>
-      <View style={s.ccRow}>
+      {/* ── プロフィールヘッダー（丸写真 + カウンター + ミニ星図） ── */}
+      <View style={s.profileHeader}>
+        <TouchableOpacity onPress={handleChangePhoto} activeOpacity={0.85}>
+          <View style={s.profileAvatar}>
+            {bike?.photoUrl ? (
+              <Image source={bike.photoUrl} style={s.profileAvatarImg} transition={200} cachePolicy="disk" />
+            ) : (
+              <View style={s.profileAvatarEmpty}>
+                <MaterialCommunityIcons name="motorbike" size={32} color={C.accent} />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <View style={s.profileRight}>
+          <View style={s.counterRow}>
+            <View style={s.counterItem}>
+              <Text style={s.counterNum}>{myPhotos.length}</Text>
+              <Text style={s.counterLabel}>ワンショット</Text>
+            </View>
+            <View style={s.counterItem}>
+              <Text style={s.counterNum}>{oneshotLocations.length}</Text>
+              <Text style={s.counterLabel}>スポット</Text>
+            </View>
+            <TouchableOpacity
+              style={s.counterItem}
+              activeOpacity={0.85}
+              onPress={() => oneshotLocations.length > 0 && setStarMapModal(true)}
+            >
+              <View style={s.miniStarMap}>
+                <MapView
+                  style={s.miniStarMapInner}
+                  initialRegion={mapRegion}
+                  region={mapRegion}
+                  customMapStyle={STAR_MAP_STYLE}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  pointerEvents="none"
+                >
+                  {trailSegments}
+                  {starMapMarkers}
+                </MapView>
+                {oneshotLocations.length === 0 && (
+                  <View style={s.miniStarMapEmpty}>
+                    <Ionicons name="navigate" size={16} color="rgba(255,255,255,0.15)" />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* ── 車種名 ── */}
+      <TouchableOpacity
+        style={s.bioRow}
+        onPress={() => { setBikeNameInput(bike?.name || ''); setBikeNameModal(true); }}
+        activeOpacity={0.7}
+      >
+        <Text style={s.bioText}>{bike?.name || '車種名を入力'}</Text>
+        <Ionicons name="pencil" size={10} color={C.sub} style={{ marginLeft: 4 }} />
+      </TouchableOpacity>
+
+      {/* ── 排気量ピル ── */}
+      <View style={s.ccPillRow}>
         {CC_OPTIONS.map((opt) => {
           const active = userCC === opt.value || (userCC === undefined && opt.value === null);
           return (
             <TouchableOpacity
               key={String(opt.value)}
-              style={[s.ccBtn, active && s.ccBtnActive]}
+              style={[s.ccPill, active && s.ccPillActive]}
               onPress={() => { handleChangeCC(opt.value); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               activeOpacity={0.7}
             >
-              <Text style={[s.ccText, active && s.ccTextActive]}>{opt.label}</Text>
+              <Text style={[s.ccPillText, active && s.ccPillTextActive]}>{opt.label}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* ── ③ よく撮ってるスポットTOP3 ─────────────── */}
+      {/* ── TOP3 ストーリーズ風 ── */}
       {topSpots.length > 0 && (
-        <>
-          <Text style={s.sectionTitle}>よく撮ってるスポット</Text>
-          <View style={s.topGrid}>
-            {topSpots.map((ts) => {
-              const photoUri = topSpotPhotos.get(ts.spotId);
-              return (
-                <TouchableOpacity
-                  key={ts.spotId}
-                  style={s.topCard}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    onGoToSpot?.({
-                      id: ts.spotId,
-                      name: ts.spotName,
-                      latitude: ts.latitude,
-                      longitude: ts.longitude,
-                      source: 'seed',
-                    } as ParkingPin);
-                  }}
-                >
+        <View style={s.storyRow}>
+          {topSpots.map((ts) => {
+            const photoUri = topSpotPhotos.get(ts.spotId);
+            return (
+              <TouchableOpacity
+                key={ts.spotId}
+                style={s.storyItem}
+                activeOpacity={0.85}
+                onPress={() => {
+                  onGoToSpot?.({
+                    id: ts.spotId,
+                    name: ts.spotName,
+                    latitude: ts.latitude,
+                    longitude: ts.longitude,
+                    source: 'seed',
+                  } as ParkingPin);
+                }}
+              >
+                <View style={s.storyRing}>
                   {photoUri ? (
-                    <Image source={photoUri} style={s.topPhoto} transition={200} cachePolicy="disk" />
+                    <Image source={photoUri} style={s.storyPhoto} transition={200} cachePolicy="disk" />
                   ) : (
-                    <View style={s.topPhotoPlaceholder}>
-                      <MaterialCommunityIcons name="motorbike" size={24} color={C.sub} />
+                    <View style={s.storyPhotoEmpty}>
+                      <MaterialCommunityIcons name="motorbike" size={18} color={C.sub} />
                     </View>
                   )}
-                  <View style={s.topInfo}>
-                    <Text style={s.topName} numberOfLines={2}>{ts.spotName}</Text>
-                    <View style={s.topMeta}>
-                      <Ionicons name="camera" size={11} color={C.accent} />
-                      <Text style={s.topCount}>{ts.count}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </>
+                </View>
+                <Text style={s.storyName} numberOfLines={1}>{ts.spotName}</Text>
+                <View style={s.storyMeta}>
+                  <Ionicons name="camera" size={9} color={C.accent} />
+                  <Text style={s.storyCount}>{ts.count}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
-      {/* ── ④ ワンショット履歴ヘッダー ─────────────── */}
-      <Text style={s.sectionTitle}>ワンショット</Text>
+      {/* ── グリッド区切り ── */}
+      <View style={s.gridDivider} />
       {myPhotos.length === 0 && (
         <View style={s.emptyActivity}>
           <Ionicons name="camera" size={24} color={C.accent} />
@@ -371,50 +691,11 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
         </View>
       )}
     </>
-  ), [nickname, bike, userCC, topSpots, topSpotPhotos, myPhotos.length, handleChangePhoto, handleChangeCC, onGoToSpot]);
+  ), [nickname, bike, userCC, topSpots, topSpotPhotos, myPhotos.length, oneshotLocations, mapRegion, trailSegments, starMapMarkers, handleChangePhoto, handleChangeCC, onGoToSpot]);
 
   const listFooter = useMemo(() => (
-    <>
-      {/* ── ⑤ ワンショットマップ ───────────────────── */}
-      <Text style={s.sectionTitle}>ワンショットマップ</Text>
-      <View style={s.mapCard}>
-        <MapView
-          style={s.map}
-          initialRegion={mapRegion}
-          region={mapRegion}
-          customMapStyle={DARK_MAP_STYLE}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          pointerEvents="none"
-        >
-          {oneshotLocations.map((loc) => (
-            <Marker
-              key={loc.spotId}
-              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-              pinColor="#FF453A"
-            />
-          ))}
-        </MapView>
-
-        {oneshotLocations.length === 0 && (
-          <View style={s.mapEmptyOverlay}>
-            <Ionicons name="map-outline" size={32} color="rgba(255,255,255,0.2)" />
-            <Text style={s.mapEmptyText}>ワンショットで地図に刻もう</Text>
-          </View>
-        )}
-
-        {oneshotLocations.length > 0 && (
-          <View style={s.mapBadge}>
-            <Text style={s.mapBadgeText}>{oneshotLocations.length}か所</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={{ height: 60 }} />
-    </>
-  ), [mapRegion, oneshotLocations]);
+    <View style={{ height: 60 }} />
+  ), []);
 
   return (
     <View style={s.safe}>
@@ -519,23 +800,55 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* ── 星図フルスクリーン ── */}
+      <Modal visible={starMapModal} animationType="slide" onRequestClose={() => setStarMapModal(false)}>
+        <View style={s.starMapFull}>
+          <MapView
+            ref={fullMapRef}
+            style={{ flex: 1 }}
+            initialRegion={fullStarRegion}
+            customMapStyle={STAR_MAP_STYLE}
+            scrollEnabled
+            zoomEnabled
+            rotateEnabled={false}
+            pitchEnabled={false}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsCompass={false}
+          >
+            {animatedTrailSegments}
+            {animatedStarMarkers}
+          </MapView>
+
+          <View style={s.starMapHeader}>
+            <Text style={s.starMapCountText}>{oneshotLocations.length}か所の足跡</Text>
+          </View>
+
+          <TouchableOpacity
+            style={s.starMapCloseBtn}
+            onPress={() => setStarMapModal(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={24} color={C.text} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-const TOP_CARD_W = Math.floor((SCREEN_W - 16 * 2 - 8 * 2) / 3);
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Constants.statusBarHeight },
   content: { paddingBottom: 20 },
 
-  // ── ⓪ ニックネーム ──
+  // ── ライダー名 ──
   nicknameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 20,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 4,
   },
   nicknameName: {
@@ -544,133 +857,179 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── ① バイク写真カード ──
-  photoCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 20,
+  // ── プロフィールヘッダー ──
+  profileHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 20,
+    alignItems: 'flex-start',
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.15)',
     overflow: 'hidden',
-    backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
+    backgroundColor: C.surface,
   },
-  photoImage: {
-    width: '100%',
-    height: 180,
+  profileAvatarImg: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
   },
-  photoPlaceholder: {
-    height: 140,
+  profileAvatarEmpty: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    backgroundColor: C.surface,
   },
-  photoPlaceholderText: {
+  profileRight: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  counterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  counterItem: {
+    alignItems: 'center',
+  },
+  counterNum: {
+    color: C.text,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  counterLabel: {
     color: C.sub,
-    fontSize: 13,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  miniStarMap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#000000',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  miniStarMapInner: {
+    width: 48,
+    height: 48,
+  },
+  miniStarMapEmpty: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
 
-  bikeNameRow: {
+  // ── 車種名 ──
+  bioRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    marginBottom: 4,
+    paddingHorizontal: 16,
+    marginTop: 10,
   },
-  bikeNameText: {
+  bioText: {
     color: C.sub,
     fontSize: 14,
   },
 
-  // ── ② 排気量選択 ──
-  ccRow: {
+  // ── 排気量ピル ──
+  ccPillRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 12,
-    gap: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    gap: 6,
   },
-  ccBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  ccPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
     backgroundColor: C.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
-  ccBtnActive: {
-    backgroundColor: 'rgba(10,132,255,0.18)',
-    borderColor: 'rgba(10,132,255,0.5)',
+  ccPillActive: {
+    backgroundColor: 'rgba(10,132,255,0.15)',
+    borderColor: 'rgba(10,132,255,0.4)',
   },
-  ccText: {
-    color: C.sub,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  ccTextActive: {
-    color: C.blue,
-  },
-
-  // ── Section ──
-  sectionTitle: {
+  ccPillText: {
     color: C.sub,
     fontSize: 12,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-    marginLeft: 18,
-    marginTop: 16,
+  },
+  ccPillTextActive: {
+    color: C.blue,
   },
 
-  // ── ③ よく撮ってるスポットTOP3 ──
-  topGrid: {
+  // ── TOP3 ストーリーズ ──
+  storyRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 8,
+    marginTop: 16,
+    justifyContent: 'space-around',
   },
-  topCard: {
-    width: TOP_CARD_W,
-    borderRadius: 12,
+  storyItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  storyRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2.5,
+    borderColor: C.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surface,
     overflow: 'hidden',
-    backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
   },
-  topPhoto: {
-    width: '100%',
-    height: TOP_CARD_W,
+  storyPhoto: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
-  topPhotoPlaceholder: {
-    width: '100%',
-    height: TOP_CARD_W,
+  storyPhotoEmpty: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.surface,
   },
-  topInfo: {
-    padding: 8,
-    gap: 4,
+  storyName: {
+    color: C.sub,
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: 'center',
   },
-  topName: {
-    color: C.text,
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 14,
-  },
-  topMeta: {
+  storyMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
+    marginTop: 1,
   },
-  topCount: {
+  storyCount: {
     color: C.accent,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
   },
 
-  // ── ④ ワンショット履歴（TOP3直後、マップの前） ──
+  // ── グリッド区切り ──
+  gridDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.border,
+    marginTop: 16,
+    marginBottom: 2,
+  },
+
+  // ── ワンショットグリッド ──
   emptyActivity: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   emptyText: { color: C.sub, fontSize: 13, textAlign: 'center', lineHeight: 20 },
   oneshotRow: {
@@ -693,34 +1052,36 @@ const s = StyleSheet.create({
   },
   oneshotCellName: { color: '#fff', fontSize: 10, fontWeight: '600' },
   oneshotCellTime: { color: 'rgba(255,255,255,0.7)', fontSize: 9 },
-  // ── ⑤ ワンショットマップ ──
-  mapCard: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    height: 180,
-    backgroundColor: C.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
+  // ── 星図フルスクリーン ──
+  starMapFull: {
+    flex: 1,
+    backgroundColor: '#000000',
   },
-  map: { flex: 1 },
-  mapEmptyOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  starMapHeader: {
+    position: 'absolute',
+    top: (Constants.statusBarHeight ?? 44) + 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  starMapCountText: {
+    color: C.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  starMapCloseBtn: {
+    position: 'absolute',
+    top: (Constants.statusBarHeight ?? 44) + 8,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  mapEmptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8 },
-  mapBadge: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  mapBadgeText: { color: C.text, fontSize: 12, fontWeight: '700' },
   // ── ニックネームモーダル ──
   modalOverlay: {
     flex: 1,

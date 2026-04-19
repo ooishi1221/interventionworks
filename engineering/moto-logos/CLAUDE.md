@@ -192,6 +192,19 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - RiderScreen のワンショットグリッドは `FlatList` + `numColumns={3}` で仮想化（`.map()` で全件レンダーしない）
 - SpotDetailSheet のギャラリー FlatList には `initialNumToRender` / `maxToRenderPerBatch` / `removeClippedSubviews` / `getItemLayout` を必ず指定
 
+### 星図（Star Map）
+
+- ライダーノートのプロフィールヘッダーにミニ星図（48pt丸）を配置。タップでフルスクリーン展開
+- `STAR_MAP_STYLE`（`src/constants/mapStyle.ts`）— ラベル全消し・極暗マップスタイル。道路・海岸線のみダークグレーで残す
+- `StarMarker` — 3層同心円グロー（outer→mid→core）。shadow不使用。訪問回数で3段階（1回/2回/3回+）
+- 軌跡ライン — 初訪問順（同一スポット再訪はスキップ）のPolyline。古い→新しいでopacityグラデーション（0.15→0.60）
+- フルスクリーン演出:
+  - 最初の足跡にストリートレベル（delta 0.004）で寄ってスタート
+  - 線が30fpsで伸び、セグメント開始時にカメラが次のスポット方向へ先読みパン
+  - 到達で星が点灯（opacity 0→1）
+  - 全完了で800msかけて全体像に引く
+- `tracksViewChanges={true}` 必須（カスタムMarkerのビットマップ化タイミング問題を回避）
+
 ### Firestore 運用
 
 - 新規スポットには必ず `geohash`（精度9）を付与する
@@ -382,7 +395,7 @@ eas update --branch preview
 | 画面 | 概要 |
 |------|------|
 | **MapScreen** | メイン地図。クラスタリング付きピン表示、タップで詳細シート |
-| **RiderScreen** | ライダーノート: マイバイク写真 + 排気量選択 + よく撮ってるスポットTOP3（ワンショット数順）+ ワンショット履歴（3列グリッド、無限スクロール）+ ワンショットマップ（180pt、撮影ポイント可視化） |
+| **RiderScreen** | ライダーノート v8（Instagram型プロフィール）: 丸バイク写真(80pt) + カウンター(ワンショット数/スポット数) + ミニ星図(48pt丸) + 車種名 + CC選択ピル + TOP3ストーリーズ風(オレンジリング丸72pt) + ワンショット3列グリッド(FlatList仮想化) + 星図フルスクリーンModal(初訪問順トレイルアニメーション+カメラ追従) |
 | **SpotDetailSheet** | 情報ゾーン（上スクロール: 鮮度テキスト + 情報更新日 + 写真ギャラリー + 住所 + 精算・料金 + 足跡一覧）+ アクションゾーン（下固定: 案内・📷ワンショット・シェア） |
 | **SearchOverlay** | テキスト検索のフルスクリーン入力画面。サーチタブ2回目タップで開く。テキスト入力→ジオコーディング→座標+エリア名を返す |
 | **NotificationsScreen** | お知らせ一覧（Firestore announcements + 既読管理 + タップ詳細モーダル） |
