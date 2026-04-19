@@ -23,7 +23,10 @@
       "extends": "base",
       "distribution": "internal",
       "channel": "preview",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
     "production": {
       "extends": "base",

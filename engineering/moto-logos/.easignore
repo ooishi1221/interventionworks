@@ -1,0 +1,4 @@
+scripts/data/
+scripts/moto-spotter-firebase-adminsdk-*.json
+.DS_Store
+*.md
