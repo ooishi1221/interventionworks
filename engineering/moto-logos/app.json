@@ -38,7 +38,14 @@
       ],
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": { "newArchEnabled": false },
+          "ios": { "newArchEnabled": true }
+        }
+      ]
     ],
     "ios": {
       "bundleIdentifier": "com.interventionworks.motologos",
@@ -55,7 +62,6 @@
     },
     "android": {
       "package": "com.interventionworks.motologos",
-      "newArchEnabled": false,
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
