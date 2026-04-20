@@ -239,7 +239,8 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
         Alert.alert('見つかりませんでした', `「${label}」に該当する場所が見つかりません。`);
       } catch (e) {
         captureError(e, { context: 'chip_press' });
-        Alert.alert('エラー', '検索に失敗しました。');
+        const msg = e instanceof Error ? e.message : String(e);
+        Alert.alert('検索エラー詳細', `[${label}]\n${msg.slice(0, 300)}`);
       } finally {
         setSearching(false);
       }
