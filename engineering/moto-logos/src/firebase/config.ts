@@ -97,11 +97,20 @@ export function getFirebaseAuth(): Auth {
 export async function ensureAnonymousAuth(): Promise<User> {
   const auth = getFirebaseAuth();
 
+  // getIdToken が iOS で稀に hang する対策: 10秒タイムアウト
+  const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
+    Promise.race([
+      p,
+      new Promise<never>((_, rej) =>
+        setTimeout(() => rej(new Error(`TOKEN_TIMEOUT:${label}`)), ms),
+      ),
+    ]);
+
   // 既存ユーザーがいる場合: トークンを強制リフレッシュして有効性確認。
   // 失敗時は再サインインにフォールバック（期限切れ・revoke 等）。
   if (auth.currentUser) {
     try {
-      await auth.currentUser.getIdToken(true);
+      await withTimeout(auth.currentUser.getIdToken(true), 10000, 'existingUser');
       return auth.currentUser;
     } catch {
       // fall through to re-sign-in
@@ -113,12 +122,15 @@ export async function ensureAnonymousAuth(): Promise<User> {
       if (user) {
         unsub();
         try {
-          // ID Token の取得を待つ。これを省くと初回サインイン直後の
-          // Firestore クエリが permission-denied で弾かれる。
-          await user.getIdToken(true);
+          // ID Token の取得を待つ（10秒タイムアウト付き）。
+          // これを省くと初回サインイン直後の Firestore クエリが
+          // permission-denied で弾かれる。
+          await withTimeout(user.getIdToken(true), 10000, 'newUser');
           resolve(user);
         } catch (e) {
-          reject(e);
+          // Token 取れなくても user オブジェクトはあるので、
+          // resolve してしまう（permission_denied は呼び出し側で retry）
+          resolve(user);
         }
       }
     });

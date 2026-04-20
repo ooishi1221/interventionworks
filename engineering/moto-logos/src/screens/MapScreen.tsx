@@ -281,6 +281,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // 初回: キャッシュ即時表示 → AsyncStorage+GPS並列 → バックグラウンド同期
   useEffect(() => {
+    if (DEBUG_ALERT) Alert.alert('DEBUG3 Map起動', 'MapScreen.useEffect 開始');
     (async () => {
       // Phase 0: SQLite キャッシュから即時表示（<10ms）
       let hasCache = false;

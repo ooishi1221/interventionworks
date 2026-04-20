@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   View,
@@ -138,9 +139,17 @@ function App() {
 
   // ── 匿名認証（Firestoreアクセスに必須）─────────────
   useEffect(() => {
+    Alert.alert('DEBUG1 App起動', 'App.useEffect 開始');
     ensureAnonymousAuth()
-      .then(() => setAuthReady(true))
-      .catch((e) => { captureError(e, { context: 'anonymous_auth' }); setAuthReady(true); }); // 失敗してもアプリは起動させる
+      .then((u) => {
+        Alert.alert('DEBUG2 認証OK', `uid=${u.uid.slice(0,10)}`);
+        setAuthReady(true);
+      })
+      .catch((e) => {
+        Alert.alert('DEBUG2 認証FAIL', e instanceof Error ? e.message : String(e));
+        captureError(e, { context: 'anonymous_auth' });
+        setAuthReady(true);
+      });
   }, []);
 
   // ── ニックネーム ────────────────────────────────────
