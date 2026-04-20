@@ -10,9 +10,9 @@
  *   const { latitude, longitude, name } = await getPlaceDetails(suggestions[0].placeId, token);
  */
 
-const API_KEY =
-  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ??
-  'AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o'; // app.json の android.config.googleMaps.apiKey と同じ
+// Places API 専用キー。app.json の android.config.googleMaps.apiKey と同じ値だが
+// ハードコードで EAS env の注入漏れを回避。リリース時に HTTP referrer 制限を検討。
+const API_KEY = 'AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o';
 
 export interface PlaceSuggestion {
   placeId: string;
@@ -68,13 +68,18 @@ export async function autocompletePlaces(
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': API_KEY,
+        // iOS/Android の Bundle/Package ヘッダーを明示的に空にして、
+        // Google 側でのアプリ制限判定に影響しないようにする
+        'X-Ios-Bundle-Identifier': '',
+        'X-Android-Package': '',
+        'X-Android-Cert': '',
       },
       body: JSON.stringify(body),
     },
   );
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`autocomplete ${res.status}: ${text}`);
+    throw new Error(`autocomplete ${res.status} key=${API_KEY.slice(0, 12)}: ${text.slice(0, 200)}`);
   }
   const data = await res.json();
   type RawSuggestion = {
