@@ -80,10 +80,10 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 | `photo-break-bike.jpg` | PhotoBreak（夜の路地 + バイク、アンバー照明） |
 | `app-mockup-map.jpg` | FAQ背景（ダークマップビジュアル） |
 | `logo-mark.jpg` | ロゴマーク（マップピン × タイヤ痕） |
-| `app-screenshot.png` | Hero iPhoneモック（※実機スクショ差し替え予定） |
-| `ss-map.png` | CoreValues 02 FRESHNESS（地図全景・※差し替え予定） |
-| `ss-detail.png` | CoreValues 01 ONE SHOT（スポット詳細・※差し替え予定） |
-| `ss-report.png` | CoreValues 03 ALTRUISM（記録画面・※差し替え予定） |
+| `app-screenshot.png` | Hero iPhoneモック（Gemini合成：文字ゼロのオレンジピン散布＋中央カメラボタン。01と兄弟ビジュアル） |
+| `ss-detail.png` | CoreValues 01 ONE SHOT（Gemini合成：駐輪写真＋「足跡を刻みました！」セレモニー） |
+| `ss-map.png` | CoreValues 02 FRESHNESS（実UI：新丸ビルゾーン、鮮度タグ「今日確認されました」） |
+| `ss-report.png` | CoreValues 03 ALTRUISM（実UI：プロフィール、ワンショット蓄積グリッド） |
 
 ## デザインシステム（アプリと統一）
 
