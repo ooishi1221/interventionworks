@@ -28,7 +28,8 @@ import { readSpotsFromCache } from '../db/spotsCache';
 import { getFirebaseAuth } from '../firebase/config';
 
 // preview でも必ず Alert を表示するデバッグフラグ。0件問題の原因特定用。
-const DEBUG_ALERT = false;
+// 問題解決後は false に戻す。
+const DEBUG_ALERT = true;
 import { insertUserSpot, getFirstVehicle, getFootprintCount } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';

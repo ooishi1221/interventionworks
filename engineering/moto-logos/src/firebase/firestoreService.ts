@@ -179,26 +179,38 @@ export async function fetchSpotsInRegion(
     return results;
   };
 
+  // iOS の初回起動時、許可ダイアログ表示中や起動直後に
+  // Firestore 通信が保留されて Promise がハングすることがある。
+  // 明示的タイムアウトで強制中断してリトライ経路に回す。
+  const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
+    Promise.race([
+      p,
+      new Promise<never>((_, rej) =>
+        setTimeout(() => rej(new Error(`TIMEOUT:${label}`)), ms),
+      ),
+    ]);
+
   try {
-    return await runQueries();
+    return await withTimeout(runQueries(), 6000, 'runQueries');
   } catch (e: unknown) {
-    // 初回サインイン直後は ID Token が Firestore backend に反映されるまで
-    // 数百ms のラグがあり permission-denied が発生しやすい。
-    // トークンをリフレッシュしてから1度だけリトライする。
     const msg = e instanceof Error ? e.message : String(e);
     const code = (e as { code?: string })?.code ?? '';
     const isAuthIssue = code === 'permission-denied' || /permission|unauth/i.test(msg);
+    const isTimeout = msg.startsWith('TIMEOUT:');
 
-    if (isAuthIssue) {
+    // 認証問題 or タイムアウト時は、トークンリフレッシュして1度だけリトライ。
+    // 初回サインイン直後は ID Token が Firestore backend に反映されるまで
+    // 数百ms〜1秒のラグがあるため。
+    if (isAuthIssue || isTimeout) {
       try {
         const auth = getFirebaseAuth();
         if (auth.currentUser) {
           await auth.currentUser.getIdToken(true);
-          await new Promise((r) => setTimeout(r, 500));
-          return await runQueries();
+          await new Promise((r) => setTimeout(r, 800));
+          return await withTimeout(runQueries(), 8000, 'runQueries_retry');
         }
       } catch (e2) {
-        captureError(e2, { context: 'geohash_query_retry_failed' });
+        captureError(e2, { context: 'geohash_query_retry_failed', originalError: msg });
       }
     }
 

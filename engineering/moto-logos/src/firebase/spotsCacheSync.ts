@@ -25,7 +25,15 @@ const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h
 export async function downloadAllSpotsToCache(): Promise<number> {
   try {
     const spots = await fetchAllSpots();
-    if (spots.length === 0) return 0;
+    // 空配列（permission-denied 等でクエリは成功したが0件の場合）は
+    // キャッシュを書き換えない。誤って空データを「新鮮キャッシュ」として
+    // 記録すると以降の loadSpotsFromCacheIfFresh で 0件返しが固定化する。
+    if (spots.length < 10) {
+      captureError(new Error(`downloadAllSpots: 異常に少ない件数 (${spots.length}) — 書き込みスキップ`), {
+        context: 'downloadAllSpotsToCache_suspicious',
+      });
+      return 0;
+    }
     await writeSpotsToCache(spots);
     return spots.length;
   } catch (e) {
