@@ -307,7 +307,12 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 
 - `.env` に Firebase + Sentry 設定値を格納（`EXPO_PUBLIC_` プレフィクス必須）
 - `.env.example` に必要なキー一覧あり（値は空）。新規メンバーはこれをコピーして Firebase Console / Sentry から値を取得する
-- EAS Build 時は `eas.json` の `env` ブロックから Sentry DSN を注入
+- **`.env` は `.gitignore` 対象で git 未追跡。EAS Build には自動で転送されない**
+- **EAS Build には `eas env:push preview --path .env --force` で Secrets 登録する必須**（production も同様）
+- 確認は `eas env:list preview`
+- 未登録時の症状: Firebase 初期化で `auth/invalid-api-key` → 全 Firestore クエリが permission-denied → 新規インストール1回目で「ピン0件」「Alertも出ない」無言死
+- 過去事例（2026-04-20）: 環境変数未登録で iOS/Android 両方動作不能。診断Alertで `DEBUG2 認証FAIL: auth/invalid-api-key` を確認して発覚
+- `.env` を変更／新キー追加時は必ず `eas env:push` を打ち直す
 
 ### クラッシュ監視（Sentry）
 
