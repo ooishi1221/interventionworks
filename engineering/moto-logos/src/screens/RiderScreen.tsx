@@ -32,6 +32,7 @@ import {
   getFootprints,
   getTopSpots,
   updateVehicle,
+  insertVehicle,
   type Footprint,
   type TopSpot,
 } from '../db/database';
@@ -189,48 +190,62 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
     setRefreshing(false);
   }, [loadData]);
 
+  // bike が未作成なら自動で作る。以降の UPDATE を必ず成功させるため。
+  const ensureBike = useCallback(async (): Promise<Vehicle> => {
+    if (bike) return bike;
+    await insertVehicle({
+      name: '',
+      type: 'motorcycle',
+      cc: userCC,
+    });
+    const created = await getFirstVehicle();
+    if (!created) throw new Error('insertVehicle failed');
+    setBike(created);
+    return created;
+  }, [bike, userCC]);
+
   // バイク写真変更
   const handleChangePhoto = useCallback(async () => {
     const uri = await showPicker();
-    if (!uri || !bike) return;
+    if (!uri) return;
     try {
-      await updateVehicle(bike.id, { ...bike, photoUrl: uri });
-      setBike({ ...bike, photoUrl: uri });
+      const current = await ensureBike();
+      await updateVehicle(current.id, { ...current, photoUrl: uri });
+      setBike({ ...current, photoUrl: uri });
       const uid = user?.userId;
-      if (uid) syncBikeToFirestore(uid, { ...bike, photoUrl: uri }).catch((e) => captureError(e, { context: 'sync_bike_photo' }));
+      if (uid) syncBikeToFirestore(uid, { ...current, photoUrl: uri }).catch((e) => captureError(e, { context: 'sync_bike_photo' }));
       onDataChanged?.();
     } catch (e) {
       captureError(e, { context: 'change_bike_photo' });
     }
-  }, [bike, showPicker, user?.userId, onDataChanged]);
+  }, [ensureBike, showPicker, user?.userId, onDataChanged]);
 
   // バイク名変更
   const handleChangeBikeName = useCallback(async (name: string) => {
-    if (!bike) return;
     try {
-      await updateVehicle(bike.id, { ...bike, name });
-      setBike({ ...bike, name });
+      const current = await ensureBike();
+      await updateVehicle(current.id, { ...current, name });
+      setBike({ ...current, name });
       const uid = user?.userId;
-      if (uid) syncBikeToFirestore(uid, { ...bike, name }).catch((e) => captureError(e, { context: 'sync_bike_name' }));
+      if (uid) syncBikeToFirestore(uid, { ...current, name }).catch((e) => captureError(e, { context: 'sync_bike_name' }));
     } catch (e) {
       captureError(e, { context: 'change_bike_name' });
     }
-  }, [bike, user?.userId]);
+  }, [ensureBike, user?.userId]);
 
   // CC変更
   const handleChangeCC = useCallback(async (cc: UserCC) => {
     onChangeCC?.(cc);
-    if (bike) {
-      try {
-        await updateVehicle(bike.id, { ...bike, cc });
-        setBike({ ...bike, cc });
-        const uid = user?.userId;
-        if (uid) syncBikeToFirestore(uid, { ...bike, cc }).catch(() => {});
-      } catch (e) {
-        captureError(e, { context: 'change_cc' });
-      }
+    try {
+      const current = await ensureBike();
+      await updateVehicle(current.id, { ...current, cc });
+      setBike({ ...current, cc });
+      const uid = user?.userId;
+      if (uid) syncBikeToFirestore(uid, { ...current, cc }).catch(() => {});
+    } catch (e) {
+      captureError(e, { context: 'change_cc' });
     }
-  }, [bike, onChangeCC, user?.userId]);
+  }, [ensureBike, onChangeCC, user?.userId]);
 
   // spotId → spotName
   const spotNameMap = useMemo(() => {
