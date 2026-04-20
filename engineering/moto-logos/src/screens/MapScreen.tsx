@@ -149,20 +149,20 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   /**
    * スポット選択時にピンがシート (Peek 28%) で隠れない位置に来るよう地図をオフセット。
-   * ピンを画面縦方向の 30% 付近に配置。シートは下 28% を占めるので、残り 72% の地図
-   * 可視域のほぼ中央にピンが見える。
+   * ピンを「可視マップ領域の中央」(画面上から 36%) に配置する。
+   * 画面中央 (50%) から上 14% に動かす = 地図の中央緯度を南にずらす = -offsetLat。
+   * 加えて、クラスタリング解除のためズームを強くする (0.005〜)。
    */
   const selectSpotWithOffset = useCallback((spot: ParkingPin | null) => {
     if (!spot) { setSelected(null); return; }
-    const region = currentRegionRef.current;
-    // 画面中央から上 20% へオフセット = 緯度方向に +0.20 * latitudeDelta（北へ）
-    const offsetLat = (region.latitudeDelta ?? 0.04) * 0.20;
+    const targetDelta = 0.005; // 街区レベルまで寄る → クラスタが解ける
+    const offsetLat = targetDelta * 0.14; // 新しい delta で 14% 上へオフセット
     mapRef.current?.animateToRegion({
-      latitude: spot.latitude + offsetLat,
+      latitude: spot.latitude - offsetLat, // 中央を南にずらす = ピンは画面の上
       longitude: spot.longitude,
-      latitudeDelta: Math.max(region.latitudeDelta * 0.6, 0.008),
-      longitudeDelta: Math.max(region.longitudeDelta * 0.6, 0.008),
-    }, 400);
+      latitudeDelta: targetDelta,
+      longitudeDelta: targetDelta,
+    }, 500);
     setSelected(spot);
   }, []);
 
@@ -936,22 +936,22 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           );
         }}
       >
-        {allSpots.map((spot) => {
-          const isSelected = selected?.id === spot.id;
-          return (
+        {/* 通常ピン: 選択中は除外してクラスタリング対象に */}
+        {allSpots
+          .filter((spot) => spot.id !== selected?.id)
+          .map((spot) => (
             <Marker
               key={spot.id}
               coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
               onPress={() => selectSpotWithOffset(spot)}
               anchor={{ x: 0.5, y: 0.5 }}
               accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
-              zIndex={isSelected ? 100 : 1}
-              tracksViewChanges={isSelected}
+              zIndex={1}
+              tracksViewChanges={false}
             >
-              <SpotPin spot={spot} wide={wideZoom} selected={isSelected} />
+              <SpotPin spot={spot} wide={wideZoom} />
             </Marker>
-          );
-        })}
+          ))}
         {/* 晴れ円: 確認済みスポット周囲 */}
         {clearedSpots.map((spot) => (
           <Circle
@@ -963,6 +963,19 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             strokeWidth={1}
           />
         ))}
+        {/* 選択中ピン: クラスタリング対象外で常に強調表示 */}
+        {selected && (
+          <Marker
+            key={`selected_${selected.id}`}
+            coordinate={{ latitude: selected.latitude, longitude: selected.longitude }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            accessibilityLabel={`${selected.name} (選択中)`}
+            zIndex={100}
+            tracksViewChanges={false}
+          >
+            <SpotPin spot={selected} wide={false} selected />
+          </Marker>
+        )}
       </ClusteredMapView>
 
       {/* 暗幕は SearchOverlay が担当 */}
