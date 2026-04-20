@@ -128,7 +128,59 @@ export function startWatching(postToSlack) {
       (err) => console.error("[Watcher] beta_feedback onSnapshot error:", err.message)
     );
 
-  console.log("[Firestore Watcher] watching beta_errors + beta_feedback");
+  // ── debug_reports 監視 ─────────────────────────────
+  // 設定画面の「デバッグ情報を送信」ボタンで書き込まれる
+  db.collection("debug_reports")
+    .where("createdAt", ">", startedAt)
+    .onSnapshot(
+      (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+          if (change.type !== "added") continue;
+          const d = change.doc.data();
+          const timeStr = formatTime(d.createdAt);
+          const recent = (d.recentErrors || []).slice(0, 3);
+          const errorSummary = recent.length
+            ? recent
+                .map(
+                  (e) =>
+                    `• \`${(e.context || "").slice(0, 30)}\` ${(e.message || "").slice(0, 80)}`,
+                )
+                .join("\n")
+            : "_(直近エラーなし)_";
+
+          const blocks = [
+            { type: "header", text: { type: "plain_text", text: "🐛 Debug Report", emoji: true } },
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*User:*\n\`${d.userId || "unknown"}\`` },
+              { type: "mrkdwn", text: `*Device:*\n${d.deviceBrand || ""} ${d.deviceModel || "?"}\n${d.platform || "?"} ${d.osVersion || ""}` },
+              { type: "mrkdwn", text: `*App:*\nv${d.appVersion || "?"} (build ${d.buildNumber ?? "?"})` },
+              { type: "mrkdwn", text: `*Update/Channel:*\n\`${(d.updateId || "?").slice(0, 8)}\` / ${d.channel || "?"}` },
+            ]},
+            { type: "section", text: { type: "mrkdwn",
+              text: `*直近エラー (最新${recent.length}件):*\n${errorSummary}`,
+            }},
+            { type: "context", elements: [
+              { type: "mrkdwn", text: `docId: \`${change.doc.id}\` · ${timeStr}` },
+            ]},
+            { type: "divider" },
+          ];
+
+          if (d.userNote) {
+            blocks.splice(2, 0, {
+              type: "section",
+              text: { type: "mrkdwn", text: `> ${String(d.userNote).slice(0, 500)}` },
+            });
+          }
+
+          postToSlack(blocks, `🐛 Debug Report from ${d.userId}`).catch((err) =>
+            console.error("[Watcher] debug_report post failed:", err.message)
+          );
+        }
+      },
+      (err) => console.error("[Watcher] debug_reports onSnapshot error:", err.message)
+    );
+
+  console.log("[Firestore Watcher] watching beta_errors + beta_feedback + debug_reports");
 }
 
 function formatTime(ts) {

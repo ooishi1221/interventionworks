@@ -59,6 +59,13 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // debug_reports: ユーザーがデバッグ情報をワンタップ送信するコレクション。
+    // 認証ユーザーは作成のみ。読取・更新・削除は Admin SDK (Slack Bot) のみ
+    match /debug_reports/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
+
     // user_activity: 認証ユーザーは自分のアクティビティを記録可。DAU/WAU/MAU集計元
     match /user_activity/{docId} {
       allow create, update: if request.auth != null;

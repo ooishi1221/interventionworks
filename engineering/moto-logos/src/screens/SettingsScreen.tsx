@@ -11,6 +11,7 @@ import {
   Switch,
   Alert,
   DevSettings,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +21,7 @@ import { purgeTestData, reportParked, fetchSpotsInRegion } from '../firebase/fir
 import * as Location from 'expo-location';
 import { Colors } from '../constants/theme';
 import { AccountLinkCard } from '../components/AccountLinkCard';
+import { sendDebugReport } from '../utils/debugReport';
 
 const C = { ...Colors, card: Colors.cardElevated };
 
@@ -38,6 +40,19 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
   const [pushEnabled, setPushEnabled] = useState(true);
   const [thirdParty, setThirdParty] = useState(false);
   const [purging, setPurging] = useState(false);
+  const [debugSending, setDebugSending] = useState(false);
+
+  const handleSendDebugReport = async () => {
+    if (debugSending) return;
+    setDebugSending(true);
+    try {
+      const id = await sendDebugReport();
+      Alert.alert('送信完了', `デバッグ情報を開発者に送信しました。\n参照ID: ${id.slice(0, 8)}`);
+    } catch (e) {
+      Alert.alert('送信失敗', e instanceof Error ? e.message : String(e));
+    }
+    setDebugSending(false);
+  };
 
   useEffect(() => {
     AsyncStorage.getItem('moto_logos_push_enabled').then((v) => setPushEnabled(v !== 'false'));
@@ -125,6 +140,14 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
   };
 
   const version = Constants.expoConfig?.version || '1.0.0';
+  // EAS Build の buildNumber (iOS) / versionCode (Android) を表示。
+  // 実機で古いビルド/新ビルドの識別を即座にできるように。
+  const buildNumber =
+    Platform.OS === 'ios'
+      ? Constants.expoConfig?.ios?.buildNumber
+      : Constants.expoConfig?.android?.versionCode;
+  // OTA 更新の識別子。ランタイムで差し替わった JS bundle の判別用
+  const updateId = Updates.updateId?.slice(0, 8) || 'embedded';
 
   return (
     <View style={s.container}>
@@ -220,6 +243,15 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
               </TouchableOpacity>
             </>
           )}
+          <View style={s.separator} />
+          <TouchableOpacity style={s.row} onPress={handleSendDebugReport} disabled={debugSending}>
+            <View style={s.rowLeft}>
+              <Ionicons name="bug-outline" size={20} color={debugSending ? C.sub : C.blue} />
+              <Text style={[s.rowLabel, { color: debugSending ? C.sub : C.text }]}>
+                {debugSending ? '送信中...' : 'デバッグ情報を開発者に送信'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* アカウント */}
@@ -297,7 +329,11 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
         </View>}
 
         {/* バージョン & クレジット */}
-        <Text style={s.version}>Moto-Logos v{version}</Text>
+        <Text style={s.version}>
+          Moto-Logos v{version}
+          {buildNumber ? ` (build ${buildNumber})` : ''}
+        </Text>
+        <Text style={s.buildMeta}>update: {updateId}</Text>
         <Text style={s.credit}>
           スポットデータの一部は OpenStreetMap を利用しています{'\n'}
           © OpenStreetMap contributors (ODbL)
@@ -321,5 +357,6 @@ const s = StyleSheet.create({
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginLeft: 48 },
   unreadBadge: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF453A', marginLeft: 4 },
   version: { color: C.sub, fontSize: 12, textAlign: 'center', marginTop: 32 },
+  buildMeta: { color: C.sub, fontSize: 10, textAlign: 'center', marginTop: 2, opacity: 0.6 },
   credit: { color: C.sub, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
 });

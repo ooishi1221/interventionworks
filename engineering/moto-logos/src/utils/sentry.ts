@@ -119,6 +119,19 @@ export function captureError(error: unknown, context?: Record<string, string>): 
   // Firestore β自動通知（Sentry の有無に関係なく実行）
   _writeBetaError(error, context);
 
+  // デバッグシェアボタンで後から送れるように AsyncStorage に直近エラーを保持
+  try {
+    const { pushRecentError } = require('./debugReport');
+    const msg = error instanceof Error ? error.message : String(error);
+    pushRecentError({
+      ts: new Date().toISOString(),
+      context: context ? JSON.stringify(context) : '',
+      message: msg.slice(0, 400),
+    });
+  } catch {
+    // 失敗は無視
+  }
+
   if (!DSN) {
     // DSN 未設定時は console.error にフォールバック
     console.error('[Sentry fallback]', error, context);
