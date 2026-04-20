@@ -5,7 +5,7 @@
  * - エリアサマリーモード（テキスト検索後: 「渋谷 — N件」+ ×クリア）
  * - スポットタップ → onSpotPress
  */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
 import { Colors } from '../constants/theme';
 import { spotFreshness, freshnessLabel, FRESHNESS_STYLE } from '../utils/freshness';
+import { useTutorial } from '../contexts/TutorialContext';
 
 const C = Colors;
 
@@ -39,6 +40,33 @@ interface Props {
 }
 
 export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Props) {
+  const tutorial = useTutorial();
+  const firstCardRef = useRef<View>(null);
+
+  // チュートリアル explore-result で最初のカードを target として登録。
+  // onLayout → measureInWindow で render 完了直後の正確な座標を取得。
+  useEffect(() => {
+    if (!tutorial.active || tutorial.currentStep.id !== 'explore-result') return;
+    if (items.length === 0) return;
+    const register = () => {
+      firstCardRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          tutorial.registerTarget('search-result-card', {
+            x: x - 4,
+            y: y - 4,
+            w: w + 8,
+            h: h + 8,
+            borderRadius: 14,
+          });
+        }
+      });
+    };
+    // レイアウト確定のためマイクロウェイト
+    const t1 = setTimeout(register, 100);
+    const t2 = setTimeout(register, 400); // 念のため再測定
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [tutorial.active, tutorial.currentStep.id, items.length]);
+
   if (items.length === 0) return null;
 
   return (
@@ -57,16 +85,29 @@ export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Pro
         </View>
 
         {/* リスト */}
-        {items.map((item) => {
+        {items.map((item, idx) => {
           const { spot } = item;
           const price = spot.isFree ? '無料' : spot.priceInfo ? spot.priceInfo : spot.pricePerHour ? `¥${spot.pricePerHour}/h` : null;
           const cap = spot.capacity ? `${spot.capacity}台` : null;
           return (
             <TouchableOpacity
               key={spot.id}
+              ref={idx === 0 ? firstCardRef : undefined}
               style={styles.row}
               onPress={() => onSpotPress?.(spot)}
               activeOpacity={0.7}
+              onLayout={idx === 0 ? () => {
+                // onLayout 発火でも再測定 (maps が非同期で動く場合のラグ対策)
+                if (tutorial.active && tutorial.currentStep.id === 'explore-result') {
+                  firstCardRef.current?.measureInWindow((x, y, w, h) => {
+                    if (w > 0 && h > 0) {
+                      tutorial.registerTarget('search-result-card', {
+                        x: x - 4, y: y - 4, w: w + 8, h: h + 8, borderRadius: 14,
+                      });
+                    }
+                  });
+                }
+              } : undefined}
             >
               <View style={styles.rowTop}>
                 <FreshDot spot={spot} />

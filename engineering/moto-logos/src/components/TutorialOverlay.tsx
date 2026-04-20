@@ -59,12 +59,25 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
 
   useEffect(() => {
     if (showOverlay) {
+      // complete 画面: TutorialGuide のフェードアウトを待ってから出す。
+      // setup 画面: 初回表示なのですぐ。
+      const waitForGuideFadeOut = tutorial.phase === 'complete' ? 500 : 0;
       fadeAnim.setValue(0);
       contentFade.setValue(0);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-      Animated.timing(contentFade, { toValue: 1, duration: 500, delay: 200, useNativeDriver: true }).start();
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: waitForGuideFadeOut,
+        useNativeDriver: true,
+      }).start();
+      Animated.timing(contentFade, {
+        toValue: 1,
+        duration: 600,
+        delay: waitForGuideFadeOut + 250,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [showOverlay]);
+  }, [showOverlay, tutorial.phase]);
 
   if (!showOverlay) return null;
 

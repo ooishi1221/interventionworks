@@ -48,26 +48,38 @@ export function TutorialGuide() {
       prevStepRef.current = stepIndex;
 
       if (isFirstAppearance) {
-        // 初回表示: 暗幕ごとフェードイン
+        // 初回表示: 暗幕ごとフェードイン（余韻のあるタメ）
         fadeAnim.setValue(0);
         contentAnim.setValue(0);
         Animated.parallel([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(contentAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }),
+          Animated.timing(contentAnim, {
+            toValue: 1,
+            duration: 500,
+            delay: 200, // 暗幕が乗ってからテキスト
+            useNativeDriver: true,
+          }),
         ]).start();
       } else {
-        // 通常遷移: 暗幕維持、コンテンツだけフェード
+        // 通常遷移: 暗幕維持、コンテンツだけ一旦フェードアウトしてから差替え
         fadeAnim.setValue(1);
-        contentAnim.setValue(0);
-        Animated.timing(contentAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+        Animated.sequence([
+          Animated.timing(contentAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+          Animated.timing(contentAnim, {
+            toValue: 1,
+            duration: 500,
+            delay: 80, // ひと呼吸置く
+            useNativeDriver: true,
+          }),
+        ]).start();
       }
 
       // パルスグロー（ピカピカ — 常に光ってる＋脈動）
       pulseAnim.setValue(0.5);
       pulseRef.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 0.5, duration: 500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.5, duration: 600, useNativeDriver: true }),
         ])
       );
       pulseRef.current.start();
@@ -77,10 +89,13 @@ export function TutorialGuide() {
   }, [active, stepIndex, phase]);
 
   // complete フェーズへの遷移: フェードアウト（地図が見える隙間を防ぐ）
+  // instruction を即時に消してから暗幕をフェードアウト。これで Overlay の
+  // complete 画面とテキストが被る「チカチカ」を防ぐ。
   useEffect(() => {
     if (active && phase === 'complete') {
       setFadingToComplete(true);
-      Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => {
+      contentAnim.setValue(0); // instruction 即消去
+      Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => {
         setFadingToComplete(false);
       });
     }

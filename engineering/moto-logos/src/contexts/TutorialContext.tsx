@@ -60,7 +60,7 @@ export const STEPS: StepDef[] = [
     id: 'explore-result',
     phase: 'explore',
     instruction: '気になるスポットをタップしてみましょう',
-    target: null,
+    target: 'search-result-card',
     waitFor: 'tap-target',
   },
   {
