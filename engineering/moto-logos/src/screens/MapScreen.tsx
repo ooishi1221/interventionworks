@@ -735,6 +735,31 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     [allSpots, wideZoom],
   );
 
+  // チュートリアル開始時: 現在の画面状態（開いてるシート・検索結果など）を
+  // リセットして、地図を東京駅にワープしてから始める。
+  // これをしないとユーザーが開いたSpotDetailSheetの上からチュートリアルが
+  // 被さり、「どこにいるんだっけ」を失った状態で手順に入ってしまう。
+  const prevTutorialActiveForStartRef = useRef(tutorial.active);
+  useEffect(() => {
+    const wasInactive = !prevTutorialActiveForStartRef.current;
+    prevTutorialActiveForStartRef.current = tutorial.active;
+    if (tutorial.active && wasInactive) {
+      setSelected(null);
+      setSearchResults([]);
+      setSearchAreaName(null);
+      onSearchPhaseChange?.('idle');
+      mapRef.current?.animateToRegion(
+        {
+          latitude: TOKYO_FALLBACK.latitude,
+          longitude: TOKYO_FALLBACK.longitude,
+          latitudeDelta: 0.04,
+          longitudeDelta: 0.04,
+        },
+        600,
+      );
+    }
+  }, [tutorial.active, onSearchPhaseChange]);
+
   // チュートリアル中: セットアップphaseでバックグラウンドキャッシュDL
   useEffect(() => {
     if (!tutorial.active || tutorial.phase !== 'setup') return;
