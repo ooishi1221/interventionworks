@@ -917,8 +917,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         clusterFontFamily={undefined}
         radius={50}
         minZoomLevel={0}
-        maxZoomLevel={15}
+        maxZoomLevel={20}
         extent={512}
+        clusteringEnabled={!selected}
         animationEnabled={false}
         renderCluster={(cluster) => {
           const { id, geometry, onPress, properties } = cluster;
