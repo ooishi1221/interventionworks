@@ -272,7 +272,36 @@ export const COLLECTIONS = {
   BETA_SIGNUPS: 'beta_signups',
   BETA_FEEDBACK: 'beta_feedback',
   BETA_ERRORS: 'beta_errors',
+  DEBUG_REPORTS: 'debug_reports',
 } as const;
+
+// ─────────────────────────────────────────────────────
+// Debug Report — 設定画面の「デバッグ情報を送信」ボタンで書き込まれる
+// ─────────────────────────────────────────────────────
+
+export interface DebugReportRecentError {
+  ts: string;
+  context: string;
+  message: string;
+}
+
+export interface DebugReportResponse {
+  id: string;
+  userId: string;
+  authUid: string | null;
+  platform: string;
+  osVersion: string;
+  deviceModel: string;
+  deviceBrand: string;
+  appVersion: string;
+  buildNumber: string | number | null;
+  updateId: string;
+  runtimeVersion: string;
+  channel: string;
+  recentErrors: DebugReportRecentError[];
+  userNote?: string;
+  createdAt: string;
+}
 
 // ─────────────────────────────────────────────────────
 // API レスポンス用 (Timestamp → string 変換済み)
