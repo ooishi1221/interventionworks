@@ -109,10 +109,17 @@ export async function ensureAnonymousAuth(): Promise<User> {
   }
 
   return new Promise((resolve, reject) => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         unsub();
-        resolve(user);
+        try {
+          // ID Token の取得を待つ。これを省くと初回サインイン直後の
+          // Firestore クエリが permission-denied で弾かれる。
+          await user.getIdToken(true);
+          resolve(user);
+        } catch (e) {
+          reject(e);
+        }
       }
     });
     signInAnonymously(auth).catch(reject);
