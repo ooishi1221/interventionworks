@@ -38,14 +38,7 @@
       ],
       "expo-apple-authentication",
       "@react-native-google-signin/google-signin",
-      "expo-font",
-      [
-        "expo-build-properties",
-        {
-          "android": { "newArchEnabled": false },
-          "ios": { "newArchEnabled": true }
-        }
-      ]
+      "expo-font"
     ],
     "ios": {
       "bundleIdentifier": "com.interventionworks.motologos",
