@@ -915,9 +915,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         clusterColor="#0A84FF"
         clusterTextColor="#fff"
         clusterFontFamily={undefined}
-        radius={60}
+        radius={50}
         minZoomLevel={0}
-        maxZoomLevel={20}
+        maxZoomLevel={15}
         extent={512}
         animationEnabled={false}
         renderCluster={(cluster) => {
