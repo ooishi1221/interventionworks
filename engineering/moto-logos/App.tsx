@@ -24,6 +24,7 @@ import { TutorialOverlay } from './src/components/TutorialOverlay';
 import { TutorialGuide } from './src/components/TutorialGuide';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { UserProvider } from './src/contexts/UserContext';
+import { UserBlocksProvider } from './src/contexts/UserBlocksContext';
 import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
 import { initSentry, setSentryUser, sentryWrap, captureError } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
@@ -322,6 +323,7 @@ function App() {
   return (
     <ErrorBoundary>
       <UserProvider nickname={nickname}>
+        <UserBlocksProvider>
         <GestureHandlerRootView style={styles.root}>
         <TutorialProvider>
           <StatusBar style="light" />
@@ -480,6 +482,7 @@ function App() {
           />
         </TutorialProvider>
         </GestureHandlerRootView>
+        </UserBlocksProvider>
       </UserProvider>
     </ErrorBoundary>
   );

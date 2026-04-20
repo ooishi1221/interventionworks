@@ -106,6 +106,7 @@ Firebase Auth Custom Claims でロールを管理。
 | `/api/users/[id]/ban` | ユーザーBAN（一時停止/永久停止） |
 | `/api/users/[id]/unban` | BAN解除 |
 | `/api/reports` | 通報管理 + resolve |
+| `/api/public/moderate-photo` | **公開API** — アプリから Firebase ID トークン付きで POST。Gemini Vision で公序良俗違反判定 → `{approved, reason?, rationale?}` を返す |
 | `/api/ng-words` | NGワードリスト管理（GET/PUT） |
 | `/api/notifications/send` | 個別ユーザーへのプッシュ通知 |
 | `/api/notifications/broadcast` | 全ユーザー一斉通知（プラットフォーム別対応） |
@@ -141,7 +142,8 @@ Firebase Auth Custom Claims でロールを管理。
 - `validations` — Good/Bad 投票
 - `user_activity` — 日次アクティビティ（DAU/WAU/MAU 集計用、アプリ側で記録）
 - `moderation_logs` — 管理操作の監査ログ（本ダッシュボードで新規作成）
-- `reports` — ユーザー通報
+- `reports` — ユーザー通報（reviewId / reporterUid / reason='inappropriate'|'spam'|'misleading'|'other' / description / status='open'|'resolved'|'dismissed'）
+- `user_blocks` — 自分がブロックしたユーザー配列（docId=auth.uid, blocked: string[]）
 - `ban_appeals` — BAN解除申請（userId, reason, status, reviewedBy）
 - `push_tokens` — Expo Push トークン（deviceId をキー）
 - `announcements` — アプリ内お知らせ（title, body, sortOrder, createdAt）

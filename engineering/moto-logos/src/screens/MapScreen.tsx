@@ -35,6 +35,7 @@ import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
 import { OneshotCeremony } from '../components/OneshotCeremony';
 import { captureError } from '../utils/sentry';
+import { moderatePhotoRemote } from '../utils/moderation';
 import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
@@ -658,6 +659,16 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       // 2. カメラ起動（使えない場合はライブラリから選択）
       const photoUri = await showPicker();
       if (!photoUri) return;
+
+      // 2.5 事前モデレーション（公序良俗違反を弾く）
+      const mod = await moderatePhotoRemote(photoUri);
+      if (!mod.approved) {
+        Alert.alert(
+          '投稿できません',
+          mod.rationale || 'この写真はコミュニティガイドラインに反する可能性があります。別の写真をお試しください。',
+        );
+        return;
+      }
 
       // 3. 住所を自動取得
       setReportLoading(true);

@@ -78,3 +78,58 @@ export async function analyzeSpotPhoto(
 
   return parsed;
 }
+
+// ─────────────────────────────────────────────────────
+// 公序良俗違反モデレーション（ワンショット事前フィルタ）
+// ─────────────────────────────────────────────────────
+
+export type ModerationResult = {
+  approved: boolean;
+  reason?: 'nudity' | 'violence' | 'illegal' | 'other';
+  rationale?: string;
+};
+
+const MODERATION_PROMPT = `あなたは画像の公序良俗判定を行うアシスタントです。
+この写真が以下のいずれかに該当する場合は reject してください:
+- ヌード・性的表現
+- 暴力・流血・虐待
+- 違法薬物・武器の明示
+- 他者のプライバシーを侵害する撮影（明確な顔アップの盗撮など）
+
+逆に、バイク・車両・駐車場・看板・建物・風景・食事・日常風景などはすべて approve してください。
+駐車場以外の写真でもバイク文化に関連するものは approve です。判断に迷う場合は approve を優先してください。
+
+以下のJSON形式のみを返してください:
+{"approved": true/false, "reason": "nudity|violence|illegal|other", "rationale": "短い日本語の理由"}
+approved が true のときは reason と rationale を省略して {"approved": true} だけでOK。`;
+
+/**
+ * 画像を Gemini Vision で解析し、公序良俗違反かどうか判定する。
+ * Apple App Store Guideline 1.2 準拠の事前フィルタ。
+ */
+export async function moderatePhoto(
+  base64: string,
+  mimeType: string = 'image/jpeg',
+): Promise<ModerationResult> {
+  const client = getClient();
+  const model = client.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const result = await model.generateContent([
+    { text: MODERATION_PROMPT },
+    { inlineData: { mimeType, data: base64 } },
+  ]);
+
+  const responseText = result.response.text();
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    // 応答パース失敗時は approve（ユーザー体験を優先）
+    return { approved: true };
+  }
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as ModerationResult;
+    return { approved: parsed.approved !== false, reason: parsed.reason, rationale: parsed.rationale };
+  } catch {
+    return { approved: true };
+  }
+}

@@ -89,5 +89,21 @@ service cloud.firestore {
     match /retention_log/{docId} {
       allow read, write: if false;
     }
+
+    // user_blocks: 自分がブロックしたユーザーの uid 配列。
+    // 本人のみ読み書き可。docId = 自分の auth.uid。
+    match /user_blocks/{uid} {
+      allow read, create, update: if request.auth != null
+                                  && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // reports: ワンショット通報（Apple Guideline 1.2 準拠）。
+    // 認証ユーザーは作成のみ。読取・更新・削除は Admin SDK（Slack Bot / 管理画面）のみ
+    match /reports/{docId} {
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.reporterUid;
+      allow read, update, delete: if false;
+    }
   }
 }

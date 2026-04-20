@@ -354,6 +354,32 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - エラー: `🚨 Beta Error` + エラーメッセージ + context + 端末情報 + スタックトレース
 - フィードバック: `💬 Beta Feedback [カテゴリ]` + メッセージ + 写真 + 端末情報
 
+### 通報・ブロック・モデレーション（Apple Guideline 1.2 準拠）
+
+ワンショット投稿に対する3層のUGC安全機構。βリリース前に必須。
+
+| 層 | 発火点 | 実装 |
+|---|--------|------|
+| **事前フィルタ** | ワンショット送信直前 | `src/utils/moderation.ts` → Admin API `/api/public/moderate-photo` → Gemini Vision で公序良俗違反を弾く |
+| **通報** | ReportCard 右上🚩（自分の投稿には非表示） | `src/components/ReportModal.tsx` → Firestore `reports` → Slack #moto-logos-dev-log + Admin `/reports` |
+| **ブロック** | 通報モーダル内「このライダーをブロック」デフォルトON | `src/contexts/UserBlocksContext.tsx` で購読 → `SpotDetailSheet` でフィルタ |
+
+**設定導線:** 設定 → プライバシー → 「ブロック中のライダー」（件数バッジ + 解除Modal）
+
+**Firestore 構造:**
+- `reports/{id}` — reviewId / spotId / reporterUid / reason ('inappropriate'|'spam'|'misleading'|'other') / description / status ('open'|'resolved'|'dismissed') / targetUserId (denorm)
+- `user_blocks/{uid}` — `blocked: string[]` (arrayUnion/arrayRemove) + updatedAt
+
+**通報UI理由:** 公序良俗違反（=inappropriate）/ スパム / その他（App側は3択、Admin側は misleading 含む4種）
+
+**Gemini コスト:** 2.5-flash-lite で 1判定 ≈ 0.00002 USD。月1万で 30 円。
+
+**設計方針:**
+- 通報ボタンは目立たせない（ワンショット思想「評価しない・競わない」と矛盾させない最小UI）
+- ブロックは silent（相手に通知しない）
+- Gemini は判定失敗時 approve（UX優先）
+- Admin側のスキーマに合わせている（reviewId / reporterUid / description / status=open）
+
 ### NGワードフィルタ
 
 - `src/utils/ng-filter.ts` でクライアント側フィルタ（即時フィードバック用）

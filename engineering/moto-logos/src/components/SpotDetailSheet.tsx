@@ -56,8 +56,11 @@ import {
 import { getFirstVehicle, addFootprint } from '../db/database';
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/theme';
 import { captureError } from '../utils/sentry';
+import { moderatePhotoRemote } from '../utils/moderation';
 import { useUser } from '../contexts/UserContext';
+import { useUserBlocks } from '../contexts/UserBlocksContext';
 import { spotFreshness, freshnessLabel, lastConfirmedText, FRESHNESS_STYLE } from '../utils/freshness';
+import { ReportModal } from './ReportModal';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -191,6 +194,11 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
   // ナビ選択モーダル
   const [navModalOpen, setNavModalOpen] = useState(false);
 
+  // 通報モーダル
+  const [reportTarget, setReportTarget] = useState<{ reviewId: string; userId: string } | null>(null);
+  const currentUserId = user?.userId ?? null;
+  const { isBlocked } = useUserBlocks();
+
   // ワンショット後のリフレッシュ用
   const loadAll = useCallback(async () => {
     setReportsLoading(true);
@@ -301,6 +309,19 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
     setShotUploading(true);
     try {
+      // 事前モデレーション（公序良俗違反を弾く）。チュートリアル中はスキップ
+      if (!tutorial.active) {
+        const mod = await moderatePhotoRemote(uri);
+        if (!mod.approved) {
+          setShotUploading(false);
+          Alert.alert(
+            '投稿できません',
+            mod.rationale || 'この写真はコミュニティガイドラインに反する可能性があります。別の写真をお試しください。',
+          );
+          return;
+        }
+      }
+
       const bike = await getFirstVehicle();
 
       // Firestore review + Storage アップロード（既存関数を再利用）
@@ -335,7 +356,12 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
   // ─────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────
-  const photos = reports.filter((r) => r.photoUri);
+  // ブロックしたユーザーの投稿は一覧・ギャラリーから除外
+  const visibleReports = useMemo(
+    () => reports.filter((r) => !isBlocked(r.userId)),
+    [reports, isBlocked],
+  );
+  const photos = visibleReports.filter((r) => r.photoUri);
 
   return (
     <>
@@ -542,10 +568,10 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
             {/* 過去の報告 */}
             {reportsLoading ? (
               <ActivityIndicator color={C.blue} style={{ marginVertical: 20 }} />
-            ) : reports.length > 0 ? (
+            ) : visibleReports.length > 0 ? (
               <View style={styles.reportsSection}>
                 <Text style={styles.sectionLabel}>みんなの足跡</Text>
-                {reports.map((r) => {
+                {visibleReports.map((r) => {
                   const isHighlight = !!(highlightReviewId && r.firestoreId === highlightReviewId);
                   return (
                     <View
@@ -556,7 +582,12 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
                         setTimeout(() => scrollRef.current?.scrollTo({ y: y + 200, animated: true }), 400);
                       } : undefined}
                     >
-                      <ReportCard report={r} onPhotoTap={setFullPhoto} />
+                      <ReportCard
+                        report={r}
+                        onPhotoTap={setFullPhoto}
+                        currentUserId={currentUserId}
+                        onReport={(reviewId, userId) => setReportTarget({ reviewId, userId })}
+                      />
                     </View>
                   );
                 })}
@@ -623,6 +654,13 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
         </Animated.View>
       </KeyboardAvoidingView>
       <PickerSheet />
+      <ReportModal
+        visible={reportTarget !== null}
+        onClose={() => setReportTarget(null)}
+        targetReviewId={reportTarget?.reviewId ?? ''}
+        targetUserId={reportTarget?.userId ?? ''}
+        spotId={spot.id}
+      />
     </>
   );
 }
@@ -813,7 +851,17 @@ const CORRECTION_LABELS: Record<string, { label: string; color: string }> = {
   other: { label: 'その他', color: C.sub },
 };
 
-function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: string) => void }) {
+function ReportCard({
+  report,
+  onPhotoTap,
+  currentUserId,
+  onReport,
+}: {
+  report: Review;
+  onPhotoTap: (uri: string) => void;
+  currentUserId: string | null;
+  onReport: (reviewId: string, targetUserId: string) => void;
+}) {
   // score: 1=停められた, 0=停められなかった, 2-5=旧星レビュー
   const isMatched = report.score === 1;
   const isUnmatched = report.score === 0;
@@ -824,6 +872,12 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
   const correctionKey = correctionMatch?.[1];
   const correctionInfo = correctionKey ? CORRECTION_LABELS[correctionKey] : null;
   const cleanComment = report.comment?.replace(/^\[(full|closed|wrong_price|wrong_cc|other)\]\s*/, '').trim();
+
+  // Firestore 由来 + 自分以外の投稿 + targetUserId が判明しているものだけ通報可
+  const canReport =
+    !!report.firestoreId &&
+    !!report.userId &&
+    report.userId !== currentUserId;
 
   return (
     <View style={styles.reportCard}>
@@ -848,7 +902,20 @@ function ReportCard({ report, onPhotoTap }: { report: Review; onPhotoTap: (uri: 
             <Text style={[styles.reportCardBadgeText, { color: C.sub }]}>メモ</Text>
           </View>
         )}
-        <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
+        <View style={styles.reportCardTopRight}>
+          <Text style={styles.reportCardDate}>{formatDate(report.createdAt)}</Text>
+          {canReport && (
+            <TouchableOpacity
+              onPress={() => onReport(report.firestoreId!, report.userId!)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.reportFlagBtn}
+              accessibilityLabel="このワンショットを通報"
+              accessibilityRole="button"
+            >
+              <Ionicons name="flag-outline" size={15} color={C.sub} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       {(report.nickname || report.vehicleName) ? (
         <Text style={styles.reportCardVehicle}>
@@ -930,6 +997,8 @@ const styles = StyleSheet.create({
   // Report card
   reportCard: { backgroundColor: C.card, borderRadius: 12, padding: Spacing.md, marginBottom: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: C.border },
   reportCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reportCardTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reportFlagBtn: { padding: 2 },
   reportCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   reportCardBadgeText: { fontSize: 12, fontWeight: '700' },
   reportCardDate: { color: C.sub, fontSize: 11 },

@@ -33,6 +33,7 @@ try {
 }
 
 const TYPE_LABELS = { bug: "バグ", opinion: "意見", confused: "わからない" };
+const REPORT_REASON_LABELS = { inappropriate: "公序良俗違反", spam: "スパム", misleading: "誤情報", other: "その他" };
 
 /**
  * beta_errors + beta_feedback コレクションの監視を開始する。
@@ -180,7 +181,50 @@ export function startWatching(postToSlack) {
       (err) => console.error("[Watcher] debug_reports onSnapshot error:", err.message)
     );
 
-  console.log("[Firestore Watcher] watching beta_errors + beta_feedback + debug_reports");
+  // ── reports 監視 ───────────────────────────────────
+  // ワンショット通報（Apple Guideline 1.2 準拠）
+  db.collection("reports")
+    .where("createdAt", ">", startedAt)
+    .onSnapshot(
+      (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+          if (change.type !== "added") continue;
+          const d = change.doc.data();
+          const timeStr = formatTime(d.createdAt);
+          const reasonLabel = REPORT_REASON_LABELS[d.reason] || d.reason || "?";
+
+          const blocks = [
+            { type: "header", text: { type: "plain_text", text: `🚩 Report [${reasonLabel}]`, emoji: true } },
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*対象レビュー:*\n\`${d.reviewId || "?"}\`` },
+              { type: "mrkdwn", text: `*対象スポット:*\n\`${d.spotId || "?"}\`` },
+            ]},
+            { type: "section", fields: [
+              { type: "mrkdwn", text: `*通報された投稿者:*\n\`${d.targetUserId || "?"}\`` },
+              { type: "mrkdwn", text: `*通報者:*\n\`${d.reporterUid || "?"}\`` },
+            ]},
+          ];
+
+          if (d.description) {
+            blocks.push({ type: "section", text: { type: "mrkdwn",
+              text: `*補足:*\n> ${String(d.description).slice(0, 500)}`,
+            }});
+          }
+
+          blocks.push({ type: "context", elements: [
+            { type: "mrkdwn", text: `docId: \`${change.doc.id}\` · ${timeStr}` },
+          ]});
+          blocks.push({ type: "divider" });
+
+          postToSlack(blocks, `🚩 Report [${reasonLabel}]: review=${d.reviewId}`).catch((err) =>
+            console.error("[Watcher] report post failed:", err.message)
+          );
+        }
+      },
+      (err) => console.error("[Watcher] reports onSnapshot error:", err.message)
+    );
+
+  console.log("[Firestore Watcher] watching beta_errors + beta_feedback + debug_reports + reports");
 }
 
 function formatTime(ts) {

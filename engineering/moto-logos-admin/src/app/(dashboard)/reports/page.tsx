@@ -27,7 +27,7 @@ interface ReportItem {
 
 const REASON_LABEL: Record<string, string> = {
   spam: 'スパム',
-  inappropriate: '不適切',
+  inappropriate: '公序良俗違反',
   misleading: '誤情報',
   other: 'その他',
 };
@@ -60,14 +60,21 @@ export default function ReportsPage() {
         if (cursorId) params.set('cursor', cursorId);
 
         const res = await fetch(`/api/reports?${params}`);
+        if (!res.ok) {
+          if (!cursorId) setReports([]);
+          setCursor(null);
+          setHasMore(false);
+          return;
+        }
         const data = await res.json();
+        const nextReports: ReportItem[] = Array.isArray(data.reports) ? data.reports : [];
 
         if (cursorId) {
-          setReports((prev) => [...prev, ...data.reports]);
+          setReports((prev) => [...prev, ...nextReports]);
         } else {
-          setReports(data.reports);
+          setReports(nextReports);
         }
-        setCursor(data.nextCursor);
+        setCursor(data.nextCursor ?? null);
         setHasMore(!!data.nextCursor);
       } finally {
         setLoading(false);

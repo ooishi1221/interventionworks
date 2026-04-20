@@ -21,6 +21,8 @@ import { purgeTestData, reportParked, fetchSpotsInRegion } from '../firebase/fir
 import * as Location from 'expo-location';
 import { Colors } from '../constants/theme';
 import { AccountLinkCard } from '../components/AccountLinkCard';
+import { BlockedUsersModal } from '../components/BlockedUsersModal';
+import { useUserBlocks } from '../contexts/UserBlocksContext';
 import { sendDebugReport } from '../utils/debugReport';
 
 const C = { ...Colors, card: Colors.cardElevated };
@@ -41,6 +43,8 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
   const [thirdParty, setThirdParty] = useState(false);
   const [purging, setPurging] = useState(false);
   const [debugSending, setDebugSending] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+  const { blocked } = useUserBlocks();
 
   const handleSendDebugReport = async () => {
     if (debugSending) return;
@@ -198,6 +202,19 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
             </View>
             <Switch value={thirdParty} onValueChange={toggleThirdParty} trackColor={{ true: C.accent }} />
           </View>
+          <View style={s.separator} />
+          <TouchableOpacity style={s.row} onPress={() => setBlockedOpen(true)}>
+            <View style={s.rowLeft}>
+              <Ionicons name="ban-outline" size={20} color={C.blue} />
+              <Text style={s.rowLabel}>ブロック中のライダー</Text>
+              {blocked.size > 0 && (
+                <View style={s.countPill}>
+                  <Text style={s.countText}>{blocked.size}</Text>
+                </View>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={C.sub} />
+          </TouchableOpacity>
         </View>
 
         {/* サポート */}
@@ -339,6 +356,8 @@ export function SettingsScreen({ onBack, onOpenLegal, onOpenInquiry, onOpenNotif
           © OpenStreetMap contributors (ODbL)
         </Text>
       </ScrollView>
+
+      <BlockedUsersModal visible={blockedOpen} onClose={() => setBlockedOpen(false)} />
     </View>
   );
 }
@@ -356,6 +375,8 @@ const s = StyleSheet.create({
   rowLabel: { color: C.text, fontSize: 15 },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: C.border, marginLeft: 48 },
   unreadBadge: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF453A', marginLeft: 4 },
+  countPill: { marginLeft: 6, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.border, minWidth: 22, alignItems: 'center' },
+  countText: { color: C.sub, fontSize: 11, fontWeight: '600' },
   version: { color: C.sub, fontSize: 12, textAlign: 'center', marginTop: 32 },
   buildMeta: { color: C.sub, fontSize: 10, textAlign: 'center', marginTop: 2, opacity: 0.6 },
   credit: { color: C.sub, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },

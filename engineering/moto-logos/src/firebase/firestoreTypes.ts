@@ -240,6 +240,68 @@ export interface FirestoreTheftAlert {
 }
 
 // ─────────────────────────────────────────────────────
+// reports コレクション（ワンショット通報）
+// ─────────────────────────────────────────────────────
+/**
+ * 通報理由（Admin ダッシュボード仕様に準拠）
+ *  - inappropriate: 公序良俗違反（UI表示ラベル。ヌード/暴力/違法行為）
+ *  - spam: スパム
+ *  - misleading: 誤情報（App側UIには出さないが Admin 互換で残す）
+ *  - other: その他
+ */
+export type ReportReason = 'inappropriate' | 'spam' | 'misleading' | 'other';
+
+/** 通報ステータス（Admin ダッシュボード仕様に準拠） */
+export type ReportStatus = 'open' | 'resolved' | 'dismissed';
+
+/**
+ * Apple App Store Guideline 1.2 準拠。
+ * ユーザーがワンショット投稿（reviews ドキュメント）を通報する。
+ */
+export interface FirestoreReport {
+  /** 通報対象レビュー（reviews ドキュメント ID） */
+  reviewId: string;
+  /** 通報対象スポット */
+  spotId: string;
+  /** 通報者 auth.uid */
+  reporterUid: string;
+  /** 通報理由 */
+  reason: ReportReason;
+  /** 自由記述（任意） */
+  description?: string;
+  /** ステータス */
+  status: ReportStatus;
+  /** 対応者（運営が resolve したときに記録） */
+  resolvedBy?: string;
+  /** 対応内容 */
+  resolution?: string;
+  /** 作成日時 */
+  createdAt: Timestamp;
+  /** 更新日時（resolve 時に付与） */
+  updatedAt?: Timestamp;
+  /**
+   * 通報対象投稿者（Phase 2 ブロック機能 + Slack 通知用のデノーマライズ）。
+   * Admin 側は reviews コレクションを JOIN して取得するので必須ではない。
+   */
+  targetUserId?: string;
+}
+
+// ─────────────────────────────────────────────────────
+// user_blocks コレクション（ユーザーブロック）
+// ─────────────────────────────────────────────────────
+/**
+ * Apple App Store Guideline 1.2 準拠。
+ * 自分がブロックしたライダーの uid 配列を保持する。
+ * ドキュメント ID = 自分の auth.uid
+ *  - blocked 配列に含まれる uid の投稿は自分の画面から消える
+ *  - 相手には通知しない（silent block）
+ */
+export interface FirestoreUserBlocks {
+  blocked: string[];
+  updatedAt: Timestamp;
+}
+
+// ─────────────────────────────────────────────────────
 // Firestore コレクションパス定数
 // ─────────────────────────────────────────────────────
 export const COLLECTIONS = {
@@ -253,4 +315,6 @@ export const COLLECTIONS = {
   THEFT_ALERTS:    'theft_alerts',
   BETA_ERRORS:     'beta_errors',
   BETA_FEEDBACK:   'beta_feedback',
+  REPORTS:         'reports',
+  USER_BLOCKS:     'user_blocks',
 } as const;
