@@ -29,6 +29,7 @@ import {
   generateSessionToken,
   type PlaceSuggestion,
 } from '../utils/placesApi';
+import { getCachedPlace, cachePlace } from '../utils/placesCache';
 import { captureError } from '../utils/sentry';
 
 const C = Colors;
@@ -120,11 +121,21 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
           suggestion.placeId,
           sessionTokenRef.current,
         );
-        saveToHistory(suggestion.primaryText || suggestion.fullText);
+        const query = suggestion.primaryText || suggestion.fullText;
+        saveToHistory(query);
+        // API 節約のためキャッシュに保存（次回同じクエリは即応答）
+        cachePlace({
+          query,
+          placeId: suggestion.placeId,
+          latitude: details.latitude,
+          longitude: details.longitude,
+          name: details.name || suggestion.primaryText,
+        }).catch(() => { /* cache 失敗は致命的ではない */ });
+
         onSearchResult({
           latitude: details.latitude,
           longitude: details.longitude,
-          areaName: suggestion.primaryText || details.name || suggestion.fullText,
+          areaName: query || details.name,
         });
         // セッション終了 → 次のセッション用にトークンを更新
         sessionTokenRef.current = generateSessionToken();
@@ -173,10 +184,25 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
     }
   };
 
-  // チップタップ → テキストに入れて Autocomplete に委ねる
-  const handleChipPress = (label: string) => {
-    setText(label);
-  };
+  // チップタップ → キャッシュがあれば即移動、なければ Autocomplete に委ねる
+  const handleChipPress = useCallback(
+    async (label: string) => {
+      Keyboard.dismiss();
+      const cached = await getCachedPlace(label);
+      if (cached) {
+        saveToHistory(label);
+        onSearchResult({
+          latitude: cached.latitude,
+          longitude: cached.longitude,
+          areaName: label,
+        });
+        return;
+      }
+      // キャッシュなし → 入力欄に入れて Autocomplete を待つ
+      setText(label);
+    },
+    [onSearchResult],
+  );
 
   if (!visible) return null;
 

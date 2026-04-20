@@ -401,6 +401,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           coordinates={[firstVisitPath[i], firstVisitPath[i + 1]]}
           strokeColor={`rgba(255,240,220,${opacity})`}
           strokeWidth={3}
+          geodesic
         />
       );
     });
@@ -440,12 +441,21 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           const lng = from.longitude * 0.3 + to.longitude * 0.7;
           const dLat = Math.abs(to.latitude - from.latitude);
           const dLng = Math.abs(to.longitude - from.longitude);
-          map.animateToRegion({
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: Math.max(dLat * 3, 0.005),
-            longitudeDelta: Math.max(dLng * 3, 0.005),
-          }, SEGMENT_DURATION);
+          // 弧を描いて飛んでいく演出: animateCamera で pitch を傾け、
+          // 地図を斜め視点にして弾道のような見た目に。距離が長いほど高く。
+          const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+          const pitch = Math.min(45, 20 + distance * 500);
+          const heading =
+            (Math.atan2(to.longitude - from.longitude, to.latitude - from.latitude) * 180) / Math.PI;
+          map.animateCamera(
+            {
+              center: { latitude: lat, longitude: lng },
+              pitch,
+              heading,
+              zoom: Math.max(13, 16 - distance * 40),
+            },
+            { duration: SEGMENT_DURATION },
+          );
         }
         // ── 全セグメント完了: 全体が収まるように引く ──
         else if (progress >= total && lastCameraSeg < total) {
@@ -508,6 +518,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           coordinates={[firstVisitPath[i], firstVisitPath[i + 1]]}
           strokeColor={`rgba(255,240,220,${opacity})`}
           strokeWidth={3}
+          geodesic
         />,
       );
     }
@@ -526,6 +537,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           coordinates={[from, mid]}
           strokeColor={`rgba(255,240,220,${opacity})`}
           strokeWidth={3}
+          geodesic
         />,
       );
     }
@@ -627,6 +639,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
                   </View>
                 )}
               </View>
+              <Text style={s.counterLabel}>星図</Text>
             </TouchableOpacity>
           </View>
         </View>

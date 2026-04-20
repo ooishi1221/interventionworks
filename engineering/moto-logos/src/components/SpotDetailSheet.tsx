@@ -22,7 +22,14 @@ import {
   ActivityIndicator,
   PanResponder,
   Animated,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
+
+// Android で LayoutAnimation を有効化
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -125,13 +132,30 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
   // 下スワイプで閉じるアニメーション
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
+  // 折りたたみ状態: collapsed=true でコンパクト表示（画面の42%）、false でフル（85%）
+  // ハンドルタップでトグル。地図を見たい時にシートで隠れる問題を解決。
+  const [collapsed, setCollapsed] = useState(false);
+  const toggleCollapsed = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsed((c) => !c);
+  }, []);
   const swipePan = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 10,
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 10,
       onPanResponderMove: (_, gs) => { if (gs.dy > 0) sheetTranslateY.setValue(gs.dy); },
       onPanResponderRelease: (_, gs) => {
-        if (gs.dy > 80) {
+        if (gs.dy > 120) {
           Animated.timing(sheetTranslateY, { toValue: 500, duration: 200, useNativeDriver: true }).start(onClose);
+        } else if (gs.dy < -40) {
+          // 上にスワイプで展開
+          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setCollapsed(false);
+        } else if (gs.dy > 40) {
+          // 下に軽くスワイプで折りたたみ
+          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setCollapsed(true);
         } else {
           Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
         }
@@ -373,10 +397,27 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
       {/* シート */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrapper} pointerEvents="box-none">
-        <Animated.View ref={sheetRef} style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
-          {/* スワイプハンドル */}
-          <View {...swipePan.panHandlers} style={styles.handleArea}>
-            <View style={styles.handle} />
+        <Animated.View
+          ref={sheetRef}
+          style={[
+            styles.sheet,
+            {
+              transform: [{ translateY: sheetTranslateY }],
+              maxHeight: SCREEN_H * (collapsed ? 0.42 : 0.85),
+            },
+          ]}
+        >
+          {/* スワイプハンドル（タップで折りたたみトグル、上下スワイプで展開/閉じる） */}
+          <View {...swipePan.panHandlers}>
+            <TouchableOpacity
+              onPress={toggleCollapsed}
+              style={styles.handleArea}
+              activeOpacity={0.6}
+              accessibilityLabel={collapsed ? 'シートを展開' : 'シートを折りたたむ'}
+              accessibilityRole="button"
+            >
+              <View style={styles.handle} />
+            </TouchableOpacity>
           </View>
 
           {/* ── 情報ゾーン（スクロール） ──────────────── */}
