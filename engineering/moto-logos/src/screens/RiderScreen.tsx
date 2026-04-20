@@ -302,7 +302,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
     };
   }, [oneshotLocations]);
 
-  // フルスクリーン星図の初期表示（最初の足跡にストリートレベルで寄せる）
+  // フルスクリーン星図の初期表示（最初の足跡を中心に近所エリア全体が見える広さ）
   const fullStarRegion = useMemo<Region>(() => {
     if (oneshotLocations.length === 0) return mapRegion;
     // 初訪問順で最初のスポット
@@ -314,8 +314,8 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
     return {
       latitude: loc.latitude,
       longitude: loc.longitude,
-      latitudeDelta: 0.004,
-      longitudeDelta: 0.004,
+      latitudeDelta: 0.03, // 0.004 は building レベルで近すぎ。駅1-2駅ぶんの広さに
+      longitudeDelta: 0.03,
     };
   }, [oneshotLocations, myPhotos, mapRegion]);
 
@@ -443,8 +443,9 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           const dLng = Math.abs(to.longitude - from.longitude);
           // 弧を描いて飛んでいく演出: animateCamera で pitch を傾け、
           // 地図を斜め視点にして弾道のような見た目に。距離が長いほど高く。
+          // 近寄りすぎ/傾きすぎると画面が訳わからなくなるため抑えめ。
           const distance = Math.sqrt(dLat * dLat + dLng * dLng);
-          const pitch = Math.min(45, 20 + distance * 500);
+          const pitch = Math.min(25, 5 + distance * 300); // 最大25度 (以前45)
           const heading =
             (Math.atan2(to.longitude - from.longitude, to.latitude - from.latitude) * 180) / Math.PI;
           map.animateCamera(
@@ -452,7 +453,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
               center: { latitude: lat, longitude: lng },
               pitch,
               heading,
-              zoom: Math.max(13, 16 - distance * 40),
+              zoom: Math.max(12, 14 - distance * 25), // ベース14, 最低12 (以前は16/13)
             },
             { duration: SEGMENT_DURATION },
           );
