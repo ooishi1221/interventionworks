@@ -55,6 +55,7 @@
     },
     "android": {
       "package": "com.interventionworks.motologos",
+      "newArchEnabled": false,
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
