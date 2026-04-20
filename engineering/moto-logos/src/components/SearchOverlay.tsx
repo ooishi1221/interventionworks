@@ -184,10 +184,12 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
     }
   };
 
-  // チップタップ → キャッシュがあれば即移動、なければ Autocomplete に委ねる
+  // チップタップ → キャッシュがあれば即移動。なければ Autocomplete で
+  // 先頭候補を取得して自動ジャンプ。候補0件なら expo-location へフォールバック。
   const handleChipPress = useCallback(
     async (label: string) => {
       Keyboard.dismiss();
+      // 1) キャッシュ: API 0回で即ジャンプ
       const cached = await getCachedPlace(label);
       if (cached) {
         saveToHistory(label);
@@ -198,8 +200,49 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
         });
         return;
       }
-      // キャッシュなし → 入力欄に入れて Autocomplete を待つ
-      setText(label);
+      // 2) キャッシュなし: Autocomplete で先頭候補取得 → Details → 即ジャンプ
+      setSearching(true);
+      const token = generateSessionToken();
+      sessionTokenRef.current = token;
+      try {
+        const picks = await autocompletePlaces(label, token);
+        if (picks.length > 0) {
+          const first = picks[0];
+          const details = await getPlaceDetails(first.placeId, token);
+          saveToHistory(label);
+          cachePlace({
+            query: label,
+            placeId: first.placeId,
+            latitude: details.latitude,
+            longitude: details.longitude,
+            name: details.name || first.primaryText,
+          }).catch(() => { /* cache 失敗は致命的ではない */ });
+          onSearchResult({
+            latitude: details.latitude,
+            longitude: details.longitude,
+            areaName: label,
+          });
+          sessionTokenRef.current = generateSessionToken();
+          return;
+        }
+        // 3) Autocomplete 0件: expo-location フォールバック
+        const geo = await Location.geocodeAsync(label);
+        if (geo.length > 0) {
+          saveToHistory(label);
+          onSearchResult({
+            latitude: geo[0].latitude,
+            longitude: geo[0].longitude,
+            areaName: label,
+          });
+          return;
+        }
+        Alert.alert('見つかりませんでした', `「${label}」に該当する場所が見つかりません。`);
+      } catch (e) {
+        captureError(e, { context: 'chip_press' });
+        Alert.alert('エラー', '検索に失敗しました。');
+      } finally {
+        setSearching(false);
+      }
     },
     [onSearchResult],
   );
