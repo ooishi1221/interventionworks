@@ -953,10 +953,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             }
           }}
           onClear={() => {
+            // × でリストだけ閉じる。地図位置は今見ているエリアのまま維持
             setSearchResults([]);
             setSearchAreaName(null);
             onSearchPhaseChange?.('idle');
-            goToCurrentLocation();
           }}
         />
       )}
