@@ -56,6 +56,11 @@
     "android": {
       "package": "com.interventionworks.motologos",
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1C1C1E"
