@@ -59,9 +59,30 @@ const SYS_GRAY = '#8E8E93';
 
 import { FRESHNESS_STYLE, spotFreshness } from '../utils/freshness';
 
-// ─── スポットピン（鮮度で色+透明度） ──────────────────
-const SpotPin = React.memo(function SpotPin({ spot, wide }: { spot: ParkingPin; wide?: boolean }) {
+// ─── スポットピン（鮮度で色+透明度。選択時は強調） ────────
+const SpotPin = React.memo(function SpotPin({
+  spot,
+  wide,
+  selected,
+}: {
+  spot: ParkingPin;
+  wide?: boolean;
+  selected?: boolean;
+}) {
   const fresh = spotFreshness(spot);
+
+  // 選択中: オレンジで強調、サイズ1.5倍、外側に発光リング
+  if (selected) {
+    return (
+      <View style={styles.selectedWrapper}>
+        <View style={styles.selectedRingOuter} />
+        <View style={styles.selectedRingInner} />
+        <View style={styles.pinSelected}>
+          <MaterialCommunityIcons name="motorbike" size={22} color="#fff" />
+        </View>
+      </View>
+    );
+  }
 
   const dotStyle = fresh === 'clear' ? styles.pinDotClear
     : fresh === 'hazy' ? styles.pinDotHazy
@@ -915,17 +936,22 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           );
         }}
       >
-        {allSpots.map((spot) => (
-          <Marker
-            key={spot.id}
-            coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
-            onPress={() => selectSpotWithOffset(spot)}
-            anchor={{ x: 0.5, y: 0.5 }}
-            accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
-          >
-            <SpotPin spot={spot} wide={wideZoom} />
-          </Marker>
-        ))}
+        {allSpots.map((spot) => {
+          const isSelected = selected?.id === spot.id;
+          return (
+            <Marker
+              key={spot.id}
+              coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
+              onPress={() => selectSpotWithOffset(spot)}
+              anchor={{ x: 0.5, y: 0.5 }}
+              accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
+              zIndex={isSelected ? 100 : 1}
+              tracksViewChanges={isSelected}
+            >
+              <SpotPin spot={spot} wide={wideZoom} selected={isSelected} />
+            </Marker>
+          );
+        })}
         {/* 晴れ円: 確認済みスポット周囲 */}
         {clearedSpots.map((spot) => (
           <Circle
@@ -1290,6 +1316,33 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
+
+  // ── 選択中ピン: オレンジ強調 + 2重発光リング ────────
+  selectedWrapper: {
+    width: 80, height: 80,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  selectedRingOuter: {
+    position: 'absolute',
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: 'rgba(255,107,0,0.18)',
+  },
+  selectedRingInner: {
+    position: 'absolute',
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: 'rgba(255,107,0,0.32)',
+  },
+  pinSelected: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FF6B00',
+    borderWidth: 3, borderColor: '#fff',
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+    elevation: 16,
+  },
 
   // ── ローディングバッジ ────────────────────────────
   loadingOverlay: {
