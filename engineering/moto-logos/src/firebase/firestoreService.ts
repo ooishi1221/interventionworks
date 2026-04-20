@@ -24,7 +24,7 @@ import {
 } from 'firebase/firestore';
 import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db } from './config';
+import { db, getFirebaseAuth } from './config';
 import { COLLECTIONS } from './firestoreTypes';
 import type { SpotCapacity, PhotoTag, HazardType, TheftAlertStatus } from './firestoreTypes';
 import type { ParkingPin, Review, ReviewSummary, MaxCC } from '../types';
@@ -154,8 +154,7 @@ export async function fetchSpotsInRegion(
   const bounds = geohashQueryBounds(region);
   const spotsCol = collection(db, COLLECTIONS.SPOTS);
 
-  try {
-    // 各 geohash 範囲を並列クエリ
+  const runQueries = async (): Promise<ParkingPin[]> => {
     const queries = bounds.map(([start, end]) =>
       getDocs(
         query(
@@ -167,10 +166,7 @@ export async function fetchSpotsInRegion(
         )
       )
     );
-
     const snapshots = await Promise.all(queries);
-
-    // 重複排除
     const seen = new Set<string>();
     const results: ParkingPin[] = [];
     for (const snap of snapshots) {
@@ -180,12 +176,35 @@ export async function fetchSpotsInRegion(
         results.push(docToPin(d));
       }
     }
-
     return results;
-  } catch (e) {
+  };
+
+  try {
+    return await runQueries();
+  } catch (e: unknown) {
+    // 初回サインイン直後は ID Token が Firestore backend に反映されるまで
+    // 数百ms のラグがあり permission-denied が発生しやすい。
+    // トークンをリフレッシュしてから1度だけリトライする。
+    const msg = e instanceof Error ? e.message : String(e);
+    const code = (e as { code?: string })?.code ?? '';
+    const isAuthIssue = code === 'permission-denied' || /permission|unauth/i.test(msg);
+
+    if (isAuthIssue) {
+      try {
+        const auth = getFirebaseAuth();
+        if (auth.currentUser) {
+          await auth.currentUser.getIdToken(true);
+          await new Promise((r) => setTimeout(r, 500));
+          return await runQueries();
+        }
+      } catch (e2) {
+        captureError(e2, { context: 'geohash_query_retry_failed' });
+      }
+    }
+
     captureError(e, { context: 'geohash_query_failed' });
     if (__DEV__) {
-      Alert.alert('Firestore エラー', `geohash query: ${e instanceof Error ? e.message : String(e)}`);
+      Alert.alert('Firestore エラー', `geohash query: ${msg}`);
     }
     // geohash インデックス未作成時のみ全件取得にフォールバック
     return fetchAllSpots();
@@ -526,8 +545,6 @@ export async function getMyReviewCount(userId: string): Promise<number> {
 // ─────────────────────────────────────────────────────
 // DAU/WAU/MAU — 日次アクティビティ記録
 // ─────────────────────────────────────────────────────
-
-import { getFirebaseAuth } from './config';
 
 /**
  * 現在の認証済み userId を返す。
