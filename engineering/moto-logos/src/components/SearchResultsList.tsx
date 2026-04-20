@@ -112,7 +112,15 @@ export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Pro
               <View style={styles.rowTop}>
                 <FreshDot spot={spot} />
                 <Text style={styles.dist}>{fmtDist(item.distanceM)}</Text>
-                {price && <Text style={styles.price}>{price}</Text>}
+                {price && (
+                  <Text
+                    style={styles.price}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {price}
+                  </Text>
+                )}
                 {cap && <Text style={styles.cap}>{cap}</Text>}
               </View>
               <Text style={styles.name} numberOfLines={1}>{spot.name}</Text>
@@ -193,9 +201,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   price: {
+    flex: 1,
     color: C.accent,
     fontSize: 14,
     fontWeight: '700',
+    minWidth: 0, // flex shrink を有効化
   },
   cap: {
     color: C.sub,
