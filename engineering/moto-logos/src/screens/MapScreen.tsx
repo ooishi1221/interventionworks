@@ -126,6 +126,25 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const nearbyFabRef = useRef<View>(null);
 
+  /**
+   * スポット選択時にピンがシート (Peek 28%) で隠れない位置に来るよう地図をオフセット。
+   * ピンを画面縦方向の 30% 付近に配置。シートは下 28% を占めるので、残り 72% の地図
+   * 可視域のほぼ中央にピンが見える。
+   */
+  const selectSpotWithOffset = useCallback((spot: ParkingPin | null) => {
+    if (!spot) { setSelected(null); return; }
+    const region = currentRegionRef.current;
+    // 画面中央から上 20% へオフセット = 緯度方向に +0.20 * latitudeDelta（北へ）
+    const offsetLat = (region.latitudeDelta ?? 0.04) * 0.20;
+    mapRef.current?.animateToRegion({
+      latitude: spot.latitude + offsetLat,
+      longitude: spot.longitude,
+      latitudeDelta: Math.max(region.latitudeDelta * 0.6, 0.008),
+      longitudeDelta: Math.max(region.longitudeDelta * 0.6, 0.008),
+    }, 400);
+    setSelected(spot);
+  }, []);
+
   // ── 検索 ──────────────────────────────────────────────
   const [searchVisible, setSearchVisible]     = useState(false);
   const [searchText, setSearchText]           = useState('');
@@ -900,7 +919,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           <Marker
             key={spot.id}
             coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
-            onPress={() => setSelected(spot)}
+            onPress={() => selectSpotWithOffset(spot)}
             anchor={{ x: 0.5, y: 0.5 }}
             accessibilityLabel={`${spot.name}${spot.isFree === true ? '、無料' : spot.isFree === false ? '、有料' : ''}`}
           >
@@ -942,11 +961,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           items={searchResults}
           areaName={searchAreaName}
           onSpotPress={(spot) => {
-            mapRef.current?.animateToRegion({
-              latitude: spot.latitude, longitude: spot.longitude,
-              latitudeDelta: 0.005, longitudeDelta: 0.005,
-            }, 800);
-            miscTimerRef.current = setTimeout(() => setSelected(spot), 900);
+            // selectSpotWithOffset が地図オフセットと選択を同時に行う
+            miscTimerRef.current = setTimeout(() => selectSpotWithOffset(spot), 400);
             // チュートリアル: 結果タップで次のステップへ
             if (tutorial.isStep('explore-result')) {
               tutorial.advanceTutorial();

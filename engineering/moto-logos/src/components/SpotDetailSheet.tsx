@@ -132,32 +132,43 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
   // 下スワイプで閉じるアニメーション
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
-  // 折りたたみ状態: collapsed=true でコンパクト表示（画面の42%）、false でフル（85%）
-  // ハンドルタップでトグル。地図を見たい時にシートで隠れる問題を解決。
-  const [collapsed, setCollapsed] = useState(false);
-  const toggleCollapsed = useCallback(() => {
+  // 3段階スナップ: peek (28%) → half (55%) → full (85%)
+  // Google Maps 風。タップ時は peek から始めて地図との位置関係を保つ。
+  type SheetState = 'peek' | 'half' | 'full';
+  const [sheetState, setSheetState] = useState<SheetState>('peek');
+  const sheetHeightRatio = sheetState === 'peek' ? 0.28 : sheetState === 'half' ? 0.55 : 0.85;
+
+  const changeSheetState = useCallback((next: SheetState) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCollapsed((c) => !c);
+    setSheetState(next);
   }, []);
+
+  // ハンドルタップで1段階進める（peek→half→full→peek）
+  const cycleSheetState = useCallback(() => {
+    changeSheetState(sheetState === 'peek' ? 'half' : sheetState === 'half' ? 'full' : 'peek');
+  }, [sheetState, changeSheetState]);
+
   const swipePan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 10,
       onPanResponderMove: (_, gs) => { if (gs.dy > 0) sheetTranslateY.setValue(gs.dy); },
       onPanResponderRelease: (_, gs) => {
-        if (gs.dy > 120) {
+        Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
+        if (gs.dy < -40) {
+          // 上スワイプ: 1段階上げる
+          setSheetState((s) => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            return s === 'peek' ? 'half' : 'full';
+          });
+        } else if (gs.dy > 120 && sheetState === 'peek') {
+          // peek で大きく下スワイプ → 閉じる
           Animated.timing(sheetTranslateY, { toValue: 500, duration: 200, useNativeDriver: true }).start(onClose);
-        } else if (gs.dy < -40) {
-          // 上にスワイプで展開
-          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          setCollapsed(false);
         } else if (gs.dy > 40) {
-          // 下に軽くスワイプで折りたたみ
-          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          setCollapsed(true);
-        } else {
-          Animated.spring(sheetTranslateY, { toValue: 0, tension: 200, friction: 15, useNativeDriver: true }).start();
+          // 下スワイプ: 1段階下げる
+          setSheetState((s) => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            return s === 'full' ? 'half' : 'peek';
+          });
         }
       },
     })
@@ -403,17 +414,17 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
             styles.sheet,
             {
               transform: [{ translateY: sheetTranslateY }],
-              maxHeight: SCREEN_H * (collapsed ? 0.42 : 0.85),
+              maxHeight: SCREEN_H * sheetHeightRatio,
             },
           ]}
         >
-          {/* スワイプハンドル（タップで折りたたみトグル、上下スワイプで展開/閉じる） */}
+          {/* スワイプハンドル: タップで1段階展開、スワイプで段階遷移 */}
           <View {...swipePan.panHandlers}>
             <TouchableOpacity
-              onPress={toggleCollapsed}
+              onPress={cycleSheetState}
               style={styles.handleArea}
               activeOpacity={0.6}
-              accessibilityLabel={collapsed ? 'シートを展開' : 'シートを折りたたむ'}
+              accessibilityLabel={`シートを${sheetState === 'full' ? '折りたたむ' : '展開'}`}
               accessibilityRole="button"
             >
               <View style={styles.handle} />
