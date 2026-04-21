@@ -1119,6 +1119,50 @@
   font-size: 13px;
   margin-top: var(--space-sm);
 }
+
+/* OS 選択チップ */
+.beta-os-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.beta-os-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  user-select: none;
+}
+.beta-os-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.beta-os-chip span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+.beta-os-chip.active {
+  border-color: var(--accent);
+  background: rgba(255, 107, 0, 0.08);
+}
+.beta-os-chip.active span {
+  color: var(--text);
+}
+.beta-form-note {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 10px;
+}
 .beta-form-result {
   display: flex;
   align-items: center;

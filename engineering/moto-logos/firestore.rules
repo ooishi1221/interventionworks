@@ -105,5 +105,20 @@ service cloud.firestore {
                     && request.auth.uid == request.resource.data.reporterUid;
       allow read, update, delete: if false;
     }
+
+    // beta_signups: LP からのβ申し込み（unauth）。
+    // create: 必須フィールド検証 + os は ios/android のみ。個別ドキュメントの get は禁止（メアド漏洩防止）。
+    // list: getCountFromServer（残枠表示） + 重複チェック where('email','==',...) で使用。
+    // update/delete: Admin SDK のみ。
+    match /beta_signups/{docId} {
+      allow list: if true;
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
+                    && request.resource.data.email.size() < 256
+                    && request.resource.data.os in ['ios', 'android']
+                    && request.resource.data.source == 'lp'
+                    && request.resource.data.keys().hasOnly(['email', 'os', 'createdAt', 'source']);
+      allow get, update, delete: if false;
+    }
   }
 }

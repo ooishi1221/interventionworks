@@ -44,7 +44,7 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 
 | コンポーネント | 用途 |
 |---------------|------|
-| `BetaForm.tsx` | メール入力フォーム。Firestore書き込み + 残枠リアルタイム表示 + 重複チェック |
+| `BetaForm.tsx` | メール入力フォーム（OS選択 iPhone/Android）。Firestore書き込み + 残枠リアルタイム表示 + 重複チェック。OS ごとに placeholder / 補足文言切替（TestFlight / Firebase App Distribution） |
 | `IPhoneFrame.tsx` | iPhoneフレーム（Dynamic Island + サイドボタン）。Hero・CoreValuesで共用 |
 
 ## カスタムフック
@@ -57,8 +57,9 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 ## Firestore
 
 - コレクション: `beta_signups`
-- ドキュメント: `{ email, createdAt, source: 'lp' }`
+- ドキュメント: `{ email, os: 'ios'|'android', createdAt, source: 'lp' }`
 - 定員: 100名（残枠をリアルタイム表示）
+- `os` に応じて TestFlight / Firebase App Distribution に振り分けて招待
 
 ## アニメーション・演出
 
@@ -100,7 +101,7 @@ npm run build && firebase deploy --only hosting --project moto-spotter
 
 - 読点（、）は基本不使用。リズム重視
 - コアコンセプト: **ワンショット**（写真1枚で足跡を刻む。AIが分類。足跡が誰かの地図になる）
-- 「温度」「体温」メタファーは廃止。**鮮度**（clear/hazy/foggy）を使う
+- 「温度」「体温」「鮮度」メタファーは廃止。**気配**（live/warm/trace/faint/cold/silent）を使う
 - 本文はニュートラル。「お前」「あなた」不使用
 - 「報告してください」「貢献しよう」とは言わない
 - 「βテスト期間中は無償」（将来のマネタイズ余地を残す）

@@ -3,11 +3,13 @@ import { collection, addDoc, query, where, getDocs, serverTimestamp, getCountFro
 import { db } from '../lib/firebase'
 
 type Status = 'idle' | 'submitting' | 'success' | 'duplicate' | 'error'
+type OS = 'ios' | 'android'
 
 const BETA_LIMIT = 100
 
 export default function BetaForm({ compact }: { compact?: boolean }) {
   const [email, setEmail] = useState('')
+  const [os, setOs] = useState<OS>('ios')
   const [status, setStatus] = useState<Status>('idle')
   const [remaining, setRemaining] = useState<number | null>(null)
 
@@ -34,6 +36,7 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
 
       await addDoc(collection(db, 'beta_signups'), {
         email: trimmed,
+        os,
         createdAt: serverTimestamp(),
         source: 'lp',
       })
@@ -53,6 +56,10 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
     )
   }
 
+  const placeholder = os === 'ios'
+    ? 'Apple ID のメールアドレス'
+    : 'Google アカウントのメール'
+
   return (
     <form onSubmit={handleSubmit} className={`beta-form ${compact ? 'compact' : ''}`} id="beta-form">
       {remaining !== null && remaining > 0 && (
@@ -61,11 +68,35 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
       {remaining === 0 && (
         <div className="beta-remaining full">定員に達しました</div>
       )}
+
+      <div className="beta-os-row">
+        <label className={`beta-os-chip ${os === 'ios' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            name="os"
+            value="ios"
+            checked={os === 'ios'}
+            onChange={() => setOs('ios')}
+          />
+          <span>iPhone</span>
+        </label>
+        <label className={`beta-os-chip ${os === 'android' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            name="os"
+            value="android"
+            checked={os === 'android'}
+            onChange={() => setOs('android')}
+          />
+          <span>Android</span>
+        </label>
+      </div>
+
       <div className="beta-form-row">
         <input
           type="email"
           required
-          placeholder="メールアドレス"
+          placeholder={placeholder}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value)
@@ -82,6 +113,13 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
           {status === 'submitting' ? '送信中...' : 'βテスターに参加する'}
         </button>
       </div>
+
+      <p className="beta-form-note">
+        {os === 'ios'
+          ? '※ TestFlight で招待メールをお送りします。Apple ID のメールをご入力ください。'
+          : '※ Firebase App Distribution で招待メールをお送りします。Google アカウントのメールをご入力ください。'}
+      </p>
+
       {status === 'duplicate' && (
         <p className="beta-form-error">このメールアドレスは登録済みです。</p>
       )}

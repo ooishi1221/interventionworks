@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         id: doc.id,
         email: data.email,
         source: data.source || 'lp',
+        os: data.os,
         invitationStatus: data.invitationStatus || 'pending',
         createdAt: data.createdAt?.toDate().toISOString() || '',
       };

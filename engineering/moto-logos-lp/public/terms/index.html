@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>利用規約 — Moto-Logos</title>
+  <meta name="description" content="Moto-Logos の利用規約。ワンショット投稿・気配データ・コミュニティ規範について。">
+  <link rel="stylesheet" href="/legal.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="home">Moto-Logos</a>
+    <a href="/privacy/">プライバシー</a>
+    <a href="/terms/">利用規約</a>
+    <a href="/moderation/">モデレーション</a>
+  </nav>
+  <main class="legal-container">
+    <article class="legal-content" id="content">
+      <p class="legal-loading">読み込み中...</p>
+    </article>
+    <footer class="legal-footer">© 2026 WitOne Inc.</footer>
+  </main>
+  <script type="module">
+    import { marked } from 'https://cdn.jsdelivr.net/npm/marked@12/lib/marked.esm.js';
+    try {
+      const res = await fetch('/legal/terms-of-service.md');
+      const md = await res.text();
+      document.getElementById('content').innerHTML = marked.parse(md);
+    } catch (e) {
+      document.getElementById('content').innerHTML = '<p class="legal-loading">読み込みに失敗しました。再読み込みしてください。</p>';
+    }
+  </script>
+</body>
+</html>

@@ -141,6 +141,7 @@ export default function BetaSignupsPage() {
             <thead>
               <tr className="border-b border-border text-text-secondary">
                 <th className="text-left px-4 py-3 font-medium">メール</th>
+                <th className="text-left px-4 py-3 font-medium">OS</th>
                 <th className="text-left px-4 py-3 font-medium">登録元</th>
                 <th className="text-left px-4 py-3 font-medium">ステータス</th>
                 <th className="text-left px-4 py-3 font-medium">登録日</th>
@@ -156,6 +157,15 @@ export default function BetaSignupsPage() {
                   className="border-b border-border/50 hover:bg-card/50 transition-colors"
                 >
                   <td className="px-4 py-3 font-medium">{s.email}</td>
+                  <td className="px-4 py-3">
+                    {s.os === 'ios' ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-fresh-blue/20 text-fresh-blue">iPhone</span>
+                    ) : s.os === 'android' ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-success/20 text-success">Android</span>
+                    ) : (
+                      <span className="text-xs text-text-secondary">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-text-secondary">{s.source}</td>
                   <td className="px-4 py-3">
                     <span

@@ -171,10 +171,12 @@ export interface ModerationLog {
 // ─────────────────────────────────────────────────────
 
 export type InvitationStatus = 'pending' | 'invited' | 'active';
+export type BetaSignupOS = 'ios' | 'android';
 
 export interface FirestoreBetaSignup {
   email: string;
   source: string;
+  os?: BetaSignupOS;
   invitationStatus?: InvitationStatus;
   createdAt: FirebaseFirestore.Timestamp;
 }
@@ -183,6 +185,7 @@ export interface BetaSignupResponse {
   id: string;
   email: string;
   source: string;
+  os?: BetaSignupOS;
   invitationStatus: InvitationStatus;
   createdAt: string;
 }
@@ -336,6 +339,24 @@ export interface UserResponse {
   banUntil?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** 最終ログイン（= 最終起動）日時 */
+  lastActiveAt?: string;
+  /** 累計起動回数 */
+  launchCount?: number;
+  /** 最終起動時の OS (ios / android / web) */
+  lastPlatform?: string;
+  /** 最終起動時の端末モデル名 */
+  lastDeviceModel?: string;
+  /** 最終起動時の端末ブランド */
+  lastDeviceBrand?: string;
+  /** 最終起動時の OS バージョン */
+  lastOsVersion?: string;
+  /** 最終起動時のアプリバージョン */
+  lastAppVersion?: string;
+  /** 累計スポット投稿数 */
+  spotCount?: number;
+  /** 累計写真投稿数 */
+  photoCount?: number;
 }
 
 export interface ModerationLogResponse {
@@ -377,7 +398,6 @@ export interface ReportResponse {
 export interface DashboardStats {
   totalSpots: number;
   totalUsers: number;
-  pendingSpots: number;
   totalReviews: number;
 }
 
@@ -405,9 +425,6 @@ export interface KpiStats {
 
   /** 駐車温度分布 */
   temperatureDistribution: { blazing: number; hot: number; warm: number; cool: number; cold: number };
-
-  /** モデレーション平均処理日数 */
-  moderationAvgDays: number;
 
   /** エリア別スポット数 Top 10 */
   topAreas: { area: string; count: number }[];
