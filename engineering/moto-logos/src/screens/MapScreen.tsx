@@ -55,7 +55,8 @@ const LAST_LOCATION_KEY = 'moto_logos_last_location';
 const SYS_BLUE = '#0A84FF';
 const SYS_GRAY = '#8E8E93';
 
-import { FRESHNESS_STYLE, spotFreshness } from '../utils/freshness';
+import { FRESHNESS_STYLE, spotFreshness, clusterFreshness } from '../utils/freshness';
+import type { SpotFreshness } from '../utils/freshness';
 
 // ─── スポットピン（鮮度で色+透明度。選択時は強調） ────────
 const SpotPin = React.memo(function SpotPin({
@@ -159,6 +160,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const tutorial = useTutorial();
   const { showPicker, PickerSheet } = usePhotoPicker();
   const mapRef = useRef<MapView>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const superClusterRef = useRef<any>(null);
   const [initialRegion, setInitialRegion] = useState<Region>(TOKYO_FALLBACK);
   const [allSpotsRaw, setAllSpotsRaw]     = useState<ParkingPin[]>([]);
   const [loading, setLoading]             = useState(true);
@@ -180,8 +183,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
    */
   const selectSpotWithOffset = useCallback((spot: ParkingPin | null) => {
     if (!spot) { setSelected(null); return; }
-    const targetDelta = 0.005; // 街区レベルまで寄る → クラスタが解ける
-    const offsetLat = targetDelta * 0.14; // 新しい delta で 14% 上へオフセット
+    const targetDelta = 0.015; // クラスタ展開と同じ引き
+    const offsetLat = targetDelta * 0.14;
     mapRef.current?.animateToRegion({
       latitude: spot.latitude - offsetLat, // 中央を南にずらす = ピンは画面の上
       longitude: spot.longitude,
@@ -288,19 +291,23 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── 周辺検索（フロートボタン + ref共用） ──────────────
   const doSearchNearby = useCallback(async () => {
-    let lat = lastLocationRef.current?.latitude;
-    let lon = lastLocationRef.current?.longitude;
+    // マップ中心を優先（ユーザーがパンした先で検索）。ズームレベルは維持
+    const cur = currentRegionRef.current;
+    let lat = cur?.latitude;
+    let lon = cur?.longitude;
     if (!lat || !lon) {
+      // フォールバック: GPS
       try {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         lat = loc.coords.latitude;
         lon = loc.coords.longitude;
-        lastLocationRef.current = { latitude: lat, longitude: lon };
       } catch {
         return;
       }
     }
-    const region: Region = { latitude: lat, longitude: lon, latitudeDelta: 0.06, longitudeDelta: 0.06 };
+    // 現在の表示デルタを保持（なければデフォルト）
+    const delta = cur?.latitudeDelta ?? 0.06;
+    const region: Region = { latitude: lat, longitude: lon, latitudeDelta: delta, longitudeDelta: delta };
     const freshSpots = await fetchSpotsForRegion(region);
     const filtered = filterByCC(freshSpots, userCC);
     const sorted = filtered
@@ -473,6 +480,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   useImperativeHandle(ref, () => ({
     resetView: () => {
       setSelected(null);
+      setSearchVisible(false);
+      setSearchResults([]);
+      setSearchAreaName(null);
 
       if (lastLocationRef.current) {
         const region = {
@@ -545,6 +555,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       return;
     }
     setLocationGranted(true);
+    setLocationDenied(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
@@ -567,6 +578,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       return;
     }
     setLocationGranted(true);
+    setLocationDenied(false);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     const { latitude, longitude } = loc.coords;
     const all = filterByCC(allSpotsRaw, userCC);
@@ -715,6 +727,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         return;
       }
       setLocationGranted(true);
+      setLocationDenied(false);
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const { latitude, longitude } = loc.coords;
 
@@ -807,6 +820,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       : [tutorial.dummySpot, ...base];
   }, [allSpotsRaw, userCC, tutorial.active, tutorial.phase, tutorial.dummySpot, tutorial.dummyUntouchedSpot]);
 
+  // 座標→気配ルックアップ（クラスタ集約用）
+  const coordFreshnessMap = useMemo(() => {
+    const m = new Map<string, SpotFreshness>();
+    for (const s of allSpots) {
+      m.set(`${s.latitude},${s.longitude}`, spotFreshness(s));
+    }
+    return m;
+  }, [allSpots]);
+
   // 気配 live（1ヶ月以内）のスポット — 広域ズームでは描画しない
   const clearedSpots = useMemo(
     () => wideZoom ? [] : allSpots.filter((s) => spotFreshness(s) === 'live'),
@@ -895,6 +917,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status === 'granted') {
             setLocationGranted(true);
+            setLocationDenied(false);
             const loc = await Promise.race([
               Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
               new Promise<never>((_, reject) =>
@@ -1024,6 +1047,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       )}
       <ClusteredMapView
         ref={mapRef}
+        superClusterRef={superClusterRef}
         style={StyleSheet.absoluteFillObject}
         initialRegion={initialRegion}
         showsUserLocation={locationGranted}
@@ -1031,6 +1055,36 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         showsCompass={false}
         customMapStyle={DARK_MAP_STYLE}
         onRegionChangeComplete={handleRegionChangeComplete}
+        preserveClusterPressBehavior
+        onClusterPress={(cluster) => {
+          // クラスタが解ける直前くらいの引きで寄る（最小delta保証）
+          const sc = superClusterRef.current;
+          if (!sc) return;
+          const leaves = sc.getLeaves(cluster.id, Infinity) as {
+            geometry: { coordinates: [number, number] };
+          }[];
+          if (leaves.length === 0) return;
+          let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+          for (const l of leaves) {
+            const lat = l.geometry.coordinates[1];
+            const lng = l.geometry.coordinates[0];
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+          }
+          const MIN_DELTA = 0.015; // クラスタ解除直前くらいの引き
+          const latDelta = Math.max((maxLat - minLat) * 1.8, MIN_DELTA);
+          const lngDelta = Math.max((maxLng - minLng) * 1.8, MIN_DELTA);
+          const centerLat = (minLat + maxLat) / 2;
+          const centerLng = (minLng + maxLng) / 2;
+          mapRef.current?.animateToRegion({
+            latitude: centerLat,
+            longitude: centerLng,
+            latitudeDelta: latDelta,
+            longitudeDelta: lngDelta,
+          }, 500);
+        }}
         clusterColor="#0A84FF"
         clusterTextColor="#fff"
         clusterFontFamily={undefined}
@@ -1043,14 +1097,50 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         renderCluster={(cluster) => {
           const { id, geometry, onPress, properties } = cluster;
           const count = properties.point_count;
+
+          // ── 気配集約: クラスタ内スポットの気配を加重平均 ──
+          let dominant: SpotFreshness = 'cold';
+          try {
+            const sc = superClusterRef.current;
+            if (sc && properties.cluster_id != null) {
+              const leaves = sc.getLeaves(properties.cluster_id, Infinity) as {
+                geometry: { coordinates: [number, number] };
+              }[];
+              const levels: SpotFreshness[] = [];
+              for (const leaf of leaves) {
+                const key = `${leaf.geometry.coordinates[1]},${leaf.geometry.coordinates[0]}`;
+                const f = coordFreshnessMap.get(key);
+                if (f) levels.push(f);
+              }
+              if (levels.length > 0) dominant = clusterFreshness(levels);
+            }
+          } catch {
+            // supercluster 未初期化時は cold フォールバック
+          }
+
+          const freshStyle = FRESHNESS_STYLE[dominant];
+          // 3段階サイズ: 小(〜5) / 中(6〜19) / 大(20+)
+          const sizeStyle = count >= 20
+            ? styles.clusterLg
+            : count >= 6
+              ? styles.clusterMd
+              : styles.clusterSm;
+
           return (
             <Marker
               key={`cluster-${id}`}
               coordinate={{ latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] }}
               onPress={onPress}
+              tracksViewChanges={false}
             >
-              <View style={[styles.cluster, count >= 50 && styles.clusterLarge]}>
-                <Text style={styles.clusterText}>{count}</Text>
+              <View style={[
+                styles.clusterBase,
+                sizeStyle,
+                { backgroundColor: dominant === 'silent' ? 'rgba(154,154,158,0.5)' : freshStyle.color },
+              ]}>
+                <Text style={[styles.clusterText, { color: freshStyle.textColor }]}>
+                  {count}
+                </Text>
               </View>
             </Marker>
           );
@@ -1370,18 +1460,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ── クラスター ─────────────────────────────────────
-  cluster: {
-    width: 36, height: 36, borderRadius: 5,
-    backgroundColor: 'rgba(10,132,255,0.85)',
+  // ── クラスター（円 + 気配カラー + 3段階サイズ） ─────────
+  clusterBase: {
     alignItems: 'center', justifyContent: 'center',
-  },
-  clusterLarge: {
-    width: 42, height: 42, borderRadius: 6,
-    backgroundColor: 'rgba(255,159,10,0.85)',
-  },
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
+  } as const,
+  clusterSm: { width: 30, height: 30, borderRadius: 15 } as const,
+  clusterMd: { width: 38, height: 38, borderRadius: 19 } as const,
+  clusterLg: { width: 46, height: 46, borderRadius: 23 } as const,
   clusterText: {
-    color: '#fff', fontSize: 13, fontWeight: '800',
+    fontSize: 12, fontWeight: '800' as const,
   },
 
   // ── 登録中インジケーター ─────────────────────────────

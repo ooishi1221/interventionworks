@@ -51,6 +51,32 @@ export function spotFreshness(spot: ParkingPin): SpotFreshness {
   return 'cold';
 }
 
+// ── クラスタ気配集約 ────────────────────────────────────
+// クラスタ内スポットの気配を加重平均で集約し、代表的な気配レベルを返す。
+// live=5, warm=4, trace=3, faint=2, cold=1, silent=0 で数値化→平均→再マッピング。
+
+const FRESHNESS_WEIGHT: Record<SpotFreshness, number> = {
+  live: 5, warm: 4, trace: 3, faint: 2, cold: 1, silent: 0,
+};
+
+const WEIGHT_TO_FRESHNESS: { min: number; freshness: SpotFreshness }[] = [
+  { min: 4.0, freshness: 'live' },
+  { min: 3.0, freshness: 'warm' },
+  { min: 2.0, freshness: 'trace' },
+  { min: 1.0, freshness: 'faint' },
+  { min: 0,   freshness: 'cold' },
+];
+
+export function clusterFreshness(levels: SpotFreshness[]): SpotFreshness {
+  if (levels.length === 0) return 'silent';
+  const sum = levels.reduce((acc, l) => acc + FRESHNESS_WEIGHT[l], 0);
+  const avg = sum / levels.length;
+  for (const t of WEIGHT_TO_FRESHNESS) {
+    if (avg >= t.min) return t.freshness;
+  }
+  return 'cold';
+}
+
 // ── ラベル ───────────────────────────────────────────────
 
 export function freshnessLabel(fresh: SpotFreshness): string {
