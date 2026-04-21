@@ -420,6 +420,38 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 | iOS bundleIdentifier | `com.interventionworks.motologos` |
 | Android package | `com.interventionworks.motologos` |
 
+### iOS ローカルビルド（macOS Tahoe 必須セットアップ）
+
+EAS Free プランの月次上限超過時や緊急時に Mac でローカルビルドする。**初回のみ**以下の前提セットアップが必要。
+
+**前提:**
+- Xcode 26.x
+- CocoaPods（`brew install cocoapods`）
+- fastlane（`brew install fastlane`）
+- Apple Developer 個人アカウント Team ID: `BDVPZX83RR`
+- EAS にログイン済み（`npx eas login`）
+
+**最重要: WWDR CA を login keychain に手動インストール**
+macOS Tahoe (26.x) のデフォルト keychain には WWDR CA G3/G6 が含まれていない。これが無いと `security find-identity` が「0 valid identities found」を返し、`fastlane import_certificate` で証明書はインポートされても EAS の chain validation で **silent fail** する。
+
+```bash
+cd /tmp
+curl -fsSL -o AppleWWDRCAG3.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+curl -fsSL -o AppleWWDRCAG6.cer https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer
+security import /tmp/AppleWWDRCAG3.cer -k ~/Library/Keychains/login.keychain-db
+security import /tmp/AppleWWDRCAG6.cer -k ~/Library/Keychains/login.keychain-db
+```
+
+**ビルドコマンド:**
+```bash
+cd engineering/moto-logos
+CI=1 npx eas build --profile preview --platform ios --local --non-interactive --output /tmp/motologos-preview.ipa
+```
+
+15-25 分で `.ipa` が生成される。
+
+**症状確認:** ビルドが `Distribution certificate with fingerprint XXX hasn't been imported successfully` で失敗する → WWDR CA G3/G6 未インストール。上記 curl + security import で解決。
+
 ### ビルド・配信（EAS Build）
 
 3プロファイル構成（`eas.json`）:
