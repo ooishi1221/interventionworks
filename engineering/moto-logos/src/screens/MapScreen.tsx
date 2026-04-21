@@ -150,10 +150,12 @@ interface Props {
   onSearchPhaseChange?: (phase: SearchPhase) => void;
   ceremonyEnabled?: boolean;
   nickname?: string;
+  /** ワンショットセレモニー完了時（チュートリアル外）のコールバック。通知プロンプト発火に使う */
+  onOneshotCompleted?: () => void;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange, ceremonyEnabled = true, nickname },
+  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange, ceremonyEnabled = true, nickname, onOneshotCompleted },
   ref
 ) {
   const user = useUser();
@@ -320,12 +322,20 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
-    setSelected(null);
-    // チュートリアル: セレモニー完了で次ステップへ
+    // チュートリアル: セレモニー完了で気配の変化を見せる
     if (tutorial.isStep('presence-ceremony')) {
+      // 詳細シートを再オープンしてゲージが silent → live に変わったことを見せる
+      // 少し遅らせて演出効果を高める
+      setTimeout(() => {
+        selectSpotWithOffset(tutorial.dummyUntouchedSpot);
+      }, 250);
       tutorial.advanceTutorial();
+      return; // チュートリアル中は通知プロンプト発火しない
     }
-  }, [tutorial]);
+    setSelected(null);
+    // 実ワンショット完了 → 通知プロンプト発火（App側で必要時のみカード表示）
+    onOneshotCompleted?.();
+  }, [tutorial, onOneshotCompleted, selectSpotWithOffset]);
 
   // refreshTrigger 変化時 → 全置換で再取得（削除されたスポットもマップから消える）
   const prevTrigger = useRef(refreshTrigger);
@@ -360,10 +370,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         }
       } catch { /* ignore */ }
 
-      // Phase 1: AsyncStorage復元 + GPS許可を並列開始
+      // Phase 1: AsyncStorage復元 + GPS許可状態の取得（要求はしない）
+      // 起動直後にシステムダイアログを出さない方針 — 許可は周辺検索FABタップ等の
+      // 文脈で初めてユーザーに求める。ここでは既存の許可状態を取得するのみ。
       const [savedData, permResult] = await Promise.all([
         AsyncStorage.getItem(LAST_LOCATION_KEY).catch(() => null),
-        Location.requestForegroundPermissionsAsync().catch(() => ({ status: 'denied' as const })),
+        Location.getForegroundPermissionsAsync().catch(() => ({ status: 'denied' as const })),
       ]);
 
       // Phase 2: 保存位置があれば地図移動 + Firestoreフェッチ（fire-and-forget）
@@ -913,20 +925,24 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       setSelected(null);
       setSearchResults([]);
     }
-    // presence-show-untouched: 未踏ダミー位置にカメラを寄せる（街区レベル）
+    // presence-show-untouched: 未踏ダミー位置にカメラを寄せる + カードを自動オープン
+    // → silent ゲージが見える状態でユーザーに「これが silent」を体感させる
     if (tutorial.isStep('presence-show-untouched')) {
-      setSelected(null);
       mapRef.current?.animateToRegion({
         latitude: DUMMY_UNTOUCHED_SPOT.latitude,
         longitude: DUMMY_UNTOUCHED_SPOT.longitude,
         latitudeDelta: 0.006,
         longitudeDelta: 0.006,
       }, 1400);
+      // 地図移動後にカードを開く（silent状態のゲージを見せる）
+      setTimeout(() => {
+        if (tutorial.isStep('presence-show-untouched')) {
+          selectSpotWithOffset(tutorial.dummyUntouchedSpot);
+        }
+      }, 1500);
     }
-    // presence-camera: 引き続き未踏ダミー周辺を表示
-    if (tutorial.isStep('presence-camera')) {
-      setSelected(null);
-    }
+    // presence-camera: カードを開いたままワンショットボタンを露出
+    // ※ ここで setSelected しない（presence-show-untouched で開いたカードを維持）
   }, [tutorial.active, tutorial.stepIndex]);
 
   // チュートリアル: カメラボタンの位置登録は App.tsx のタブバー側に移動済み
@@ -943,12 +959,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   return (
     <View style={styles.container}>
-      {(loading || gpsLoading) && (
-        <View style={styles.loadingOverlay} pointerEvents="none">
-          <View style={styles.loadingBadge}>
-            <ActivityIndicator size="small" color={SYS_BLUE} />
-            <Text style={styles.loadingText}>{gpsLoading ? '現在地を取得中...' : 'スポット読み込み中...'}</Text>
-          </View>
+      {/* ローディングインジケータ — チュートリアル中は非表示、通常時は左上に小スピナー */}
+      {!tutorial.active && (loading || gpsLoading) && (
+        <View style={styles.loadingTopLeft} pointerEvents="none">
+          <ActivityIndicator size="small" color={SYS_BLUE} />
         </View>
       )}
 
@@ -1410,19 +1424,18 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
 
-  // ── ローディングバッジ ────────────────────────────
-  loadingOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center', justifyContent: 'flex-end',
-    paddingBottom: 120, zIndex: 10,
+  // ── ローディング: 左上に小スピナーのみ ────────────
+  loadingTopLeft: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 16,
+    zIndex: 10,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(28,28,30,0.85)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
-  loadingBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: 'rgba(28,28,30,0.92)',
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20,
-  },
-  loadingText: { color: '#AEAEB2', fontSize: 12 },
   // 位置情報拒否バナー
   deniedBanner: {
     position: 'absolute', top: 54, left: 16, right: 16, zIndex: 20,

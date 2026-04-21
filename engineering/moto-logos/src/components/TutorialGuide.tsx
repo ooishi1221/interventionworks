@@ -208,19 +208,13 @@ export function TutorialGuide() {
     );
   }
 
-  // ── tap-target でターゲット未取得（定義なし or 測定未完了）: 完全タッチ貫通
-  //    pointerEvents="none" で全タッチを下のUIに通す。コンポーネント側がadvance
-  //    Animated.View を使わない: useNativeDriver でシーン→通常ステップ遷移時に
-  //    fadeAnim の JS 値が 0 のまま残りオーバーレイが見えなくなる問題を回避
+  // ── tap-target でターゲット未取得（定義なし or 測定未完了）:
+  //    完全タッチ貫通のみ。指示テキストは出さない。
+  //    target が測定されてからスポットライト+メッセージを一気に出す方が、
+  //    SearchOverlay 等が開く瞬間に「読めない一瞬の文字」が flash するのを防げる。
   if (!target && currentStep.waitFor === 'tap-target') {
     return (
-      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none">
-        {currentStep.instruction ? (
-          <StepFadeIn key={`tap-target-no-target-${stepIndex}`} style={styles.floatingCard}>
-            <Text style={styles.instructionText}>{currentStep.instruction}</Text>
-          </StepFadeIn>
-        ) : null}
-      </Animated.View>
+      <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none" />
     );
   }
 
@@ -263,21 +257,19 @@ export function TutorialGuide() {
     borderRadius: (target.borderRadius ?? 0) + PADDING / 2,
   };
 
-  // 指示テキストの位置: 上下の空きスペースが広い方に配置
-  // top で統一指定（bottom だとセーフエリアでズレるため）
+  // 指示テキストの位置: 「ターゲット未測定」時の floatingCard と位置を揃えるため、
+  // 画面下部に固定（top: undefined / bottom 指定）。ターゲット周辺にせり出す動的配置だと、
+  // 測定前後でメッセージが瞬間移動して読めなくなる。
+  // ターゲットが画面下部 (タブバー / FAB) にある場合のみ、メッセージを上に逃がす。
   const SAFE_TOP = Platform.OS === 'ios' ? 60 : 40;
-  const SAFE_BOTTOM = Platform.OS === 'ios' ? 100 : 80;
-  const spaceAbove = hole.y - SAFE_TOP;
-  const spaceBelow = SCREEN_H - SAFE_BOTTOM - (hole.y + hole.h);
-  // 上の空きスペースが十分（200px以上）なら上、そうでなければ下
-  const instructionAbove = spaceAbove > 200 && spaceAbove > spaceBelow;
+  const SAFE_BOTTOM = Platform.OS === 'ios' ? 140 : 110;
+  const FIXED_BOTTOM = Platform.OS === 'ios' ? 140 : 110;
+  const targetNearBottom = hole.y + hole.h > SCREEN_H - 200;
   const CARD_HEIGHT_EST = 90;
-  const GAP = 24;
-  // 下半分のスペースの中央に配置（ターゲットの下）
-  const belowCenter = hole.y + hole.h + (SCREEN_H - SAFE_BOTTOM - hole.y - hole.h) / 2 - CARD_HEIGHT_EST / 2;
-  const instructionTop = instructionAbove
-    ? Math.max(SAFE_TOP, hole.y - CARD_HEIGHT_EST - GAP)
-    : Math.max(hole.y + hole.h + GAP, Math.min(belowCenter, SCREEN_H - SAFE_BOTTOM - CARD_HEIGHT_EST));
+  const instructionTop = targetNearBottom
+    ? Math.max(SAFE_TOP, hole.y - CARD_HEIGHT_EST - 24)
+    : undefined;
+  const instructionBottom = targetNearBottom ? undefined : FIXED_BOTTOM;
 
   return (
     <Animated.View
@@ -337,7 +329,7 @@ export function TutorialGuide() {
 
       {/* ── 指示テキスト ─────────────────────────────── */}
       {currentStep.instruction ? (
-        <StepFadeIn key={`spot-instr-${stepIndex}`} style={[styles.instructionCard, { top: instructionTop }]}>
+        <StepFadeIn key={`spot-instr-${stepIndex}`} style={[styles.instructionCard, { top: instructionTop, bottom: instructionBottom }]}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
             <View style={styles.tapHintRow}>

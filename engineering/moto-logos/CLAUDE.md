@@ -175,6 +175,17 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - レビュー・投票には必ず実 userId を紐付ける（`'local_user'` ハードコード禁止）
 - **UI**: 設定画面に「アカウント」セクション（`AccountLinkCard`）、初回足跡後にナッジカード（`LinkNudgeCard`）
 
+### 権限要求（通知・位置情報）
+
+起動直後にシステムダイアログを連発させない。**文脈付きで遅延発火**する。
+
+- **通知パーミッション** — 利用規約同意直後ではなく、以下の2タイミングで要求:
+  1. チュートリアル完了（「さあはじめよう！」or スキップ）→ `App.finishTutorial`
+  2. 初回ワンショット完了 → `MapScreen.onOneshotCompleted`
+- **位置パーミッション** — 起動時の Phase 1 では `getForegroundPermissionsAsync()` で**既存状態の取得のみ**。要求は周辺検索FABタップ等のユーザー意図ある操作で初めて発火（`Location.requestForegroundPermissionsAsync()`）
+- **PrePermissionDialog** (`src/components/PrePermissionDialog.tsx`) — システム権限ダイアログの直前にブランド準拠のソフト説明カードを1枚挟む。1回拒否されると再表示困難なため許可率を上げる
+- **`permissionPrompts.ts`** — `shouldShowXxxPrompt()` で「未案内 + 未許可」を判定し、`markXxxPromptShown()` で AsyncStorage に記録して二重表示を防ぐ
+
 ### 写真アップロード（Firebase Storage）
 
 - レビュー写真は Firebase Storage にアップロードし、公開 URL を Firestore `reviews.photoUrls` に保存
@@ -520,7 +531,7 @@ eas update --branch preview
 - `TutorialOverlay` (`src/components/TutorialOverlay.tsx`): セットアップ画面 + 完了画面
 - `TutorialGuide` (`src/components/TutorialGuide.tsx`): スポットライト（4矩形暗幕）+ パルスグロー + 指示テキスト
 
-**フロー（15ステップ — 全ステップがユーザータップで進行）:**
+**フロー（18ステップ — 全ステップがユーザータップで進行）:**
 
 | # | ステップ | 内容 |
 |---|---------|------|
@@ -530,16 +541,18 @@ eas update --branch preview
 | 4 | explore-result | 結果カードタップ → スポット詳細表示 |
 | 5 | explore-nav | ナビボタンタップ → 案内開始アラート |
 | 6 | explore-search | サーチタブタップ → SearchOverlay表示 |
-| 7 | explore-search-info | SearchOverlay表示中、上野チップを target にして「上野をタップしてみよう」（チュートリアル中は文字入力ロック+他チップ無効化） |
+| 7 | explore-search-info | 上野チップを target にして「人気エリアの上野を選択してみましょう」（チュートリアル中は文字入力ロック+他チップ無効化） |
 | 8 | explore-search-result | 上野ダミー3件注入 → 検索結果表示 |
 | 9 | scene-presence | シーンカード「スポットの『気配』」 |
 | 10 | presence-intro | 6段階カラーパネル表示（live/warm/trace/faint/cold/silent + 各意味） |
 | 11 | presence-action-intro | 「気配はワンショットで更新されます。やってみましょう」 |
-| 12 | presence-show-untouched | 未踏ダミー（丸の内仲通り）に地図を寄せ「これが silent」 |
+| 12 | presence-show-untouched | 未踏ダミーに地図寄せ + カード自動オープン → silent ゲージを見せる |
 | 13 | presence-camera | ワンショットボタンタップ → ダミーセレモニー発火 + ピンを silent → live に切替 |
-| 14 | presence-ceremony | OneshotCeremony演出 → 完了で次へ |
-| 15 | presence-done | 「ワンショットで気配が live に。看板の文字が写っていれば登録情報も自動更新」 |
-| 16 | complete | 「ワンショットを撮るほど、地図が育つ。さあはじめよう！」 |
+| 14 | presence-ceremony | OneshotCeremony演出 → 完了で次へ。直後にカード再オープン（live ゲージ可視化） |
+| 15 | presence-done | 「気配がつきました！MAPのピンとカードのステータスが更新されました」 |
+| 16 | presence-ai-update | 「看板など文字や写っている場合 AIが判別して最新の状態に更新されます ※1日1回更新となります」 |
+| 17 | presence-encourage | 「ワンショットで気配をどんどん残しましょう！」 |
+| 18 | complete | 「ワンショットを撮るほど、地図が育つ。さあはじめよう！」 |
 
 **ダミーデータ:**
 - スポット: 東京駅八重洲口バイク駐車場（`_tutorial_spot_`）+ 周辺2件 + 上野3件 + 丸の内仲通り（`_tutorial_untouched_`、silent状態）

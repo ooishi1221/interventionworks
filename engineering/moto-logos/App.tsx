@@ -29,6 +29,15 @@ import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
 import { initSentry, setSentryUser, sentryWrap, captureError } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
+import * as Notifications from 'expo-notifications';
+import * as Location from 'expo-location';
+import { PrePermissionDialog, type PromptType } from './src/components/PrePermissionDialog';
+import {
+  shouldShowNotificationPrompt,
+  shouldShowLocationPrompt,
+  markNotificationPromptShown,
+  markLocationPromptShown,
+} from './src/utils/permissionPrompts';
 import { useImpactNotification } from './src/hooks/useImpactNotification';
 import { FontSize, Spacing } from './src/constants/theme';
 import { collection, getDocs, query, orderBy, limit, addDoc, Timestamp } from 'firebase/firestore';
@@ -212,25 +221,54 @@ function App() {
   const handleLegalAccept = useCallback(() => {
     setLegalConsented(true);
     AsyncStorage.setItem(LEGAL_CONSENT_KEY, 'true');
-    // 利用規約同意後にプッシュ通知のパーミッション要求 & トークン登録
-    registerForPushNotifications();
+    // 通知パーミッション要求はチュートリアル完了 or 初回ワンショット完了後まで遅延
+    // （規約同意直後にシステムダイアログを連発させない UX 改善）
   }, []);
+
+  // ── 権限プロンプト（カスタムカード制御） ────────────
+  const [pendingPrompt, setPendingPrompt] = useState<PromptType | null>(null);
+  const handlePromptAllow = useCallback(async () => {
+    const t = pendingPrompt;
+    setPendingPrompt(null);
+    if (t === 'notification') {
+      await markNotificationPromptShown();
+      await registerForPushNotifications();
+    } else if (t === 'location') {
+      await markLocationPromptShown();
+      try { await Location.requestForegroundPermissionsAsync(); } catch { /* noop */ }
+    }
+  }, [pendingPrompt]);
+  const handlePromptDeny = useCallback(async () => {
+    const t = pendingPrompt;
+    setPendingPrompt(null);
+    if (t === 'notification') await markNotificationPromptShown();
+    else if (t === 'location') await markLocationPromptShown();
+  }, [pendingPrompt]);
 
   // ── チュートリアル ─────────────────────────────────
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  // DB初期化完了後にチュートリアルフラグをチェック & プッシュ通知トークン更新
+  // DB初期化完了後にチュートリアルフラグをチェック
   useEffect(() => {
     if (status !== 'ready' || !legalConsented) return;
     AsyncStorage.getItem(TUTORIAL_KEY).then((v) => {
       if (v !== 'true') setTutorialVisible(true);
     });
-    // 既に同意済みの復帰ユーザーのトークンを更新
-    registerForPushNotifications();
+    // 既に通知許可済みの復帰ユーザーはトークン更新（許可未済なら何もしない）
+    (async () => {
+      try {
+        const { status: ns } = await Notifications.getPermissionsAsync();
+        if (ns === 'granted') registerForPushNotifications();
+      } catch { /* noop */ }
+    })();
   }, [status, legalConsented]);
 
-  const finishTutorial = useCallback(() => {
+  const finishTutorial = useCallback(async () => {
     setTutorialVisible(false);
     AsyncStorage.setItem(TUTORIAL_KEY, 'true');
+    // 「さあはじめよう！」直後に通知プロンプトを文脈付きで提示
+    if (await shouldShowNotificationPrompt()) {
+      setPendingPrompt('notification');
+    }
   }, []);
 
   const startTutorial = useCallback(() => {
@@ -346,6 +384,11 @@ function App() {
                 onSearchPhaseChange={setSearchPhase}
                 ceremonyEnabled={ceremonyEnabled}
                 nickname={nickname}
+                onOneshotCompleted={async () => {
+                  if (await shouldShowNotificationPrompt()) {
+                    setPendingPrompt('notification');
+                  }
+                }}
               />
             </View>
             {tab === 'rider' && (
@@ -482,6 +525,14 @@ function App() {
             userCC={userCC}
             onChangeCC={(cc) => setUserCC(cc)}
 
+          />
+
+          {/* システム権限ダイアログの直前に挟むカスタム説明カード */}
+          <PrePermissionDialog
+            visible={pendingPrompt !== null}
+            type={pendingPrompt ?? 'notification'}
+            onAllow={handlePromptAllow}
+            onDeny={handlePromptDeny}
           />
         </TutorialProvider>
         </GestureHandlerRootView>

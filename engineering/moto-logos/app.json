@@ -21,6 +21,7 @@
         }
       ],
       "./plugins/withYahooNaviAndroid",
+      "./plugins/withDisableLint",
       [
         "@sentry/react-native",
         {
