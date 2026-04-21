@@ -331,6 +331,16 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 過去事例（2026-04-20）: 環境変数未登録で iOS/Android 両方動作不能。診断Alertで `DEBUG2 認証FAIL: auth/invalid-api-key` を確認して発覚
 - `.env` を変更／新キー追加時は必ず `eas env:push` を打ち直す
 
+### デバッグ Alert スイッチ（DEBUG_ALERT）
+
+調査用に画面に Alert を出すデバッグ機構を `src/utils/debug.ts` に集約。**β配布前は必ず `DEBUG_ALERT = false`**。
+
+- 影響範囲:
+  - `MapScreen.tsx`: fetchSpotsInRegion の結果 / エラーを Alert（0件問題の調査用）
+  - `SearchOverlay.tsx`: chipPress のエラー詳細を Alert（Places API 調査用）
+- 通常の Alert（位置情報拒否・検索失敗など）は DEBUG_ALERT に依存しない常時表示
+- 個別フラグではなく単一スイッチに統一（過去事例: 2026-04-20 に SearchOverlay へ仕込んだまま CEO がβ実機で遭遇 → 一括制御に変更）
+
 ### クラッシュ監視（Sentry）
 
 - Sentry（`@sentry/react-native ~7.2.0`）を使用（Expo managed workflow 対応）

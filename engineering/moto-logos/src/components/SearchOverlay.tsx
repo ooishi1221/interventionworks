@@ -31,6 +31,7 @@ import {
 } from '../utils/placesApi';
 import { getCachedPlace, cachePlace } from '../utils/placesCache';
 import { captureError } from '../utils/sentry';
+import { DEBUG_ALERT } from '../utils/debug';
 import { useTutorial } from '../contexts/TutorialContext';
 
 const C = Colors;
@@ -262,8 +263,12 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
         Alert.alert('見つかりませんでした', `「${label}」に該当する場所が見つかりません。`);
       } catch (e) {
         captureError(e, { context: 'chip_press' });
-        const msg = e instanceof Error ? e.message : String(e);
-        Alert.alert('検索エラー詳細', `[${label}]\n${msg.slice(0, 300)}`);
+        if (DEBUG_ALERT) {
+          const msg = e instanceof Error ? e.message : String(e);
+          Alert.alert('検索エラー詳細', `[${label}]\n${msg.slice(0, 300)}`);
+        } else {
+          Alert.alert('検索エラー', '検索に失敗しました。');
+        }
       } finally {
         setSearching(false);
       }

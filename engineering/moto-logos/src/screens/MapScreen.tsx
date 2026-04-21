@@ -26,10 +26,7 @@ import { fetchSpotsInRegion, addUserSpotToFirestore, addReview, logActivity } fr
 import { loadSpotsFromCacheIfFresh, syncSpotsCache, downloadAllSpotsToCache } from '../firebase/spotsCacheSync';
 import { readSpotsFromCache } from '../db/spotsCache';
 import { getFirebaseAuth } from '../firebase/config';
-
-// preview でも必ず Alert を表示するデバッグフラグ。0件問題の原因特定用。
-// 問題解決後は false に戻す。
-const DEBUG_ALERT = false;
+import { DEBUG_ALERT } from '../utils/debug';
 import { insertUserSpot, getFirstVehicle, getFootprintCount, addFootprint } from '../db/database';
 import { DARK_MAP_STYLE } from '../constants/mapStyle';
 import { SpotDetailSheet } from '../components/SpotDetailSheet';
@@ -257,7 +254,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       });
     } catch (e) {
       captureError(e, { context: 'fetchSpotsInRegion' });
-      if (__DEV__ || DEBUG_ALERT) {
+      if (DEBUG_ALERT) {
         const auth = getFirebaseAuth();
         const uid = auth.currentUser?.uid?.slice(0, 8) ?? 'null';
         Alert.alert(
