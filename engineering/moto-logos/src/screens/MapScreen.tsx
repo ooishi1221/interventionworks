@@ -269,8 +269,18 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     return fetched;
   }, []);
 
-  // 報告後に現在リージョンのスポットを再取得して鮮度を反映
-  const handleProximitySpotUpdated = useCallback(() => {
+  // 報告後に現在リージョンのスポットを再取得して気配を反映
+  // 楽観的更新: 該当スポットの lastConfirmedAt を即座にローカルで now に上書き
+  //             → ピンが即座に黄色（live）になる。Firestore 再取得の遅延を吸収。
+  const handleProximitySpotUpdated = useCallback((spotId?: string) => {
+    if (spotId) {
+      const nowIso = new Date().toISOString();
+      setAllSpotsRaw((prev) =>
+        prev.map((s) => (s.id === spotId ? { ...s, lastConfirmedAt: nowIso } : s))
+      );
+      // selected も表示中なら同期
+      setSelected((sel) => (sel && sel.id === spotId ? { ...sel, lastConfirmedAt: nowIso } : sel));
+    }
     if (lastFetchRegionRef.current) {
       fetchSpotsForRegion(lastFetchRegionRef.current);
     }
@@ -303,19 +313,28 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   // ── ワンショットセレモニー ────────────────────────────
   const ceremonyCooldown = useRef(false);
-  const handleOneshotCeremony = useCallback(async (data: { photoUri: string; spotName: string }) => {
+  // セレモニー開始時のスポットを覚えて、完了後にカードを再オープンする
+  const pendingCardSpotRef = useRef<ParkingPin | null>(null);
+  const handleOneshotCeremony = useCallback(async (data: { photoUri: string; spotName: string; spot?: ParkingPin }) => {
     if (ceremonyCooldown.current) return;
     ceremonyCooldown.current = true;
+    // セレモニー完了後に再オープンするスポットを保存（selected または明示的に渡された spot）
+    pendingCardSpotRef.current = data.spot ?? selected ?? null;
     setSelected(null); // シートを先に閉じて地図を見せる
     if (!ceremonyEnabled) {
-      // 演出OFF → セレモニーをスキップ
+      // 演出OFF → セレモニーをスキップ。カードだけ即再オープン
       setTimeout(() => { ceremonyCooldown.current = false; }, 1000);
+      if (pendingCardSpotRef.current) {
+        const spotToReopen = pendingCardSpotRef.current;
+        pendingCardSpotRef.current = null;
+        setTimeout(() => selectSpotWithOffset(spotToReopen), 100);
+      }
       return;
     }
     const count = await getFootprintCount().catch(() => 0);
     setCeremony({ ...data, footprintCount: count });
     setTimeout(() => { ceremonyCooldown.current = false; }, 3500);
-  }, [ceremonyEnabled]);
+  }, [ceremonyEnabled, selected, selectSpotWithOffset]);
 
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
@@ -327,9 +346,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         selectSpotWithOffset(tutorial.dummyUntouchedSpot);
       }, 250);
       tutorial.advanceTutorial();
+      pendingCardSpotRef.current = null;
       return; // チュートリアル中は通知プロンプト発火しない
     }
-    setSelected(null);
+    // 実ワンショット完了: 該当スポットのカードを再オープン
+    const spotToReopen = pendingCardSpotRef.current;
+    pendingCardSpotRef.current = null;
+    if (spotToReopen) {
+      setTimeout(() => selectSpotWithOffset(spotToReopen), 250);
+    } else {
+      setSelected(null);
+    }
     // 実ワンショット完了 → 通知プロンプト発火（App側で必要時のみカード表示）
     onOneshotCompleted?.();
   }, [tutorial, onOneshotCompleted, selectSpotWithOffset]);
@@ -759,8 +786,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         latitude, longitude,
         latitudeDelta: 0.005, longitudeDelta: 0.005,
       }, 600);
-      // セレモニー演出（ハプティックはセレモニー内）
-      handleOneshotCeremony({ photoUri, spotName: name });
+      // セレモニー演出（ハプティックはセレモニー内）+ 新規ピンを完了後に再オープン
+      handleOneshotCeremony({ photoUri, spotName: name, spot: newPin });
     } catch (e: unknown) {
       captureError(e, { context: 'quickReport' });
       const message = e instanceof Error ? e.message : String(e);
@@ -1033,8 +1060,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         {allSpots
           .filter((spot) => spot.id !== selected?.id)
           .map((spot) => (
+            // key に lastConfirmedAt を含めることで気配が変わった瞬間に Marker を
+            // 再マウント → native bitmap が新色で撮り直される。tracksViewChanges=false
+            // のままでも色変化が反映される。
             <Marker
-              key={spot.id}
+              key={`${spot.id}-${spot.lastConfirmedAt ?? 's'}`}
               coordinate={{ latitude: spot.latitude, longitude: spot.longitude }}
               onPress={() => selectSpotWithOffset(spot)}
               anchor={{ x: 0.5, y: 0.5 }}
@@ -1059,7 +1089,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         {/* 選択中ピン: クラスタリング対象外で常に強調表示 */}
         {selected && (
           <Marker
-            key={`selected_${selected.id}`}
+            key={`selected_${selected.id}-${selected.lastConfirmedAt ?? 's'}`}
             coordinate={{ latitude: selected.latitude, longitude: selected.longitude }}
             anchor={{ x: 0.5, y: 0.5 }}
             accessibilityLabel={`${selected.name} (選択中)`}
@@ -1384,14 +1414,16 @@ const styles = StyleSheet.create({
   pinDot: {
     width: 22, height: 22, borderRadius: 11,
   },
-  // 鮮度「新鮮」だけにかける薄グロー
-  glow: {
-    shadowColor: '#FFD60A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    elevation: 8,
-  },
+  // 気配 live にかける薄グロー。Android は elevation が重いので無効化（色のみで表現）
+  glow: Platform.select({
+    ios: {
+      shadowColor: '#FFD60A',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.7,
+      shadowRadius: 6,
+    },
+    default: {}, // Android: elevation による描画負荷を避けるため glow なし
+  }) as object,
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 
   // ── 選択中ピン: オレンジ強調 + 2重発光リング ────────

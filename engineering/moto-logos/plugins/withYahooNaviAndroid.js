@@ -12,7 +12,7 @@ module.exports = function withYahooNaviAndroid(config) {
       manifest.queries = [];
     }
 
-    const schemes = ['yjnavicar', 'ynavigation'];
+    const schemes = ['yjnavi', 'yjnavicar', 'ynavigation'];
     for (const scheme of schemes) {
       const alreadyAdded = manifest.queries.some(
         (q) => q?.intent?.[0]?.data?.[0]?.['$']?.['android:scheme'] === scheme

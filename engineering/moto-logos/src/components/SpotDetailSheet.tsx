@@ -36,7 +36,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
 import { Asset } from 'expo-asset';
 import { useTutorial } from '../contexts/TutorialContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin, Review } from '../types';
@@ -102,7 +102,7 @@ interface Props {
   spot: ParkingPin;
   onClose: () => void;
   onSpotSelect?: (spot: ParkingPin) => void;
-  onSpotUpdated?: () => void;
+  onSpotUpdated?: (spotId?: string) => void;
   onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
   highlightReviewId?: string;
   nickname?: string;
@@ -257,18 +257,20 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
     if (!lat || !lng) return;
     const name = spot.name?.trim() ? encodeURIComponent(spot.name) : '';
     const namePart = name ? `&name=${name}` : '';
-    const newLink = `ynavigation://v1/route?lat=${lat}&lon=${lng}${namePart}&type=drive`;
-    const oldLink = `yjnavicar://v1/map?lat=${lat}&lon=${lng}${namePart}`;
-    // iOS: canOpenURL で確認してから開く
-    if (Platform.OS === 'ios') {
-      const canNew = await Linking.canOpenURL(newLink);
-      if (canNew) { await Linking.openURL(newLink); return; }
-      const canOld = await Linking.canOpenURL(oldLink);
-      if (canOld) { await Linking.openURL(oldLink); return; }
-    } else {
-      // Android: canOpenURL が <queries> 未宣言だとfalseになるため直接試す
-      try { await Linking.openURL(newLink); return; } catch { /* fall through */ }
-      try { await Linking.openURL(oldLink); return; } catch { /* fall through */ }
+    // Yahoo!カーナビ 公式 URL スキーム（2024〜）: yjnavi://
+    // 旧スキーム ynavigation:// / yjnavicar:// もフォールバックで試す
+    // iOS/Android 共通で openURL を順次試行（canOpenURL は LSApplicationQueriesSchemes /
+    // <queries> 未登録だと false を返すため信用できない）
+    const links = [
+      `yjnavi://v1/routesearch?lat=${lat}&lon=${lng}${namePart}`,
+      `ynavigation://v1/route?lat=${lat}&lon=${lng}${namePart}&type=drive`,
+      `yjnavicar://v1/map?lat=${lat}&lon=${lng}${namePart}`,
+    ];
+    for (const link of links) {
+      try {
+        await Linking.openURL(link);
+        return;
+      } catch { /* try next */ }
     }
     // 両方失敗 → 未インストール → ストアへ誘導
     const store = Platform.select({
@@ -340,7 +342,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
 
       // セレモニー演出をトリガー（ハプティックはセレモニー内で実行）
       onOneshotCeremony?.({ photoUri: uri, spotName: spot.name });
-      onSpotUpdated?.();
+      onSpotUpdated?.(spot.id); // ← spotId 渡してローカルで即 live に楽観的更新
       await loadAll();
     } catch (e: unknown) {
       captureError(e, { context: 'oneshot' });
