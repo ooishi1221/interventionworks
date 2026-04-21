@@ -77,18 +77,21 @@ function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
     <TouchableOpacity
       style={{
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 56 : 36,
-        right: 16,
+        top: Platform.OS === 'ios' ? 60 : 40,
+        right: 14,
         zIndex: 10000,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 7,
+        backgroundColor: 'rgba(0,0,0,0.72)',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 9,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(255,255,255,0.18)',
       }}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       onPress={() => { tutorial.finishTutorial(); onSkip(); }}
       activeOpacity={0.7}
     >
-      <RNText style={{ color: '#8E8E93', fontSize: 13, fontWeight: '600' }}>スキップ</RNText>
+      <RNText style={{ color: '#C7C7CC', fontSize: 13, fontWeight: '600', letterSpacing: 0.2 }}>スキップ</RNText>
     </TouchableOpacity>
   );
 }

@@ -508,11 +508,10 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
                   <Text style={styles.badgeTextMuted}>{spot.capacity}台</Text>
                 </View>
               )}
-              <FreshnessBadge spot={spot} />
             </View>
 
-            {/* 鮮度テキスト */}
-            <FreshnessText spot={spot} />
+            {/* 鮮度インジケーター（ゲージ + ラベル + 経過日数） */}
+            <FreshnessIndicator spot={spot} />
 
             {/* 情報更新日 */}
             <InfoUpdatedAt spot={spot} />
@@ -665,29 +664,40 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
   );
 }
 
-// ─── 鮮度バッジ（霧の状態） ─────────────────────────
-function FreshnessBadge({ spot }: { spot: ParkingPin }) {
+// ─── 気配インジケーター（5段階カラーゲージ + ラベル + 経過日数） ─────
+// マップピンの色と完全連動。色の意味がカード内で学習される設計。
+const FRESH_LEVELS = ['live', 'warm', 'trace', 'faint', 'cold'] as const;
+function FreshnessIndicator({ spot }: { spot: ParkingPin }) {
   const fresh = spotFreshness(spot);
-  const color = FRESHNESS_STYLE[fresh].color;
+  const { color } = FRESHNESS_STYLE[fresh];
   const label = freshnessLabel(fresh);
-  return (
-    <View style={[styles.badge, { backgroundColor: `${color}18`, borderWidth: StyleSheet.hairlineWidth, borderColor: `${color}44` }]}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, marginRight: 4 }} />
-      <Text style={[styles.badgeText, { color, fontSize: 10, fontWeight: '600' }]}>{label}</Text>
-    </View>
-  );
-}
+  const daysText = lastConfirmedText(spot);
+  const isSilent = fresh === 'silent';
+  const labelColor = isSilent ? '#E8E8E8' : color;
 
-// ─── 鮮度テキスト（「X日前に確認」/「まだ誰も確認していません」） ──
-function FreshnessText({ spot }: { spot: ParkingPin }) {
-  const fresh = spotFreshness(spot);
-  const text = lastConfirmedText(spot);
-  const color = fresh === 'foggy' ? C.accent : FRESHNESS_STYLE[fresh].color;
-  const icon = fresh === 'foggy' ? 'footsteps-outline' : 'checkmark-circle-outline';
   return (
-    <View style={styles.temperatureRow}>
-      <Ionicons name={icon as 'time-outline'} size={14} color={color} />
-      <Text style={[styles.temperatureText, { color }]}>{text}</Text>
+    <View style={styles.freshRow}>
+      <View style={styles.freshGauge}>
+        {FRESH_LEVELS.map((f) => {
+          const active = f === fresh;
+          const c = FRESHNESS_STYLE[f].color;
+          return (
+            <View
+              key={f}
+              style={[
+                styles.freshSeg,
+                active
+                  ? { backgroundColor: c, width: 22 }
+                  : { backgroundColor: `${c}44` },
+              ]}
+            />
+          );
+        })}
+      </View>
+      <View style={styles.freshLabelWrap}>
+        <Text style={[styles.freshLabel, { color: labelColor }]}>{label}</Text>
+        <Text style={styles.freshDays}>· {daysText}</Text>
+      </View>
     </View>
   );
 }
@@ -961,6 +971,12 @@ const styles = StyleSheet.create({
   // Freshness
   temperatureRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   temperatureText: { fontSize: 13, fontWeight: '500' },
+  freshRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 2 },
+  freshGauge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  freshSeg: { width: 10, height: 6, borderRadius: 3 },
+  freshLabelWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 6, flexShrink: 1 },
+  freshLabel: { fontSize: 15, fontWeight: '700' },
+  freshDays: { fontSize: 12, color: C.sub, flexShrink: 1 },
 
   // 自分のメモ
   myMemoSection: { marginTop: 12 },

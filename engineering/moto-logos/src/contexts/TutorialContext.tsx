@@ -9,7 +9,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { ParkingPin } from '../types';
 
 // ─── ステップ定義 ──────────────────────────────────────
-export type TutorialPhase = 'setup' | 'explore' | 'register' | 'complete' | 'inactive';
+export type TutorialPhase = 'setup' | 'explore' | 'presence' | 'complete' | 'inactive';
 
 /** waitFor: ユーザーが何をしたら次に進むか */
 type WaitFor =
@@ -31,6 +31,8 @@ export interface StepDef {
   sceneTitle?: string;
   /** シーンアイコン（Ionicons名） */
   sceneIcon?: string;
+  /** 特殊カスタムUI識別子（TutorialOverlay/Guide が分岐に使う） */
+  customUI?: 'presence-intro';
 }
 
 export const STEPS: StepDef[] = [
@@ -82,9 +84,9 @@ export const STEPS: StepDef[] = [
   {
     id: 'explore-search-info',
     phase: 'explore',
-    instruction: '人気エリアから選ぶだけで検索できます\n文字入力もOK',
-    target: null,
-    waitFor: 'tap-anywhere',
+    instruction: '人気エリアの「上野」を\nタップしてみよう',
+    target: 'hot-area-ueno',
+    waitFor: 'tap-target',
   },
   {
     id: 'explore-search-result',
@@ -94,43 +96,58 @@ export const STEPS: StepDef[] = [
     waitFor: 'tap-anywhere',
   },
 
-  // ── Scene 2: 足跡を刻む ───────────────────────────
+  // ── Scene 2: 気配を体感 ───────────────────────────
   {
-    id: 'scene-register',
-    phase: 'register',
+    id: 'scene-presence',
+    phase: 'presence',
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
-    sceneTitle: 'ワンショットで足跡を刻む',
-    sceneIcon: 'camera-outline',
+    sceneTitle: 'スポットの「気配」',
+    sceneIcon: 'pulse-outline',
   },
 
-  // ── Phase: Register（足跡を刻む） ─────────────────
+  // ── Phase: Presence（気配の意味） ─────────────────
   {
-    id: 'register-intro',
-    phase: 'register',
-    instruction: '検索で出てこないバイク置き場や\n料金のメモなどあれば\nカメラで撮影しよう',
+    id: 'presence-intro',
+    phase: 'presence',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-anywhere',
+    customUI: 'presence-intro',
+  },
+  {
+    id: 'presence-action-intro',
+    phase: 'presence',
+    instruction: '気配はワンショットで更新されます\n実際にやってみましょう',
     target: null,
     waitFor: 'tap-anywhere',
   },
   {
-    id: 'register-camera',
-    phase: 'register',
+    id: 'presence-show-untouched',
+    phase: 'presence',
+    instruction: 'これが silent（未踏）のスポット\nまだ誰も気配を残していません',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  {
+    id: 'presence-camera',
+    phase: 'presence',
     instruction: 'ワンショットボタンをタップ',
     target: 'camera-button',
     waitFor: 'tap-target',
   },
   {
-    id: 'register-ceremony',
-    phase: 'register',
+    id: 'presence-ceremony',
+    phase: 'presence',
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
   },
   {
-    id: 'register-done',
-    phase: 'register',
-    instruction: 'ワンショットで残した写真は\n新しいスポット登録や情報更新され\n他のライダーにも表示されます',
+    id: 'presence-done',
+    phase: 'presence',
+    instruction: 'ワンショットで気配が live に変わりました\n看板など文字が写っていれば\nスポット名や料金などの登録情報も自動で更新されます',
     target: null,
     waitFor: 'tap-anywhere',
   },
@@ -156,7 +173,21 @@ export const DUMMY_SPOT: ParkingPin = {
   capacity: 30,
   source: 'seed',
   address: '東京都中央区八重洲1丁目',
-  updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前更新（青バッジ）
+  updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前更新
+};
+
+/** チュートリアル: 気配セクション用の未踏（silent）ダミースポット */
+export const DUMMY_UNTOUCHED_SPOT: ParkingPin = {
+  id: '_tutorial_untouched_',
+  name: '丸の内仲通り駐輪場',
+  latitude: 35.6790,    // 東京駅 西側の丸の内エリア
+  longitude: 139.7660,
+  maxCC: null,
+  isFree: null,
+  capacity: null,
+  source: 'seed',
+  address: '東京都千代田区丸の内2丁目',
+  // lastConfirmedAt 未設定 → silent 扱い
 };
 
 /** チュートリアル: 東京駅周辺の最寄り3件（FAB検索用） */
@@ -239,8 +270,14 @@ interface TutorialContextValue {
   currentStep: StepDef;
   /** 現在のフェーズ */
   phase: TutorialPhase;
-  /** ダミースポット */
+  /** ダミースポット（探す用） */
   dummySpot: ParkingPin;
+  /** 気配セクション用の未踏ダミースポット（confirmed後はlive） */
+  dummyUntouchedSpot: ParkingPin;
+  /** 気配セクション内で未踏ダミーがワンショット済みになったら true（色変化トリガー） */
+  untouchedConfirmed: boolean;
+  /** 未踏ダミーをワンショット済みに切替（lastConfirmedAt = 現在時刻） */
+  markUntouchedConfirmed: () => void;
   /** ターゲット矩形の登録（コンポーネントが自分の位置を報告） */
   registerTarget: (id: string, rect: TargetRect) => void;
   /** 登録済みターゲット矩形の取得 */
@@ -263,11 +300,24 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [exiting, setExiting] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const targets = useRef<Record<string, TargetRect>>({});
-  const [dummySpot, setDummySpot] = useState<ParkingPin>(DUMMY_SPOT);
+  const [dummySpot] = useState<ParkingPin>(DUMMY_SPOT);
+  const [untouchedConfirmed, setUntouchedConfirmed] = useState(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentStep = STEPS[stepIndex] ?? STEPS[0];
   const phase = active ? currentStep.phase : 'inactive';
+
+  // 未踏ダミー: confirmed フラグに応じて lastConfirmedAt を付与
+  const dummyUntouchedSpot = useMemo<ParkingPin>(() => {
+    if (untouchedConfirmed) {
+      return { ...DUMMY_UNTOUCHED_SPOT, lastConfirmedAt: new Date().toISOString() };
+    }
+    return DUMMY_UNTOUCHED_SPOT;
+  }, [untouchedConfirmed]);
+
+  const markUntouchedConfirmed = useCallback(() => {
+    setUntouchedConfirmed(true);
+  }, []);
 
   // ターゲット登録
   const registerTarget = useCallback((id: string, rect: TargetRect) => {
@@ -314,6 +364,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const startTutorial = useCallback(() => {
     setStepIndex(0);
     setActive(true);
+    setUntouchedConfirmed(false);
     targets.current = {};
   }, []);
 
@@ -325,6 +376,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       setActive(false);
       setExiting(false);
       setStepIndex(0);
+      setUntouchedConfirmed(false);
     }, 400);
   }, []);
 
@@ -340,13 +392,16 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     currentStep,
     phase,
     dummySpot,
+    dummyUntouchedSpot,
+    untouchedConfirmed,
+    markUntouchedConfirmed,
     registerTarget,
     getTarget,
     advanceTutorial,
     startTutorial,
     finishTutorial,
     isStep,
-  }), [active, exiting, stepIndex, currentStep, phase, dummySpot, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep]);
+  }), [active, exiting, stepIndex, currentStep, phase, dummySpot, dummyUntouchedSpot, untouchedConfirmed, markUntouchedConfirmed, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep]);
 
   return (
     <TutorialContext.Provider value={value}>

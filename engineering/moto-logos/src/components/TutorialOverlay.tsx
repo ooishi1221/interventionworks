@@ -45,6 +45,9 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
   const tutorial = useTutorial();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
+  // 「はじめる」/「さあはじめよう」ボタンの脈動 — 視線誘導
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   const showSetup = visible && tutorial.phase === 'setup';
   const showComplete = visible && tutorial.phase === 'complete';
@@ -76,6 +79,22 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
         delay: waitForGuideFadeOut + 250,
         useNativeDriver: true,
       }).start();
+
+      // CTA ボタンの脈動ループ（コンテンツ表示後にスタート）
+      pulseScale.setValue(1);
+      const startPulse = setTimeout(() => {
+        pulseLoopRef.current = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseScale, { toValue: 1.04, duration: 700, useNativeDriver: true }),
+            Animated.timing(pulseScale, { toValue: 1.0,  duration: 700, useNativeDriver: true }),
+          ])
+        );
+        pulseLoopRef.current.start();
+      }, waitForGuideFadeOut + 900);
+      return () => {
+        clearTimeout(startPulse);
+        pulseLoopRef.current?.stop();
+      };
     }
   }, [showOverlay, tutorial.phase]);
 
@@ -148,10 +167,12 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
 
             <View style={{ height: 32 }} />
 
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleSetupComplete} activeOpacity={0.8}>
-              <Text style={styles.primaryBtnText}>はじめる</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: pulseScale }] }}>
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleSetupComplete} activeOpacity={0.8}>
+                <Text style={styles.primaryBtnText}>はじめる</Text>
+                <Ionicons name="arrow-forward" size={16} color="#fff" />
+              </TouchableOpacity>
+            </Animated.View>
 
             <TouchableOpacity style={styles.skipLink} onPress={handleComplete} activeOpacity={0.7}>
               <Text style={styles.skipText}>スキップ</Text>
@@ -170,10 +191,10 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
               ワンショットを撮るほど{'\n'}地図が育つ。
             </Text>
             <View style={{ height: 48 }} />
-            <View style={styles.primaryBtnGreen}>
+            <Animated.View style={[styles.primaryBtnGreen, { transform: [{ scale: pulseScale }] }]}>
               <Text style={styles.primaryBtnText}>さあはじめよう！</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
-            </View>
+            </Animated.View>
           </Animated.View>
         </TouchableWithoutFeedback>
       )}

@@ -18,7 +18,7 @@ import ClusteredMapView from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { ParkingPin, UserCC, MaxCC } from '../types';
 import { filterByCC } from '../data/adachi-parking';
 import { Spacing } from '../constants/theme';
@@ -41,7 +41,7 @@ import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { SearchResultsList } from '../components/SearchResultsList';
-import { useTutorial, TUTORIAL_NEARBY_RESULTS, TUTORIAL_SEARCH_RESULTS, DUMMY_SPOT } from '../contexts/TutorialContext';
+import { useTutorial, TUTORIAL_NEARBY_RESULTS, TUTORIAL_SEARCH_RESULTS, DUMMY_SPOT, DUMMY_UNTOUCHED_SPOT } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
 
@@ -79,27 +79,52 @@ const SpotPin = React.memo(function SpotPin({
         <View style={styles.selectedRingOuter} />
         <View style={styles.selectedRingInner} />
         <View style={styles.pinSelected}>
-          <MaterialCommunityIcons name="motorbike" size={22} color="#fff" />
+          <FontAwesome5 name="motorcycle" size={18} color="#fff" />
         </View>
       </View>
     );
   }
 
-  const dotStyle = fresh === 'clear' ? styles.pinDotClear
-    : fresh === 'hazy' ? styles.pinDotHazy
-    : styles.pinDotFoggy;
+  const { color, textColor } = FRESHNESS_STYLE[fresh];
+  const isSilent = fresh === 'silent';
+  // live は最も目立たせる（薄グロー）、その他はフラット
+  const isHighlighted = fresh === 'live';
 
   if (wide) {
-    return <View style={[styles.pinDot, dotStyle]} />;
+    // 広域ズーム: 小ドット
+    return (
+      <View
+        style={[
+          styles.pinDot,
+          isSilent
+            ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#9A9A9E' }
+            : {
+                backgroundColor: color,
+                borderWidth: 2,
+                borderColor: '#fff',
+                ...(isHighlighted ? styles.glow : null),
+              },
+        ]}
+      />
+    );
   }
 
-  const pinStyle = fresh === 'clear' ? styles.pinClear
-    : fresh === 'hazy' ? styles.pinHazyLarge
-    : styles.pinFoggyLarge;
-
+  // 通常ピン: アイコン付き円形
   return (
-    <View style={[styles.pinLarge, pinStyle]}>
-      <MaterialCommunityIcons name="motorbike" size={17} color="#fff" />
+    <View
+      style={[
+        styles.pinLarge,
+        isSilent
+          ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#9A9A9E' }
+          : {
+              backgroundColor: color,
+              borderWidth: 1.5,
+              borderColor: 'rgba(255,255,255,0.5)',
+              ...(isHighlighted ? styles.glow : null),
+            },
+      ]}
+    >
+      <FontAwesome5 name="motorcycle" size={14} color={textColor} />
     </View>
   );
 });
@@ -297,7 +322,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     setCeremony(null);
     setSelected(null);
     // チュートリアル: セレモニー完了で次ステップへ
-    if (tutorial.isStep('register-ceremony')) {
+    if (tutorial.isStep('presence-ceremony')) {
       tutorial.advanceTutorial();
     }
   }, [tutorial]);
@@ -438,11 +463,12 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
     },
     triggerOneShot: () => {
-      if (tutorial.isStep('register-camera')) {
-        // ダミーセレモニー発火 → 完了で次ステップへ
+      if (tutorial.isStep('presence-camera')) {
+        // 気配セクション: 未踏ダミーをワンショット → silent → live に変化
         const asset = Image.resolveAssetSource(require('../../assets/tutorial-parking.jpg'));
-        setCeremony({ photoUri: asset.uri, spotName: DUMMY_SPOT.name, footprintCount: 1 });
-        tutorial.advanceTutorial(); // → register-ceremony (auto 3000ms)
+        setCeremony({ photoUri: asset.uri, spotName: DUMMY_UNTOUCHED_SPOT.name, footprintCount: 1 });
+        tutorial.markUntouchedConfirmed(); // ピン色変化トリガー
+        tutorial.advanceTutorial(); // → presence-ceremony
         return;
       }
       quickReportRef.current();
@@ -737,12 +763,17 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const allSpots = useMemo(() => {
     const base = filterByCC(allSpotsRaw, userCC);
-    return tutorial.active ? [tutorial.dummySpot, ...base] : base;
-  }, [allSpotsRaw, userCC, tutorial.active, tutorial.dummySpot]);
+    if (!tutorial.active) return base;
+    // 気配フェーズ中は未踏ダミーも追加（presence-show-untouched 以降ずっと表示）
+    const showUntouched = tutorial.phase === 'presence';
+    return showUntouched
+      ? [tutorial.dummySpot, tutorial.dummyUntouchedSpot, ...base]
+      : [tutorial.dummySpot, ...base];
+  }, [allSpotsRaw, userCC, tutorial.active, tutorial.phase, tutorial.dummySpot, tutorial.dummyUntouchedSpot]);
 
-  // 確認済みスポット（鮮度clear）— 広域ズームでは描画しない
+  // 気配 live（1ヶ月以内）のスポット — 広域ズームでは描画しない
   const clearedSpots = useMemo(
-    () => wideZoom ? [] : allSpots.filter((s) => spotFreshness(s) === 'clear'),
+    () => wideZoom ? [] : allSpots.filter((s) => spotFreshness(s) === 'live'),
     [allSpots, wideZoom],
   );
 
@@ -801,7 +832,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         longitude: tutorial.dummySpot.longitude,
         latitudeDelta: 0.008,
         longitudeDelta: 0.008,
-      }, 800);
+      }, 1200);
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
@@ -875,12 +906,26 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       mapRef.current?.animateToRegion({
         latitude: 35.7134, longitude: 139.7770,
         latitudeDelta: 0.015, longitudeDelta: 0.015,
-      }, 800);
+      }, 1400);
     }
-    // scene-register: 検索結果を閉じてカメラボタンを露出
-    if (tutorial.isStep('scene-register')) {
+    // scene-presence: 検索結果を閉じて地図を見せる + 未踏ダミー位置に寄せる
+    if (tutorial.isStep('scene-presence')) {
       setSelected(null);
       setSearchResults([]);
+    }
+    // presence-show-untouched: 未踏ダミー位置にカメラを寄せる（街区レベル）
+    if (tutorial.isStep('presence-show-untouched')) {
+      setSelected(null);
+      mapRef.current?.animateToRegion({
+        latitude: DUMMY_UNTOUCHED_SPOT.latitude,
+        longitude: DUMMY_UNTOUCHED_SPOT.longitude,
+        latitudeDelta: 0.006,
+        longitudeDelta: 0.006,
+      }, 1400);
+    }
+    // presence-camera: 引き続き未踏ダミー周辺を表示
+    if (tutorial.isStep('presence-camera')) {
+      setSelected(null);
     }
   }, [tutorial.active, tutorial.stepIndex]);
 
@@ -989,14 +1034,14 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
               <SpotPin spot={spot} wide={wideZoom} />
             </Marker>
           ))}
-        {/* 晴れ円: 確認済みスポット周囲 */}
+        {/* 新鮮スポット周囲のハロー（黄の薄グロー） */}
         {clearedSpots.map((spot) => (
           <Circle
             key={`clear_${spot.id}`}
             center={{ latitude: spot.latitude, longitude: spot.longitude }}
             radius={250}
-            fillColor="rgba(48,209,88,0.06)"
-            strokeColor="rgba(48,209,88,0.18)"
+            fillColor="rgba(255,214,10,0.06)"
+            strokeColor="rgba(255,214,10,0.18)"
             strokeWidth={1}
           />
         ))}
@@ -1328,42 +1373,13 @@ const styles = StyleSheet.create({
   pinDot: {
     width: 22, height: 22, borderRadius: 11,
   },
-  // 確認済み（clear）— ビビッドグリーン
-  pinClear: {
-    backgroundColor: '#30D158',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#30D158',
+  // 鮮度「新鮮」だけにかける薄グロー
+  glow: {
+    shadowColor: '#FFD60A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  pinDotClear: {
-    backgroundColor: '#30D158',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#30D158',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
     shadowRadius: 6,
     elevation: 8,
-  },
-  // やや古い（hazy）— ミューテッドグリーン
-  pinHazyLarge: {
-    backgroundColor: '#7A9E7E',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
-  },
-  pinDotHazy: {
-    backgroundColor: '#7A9E7E',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
-  },
-  // 未確認（foggy）— ニュートラルグレー
-  pinFoggyLarge: {
-    backgroundColor: '#636366',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
-  },
-  pinDotFoggy: {
-    backgroundColor: '#636366',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   pinText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 

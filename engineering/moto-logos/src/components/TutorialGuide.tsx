@@ -19,16 +19,49 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTutorial, type TargetRect } from '../contexts/TutorialContext';
+import { FRESHNESS_STYLE, type SpotFreshness } from '../utils/freshness';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const PADDING = 8; // ターゲット周囲のパディング
+const SAFE_MARGIN = 20; // チュートリアルカード共通の左右セーフマージン (>= 16dp)
+
+// ─── StepFadeIn ───────────────────────────────────────
+// 各ステップでの content fade-in。stepIndex を key にして使うことで、
+// ステップ切替時に新しい Animated.Value (初期値 0) を持つインスタンスとして mount される。
+// 共有 Animated.Value 方式の「opacity 1 → JSX 差替え → 一瞬全表示 → setValue(0) → fade-in」
+// という flicker を構造的に排除する。
+const StepFadeIn = React.memo(function StepFadeIn({
+  children,
+  delay = 120,
+  duration = 480,
+  style,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  duration?: number;
+  style?: any;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const ty = useRef(new Animated.Value(8)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration, delay, useNativeDriver: true }),
+      Animated.timing(ty,      { toValue: 0, duration, delay, useNativeDriver: true }),
+    ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <Animated.View style={[style, { opacity, transform: [{ translateY: ty }] }]}>
+      {children}
+    </Animated.View>
+  );
+});
 
 export function TutorialGuide() {
   const { active, exiting, currentStep, stepIndex, getTarget, advanceTutorial, phase } = useTutorial();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const contentAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
   const prevStepRef = useRef(stepIndex);
@@ -41,40 +74,19 @@ export function TutorialGuide() {
   const spotlightRef = useRef<View>(null);
   const originRef = useRef({ x: 0, y: 0 });
 
-  // ステップ切替: 暗幕維持 + コンテンツだけフェード（地図が見える隙間を防ぐ）
+  // 暗幕の opacity だけ管理。コンテンツの fade は <StepFadeIn key={stepIndex}> に委譲。
+  // 共有 contentAnim 方式は「state 更新→新JSXが opacity 1 で1フレーム表示→useEffect で setValue(0)→fade-in」のフリッカーを起こすため廃止。
   useEffect(() => {
     if (active && phase !== 'setup' && phase !== 'complete') {
       const isFirstAppearance = prevStepRef.current === 0 && stepIndex > 0;
       prevStepRef.current = stepIndex;
-
       if (isFirstAppearance) {
-        // 初回表示: 暗幕ごとフェードイン（余韻のあるタメ）
         fadeAnim.setValue(0);
-        contentAnim.setValue(0);
-        Animated.parallel([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }),
-          Animated.timing(contentAnim, {
-            toValue: 1,
-            duration: 500,
-            delay: 200, // 暗幕が乗ってからテキスト
-            useNativeDriver: true,
-          }),
-        ]).start();
+        Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }).start();
       } else {
-        // 通常遷移: 暗幕維持、コンテンツだけ一旦フェードアウトしてから差替え
-        fadeAnim.setValue(1);
-        Animated.sequence([
-          Animated.timing(contentAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
-          Animated.timing(contentAnim, {
-            toValue: 1,
-            duration: 500,
-            delay: 80, // ひと呼吸置く
-            useNativeDriver: true,
-          }),
-        ]).start();
+        fadeAnim.setValue(1); // 暗幕は維持
       }
-
-      // パルスグロー（ピカピカ — 常に光ってる＋脈動）
+      // パルスグロー（ターゲット周囲）
       pulseAnim.setValue(0.5);
       pulseRef.current = Animated.loop(
         Animated.sequence([
@@ -88,13 +100,10 @@ export function TutorialGuide() {
     }
   }, [active, stepIndex, phase]);
 
-  // complete フェーズへの遷移: フェードアウト（地図が見える隙間を防ぐ）
-  // instruction を即時に消してから暗幕をフェードアウト。これで Overlay の
-  // complete 画面とテキストが被る「チカチカ」を防ぐ。
+  // complete フェーズへの遷移: 暗幕フェードアウト
   useEffect(() => {
     if (active && phase === 'complete') {
       setFadingToComplete(true);
-      contentAnim.setValue(0); // instruction 即消去
       Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => {
         setFadingToComplete(false);
       });
@@ -141,7 +150,7 @@ export function TutorialGuide() {
   if ((!active && !exiting) || phase === 'setup') return null;
   if (phase === 'complete' && !fadingToComplete) return null;
   // セレモニー演出中はOneshotCeremonyが全面を担当
-  if (currentStep.id === 'register-ceremony') return null;
+  if (currentStep.id === 'presence-ceremony') return null;
 
   // complete フェーズへのフェードアウト中: 暗幕のみ表示
   if (phase === 'complete' && fadingToComplete) {
@@ -158,19 +167,42 @@ export function TutorialGuide() {
     // tap-target の場合は暗幕タップでは進まない
   };
 
+  // ── 気配の説明パネル（customUI: 'presence-intro'） ────────
+  if (currentStep.customUI === 'presence-intro') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim, paddingHorizontal: SAFE_MARGIN }]}>
+          <StepFadeIn key={`presence-intro-${stepIndex}`} style={styles.presencePanelInner}>
+            <Text style={styles.presenceTitle}>Moto-Logos のスポットには{'\n'}「気配」があります</Text>
+            <Text style={styles.presenceSubtitle}>ライダーがどれだけ最近そこに立ち寄ったか{'\n'}を6段階の色で表現します</Text>
+            <View style={styles.presenceList}>
+              {PRESENCE_ROWS.map((row, i) => (
+                <PresenceRow key={row.level} index={i} {...row} />
+              ))}
+            </View>
+            <View style={styles.tapHintRow}>
+              <Text style={styles.tapHint}>タップして次へ</Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
+            </View>
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
   // ── シーンタイトルカード（フェーズ切替演出） ────────
   if (!target && currentStep.sceneTitle) {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim }]}>
-          <Animated.View style={{ alignItems: 'center', gap: 16, opacity: contentAnim }}>
-          <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as keyof typeof Ionicons.glyphMap} size={48} color="#FF9F0A" />
-          <Text style={styles.sceneTitle}>{currentStep.sceneTitle}</Text>
-          <View style={styles.tapHintRow}>
-            <Text style={styles.tapHint}>タップして次へ</Text>
-            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-          </View>
-          </Animated.View>
+        <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim, paddingHorizontal: SAFE_MARGIN }]}>
+          <StepFadeIn key={`scene-${stepIndex}`} delay={200} style={styles.sceneInner}>
+            <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as keyof typeof Ionicons.glyphMap} size={48} color="#FF9F0A" />
+            <Text style={styles.sceneTitle}>{currentStep.sceneTitle}</Text>
+            <View style={styles.tapHintRow}>
+              <Text style={styles.tapHint}>タップして次へ</Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
+            </View>
+          </StepFadeIn>
         </Animated.View>
       </TouchableWithoutFeedback>
     );
@@ -184,9 +216,9 @@ export function TutorialGuide() {
     return (
       <Animated.View style={[styles.fullOverlayLight, { opacity: fadeAnim }]} pointerEvents="none">
         {currentStep.instruction ? (
-          <Animated.View style={[styles.floatingCard, { opacity: contentAnim }]}>
+          <StepFadeIn key={`tap-target-no-target-${stepIndex}`} style={styles.floatingCard}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
-          </Animated.View>
+          </StepFadeIn>
         ) : null}
       </Animated.View>
     );
@@ -198,13 +230,13 @@ export function TutorialGuide() {
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
           {currentStep.instruction ? (
-            <Animated.View style={[styles.floatingCard, { opacity: contentAnim }]}>
+            <StepFadeIn key={`tap-anywhere-${stepIndex}`} style={styles.floatingCard}>
               <Text style={styles.instructionText}>{currentStep.instruction}</Text>
               <View style={styles.tapHintRow}>
                 <Text style={styles.tapHint}>タップして次へ</Text>
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
               </View>
-            </Animated.View>
+            </StepFadeIn>
           ) : null}
         </Animated.View>
       </TouchableWithoutFeedback>
@@ -215,11 +247,19 @@ export function TutorialGuide() {
   // コンテナ原点を差し引いて座標を補正（Android edge-to-edge対応）
   const ox = originRef.current.x;
   const oy = originRef.current.y;
+  // ターゲット矩形を画面内に収める。タブバー右端のターゲットが
+  // glowBorder ごと右にはみ出る不具合を防ぐ。
+  const rawX = target.x - PADDING - ox;
+  const rawY = target.y - PADDING - oy;
+  const rawW = target.w + PADDING * 2;
+  const rawH = target.h + PADDING * 2;
+  const clampedX = Math.max(0, Math.min(rawX, SCREEN_W - rawW));
+  const clampedY = Math.max(0, rawY);
   const hole = {
-    x: target.x - PADDING - ox,
-    y: target.y - PADDING - oy,
-    w: target.w + PADDING * 2,
-    h: target.h + PADDING * 2,
+    x: clampedX,
+    y: clampedY,
+    w: Math.min(rawW, SCREEN_W - clampedX),
+    h: rawH,
     borderRadius: (target.borderRadius ?? 0) + PADDING / 2,
   };
 
@@ -274,6 +314,9 @@ export function TutorialGuide() {
       </TouchableWithoutFeedback>
 
       {/* ── パルスグロー枠（ターゲット周囲） ────────── */}
+      {/* opacity 脈動 + scale 1.0 ↔ 1.06 で視線誘導を強化。
+          ターゲット中央を基準にスケールするため transform-origin の代替として
+          left/top を一定に保ったまま scale を transform で適用 */}
       <Animated.View
         style={[styles.glowBorder, {
           top: hole.y,
@@ -282,18 +325,19 @@ export function TutorialGuide() {
           height: hole.h,
           borderRadius: hole.borderRadius,
           opacity: pulseAnim,
+          transform: [{
+            scale: pulseAnim.interpolate({
+              inputRange: [0.5, 1],
+              outputRange: [1.0, 1.06],
+            }),
+          }],
         }]}
         pointerEvents="none"
       />
 
       {/* ── 指示テキスト ─────────────────────────────── */}
-      {/* fadeAnim を使用: ターゲット到着ポーリング後にビューが切り替わるため
-          contentAnim のネイティブドライバー値が伝播しないケースを回避 */}
       {currentStep.instruction ? (
-        <Animated.View style={[
-          styles.instructionCard,
-          { top: instructionTop, opacity: contentAnim },
-        ]}>
+        <StepFadeIn key={`spot-instr-${stepIndex}`} style={[styles.instructionCard, { top: instructionTop }]}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
             <View style={styles.tapHintRow}>
@@ -301,11 +345,60 @@ export function TutorialGuide() {
               <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
             </View>
           )}
-        </Animated.View>
+        </StepFadeIn>
       ) : null}
     </Animated.View>
   );
 }
+
+// ─── 気配説明用のミニ行（スタッガーフェードイン付き） ──────
+type PresenceRowProps = { level: SpotFreshness; label: string; meaning: string };
+const PRESENCE_ROWS: PresenceRowProps[] = [
+  { level: 'live',   label: 'live',   meaning: '濃い気配 (1ヶ月以内)' },
+  { level: 'warm',   label: 'warm',   meaning: '温かい気配 (1〜2ヶ月)' },
+  { level: 'trace',  label: 'trace',  meaning: '痕跡が残る (2〜3ヶ月)' },
+  { level: 'faint',  label: 'faint',  meaning: '薄れた気配 (3〜6ヶ月)' },
+  { level: 'cold',   label: 'cold',   meaning: '冷えきった (半年以上)' },
+  { level: 'silent', label: 'silent', meaning: '静寂・誰も来ていない' },
+];
+const PresenceRow = React.memo(function PresenceRow({ level, label, meaning, index }: PresenceRowProps & { index: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    // パネル全体のフェードイン (contentAnim) より少し遅らせてスタッガー
+    const startDelay = 240 + index * 90;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1, duration: 380, delay: startDelay, useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0, duration: 380, delay: startDelay, useNativeDriver: true,
+      }),
+    ]).start();
+  }, [index, opacity, translateY]);
+
+  const { color, textColor } = FRESHNESS_STYLE[level];
+  const isSilent = level === 'silent';
+  return (
+    <Animated.View style={[styles.presenceRow, { opacity, transform: [{ translateY }] }]}>
+      <View
+        style={[
+          styles.presencePin,
+          isSilent
+            ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#9A9A9E' }
+            : { backgroundColor: color, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+        ]}
+      >
+        <FontAwesome5 name="motorcycle" size={11} color={isSilent ? '#9A9A9E' : textColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.presenceLabel, { color: isSilent ? '#E8E8E8' : color }]}>{label}</Text>
+        <Text style={styles.presenceMeaning}>{meaning}</Text>
+      </View>
+    </Animated.View>
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -355,8 +448,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,159,10,0.08)',
   },
   floatingCard: {
-    left: 20,
-    right: 20,
+    marginHorizontal: SAFE_MARGIN,
+    alignSelf: 'stretch',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.85)',
     borderRadius: 16,
@@ -368,8 +461,9 @@ const styles = StyleSheet.create({
   },
   instructionCard: {
     position: 'absolute',
-    left: 20,
-    right: 20,
+    left: SAFE_MARGIN,
+    right: SAFE_MARGIN,
+    maxWidth: SCREEN_W - SAFE_MARGIN * 2,
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.80)',
     borderRadius: 16,
@@ -378,6 +472,17 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.15)',
+  },
+  sceneInner: {
+    alignItems: 'center',
+    gap: 16,
+    maxWidth: SCREEN_W - SAFE_MARGIN * 2,
+  },
+  presencePanelInner: {
+    width: '100%',
+    maxWidth: SCREEN_W - SAFE_MARGIN * 2,
+    alignItems: 'center',
+    gap: 18,
   },
   instructionText: {
     color: '#F2F2F7',
@@ -396,5 +501,49 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontSize: 13,
     fontWeight: '500',
+  },
+
+  // ── 気配説明パネル ──────────────────────────────
+  presenceTitle: {
+    color: '#F2F2F7',
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 30,
+  },
+  presenceSubtitle: {
+    color: '#8E8E93',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: -4,
+  },
+  presenceList: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  presenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  presencePin: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  presenceLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  presenceMeaning: {
+    color: '#9A9A9E',
+    fontSize: 11,
+    marginTop: 1,
   },
 });

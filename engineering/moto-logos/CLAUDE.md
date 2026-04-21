@@ -254,22 +254,28 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - 旧星レビュー（score 2-5）の後方互換表示 → 完全削除
 - 「報告」という用語 → 「足跡」「メモ」に統一
 
-### 鮮度システム（地図ピン）
+### 気配システム（地図ピン）
 
-スポットの鮮度を `lastVerifiedAt`（= lastConfirmedAt）の経過時間で3段階に表示。ワンショット撮影で `reportParked()` が呼ばれると副産物として更新される。
+スポットに残された**ライダーの「気配」**を `lastVerifiedAt`（= lastConfirmedAt）の経過時間で6段階表現。ワンショット撮影で `reportParked()` が呼ばれると副産物として更新される。選択ピンのオレンジ `#FF6B00` と色相を分離。刑事/追跡の "warm trail / cold trail" 慣用句をメタファに採用。
 
-| 鮮度 | 経過時間 | 色 | 意味 |
+| 気配 | 経過時間 | 色 | 意味 |
 |------|---------|-----|------|
-| clear（確認済み） | 1ヶ月以内 | ビビッドグリーン `#30D158` | 最近の足跡。生々しい存在感 |
-| hazy（やや古い） | 3ヶ月以内 | ミューテッドグリーン `#7A9E7E` | 褪せた足跡。まだ読める |
-| foggy（未確認） | それ以上 | ニュートラルグレー `#636366` | 未踏。データだけの存在 |
+| live   | 1ヶ月以内 | 黄 `#FFD60A` | 濃い気配。薄グロー付きで最も目立つ |
+| warm   | 1〜2ヶ月 | 琥珀 `#FFAE42` | 温かい気配 |
+| trace  | 2〜3ヶ月 | 白 `#E8E8E8` | 痕跡が残る |
+| faint  | 3〜6ヶ月 | シアン `#5AC8FA` | 薄れた気配 |
+| cold   | 半年以上 | 深青 `#3A6B9C` | 冷えきった |
+| silent | 記録なし | 中空リング | 静寂・未踏。構造で別扱い |
 
 - 全ピン透明度1.0（霧システム廃止。全スポットがダークマップ上で視認可能）
-- ピンアイコンは `motorbike`（MaterialCommunityIcons）
-- マーカーはsource（seed/user）で区別しない。鮮度の色のみで表現
-- 広域ズーム時のドット: 24×24px + 白stroke 2px（視認性確保）
+- ピンアイコンは `motorcycle`（FontAwesome5）。MDI motorbike は小サイズで自転車に見えるため差し替え済み
+- マーカーは source（seed/user）で区別しない。気配の色のみで表現
+- silent（未踏）は中空リング（塗りなし + 白グレーストローク）で視認性を保持しつつ「誰も来てない」を構造的に表現
+- live のみ薄黄グローを付加して「最近の気配」を目立たせる
+- 広域ズーム時のドット: 22×22px + 白stroke 2px
 - ワンショット撮影時に `reportParked()` で `lastVerifiedAt` が副産物として更新
 - 実装: `src/utils/freshness.ts`（spotFreshness / FRESHNESS_STYLE / freshnessLabel / lastConfirmedText）
+- SpotDetailSheet 内の `FreshnessIndicator` が5段階カラーゲージ + ラベル + 経過日数をタイトル直下に表示（マップピンと色連動）
 
 ### 足跡タイプカラー（活動タイムライン）
 
@@ -514,7 +520,7 @@ eas update --branch preview
 - `TutorialOverlay` (`src/components/TutorialOverlay.tsx`): セットアップ画面 + 完了画面
 - `TutorialGuide` (`src/components/TutorialGuide.tsx`): スポットライト（4矩形暗幕）+ パルスグロー + 指示テキスト
 
-**フロー（13ステップ — 全ステップがユーザータップで進行）:**
+**フロー（15ステップ — 全ステップがユーザータップで進行）:**
 
 | # | ステップ | 内容 |
 |---|---------|------|
@@ -524,18 +530,21 @@ eas update --branch preview
 | 4 | explore-result | 結果カードタップ → スポット詳細表示 |
 | 5 | explore-nav | ナビボタンタップ → 案内開始アラート |
 | 6 | explore-search | サーチタブタップ → SearchOverlay表示 |
-| 7 | explore-search-info | 人気エリアから選ぶだけで検索できる説明 |
+| 7 | explore-search-info | SearchOverlay表示中、上野チップを target にして「上野をタップしてみよう」（チュートリアル中は文字入力ロック+他チップ無効化） |
 | 8 | explore-search-result | 上野ダミー3件注入 → 検索結果表示 |
-| 9 | scene-register | シーンカード「ワンショットで足跡を刻む」 |
-| 10 | register-intro | 「検索で出てこないバイク置き場や料金のメモなどあればカメラで撮影しよう」 |
-| 11 | register-camera | ワンショットボタンタップ → ダミーセレモニー発火 |
-| 12 | register-ceremony | OneshotCeremony演出（ダミー写真が地図に吸い込まれる）→ 自動進行 |
-| 13 | register-done | 「ワンショットで残した写真は新しいスポット登録や情報更新され他のライダーにも表示されます」 |
-| 14 | complete | 「ワンショットを撮るほど、地図が育つ。さあはじめよう！」 |
+| 9 | scene-presence | シーンカード「スポットの『気配』」 |
+| 10 | presence-intro | 6段階カラーパネル表示（live/warm/trace/faint/cold/silent + 各意味） |
+| 11 | presence-action-intro | 「気配はワンショットで更新されます。やってみましょう」 |
+| 12 | presence-show-untouched | 未踏ダミー（丸の内仲通り）に地図を寄せ「これが silent」 |
+| 13 | presence-camera | ワンショットボタンタップ → ダミーセレモニー発火 + ピンを silent → live に切替 |
+| 14 | presence-ceremony | OneshotCeremony演出 → 完了で次へ |
+| 15 | presence-done | 「ワンショットで気配が live に。看板の文字が写っていれば登録情報も自動更新」 |
+| 16 | complete | 「ワンショットを撮るほど、地図が育つ。さあはじめよう！」 |
 
 **ダミーデータ:**
-- スポット: 東京駅八重洲口バイク駐車場（`_tutorial_spot_`）+ 周辺2件 + 上野3件
+- スポット: 東京駅八重洲口バイク駐車場（`_tutorial_spot_`）+ 周辺2件 + 上野3件 + 丸の内仲通り（`_tutorial_untouched_`、silent状態）
 - 写真: `assets/tutorial-parking.jpg`（セレモニー演出用）
+- 未踏ダミーの気配状態は TutorialContext の `untouchedConfirmed` state で制御。`markUntouchedConfirmed()` で lastConfirmedAt = now を付与 → live に色変化
 - Firestoreへの書き込みなし（チュートリアル中は全インターセプト）
 
 **チュートリアル終了後:** ダミーデータ削除、GPS現在地にマップ移動、周辺スポット自動フェッチ
@@ -572,7 +581,7 @@ eas update --branch preview
 | 「撮影済み」制限 | 廃止完了。ワンショットは何度でも撮れる |
 | 日記タイムライン（RiderScreen） | 廃止完了。ワンショットカードが代替 |
 | ピルバーのアバターアイコン | 廃止完了。ライダーノートがタブに昇格 |
-| 温度システム（temperature.ts） | 廃止完了。鮮度システム（freshness.ts）に置換 |
+| 温度システム（temperature.ts） | 廃止完了。気配システム（freshness.ts）に置換 |
 | 「停めた ✓」ボタン | 廃止完了。ワンショット撮影が代替 |
 | 到着検知（useArrivalDetection） | 廃止完了。通知で撮影を促す＝報告の押し付け。鮮度更新はワンショットで代替 |
 | 近接コンテキストカード（ProximityContextCard） | 廃止完了。GPSで検知して撮影を促す＝到着検知と同構造。ワンショットはライダー主導 |
@@ -597,7 +606,7 @@ eas update --branch preview
 | ~~デジタルヤエー通知~~ | ~~P2~~ | **実装済み** — `useImpactNotification` フック |
 | ~~カメラロール写真選択~~ | ~~P2~~ | **実装済み** — 全5箇所を統一ボトムシート化（`usePhotoPicker` フック + `PhotoPickerSheet`）。撮影/フォルダ選択の2択 |
 | ~~入口写真のタグ分け~~ | ~~P2~~ | **実装済み→廃止（#124）** — taggingフェーズ削除、photo→thanks直結。タグは将来Admin側で分類 |
-| ~~鮮度システム~~ | — | **実装済み** — 3段階鮮度（clear/hazy/foggy）+ 到着自動記録 + ワンショット撮影で副産物更新 |
+| ~~気配システム~~ | — | **実装済み** — 温→冷 5段階 + 未踏（live/warm/trace/faint/cold/silent）。マップピン+スポットカード5段階ゲージで色連動。"warm trail" メタファ |
 | ~~未来検索UI（SearchOverlay）~~ | ~~P0~~ | **実装済み** — サーチタブ2回目で起動。フルスクリーンオーバーレイ + ジオコーディング + SearchResultsListで最寄り3件表示 |
 | ~~Googleマップ検索復帰~~ | ~~P1~~ | **廃止** — 近接カード撤去に伴い削除 |
 | ~~アプリ内広域検索~~ | ~~P1~~ | **実装済み** — 15km圏スポット取得 + 最寄り表示 |
