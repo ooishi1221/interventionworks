@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 20,
     shadowOpacity: 1,
-    elevation: 12,
+    // elevation除去（Android重い）
     backgroundColor: 'rgba(255,159,10,0.08)',
   },
   floatingCard: {

@@ -689,6 +689,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleRegionChangeComplete = (region: Region) => {
     currentRegionRef.current = region;
+    clusterFreshnessCache.current.clear(); // ズーム変更でクラスタ再生成 → キャッシュ破棄
     // ヒステリシス付き広域モード切替（バタつき防止）
     // wide→通常: 0.04以下、通常→wide: 0.06以上。境界帯(0.04〜0.06)では状態維持
     const delta = region.latitudeDelta;
@@ -828,6 +829,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     }
     return m;
   }, [allSpots]);
+
+  // クラスタ気配キャッシュ（cluster_id → dominant freshness）
+  const clusterFreshnessCache = useRef(new Map<number, SpotFreshness>());
 
   // 気配 live（1ヶ月以内）のスポット — 広域ズームでは描画しない
   const clearedSpots = useMemo(
@@ -1092,30 +1096,39 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         minZoomLevel={0}
         maxZoomLevel={20}
         extent={512}
-        clusteringEnabled={!selected}
+        clusteringEnabled
         animationEnabled={false}
         renderCluster={(cluster) => {
           const { id, geometry, onPress, properties } = cluster;
           const count = properties.point_count;
 
-          // ── 気配集約: クラスタ内スポットの気配を加重平均 ──
+          // ── 気配集約: キャッシュ優先 → なければ getLeaves で計算 ──
           let dominant: SpotFreshness = 'cold';
-          try {
-            const sc = superClusterRef.current;
-            if (sc && properties.cluster_id != null) {
-              const leaves = sc.getLeaves(properties.cluster_id, Infinity) as {
-                geometry: { coordinates: [number, number] };
-              }[];
-              const levels: SpotFreshness[] = [];
-              for (const leaf of leaves) {
-                const key = `${leaf.geometry.coordinates[1]},${leaf.geometry.coordinates[0]}`;
-                const f = coordFreshnessMap.get(key);
-                if (f) levels.push(f);
+          const cid = properties.cluster_id as number | undefined;
+          if (cid != null) {
+            const cached = clusterFreshnessCache.current.get(cid);
+            if (cached) {
+              dominant = cached;
+            } else {
+              try {
+                const sc = superClusterRef.current;
+                if (sc) {
+                  const leaves = sc.getLeaves(cid, Infinity) as {
+                    geometry: { coordinates: [number, number] };
+                  }[];
+                  const levels: SpotFreshness[] = [];
+                  for (const leaf of leaves) {
+                    const key = `${leaf.geometry.coordinates[1]},${leaf.geometry.coordinates[0]}`;
+                    const f = coordFreshnessMap.get(key);
+                    if (f) levels.push(f);
+                  }
+                  if (levels.length > 0) dominant = clusterFreshness(levels);
+                  clusterFreshnessCache.current.set(cid, dominant);
+                }
+              } catch {
+                // supercluster 未初期化時は cold フォールバック
               }
-              if (levels.length > 0) dominant = clusterFreshness(levels);
             }
-          } catch {
-            // supercluster 未初期化時は cold フォールバック
           }
 
           const freshStyle = FRESHNESS_STYLE[dominant];
@@ -1342,7 +1355,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
-    elevation: 6,
     zIndex: 5,
   },
   searchPillText: {
@@ -1368,7 +1380,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 6,
     zIndex: 5,
   },
 
@@ -1406,7 +1417,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
-    elevation: 8,
   },
   searchBarFocused: {
     backgroundColor: 'rgba(28,28,30,0.98)',
@@ -1452,7 +1462,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
-    elevation: 6,
   },
   toastText: {
     color: '#F2F2F7',
@@ -1464,9 +1473,10 @@ const styles = StyleSheet.create({
   clusterBase: {
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3 },
+      default: {},
+    }),
   } as const,
   clusterSm: { width: 30, height: 30, borderRadius: 15 } as const,
   clusterMd: { width: 38, height: 38, borderRadius: 19 } as const,
@@ -1493,9 +1503,10 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.8)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3 },
+      default: {},
+    }),
   },
   pinLarge: {
     width: 34, height: 34, borderRadius: 17,
@@ -1537,11 +1548,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#FF6B00',
     borderWidth: 3, borderColor: '#fff',
-    shadowColor: '#FF6B00',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    elevation: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 12 },
+      default: {},
+    }),
   },
 
   // ── ローディング: 左上に小スピナーのみ ────────────

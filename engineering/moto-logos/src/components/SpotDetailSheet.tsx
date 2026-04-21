@@ -26,10 +26,7 @@ import {
   UIManager,
 } from 'react-native';
 
-// Android で LayoutAnimation を有効化
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// LayoutAnimation のグローバル有効化を廃止（Android全体のパフォーマンスに悪影響）
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';

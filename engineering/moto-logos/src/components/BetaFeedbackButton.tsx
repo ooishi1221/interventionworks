@@ -15,6 +15,8 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   Alert,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -148,11 +150,11 @@ export function BetaFeedbackButton() {
       >
         <KeyboardAvoidingView
           style={s.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={handleClose} />
+          <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => { Keyboard.dismiss(); handleClose(); }} />
 
-          <View style={s.sheet}>
+          <ScrollView style={s.sheet} keyboardShouldPersistTaps="handled" bounces={false}>
             {sent ? (
               <View style={s.sentView}>
                 <Ionicons name="checkmark-circle" size={48} color={C.success} />
@@ -230,7 +232,7 @@ export function BetaFeedbackButton() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
       <PickerSheet />
@@ -254,7 +256,7 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 6,
+    // elevation除去（Android重い）
     zIndex: 5,
   },
   fabText: {

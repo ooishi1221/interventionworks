@@ -410,7 +410,6 @@ const s = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
-    elevation: 100,
   },
   container: {
     flex: 1,

@@ -551,7 +551,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
       key={`star_${loc.spotId}`}
       coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges
+      tracksViewChanges={false}
     >
       <StarMarker visitCount={visitCountMap.get(loc.spotId) ?? 1} />
     </Marker>
@@ -569,7 +569,7 @@ export function RiderScreen({ onGoToSpot, onDataChanged, userCC, onChangeCC, nic
           key={`star_${loc.spotId}`}
           coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
           anchor={{ x: 0.5, y: 0.5 }}
-          tracksViewChanges
+          tracksViewChanges={false}
           opacity={reached ? 1 : 0}
         >
           <StarMarker visitCount={reached ? (visitCountMap.get(loc.spotId) ?? 1) : 1} />

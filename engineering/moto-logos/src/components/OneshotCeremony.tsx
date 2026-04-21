@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
-    elevation: 20,
+    // elevation除去（Androidアニメ中に重い）
   },
   photo: {
     width: '100%',

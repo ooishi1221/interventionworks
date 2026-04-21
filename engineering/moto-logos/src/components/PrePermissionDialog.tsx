@@ -104,7 +104,7 @@ const s = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 24,
       },
-      android: { elevation: 16 },
+      android: {},
     }),
   },
   iconWrap: {
