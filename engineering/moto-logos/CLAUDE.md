@@ -116,7 +116,7 @@ src/
 ├── contexts/       # React Context（UserContext — ユーザー識別）
 ├── firebase/       # Firestore/Storage 初期化・CRUD・型定義
 ├── db/             # SQLite スキーマ・CRUD
-├── hooks/          # カスタムフック（useDatabase, useProximityState, useImpactNotification）
+├── hooks/          # カスタムフック（useDatabase, useImpactNotification, usePhotoPicker）
 ├── utils/          # ユーティリティ（geohash, distance, image-upload, ng-filter, sentry, photoPicker）
 ├── constants/      # テーマ・地図スタイル
 ├── types/          # TypeScript 型定義
@@ -148,7 +148,7 @@ plugins/            # カスタム Expo プラグイン（Yahoo ナビ連携）
 - **ダークモード専用** — ヘルメット越し・夜間走行でも視認性を確保
 - **グローブ対応タップ領域** — ボタン最小 52pt、主要アクション 64pt 以上
 - **親指一本操作** — 片手持ちで全機能にアクセス可能な配置
-- **アイコンセット** — Ionicons + MaterialCommunityIcons
+- **アイコンセット** — Ionicons + MaterialCommunityIcons + FontAwesome5（マップピンの motorcycle）
 
 ---
 
@@ -564,59 +564,26 @@ eas update --branch preview
 | 足跡の残し方 | 「停めた✓」ボタン | ワンショット撮影（写真1枚がライダーノートになる） |
 | 到着後の接点 | なし（構造的断絶） | ワンショット撮影（ライダー主導） |
 
-### 削除対象
+### 廃止済みの主要概念（参照用）
 
-| 機能 | 理由 |
-|------|------|
-| trustScore | 存在に信頼スコアはない |
-| ランクシステム（novice/rider/patrol） | 存在に序列はない |
-| ゲーミフィケーション（ポイント・バッジ・ランキング） | 報酬で動機づけする思想と矛盾 |
-| 貢献者ランキング | 競争原理は気配の世界観と矛盾 |
-| 旧星レビュー後方互換表示 | 完全削除 |
-| viewCount の UI 表示 | 管理画面用の集計としてのみ残す |
-| LiveFeed（ライブフィード） | 廃止完了。ワンショット+ライダーノートが代替 |
-| リアルタイム駐車状態（currentParked / currentParkedAt） | 廃止完了。startParking/endParking/reportDeparted/expireOldParkingSessions 全削除。鮮度（lastVerifiedAt）のみ残存 |
-| 駐車中カード（RiderScreen） | 廃止完了。ワンショットの世界に駐車状態は不要 |
-| 「停められなかった」フロー | 廃止完了。ワンショットの世界に「失敗」はない |
-| 「撮影済み」制限 | 廃止完了。ワンショットは何度でも撮れる |
-| 日記タイムライン（RiderScreen） | 廃止完了。ワンショットカードが代替 |
-| ピルバーのアバターアイコン | 廃止完了。ライダーノートがタブに昇格 |
-| 温度システム（temperature.ts） | 廃止完了。気配システム（freshness.ts）に置換 |
-| 「停めた ✓」ボタン | 廃止完了。ワンショット撮影が代替 |
-| 到着検知（useArrivalDetection） | 廃止完了。通知で撮影を促す＝報告の押し付け。鮮度更新はワンショットで代替 |
-| 近接コンテキストカード（ProximityContextCard） | 廃止完了。GPSで検知して撮影を促す＝到着検知と同構造。ワンショットはライダー主導 |
-| Googleマップ検索復帰（#137） | 廃止完了。近接カード撤去に伴い復帰プロンプトも削除 |
-| GlassBreakEffect | 廃止完了。霧を晴らす演出は不要に |
-| お気に入り（ハート）機能 | 足跡日記が自然に代替。手動ブックマークは不要 |
-| 「出発した」ボタン | ライダーに「報告」を強いる。2h自動出発で十分 |
-| マーカーの脈動アニメーション | バッテリー/発熱の原因。色のみで温度を表現 |
-| ピルバー（NearbySpotsList） | 廃止完了。フッター5タブに機能を集約。地図をクリーンに |
-| CCフィルタトグル | 廃止完了。チュートリアルで選択済み、常にフィルタON |
-| MyBikeScreen（情報入力画面） | 廃止完了。誰も見ない。バイク写真とCC選択はRiderScreen内に直接配置 |
+新コンセプト（ワンショット＋気配）に置換された主要な廃止項目。詳細は git log を参照。
 
-### 新規追加予定
+- **ランク・ポイント・バッジ・貢献者ランキング** — 存在に序列なし
+- **trustScore / 旧星レビュー** — 評価ではなく気配で表現
+- **温度システム（temperature.ts）** → 気配システム（freshness.ts）に置換
+- **「停めた✓」ボタン / 「停められなかった」フロー** → ワンショット撮影
+- **到着検知（useArrivalDetection） / 近接コンテキストカード** → ライダー主導のワンショット
+- **リアルタイム駐車状態（currentParked / parking_history）** → 気配（lastVerifiedAt）のみ
+- **LiveFeed / お気に入り（ハート） / 出発ボタン / 日記タイムライン** → ワンショット + ライダーノートに統合
+- **CCフィルタトグル** → チュートリアルで選択、常時ON
+- **MyBikeScreen** → RiderScreen内に集約
+- **GlassBreakEffect / マーカー脈動 / ピルバー（NearbySpotsList）** → クリーンマップ＋5タブ集約
+
+### 未着手・保留の予定機能
 
 | 機能 | 優先度 | 状態 |
 |------|--------|------|
-| ~~到着通知~~ | ~~P0~~ | **廃止** — 通知で撮影を促す＝報告の押し付け。ワンショットで代替 |
-| ~~料金・営業時間・決済手段フィールド~~ | ~~P1~~ | **実装済み** — priceInfo + SpotPayment + SpotDetailSheet表示 |
-| ~~足跡地図（RiderScreen刷新）~~ | ~~P1~~ | **実装済み** — v6: タブ化 + ワンショットカード（写真+場所名+時刻）+ 足跡サマリー。AI分析データはライダーノートに出さない（スポット詳細で完結） |
-| ~~駐車履歴の自動記録~~ | ~~P1~~ | **実装済み** — parking_history テーブル + 到着検知連携 |
-| ~~コールドスタート用データ投入~~ | ~~P1~~ | **実装済み** — JMPSA実在79件（温度焚き付け付き） |
-| ~~デジタルヤエー通知~~ | ~~P2~~ | **実装済み** — `useImpactNotification` フック |
-| ~~カメラロール写真選択~~ | ~~P2~~ | **実装済み** — 全5箇所を統一ボトムシート化（`usePhotoPicker` フック + `PhotoPickerSheet`）。撮影/フォルダ選択の2択 |
-| ~~入口写真のタグ分け~~ | ~~P2~~ | **実装済み→廃止（#124）** — taggingフェーズ削除、photo→thanks直結。タグは将来Admin側で分類 |
-| ~~気配システム~~ | — | **実装済み** — 温→冷 5段階 + 未踏（live/warm/trace/faint/cold/silent）。マップピン+スポットカード5段階ゲージで色連動。"warm trail" メタファ |
-| ~~未来検索UI（SearchOverlay）~~ | ~~P0~~ | **実装済み** — サーチタブ2回目で起動。フルスクリーンオーバーレイ + ジオコーディング + SearchResultsListで最寄り3件表示 |
-| ~~Googleマップ検索復帰~~ | ~~P1~~ | **廃止** — 近接カード撤去に伴い削除 |
-| ~~アプリ内広域検索~~ | ~~P1~~ | **実装済み** — 15km圏スポット取得 + 最寄り表示 |
-| ~~ソーシャルログイン~~ | ~~P1~~ | **実装済み（#130）** — Apple/Google Sign-In + 匿名→リンク昇格 + データ移行 + ナッジカード |
-| ~~βエラー自動通知~~ | ~~P0~~ | **実装済み** — captureError → Firestore `beta_errors` → Slack即時通知。端末情報+userId自動収集、60秒レート制限 |
-| ~~βフィードバックボタン~~ | ~~P0~~ | **実装済み** — 左下フローティングピル「報告」→ モーダル（バグ/意見/わからない + テキスト + 写真）→ Firestore `beta_feedback` → Slack通知 |
-| ~~ワンショット撮影~~ | ~~P0~~ | **実装済み** — `usePhotoPicker` → `addReview` → `reportParked` で写真1枚がライダーノート+スポット鮮度更新 |
-| ~~ライダーノート~~ | ~~P1~~ | **実装済み** — SpotDetailSheet写真表示 + RiderScreen写真ギャラリー（`fetchUserPhotos`） |
-| コールドスタート対策 | P1 | **未着手（#135）** — 「知ってるのにない」離脱防止。データ拡充 + チュートリアル後ツールチップ |
-| 警察ガイドデータ取り込み | P1 | **未着手（#136）** — PDFスキャン→OCR→ジオコーディング→Firestore投入 |
+| コールドスタート対策 | P1 | **未着手（#180）** — 「知ってるのにない」離脱防止。最寄り距離表示 + チュートリアル後ツールチップ |
 | 看板OCR | P1 | **保留** — コスト考慮。管理画面で人力入力に変更 |
 
 ---
@@ -625,32 +592,7 @@ eas update --branch preview
 
 | Issue | 内容 | 状態 |
 |-------|------|------|
-| ~~#91~~ | ~~写真ピッキング共通ユーティリティ化~~ | **完了** — `src/utils/photoPicker.ts` |
-| ~~#92~~ | ~~カラー定数の一元化~~ | **完了** — `Colors` export、14ファイル統合 |
-| ~~#93~~ | ~~TypeScript any型の排除~~ | **完了** — UserSpotRow型付け等 |
-| #94 | アクセシビリティラベル追加 | 未完了（P2） |
-| — | ~~haversineMeters 4ファイル重複~~ | **完了** — `src/utils/distance.ts` に集約 |
-| — | ~~migration.ts 残骸~~ | **完了** — `src/firebase/migration.ts` 削除（未参照） |
-| — | ~~.env.example 未作成~~ | **完了** — `.env.example` 追加 |
-| — | ~~エラー握り潰し（空catch）~~ | **完了** — `captureError` 適用、reportParked/reportDeparted は例外伝播に変更 |
-| — | ~~geohash 0件で全件取得フォールバック~~ | **完了** — geohash成功時は0件でもそのまま返す |
-| — | ~~allSpotsRaw 無限蓄積~~ | **完了** — 500件上限+遠方自動除外 |
-| — | ~~SpotPin 再レンダー過多~~ | **完了** — React.memo 適用 |
-| — | ~~setTimeout リーク（MapScreen 4箇所）~~ | **完了** — ref管理+アンマウント時cleanup |
-| — | ~~キーボードアニメーション死コード~~ | **完了** — kbOffset/overlayOpacity 削除（JSX未使用） |
-| — | ~~RiderScreen モーダル依存リロード~~ | **完了** — useEffect依存からfavModalOpen/spotsModalOpen除去 |
-| — | ~~LiveFeed タイマーリーク~~ | **完了** — 再帰setTimeout ref管理+cleanup |
-| — | ~~allSpots 毎レンダーフィルタリング~~ | **完了** — useMemo化 |
-| — | ~~GPS 5秒ポーリング~~ | **完了** — 15秒/30m間隔に緩和 |
-| — | ~~NotificationsScreen FlatList未最適化~~ | **完了** — removeClippedSubviews/windowSize/maxToRenderPerBatch |
-| — | ~~SpotDetailSheet 連打で並行リクエスト~~ | **完了** — staleガードで前リクエスト結果を無視 |
-| — | ~~Firestore キャッシュ無制限~~ | **完了** — 50MB上限設定 |
-| — | ~~console.warn 本番残留~~ | **完了** — captureError に統一 |
-| — | ~~fetchReviews 無制限取得~~ | **完了** — limit(30) 追加 |
-| ~~#124~~ | ~~ProximityCard taggingフェーズ~~ | **完了** — photo→thanks直結。タグ選択廃止 |
-| ~~#125~~ | ~~corrections理由選択の導線~~ | **完了** — 「停められなかった」で即記録+alternatives表示。理由は任意 |
-| ~~#126~~ | ~~インパクトメッセージ不正確~~ | **完了** — 「M人に届いた」削除、足跡数のみ表示 |
-| ~~#127~~ | ~~通知文言「助かりました」~~ | **完了** — 「N人が見た」に変更。善意の押し付け排除 |
+| #94 | アクセシビリティラベル追加（WCAG 2.1 AA） | 未完了（P2） |
 
 ---
 

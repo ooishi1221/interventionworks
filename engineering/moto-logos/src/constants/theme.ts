@@ -15,7 +15,7 @@ export const Colors = {
   sheet:         '#1C1C1E',        // ボトムシート・モーダル背景
   surface:       '#1C1C1E',        // sheet と同値（Settings / Notifications 等）
   card:          '#1C1C1E',        // 一次カード背景
-  cardElevated:  '#2C2C2E',        // 二次カード（SpotDetailSheet / ProximityContextCard）
+  cardElevated:  '#2C2C2E',        // 二次カード（SpotDetailSheet 等）
 
   // ── テキスト ──────────────────────────────────────
   text:          '#F2F2F7',
