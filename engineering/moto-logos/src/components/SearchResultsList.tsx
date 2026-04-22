@@ -5,13 +5,14 @@
  * - エリアサマリーモード（テキスト検索後: 「渋谷 — N件」+ ×クリア）
  * - スポットタップ → onSpotPress
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
+  LayoutAnimation,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ParkingPin } from '../types';
@@ -37,14 +38,19 @@ interface Props {
   areaName?: string | null;
   onSpotPress?: (spot: ParkingPin) => void;
   onClear?: () => void;
+  /** 案内中バナー表示時に下にずらす追加オフセット */
+  topOffset?: number;
 }
 
-export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Props) {
+export function SearchResultsList({ items, areaName, onSpotPress, onClear, topOffset }: Props) {
   const tutorial = useTutorial();
   const firstCardRef = useRef<View>(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // アイテムが変わったら展開に戻す（新しい検索結果）
+  useEffect(() => { setCollapsed(false); }, [items]);
 
   // チュートリアル explore-result で最初のカードを target として登録。
-  // onLayout → measureInWindow で render 完了直後の正確な座標を取得。
   useEffect(() => {
     if (!tutorial.active || tutorial.currentStep.id !== 'explore-result') return;
     if (items.length === 0) return;
@@ -52,40 +58,48 @@ export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Pro
       firstCardRef.current?.measureInWindow((x, y, w, h) => {
         if (w > 0 && h > 0) {
           tutorial.registerTarget('search-result-card', {
-            x: x - 4,
-            y: y - 4,
-            w: w + 8,
-            h: h + 8,
-            borderRadius: 14,
+            x: x - 4, y: y - 4, w: w + 8, h: h + 8, borderRadius: 14,
           });
         }
       });
     };
-    // レイアウト確定のためマイクロウェイト
     const t1 = setTimeout(register, 100);
-    const t2 = setTimeout(register, 400); // 念のため再測定
+    const t2 = setTimeout(register, 400);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [tutorial.active, tutorial.currentStep.id, items.length]);
 
   if (items.length === 0) return null;
 
+  const toggleCollapse = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsed((prev) => !prev);
+  };
+
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, topOffset ? { top: (Platform.OS === 'ios' ? 60 : 40) + topOffset } : undefined]} pointerEvents="box-none">
       <View style={styles.card}>
-        {/* ヘッダー */}
-        <View style={styles.header}>
-          {areaName ? (
-            <Text style={styles.areaName} numberOfLines={1}>{areaName}</Text>
-          ) : (
-            <Text style={styles.title}>近くのスポット</Text>
-          )}
+        {/* ヘッダー（タップで折り畳み） */}
+        <TouchableOpacity style={styles.header} onPress={toggleCollapse} activeOpacity={0.7}>
+          <View style={styles.headerLeft}>
+            {areaName ? (
+              <Text style={styles.areaName} numberOfLines={1}>{areaName}</Text>
+            ) : (
+              <Text style={styles.title}>近くのスポット</Text>
+            )}
+            <Text style={styles.countBadge}>{items.length}件</Text>
+            <Ionicons
+              name={collapsed ? 'chevron-down' : 'chevron-up'}
+              size={14}
+              color={C.sub}
+            />
+          </View>
           <TouchableOpacity onPress={onClear} style={styles.clearBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="close" size={14} color={C.sub} />
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
 
-        {/* リスト */}
-        {items.map((item, idx) => {
+        {/* リスト（折り畳み時は非表示） */}
+        {!collapsed && items.map((item, idx) => {
           const { spot } = item;
           const price = spot.isFree ? '無料' : spot.priceInfo ? spot.priceInfo : spot.pricePerHour ? `¥${spot.pricePerHour}/h` : null;
           const cap = spot.capacity ? `${spot.capacity}台` : null;
@@ -97,7 +111,6 @@ export function SearchResultsList({ items, areaName, onSpotPress, onClear }: Pro
               onPress={() => onSpotPress?.(spot)}
               activeOpacity={0.7}
               onLayout={idx === 0 ? () => {
-                // onLayout 発火でも再測定 (maps が非同期で動く場合のラグ対策)
                 if (tutorial.active && tutorial.currentStep.id === 'explore-result') {
                   firstCardRef.current?.measureInWindow((x, y, w, h) => {
                     if (w > 0 && h > 0) {
@@ -160,6 +173,12 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     marginBottom: 2,
   },
+  headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   title: {
     color: C.sub,
     fontSize: 12,
@@ -169,7 +188,12 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 13,
     fontWeight: '700',
-    flex: 1,
+    flexShrink: 1,
+  },
+  countBadge: {
+    color: C.sub,
+    fontSize: 11,
+    fontWeight: '600',
   },
   clearBtn: {
     width: 28,
