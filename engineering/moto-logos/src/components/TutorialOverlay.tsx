@@ -102,10 +102,8 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
 
   const handleSetupComplete = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // フェードアウト→次のステップ（TutorialGuideに引き継ぎ）
-    Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
-      tutorial.advanceTutorial();
-    });
+    // フェードアウトなしで即遷移（TutorialGuide の暗幕が引き継ぐので暗転を維持）
+    tutorial.advanceTutorial();
   };
 
   const handleComplete = () => {
@@ -188,7 +186,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
             <Ionicons name="map" size={48} color="#FF9F0A" />
             <View style={{ height: 20 }} />
             <Text style={styles.heroText}>
-              ワンショットを撮るほど{'\n'}地図が育つ。
+              ワンショットが足跡を刻む。{'\n'}足跡が誰かの地図になる。
             </Text>
             <View style={{ height: 48 }} />
             <Animated.View style={[styles.primaryBtnGreen, { transform: [{ scale: pulseScale }] }]}>

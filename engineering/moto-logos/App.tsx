@@ -25,7 +25,7 @@ import { TutorialGuide } from './src/components/TutorialGuide';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { UserProvider } from './src/contexts/UserContext';
 import { UserBlocksProvider } from './src/contexts/UserBlocksContext';
-import { TutorialProvider, useTutorial } from './src/contexts/TutorialContext';
+import { TutorialProvider, useTutorial, DUMMY_SPOT } from './src/contexts/TutorialContext';
 import { initSentry, setSentryUser, sentryWrap, captureError } from './src/utils/sentry';
 import { ensureAnonymousAuth } from './src/firebase/config';
 import { setupNotificationHandler, registerForPushNotifications } from './src/utils/push-notifications';
@@ -46,7 +46,7 @@ import { ParkingPin, UserCC } from './src/types';
 import type { CenterButtonContext } from './src/types/centerButton';
 import { getFirstVehicle, getFootprintCount } from './src/db/database';
 import { checkAndCleanupStaleGeofence } from './src/utils/geofenceService';
-import { LogBox } from 'react-native';
+import { LogBox, StatusBar as RNStatusBar } from 'react-native';
 import { Text as RNText } from 'react-native';
 
 // ── チュートリアル: ワンショットボタンのターゲット登録 ──
@@ -88,8 +88,8 @@ function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
     <TouchableOpacity
       style={{
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 60 : 40,
-        right: 14,
+        top: Platform.OS === 'ios' ? 64 : 48,
+        right: 16,
         zIndex: 10000,
         backgroundColor: 'rgba(0,0,0,0.72)',
         borderRadius: 18,
@@ -105,6 +105,34 @@ function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
       <RNText style={{ color: '#C7C7CC', fontSize: 13, fontWeight: '600', letterSpacing: 0.2 }}>スキップ</RNText>
     </TouchableOpacity>
   );
+}
+
+// ── チュートリアルステップ制御（タブ切替・バナー制御） ──
+function TutorialStepController({ setTab, setCenterCtx }: {
+  setTab: (tab: Tab) => void;
+  setCenterCtx: React.Dispatch<React.SetStateAction<CenterButtonContext>>;
+}) {
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (!tutorial.active) return;
+    // explore-banner: バナーを模擬表示（暗幕薄めで実物を見せる）
+    if (tutorial.isStep('explore-banner')) {
+      setCenterCtx((prev) => ({
+        ...prev,
+        activeNavName: DUMMY_SPOT.name,
+        activeNavSpot: DUMMY_SPOT,
+      }));
+    }
+    // scene-oneshot: バナーを消す
+    if (tutorial.isStep('scene-oneshot')) {
+      setCenterCtx((prev) => ({ ...prev, activeNavName: undefined, activeNavSpot: undefined }));
+    }
+    // scene-presence: バナーも確実にクリア
+    if (tutorial.isStep('scene-presence')) {
+      setCenterCtx((prev) => ({ ...prev, activeNavName: undefined, activeNavSpot: undefined }));
+    }
+  }, [tutorial.active, tutorial.stepIndex]);
+  return null;
 }
 
 // アプリ起動時に Sentry を初期化（最速で呼ぶ）
@@ -419,6 +447,7 @@ function App() {
         <UserBlocksProvider>
         <GestureHandlerRootView style={styles.root}>
         <TutorialProvider>
+          <TutorialStepController setTab={setTab} setCenterCtx={setCenterCtx} />
           <StatusBar style="light" />
 
           <View style={styles.content}>
@@ -721,6 +750,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
+    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0,
   },
   navBanner: {
     flexDirection: 'row',

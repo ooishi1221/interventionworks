@@ -19,13 +19,33 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTutorial, type TargetRect } from '../contexts/TutorialContext';
 import { FRESHNESS_STYLE, type SpotFreshness } from '../utils/freshness';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const PADDING = 8; // ターゲット周囲のパディング
+const PADDING = 10; // ターゲット周囲のパディング（ズレ吸収のため余裕をもたせる）
 const SAFE_MARGIN = 20; // チュートリアルカード共通の左右セーフマージン (>= 16dp)
+
+// ── 浮遊アニメーション付き「タップして次へ」 ─────────────
+function FloatingTapHint() {
+  const float = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: -4, duration: 1200, useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, [float]);
+  return (
+    <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }, { transform: [{ translateY: float }] }]}>
+      <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '500' }}>タップして次へ</Text>
+      <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
+    </Animated.View>
+  );
+}
 
 // ─── StepFadeIn ───────────────────────────────────────
 // 各ステップでの content fade-in。stepIndex を key にして使うことで、
@@ -104,7 +124,7 @@ export function TutorialGuide() {
   useEffect(() => {
     if (active && phase === 'complete') {
       setFadingToComplete(true);
-      Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 700, useNativeDriver: true }).start(() => {
         setFadingToComplete(false);
       });
     }
@@ -141,7 +161,7 @@ export function TutorialGuide() {
         clearInterval(timer);
         forceRender(v => v + 1);
       }
-    }, 200);
+    }, 100);
     return () => clearInterval(timer);
   }, [active, stepIndex, currentStep.target, getTarget]);
 
@@ -149,8 +169,8 @@ export function TutorialGuide() {
   // exiting中はフェードアウトのため表示を維持
   if ((!active && !exiting) || phase === 'setup') return null;
   if (phase === 'complete' && !fadingToComplete) return null;
-  // セレモニー演出中はOneshotCeremonyが全面を担当
-  if (currentStep.id === 'presence-ceremony') return null;
+  // セレモニー演出中は全面OneshotCeremonyが担当
+  if (currentStep.id === 'oneshot-ceremony') return null;
 
   // complete フェーズへのフェードアウト中: 暗幕のみ表示
   if (phase === 'complete' && fadingToComplete) {
@@ -167,6 +187,105 @@ export function TutorialGuide() {
     // tap-target の場合は暗幕タップでは進まない
   };
 
+  // ── 案内中バナー説明（customUI: 'explore-banner'）— 薄暗幕でバナー+ピン見せる＋ハイライト枠 ──
+  if (currentStep.customUI === 'explore-banner') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.exploreBannerOverlay, { opacity: fadeAnim }]}>
+          {/* バナーのハイライト枠 */}
+          <View style={styles.bannerFrame} />
+          <StepFadeIn key={`banner-${stepIndex}`} style={styles.centerCard}>
+            <Text style={styles.instructionText}>{currentStep.instruction}</Text>
+            <FloatingTapHint />
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  // ── 到着フロー画像（customUI: 'explore-flow'）────
+  if (currentStep.customUI === 'explore-flow') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
+          <StepFadeIn key={`flow-${stepIndex}`} style={styles.centerCard}>
+            <Text style={styles.instructionText}>通知をタップすると{'\n'}スポットカードが開きます</Text>
+            <View style={styles.flowSteps}>
+              <View style={styles.flowStep}>
+                <View style={styles.flowIcon}><Ionicons name="location" size={22} color="#FF6B00" /></View>
+                <Text style={styles.flowLabel}>通知タップ</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
+              <View style={styles.flowStep}>
+                <View style={styles.flowIcon}><Ionicons name="camera" size={22} color="#FF6B00" /></View>
+                <Text style={styles.flowLabel}>ワンショット</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
+              <View style={styles.flowStep}>
+                <View style={styles.flowIcon}><Ionicons name="pulse" size={22} color="#FFD60A" /></View>
+                <Text style={styles.flowLabel}>気配更新</Text>
+              </View>
+            </View>
+            <Text style={[styles.instructionText, { fontSize: 14, color: '#AEAEB2' }]}>写真1枚で足跡を刻み{'\n'}スポットの気配が更新されます</Text>
+            <FloatingTapHint />
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  // ── 到着通知説明（customUI: 'explore-notify'）── モック通知カード付き
+  if (currentStep.customUI === 'explore-notify') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
+          <StepFadeIn key={`notify-${stepIndex}`} style={styles.centerCard}>
+            <Text style={styles.instructionText}>目的地の500m圏内に入ると{'\n'}通知が届きます</Text>
+            {/* モック通知カード */}
+            <View style={styles.mockNotif}>
+              <View style={styles.mockNotifRow}>
+                <View style={styles.mockNotifIcon}>
+                  <Ionicons name="location" size={16} color="#FF6B00" />
+                </View>
+                <Text style={styles.mockNotifApp}>Moto-Logos</Text>
+                <Text style={styles.mockNotifTime}>今</Text>
+              </View>
+              <Text style={styles.mockNotifTitle}>東京駅八重洲口バイク駐車場に着いた？</Text>
+              <Text style={styles.mockNotifBody}>バイクの場所、残しとく？</Text>
+            </View>
+            <Text style={[styles.instructionText, { fontSize: 14, color: '#AEAEB2' }]}>通知をタップするとスポットカードが開きます</Text>
+            <FloatingTapHint />
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  // ── 新規登録説明（customUI: 'newspot-explain'）── フッターモック付き
+  if (currentStep.customUI === 'newspot-explain') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
+          <StepFadeIn key={`newspot-${stepIndex}`} style={styles.centerCard}>
+            <Text style={styles.instructionText}>近くにスポットがない場合{'\n'}フッターのボタンが ＋ に変わります</Text>
+            {/* フッターモック */}
+            <View style={styles.mockFooterBar}>
+              <Ionicons name="home-outline" size={24} color="#8E8E93" />
+              <Ionicons name="search-outline" size={24} color="#8E8E93" />
+              <View style={styles.mockPlusBtn}>
+                <Ionicons name="add" size={28} color="#fff" />
+              </View>
+              <Ionicons name="person-outline" size={24} color="#8E8E93" />
+              <Ionicons name="settings-outline" size={24} color="#8E8E93" />
+            </View>
+            <Text style={styles.instructionText}>タップで写真を1枚撮るだけで{'\n'}その場に新しいスポットが生まれます</Text>
+            <FloatingTapHint />
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
   // ── 気配の説明パネル（customUI: 'presence-intro'） ────────
   if (currentStep.customUI === 'presence-intro') {
     return (
@@ -180,10 +299,7 @@ export function TutorialGuide() {
                 <PresenceRow key={row.level} index={i} {...row} />
               ))}
             </View>
-            <View style={styles.tapHintRow}>
-              <Text style={styles.tapHint}>タップして次へ</Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-            </View>
+            <FloatingTapHint />
           </StepFadeIn>
         </Animated.View>
       </TouchableWithoutFeedback>
@@ -198,10 +314,7 @@ export function TutorialGuide() {
           <StepFadeIn key={`scene-${stepIndex}`} delay={200} style={styles.sceneInner}>
             <Ionicons name={(currentStep.sceneIcon ?? 'compass-outline') as keyof typeof Ionicons.glyphMap} size={48} color="#FF9F0A" />
             <Text style={styles.sceneTitle}>{currentStep.sceneTitle}</Text>
-            <View style={styles.tapHintRow}>
-              <Text style={styles.tapHint}>タップして次へ</Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-            </View>
+            <FloatingTapHint />
           </StepFadeIn>
         </Animated.View>
       </TouchableWithoutFeedback>
@@ -218,18 +331,15 @@ export function TutorialGuide() {
     );
   }
 
-  // ── ターゲットなし + tap-anywhere: どこタップしても次へ
+  // ── ターゲットなし + tap-anywhere: どこタップしても次へ（テキストは下部固定）
   if (!target) {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
           {currentStep.instruction ? (
-            <StepFadeIn key={`tap-anywhere-${stepIndex}`} style={styles.floatingCard}>
+            <StepFadeIn key={`tap-anywhere-${stepIndex}`} style={styles.centerCard}>
               <Text style={styles.instructionText}>{currentStep.instruction}</Text>
-              <View style={styles.tapHintRow}>
-                <Text style={styles.tapHint}>タップして次へ</Text>
-                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-              </View>
+              <FloatingTapHint />
             </StepFadeIn>
           ) : null}
         </Animated.View>
@@ -257,19 +367,7 @@ export function TutorialGuide() {
     borderRadius: (target.borderRadius ?? 0) + PADDING / 2,
   };
 
-  // 指示テキストの位置: 「ターゲット未測定」時の floatingCard と位置を揃えるため、
-  // 画面下部に固定（top: undefined / bottom 指定）。ターゲット周辺にせり出す動的配置だと、
-  // 測定前後でメッセージが瞬間移動して読めなくなる。
-  // ターゲットが画面下部 (タブバー / FAB) にある場合のみ、メッセージを上に逃がす。
-  const SAFE_TOP = Platform.OS === 'ios' ? 60 : 40;
-  const SAFE_BOTTOM = Platform.OS === 'ios' ? 140 : 110;
-  const FIXED_BOTTOM = Platform.OS === 'ios' ? 140 : 110;
-  const targetNearBottom = hole.y + hole.h > SCREEN_H - 200;
-  const CARD_HEIGHT_EST = 90;
-  const instructionTop = targetNearBottom
-    ? Math.max(SAFE_TOP, hole.y - CARD_HEIGHT_EST - 24)
-    : undefined;
-  const instructionBottom = targetNearBottom ? undefined : FIXED_BOTTOM;
+  // 指示テキストの位置: 常に画面中央
 
   return (
     <Animated.View
@@ -329,13 +427,10 @@ export function TutorialGuide() {
 
       {/* ── 指示テキスト ─────────────────────────────── */}
       {currentStep.instruction ? (
-        <StepFadeIn key={`spot-instr-${stepIndex}`} style={[styles.instructionCard, { top: instructionTop, bottom: instructionBottom }]}>
+        <StepFadeIn key={`spot-instr-${stepIndex}`} style={styles.spotlightCard}>
           <Text style={styles.instructionText}>{currentStep.instruction}</Text>
           {currentStep.waitFor === 'tap-anywhere' && (
-            <View style={styles.tapHintRow}>
-              <Text style={styles.tapHint}>タップして次へ</Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-            </View>
+            <FloatingTapHint />
           )}
         </StepFadeIn>
       ) : null}
@@ -399,7 +494,7 @@ const styles = StyleSheet.create({
   },
   sceneOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    backgroundColor: 'rgba(0,0,0,0.95)',
     zIndex: 9998,
     alignItems: 'center',
     justifyContent: 'center',
@@ -412,11 +507,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.5,
   },
-  fullOverlayClear: {
+  exploreBannerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.01)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     zIndex: 9998,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SAFE_MARGIN,
+  },
+  bannerFrame: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 67 : 44,
+    left: 14,
+    right: 14,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF9F0A',
+    ...Platform.select({
+      ios: { shadowColor: '#FF9F0A', shadowOffset: { width: 0, height: 0 }, shadowRadius: 10, shadowOpacity: 0.7 },
+      default: {},
+    }),
+  },
+  fullOverlayClear: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    zIndex: 9998,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SAFE_MARGIN,
   },
   fullOverlayLight: {
     ...StyleSheet.absoluteFillObject,
@@ -439,29 +558,19 @@ const styles = StyleSheet.create({
     // elevation除去（Android重い）
     backgroundColor: 'rgba(255,159,10,0.08)',
   },
-  floatingCard: {
-    marginHorizontal: SAFE_MARGIN,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  instructionCard: {
-    position: 'absolute',
-    left: SAFE_MARGIN,
-    right: SAFE_MARGIN,
+  centerCard: {
+    width: '100%',
     maxWidth: SCREEN_W - SAFE_MARGIN * 2,
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.80)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 8,
+    gap: 14,
+  },
+  spotlightCard: {
+    position: 'absolute',
+    top: SCREEN_H * 0.38,
+    left: SAFE_MARGIN,
+    right: SAFE_MARGIN,
+    alignItems: 'center',
+    gap: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.15)',
   },
@@ -477,11 +586,14 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   instructionText: {
-    color: '#F2F2F7',
-    fontSize: 17,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 28,
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   tapHintRow: {
     flexDirection: 'row',
@@ -537,5 +649,97 @@ const styles = StyleSheet.create({
     color: '#9A9A9E',
     fontSize: 11,
     marginTop: 1,
+  },
+  // ── フローステップ ─────────────────────────────
+  flowSteps: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginVertical: 12,
+  },
+  flowStep: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  flowIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  flowLabel: {
+    color: '#AEAEB2',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // ── モック通知カード ────────────────────────────
+  mockNotif: {
+    width: '100%',
+    backgroundColor: 'rgba(60,60,67,0.9)',
+    borderRadius: 16,
+    padding: 14,
+    marginVertical: 8,
+  },
+  mockNotifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  mockNotifIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  mockNotifApp: {
+    color: '#8E8E93',
+    fontSize: 12,
+    flex: 1,
+  },
+  mockNotifTime: {
+    color: '#8E8E93',
+    fontSize: 12,
+  },
+  mockNotifTitle: {
+    color: '#F2F2F7',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  mockNotifBody: {
+    color: '#AEAEB2',
+    fontSize: 14,
+  },
+  // ── モックフッター ─────────────────────────────
+  mockFooterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+    backgroundColor: 'rgba(28,28,30,0.95)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginVertical: 8,
+  },
+  mockPlusBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
   },
 });

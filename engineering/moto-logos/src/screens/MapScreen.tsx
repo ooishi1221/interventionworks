@@ -38,7 +38,7 @@ import { haversineMeters } from '../utils/distance';
 import { useUser } from '../contexts/UserContext';
 import { SearchOverlay, SearchResult } from '../components/SearchOverlay';
 import { SearchResultsList } from '../components/SearchResultsList';
-import { useTutorial, TUTORIAL_NEARBY_RESULTS, TUTORIAL_SEARCH_RESULTS, DUMMY_SPOT, DUMMY_UNTOUCHED_SPOT } from '../contexts/TutorialContext';
+import { useTutorial, TUTORIAL_NEARBY_RESULTS, DUMMY_SPOT } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
 import { getNavigationTarget } from '../utils/navigationState';
@@ -373,16 +373,11 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
-    // チュートリアル: セレモニー完了で気配の変化を見せる
-    if (tutorial.isStep('presence-ceremony')) {
-      // 詳細シートを再オープンしてゲージが silent → live に変わったことを見せる
-      // 少し遅らせて演出効果を高める
-      setTimeout(() => {
-        selectSpotWithOffset(tutorial.dummyUntouchedSpot);
-      }, 250);
-      tutorial.advanceTutorial();
+    // チュートリアル: セレモニー完了で次へ
+    if (tutorial.isStep('oneshot-ceremony')) {
+      tutorial.advanceTutorial(); // → oneshot-result
       pendingCardSpotRef.current = null;
-      return; // チュートリアル中は通知プロンプト発火しない
+      return;
     }
     // 実ワンショット完了: 該当スポットのカードを再オープン
     const spotToReopen = pendingCardSpotRef.current;
@@ -539,23 +534,10 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
     },
     triggerOneShot: () => {
-      if (tutorial.isStep('presence-camera')) {
-        // 気配セクション: 未踏ダミーをワンショット → silent → live に変化
-        const asset = Image.resolveAssetSource(require('../../assets/tutorial-parking.jpg'));
-        setCeremony({ photoUri: asset.uri, spotName: DUMMY_UNTOUCHED_SPOT.name, footprintCount: 1 });
-        tutorial.markUntouchedConfirmed(); // ピン色変化トリガー
-        tutorial.advanceTutorial(); // → presence-ceremony
-        return;
-      }
       quickReportRef.current();
     },
     searchNearby: doSearchNearby,
     openTextSearch: () => {
-      if (tutorial.isStep('explore-search')) {
-        setSearchVisible(true); // SearchOverlayを実際に開いて人気エリアを見せる
-        tutorial.advanceTutorial();
-        return;
-      }
       setSearchVisible(true);
     },
     selectAndShowSpot: (spot: ParkingPin) => {
@@ -912,12 +894,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const allSpots = useMemo(() => {
     const base = filterByCC(allSpotsRaw, userCC);
     if (!tutorial.active) return base;
-    // 気配フェーズ中は未踏ダミーも追加（presence-show-untouched 以降ずっと表示）
-    const showUntouched = tutorial.phase === 'presence';
-    return showUntouched
-      ? [tutorial.dummySpot, tutorial.dummyUntouchedSpot, ...base]
-      : [tutorial.dummySpot, ...base];
-  }, [allSpotsRaw, userCC, tutorial.active, tutorial.phase, tutorial.dummySpot, tutorial.dummyUntouchedSpot]);
+    // チュートリアル中はダミースポットを注入
+    return [tutorial.dummySpot, ...base];
+  }, [allSpotsRaw, userCC, tutorial.active, tutorial.dummySpot]);
 
   // 座標→気配ルックアップ（クラスタ集約用）
   const coordFreshnessMap = useMemo(() => {
@@ -1055,44 +1034,39 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     if (tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
     }
-    // explore-search: シートと検索結果を閉じてサーチタブを露出
+    // explore-banner: シートを閉じてバナー+ピンを見せる + ピンをオレンジに
+    if (tutorial.isStep('explore-banner')) {
+      setSelected(null);
+      setSearchResults([]);
+      setNavTargetId(tutorial.dummySpot.id);
+    }
+    // explore-search: サーチタブ説明（SearchOverlayも確実に閉じる）
     if (tutorial.isStep('explore-search')) {
       setSelected(null);
       setSearchResults([]);
-    }
-    // explore-search-result: SearchOverlay閉じて上野ダミー3件を注入 + 地図移動
-    if (tutorial.isStep('explore-search-result')) {
       setSearchVisible(false);
-      setSearchResults(TUTORIAL_SEARCH_RESULTS);
-      setSearchAreaName('上野');
-      mapRef.current?.animateToRegion({
-        latitude: 35.7134, longitude: 139.7770,
-        latitudeDelta: 0.015, longitudeDelta: 0.015,
-      }, 1400);
     }
-    // scene-presence: 検索結果を閉じて地図を見せる + 未踏ダミー位置に寄せる
+    // scene-oneshot 以降: ピンオレンジ解除 + SearchOverlay確実に閉じ
+    if (tutorial.isStep('scene-oneshot')) {
+      setNavTargetId(null);
+      setSelected(null);
+      setSearchVisible(false);
+    }
+    // oneshot-do: ダミースポットカードを自動表示 → ワンショットボタンをスポットライト
+    if (tutorial.isStep('oneshot-do')) {
+      if (!selected) {
+        setTimeout(() => selectSpotWithOffset(tutorial.dummySpot), 800);
+      }
+    }
+    // oneshot-result 以降: シートを閉じる
+    if (tutorial.isStep('oneshot-result') || tutorial.isStep('scene-newspot') || tutorial.isStep('newspot-explain') || tutorial.isStep('newspot-ai')) {
+      setSelected(null);
+    }
+    // scene-presence: 検索結果を閉じて地図を見せる
     if (tutorial.isStep('scene-presence')) {
       setSelected(null);
       setSearchResults([]);
     }
-    // presence-show-untouched: 未踏ダミー位置にカメラを寄せる + カードを自動オープン
-    // → silent ゲージが見える状態でユーザーに「これが silent」を体感させる
-    if (tutorial.isStep('presence-show-untouched')) {
-      mapRef.current?.animateToRegion({
-        latitude: DUMMY_UNTOUCHED_SPOT.latitude,
-        longitude: DUMMY_UNTOUCHED_SPOT.longitude,
-        latitudeDelta: 0.006,
-        longitudeDelta: 0.006,
-      }, 1400);
-      // 地図移動後にカードを開く（silent状態のゲージを見せる）
-      setTimeout(() => {
-        if (tutorial.isStep('presence-show-untouched')) {
-          selectSpotWithOffset(tutorial.dummyUntouchedSpot);
-        }
-      }, 1500);
-    }
-    // presence-camera: カードを開いたままワンショットボタンを露出
-    // ※ ここで setSelected しない（presence-show-untouched で開いたカードを維持）
   }, [tutorial.active, tutorial.stepIndex]);
 
   // チュートリアル: カメラボタンの位置登録は App.tsx のタブバー側に移動済み
@@ -1344,6 +1318,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         <SearchResultsList
           items={searchResults}
           areaName={searchAreaName}
+          topOffset={navTargetId ? 46 : 0}
           onSpotPress={(spot) => {
             // selectSpotWithOffset が地図オフセットと選択を同時に行う
             miscTimerRef.current = setTimeout(() => selectSpotWithOffset(spot), 400);

@@ -69,10 +69,7 @@ interface Props {
 
 export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
   const tutorial = useTutorial();
-  // チュートリアル中は文字入力させない（フォーカス・キーボードを抑制）
-  const tutorialMode = tutorial.active && (
-    tutorial.isStep('explore-search') || tutorial.isStep('explore-search-info')
-  );
+  const tutorialMode = false; // テキスト検索チュートリアルは廃止（v2で削除）
 
   const [text, setText] = useState('');
   const [searching, setSearching] = useState(false);
@@ -80,7 +77,6 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [autocompleteLoading, setAutocompleteLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const uenoChipRef = useRef<View>(null);
   const sessionTokenRef = useRef<string>(generateSessionToken());
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,24 +86,9 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
       setSuggestions([]);
       sessionTokenRef.current = generateSessionToken();
       loadHistory().then(setHistory);
-      // チュートリアル中はフォーカスせずキーボード抑制
-      if (!tutorialMode) {
-        setTimeout(() => inputRef.current?.focus(), 150);
-      }
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [visible, tutorialMode]);
-
-  // チュートリアル中: 上野チップを target として登録（スポットライト用）
-  useEffect(() => {
-    if (!visible || !tutorial.active || !tutorial.isStep('explore-search-info')) return;
-    const measure = () => {
-      uenoChipRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
-        if (w > 0) tutorial.registerTarget('hot-area-ueno', { x, y, w, h, borderRadius: 16 });
-      });
-    };
-    const t = setTimeout(measure, 350);
-    return () => clearTimeout(t);
-  }, [visible, tutorial.active, tutorial.stepIndex]);
+  }, [visible]);
 
   // デバウンス付き autocomplete
   useEffect(() => {
@@ -369,32 +350,17 @@ export function SearchOverlay({ visible, onDismiss, onSearchResult }: Props) {
             )}
             <Text style={s.chipSectionTitle}>人気エリア</Text>
             <View style={s.chipRow}>
-              {HOT_AREAS.map((area) => {
-                const isUeno = area === '上野';
-                const isUenoTarget = tutorialMode && isUeno;
-                const isOtherChipDisabled = tutorialMode && !isUeno; // 上野以外はチュートリアル中タップ無効化
-                return (
+              {HOT_AREAS.map((area) => (
                   <TouchableOpacity
                     key={area}
-                    ref={isUeno ? uenoChipRef : undefined}
-                    style={[s.chip, isOtherChipDisabled && { opacity: 0.4 }]}
-                    onPress={() => {
-                      if (tutorialMode && !isUeno) return; // 上野以外無視
-                      if (isUenoTarget) {
-                        // チュートリアル中の上野タップ: 検索処理をスキップして次ステップへ
-                        tutorial.advanceTutorial();
-                        return;
-                      }
-                      handleChipPress(area);
-                    }}
-                    activeOpacity={isOtherChipDisabled ? 1 : 0.7}
-                    disabled={isOtherChipDisabled}
+                    style={s.chip}
+                    onPress={() => handleChipPress(area)}
+                    activeOpacity={0.7}
                   >
                     <Ionicons name="flame-outline" size={14} color={C.accent} />
                     <Text style={s.chipText}>{area}</Text>
                   </TouchableOpacity>
-                );
-              })}
+              ))}
             </View>
           </ScrollView>
         )}

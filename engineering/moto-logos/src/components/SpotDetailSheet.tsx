@@ -28,6 +28,7 @@ import {
 
 // LayoutAnimation のグローバル有効化を廃止（Android全体のパフォーマンスに悪影響）
 import { Image } from 'expo-image';
+import { Image as RNImage } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Share } from 'react-native';
@@ -118,6 +119,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
   const tutorial = useTutorial();
   const { showPicker, PickerSheet } = usePhotoPicker();
   const navBtnRef = useRef<View>(null);
+  const oneshotBtnRef = useRef<View>(null);
   const sheetRef = useRef<View>(null);
 
   // チュートリアル: ターゲット位置登録
@@ -126,6 +128,9 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
     const measure = () => {
       navBtnRef.current?.measureInWindow((x, y, w, h) => {
         if (w > 0) tutorial.registerTarget('nav-button', { x, y, w, h, borderRadius: 14 });
+      });
+      oneshotBtnRef.current?.measureInWindow((x, y, w, h) => {
+        if (w > 0) tutorial.registerTarget('oneshot-button', { x, y, w, h, borderRadius: 14 });
       });
       sheetRef.current?.measureInWindow((x, y, w, h) => {
         if (w > 0) tutorial.registerTarget('detail-sheet', { x, y, w, h, borderRadius: 20 });
@@ -610,13 +615,8 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
               style={styles.footerNavBtn}
               onPress={() => {
                 if (tutorial.isStep('explore-nav')) {
-                  // チュートリアル: 実リンクを開かず説明テキストで進む
-                  Alert.alert(
-                    '案内開始',
-                    'Googleマップで案内が始まります',
-                    [{ text: 'OK', onPress: () => tutorial.advanceTutorial() }],
-                    { cancelable: false },
-                  );
+                  // チュートリアル: 実リンクを開かず、バナー表示して次へ
+                  tutorial.advanceTutorial(); // → explore-banner（TutorialStepControllerがバナーを模擬表示）
                   return;
                 }
                 handleNav();
@@ -630,8 +630,18 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
               <Text style={styles.footerNavText}>案内開始</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              ref={oneshotBtnRef}
               style={[styles.footerShotBtn, shotUploading && { opacity: 0.5 }]}
-              onPress={handleOneShot}
+              onPress={() => {
+                // チュートリアル: 到着ワンショットのデモ
+                if (tutorial.isStep('oneshot-do')) {
+                  const asset = RNImage.resolveAssetSource(require('../../assets/tutorial-bike.jpg'));
+                  onOneshotCeremony?.({ photoUri: asset.uri, spotName: spot.name });
+                  tutorial.advanceTutorial(); // → oneshot-ceremony（TutorialGuide非表示、セレモニー全画面）
+                  return;
+                }
+                handleOneShot();
+              }}
               activeOpacity={0.8}
               accessibilityLabel="ワンショット"
               accessibilityRole="button"
