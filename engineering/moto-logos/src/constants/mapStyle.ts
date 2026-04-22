@@ -3,9 +3,10 @@
  * アプリのダークUIに完全マッチするカスタムスタイル
  */
 export const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#1d1d1d' }] },
+  { elementType: 'geometry', stylers: [{ color: '#242424' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#8e8e93' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1d1d1d' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#242424' }] },
+  // ── 行政ラベル: 区名・市名を控えめに（Android で目立ちすぎる対策） ──
   {
     featureType: 'administrative',
     elementType: 'geometry',
@@ -14,32 +15,39 @@ export const DARK_MAP_STYLE = [
   {
     featureType: 'administrative.country',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#636366' }],
+    stylers: [{ color: '#4a4a4e' }],
+  },
+  {
+    featureType: 'administrative.province',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' as const }],
   },
   {
     featureType: 'administrative.locality',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#aeaeb2' }],
+    stylers: [{ color: '#636366' }],
   },
   {
+    featureType: 'administrative.neighborhood',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' as const }],
+  },
+  // ── POI: ラベル非表示（公園のジオメトリだけ残す） ──
+  {
     featureType: 'poi',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#636366' }],
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' as const }],
   },
   {
     featureType: 'poi.park',
     elementType: 'geometry',
     stylers: [{ color: '#1a2e1a' }],
   },
-  {
-    featureType: 'poi.park',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#3a5a3a' }],
-  },
+  // ── 道路 ──
   {
     featureType: 'road',
     elementType: 'geometry',
-    stylers: [{ color: '#2c2c2e' }],
+    stylers: [{ color: '#333336' }],
   },
   {
     featureType: 'road',
@@ -49,7 +57,12 @@ export const DARK_MAP_STYLE = [
   {
     featureType: 'road',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#8e8e93' }],
+    stylers: [{ color: '#636366' }],
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' as const }],
   },
   {
     featureType: 'road.highway',
@@ -64,8 +77,9 @@ export const DARK_MAP_STYLE = [
   {
     featureType: 'road.highway',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#aeaeb2' }],
+    stylers: [{ color: '#8e8e93' }],
   },
+  // ── 交通 ──
   {
     featureType: 'transit',
     elementType: 'geometry',
@@ -74,8 +88,9 @@ export const DARK_MAP_STYLE = [
   {
     featureType: 'transit.station',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#636366' }],
+    stylers: [{ color: '#4a4a4e' }],
   },
+  // ── 水域 ──
   {
     featureType: 'water',
     elementType: 'geometry',

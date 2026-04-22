@@ -103,17 +103,22 @@ const SpotPin = React.memo(function SpotPin({
   const isHighlighted = fresh === 'live';
 
   if (wide) {
-    // 広域ズーム: 小ドット
+    // 広域ズーム: 小ドット（Android は白フチを薄くして密集時のノイズを抑制）
+    const dotBorder = Platform.OS === 'ios'
+      ? { borderWidth: 2, borderColor: '#fff' }
+      : { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' };
+    const silentBorder = Platform.OS === 'ios'
+      ? { borderWidth: 2, borderColor: '#9A9A9E' }
+      : { borderWidth: 1.5, borderColor: 'rgba(154,154,158,0.5)' };
     return (
       <View
         style={[
           styles.pinDot,
           isSilent
-            ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#9A9A9E' }
+            ? { backgroundColor: 'transparent', ...silentBorder }
             : {
                 backgroundColor: color,
-                borderWidth: 2,
-                borderColor: '#fff',
+                ...dotBorder,
                 ...(isHighlighted ? styles.glow : null),
               },
         ]}
@@ -1620,15 +1625,19 @@ const styles = StyleSheet.create({
   // ── クラスター（円 + 気配カラー + 3段階サイズ） ─────────
   clusterBase: {
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3 },
-      default: {},
+      ios: {
+        borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3,
+      },
+      default: {
+        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)',
+      },
     }),
   } as const,
-  clusterSm: { width: 30, height: 30, borderRadius: 15 } as const,
-  clusterMd: { width: 38, height: 38, borderRadius: 19 } as const,
-  clusterLg: { width: 46, height: 46, borderRadius: 23 } as const,
+  clusterSm: { width: 28, height: 28, borderRadius: 14 } as const,
+  clusterMd: { width: 34, height: 34, borderRadius: 17 } as const,
+  clusterLg: { width: 42, height: 42, borderRadius: 21 } as const,
   clusterText: {
     fontSize: 12, fontWeight: '800' as const,
   },
