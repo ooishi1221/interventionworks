@@ -192,8 +192,11 @@ export function TutorialGuide() {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.exploreBannerOverlay, { opacity: fadeAnim }]}>
-          {/* バナーのハイライト枠 */}
-          <View style={styles.bannerFrame} />
+          {/* バナーのハイライト枠（パルスグロー付き） */}
+          <Animated.View style={[styles.bannerFrame, {
+            opacity: pulseAnim,
+            transform: [{ scale: pulseAnim.interpolate({ inputRange: [0.5, 1], outputRange: [1.0, 1.03] }) }],
+          }]} />
           <StepFadeIn key={`banner-${stepIndex}`} style={styles.centerCard}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
             <FloatingTapHint />

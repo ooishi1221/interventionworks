@@ -326,6 +326,16 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const currentStep = STEPS[stepIndex] ?? STEPS[0];
   const phase = active ? currentStep.phase : 'inactive';
 
+  // ステップ切替時に古いターゲット矩形をクリア（render中に実行）
+  // シートが閉じた後も前回の測定値が残り、次のステップで古い位置にスポットライトが
+  // 一瞬表示される問題を防ぐ。コンポーネントが再測定して registerTarget を呼ぶまで
+  // TutorialGuide は「ターゲット待ち」の軽い暗幕のみ表示する。
+  const prevStepRef = useRef(stepIndex);
+  if (prevStepRef.current !== stepIndex) {
+    prevStepRef.current = stepIndex;
+    targets.current = {};
+  }
+
   // ターゲット登録
   const registerTarget = useCallback((id: string, rect: TargetRect) => {
     targets.current[id] = rect;
