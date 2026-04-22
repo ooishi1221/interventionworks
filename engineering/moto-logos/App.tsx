@@ -115,7 +115,7 @@ function TutorialStepController({ setTab, setCenterCtx }: {
   const tutorial = useTutorial();
   useEffect(() => {
     if (!tutorial.active) return;
-    // explore-banner: バナーを模擬表示（暗幕薄めで実物を見せる）
+    // B-5: explore-banner: バナーを模擬表示（暗幕薄めで実物を見せる）
     if (tutorial.isStep('explore-banner')) {
       setCenterCtx((prev) => ({
         ...prev,
@@ -123,11 +123,11 @@ function TutorialStepController({ setTab, setCenterCtx }: {
         activeNavSpot: DUMMY_SPOT,
       }));
     }
-    // scene-oneshot: バナーを消す
-    if (tutorial.isStep('scene-oneshot')) {
+    // C: scene-arrive: バナーを消す
+    if (tutorial.isStep('scene-arrive')) {
       setCenterCtx((prev) => ({ ...prev, activeNavName: undefined, activeNavSpot: undefined }));
     }
-    // scene-presence: バナーも確実にクリア
+    // E: scene-presence: バナーも確実にクリア
     if (tutorial.isStep('scene-presence')) {
       setCenterCtx((prev) => ({ ...prev, activeNavName: undefined, activeNavSpot: undefined }));
     }

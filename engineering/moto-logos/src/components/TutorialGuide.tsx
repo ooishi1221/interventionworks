@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { useTutorial, type TargetRect } from '../contexts/TutorialContext';
+import { useTutorial, type TargetRect, DUMMY_SPOT } from '../contexts/TutorialContext';
 import { FRESHNESS_STYLE, type SpotFreshness } from '../utils/freshness';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -170,7 +170,7 @@ export function TutorialGuide() {
   if ((!active && !exiting) || phase === 'setup') return null;
   if (phase === 'complete' && !fadingToComplete) return null;
   // セレモニー演出中は全面OneshotCeremonyが担当
-  if (currentStep.id === 'oneshot-ceremony') return null;
+  if (currentStep.id === 'arrive-ceremony' || currentStep.id === 'newspot-ceremony') return null;
 
   // complete フェーズへのフェードアウト中: 暗幕のみ表示
   if (phase === 'complete' && fadingToComplete) {
@@ -203,44 +203,44 @@ export function TutorialGuide() {
     );
   }
 
-  // ── 到着フロー画像（customUI: 'explore-flow'）────
-  if (currentStep.customUI === 'explore-flow') {
+  // ── B-4: 確認カード（customUI: 'explore-nav-confirm'）── モックナビモーダル + テキスト
+  if (currentStep.customUI === 'explore-nav-confirm') {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
-          <StepFadeIn key={`flow-${stepIndex}`} style={styles.centerCard}>
-            <Text style={styles.instructionText}>通知をタップすると{'\n'}スポットカードが開きます</Text>
-            <View style={styles.flowSteps}>
-              <View style={styles.flowStep}>
-                <View style={styles.flowIcon}><Ionicons name="location" size={22} color="#FF6B00" /></View>
-                <Text style={styles.flowLabel}>通知タップ</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
-              <View style={styles.flowStep}>
-                <View style={styles.flowIcon}><Ionicons name="camera" size={22} color="#FF6B00" /></View>
-                <Text style={styles.flowLabel}>ワンショット</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
-              <View style={styles.flowStep}>
-                <View style={styles.flowIcon}><Ionicons name="pulse" size={22} color="#FFD60A" /></View>
-                <Text style={styles.flowLabel}>気配更新</Text>
-              </View>
-            </View>
-            <Text style={[styles.instructionText, { fontSize: 14, color: '#AEAEB2' }]}>写真1枚で足跡を刻み{'\n'}スポットの気配が更新されます</Text>
-            <FloatingTapHint />
+        <Animated.View style={[styles.navConfirmOverlay, { opacity: fadeAnim }]}>
+          {/* 上部テキスト */}
+          <StepFadeIn key={`nav-confirm-${stepIndex}`} style={styles.navConfirmTextWrap}>
+            <Text style={styles.instructionText}>住所をコピーで{'\n'}好きなナビアプリを使用することもできます</Text>
           </StepFadeIn>
+          {/* モックナビモーダル（実物と同じデザイン） */}
+          <StepFadeIn key={`nav-modal-${stepIndex}`} delay={200} style={styles.mockNavModal}>
+            <Text style={styles.mockNavTitle}>案内開始</Text>
+            <Text style={styles.mockNavSub} numberOfLines={2}>{DUMMY_SPOT.name}</Text>
+            <View style={styles.mockNavOption}>
+              <Ionicons name="navigate-circle" size={22} color="#0A84FF" />
+              <Text style={styles.mockNavOptionText}>Googleマップ</Text>
+            </View>
+            <View style={styles.mockNavOption}>
+              <Ionicons name="copy-outline" size={22} color="#8E8E93" />
+              <Text style={styles.mockNavOptionText}>住所をコピー</Text>
+            </View>
+            <View style={styles.mockNavCancel}>
+              <Text style={styles.mockNavCancelText}>キャンセル</Text>
+            </View>
+          </StepFadeIn>
+          <FloatingTapHint />
         </Animated.View>
       </TouchableWithoutFeedback>
     );
   }
 
-  // ── 到着通知説明（customUI: 'explore-notify'）── モック通知カード付き
-  if (currentStep.customUI === 'explore-notify') {
+  // ── C-2: 到着通知（customUI: 'arrive-notify'）── モック通知カード（タップで次へ）
+  if (currentStep.customUI === 'arrive-notify') {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
           <StepFadeIn key={`notify-${stepIndex}`} style={styles.centerCard}>
-            <Text style={styles.instructionText}>目的地の500m圏内に入ると{'\n'}通知が届きます</Text>
+            <Text style={styles.instructionText}>通知カードをタップしてみましょう</Text>
             {/* モック通知カード */}
             <View style={styles.mockNotif}>
               <View style={styles.mockNotifRow}>
@@ -253,7 +253,6 @@ export function TutorialGuide() {
               <Text style={styles.mockNotifTitle}>東京駅八重洲口バイク駐車場に着いた？</Text>
               <Text style={styles.mockNotifBody}>バイクの場所、残しとく？</Text>
             </View>
-            <Text style={[styles.instructionText, { fontSize: 14, color: '#AEAEB2' }]}>通知をタップするとスポットカードが開きます</Text>
             <FloatingTapHint />
           </StepFadeIn>
         </Animated.View>
@@ -261,13 +260,28 @@ export function TutorialGuide() {
     );
   }
 
-  // ── 新規登録説明（customUI: 'newspot-explain'）── フッターモック付き
+  // ── C-4b: 気配の色変更を見せる（customUI: 'arrive-result'）── 薄暗幕でスポットカード見せる
+  if (currentStep.customUI === 'arrive-result') {
+    return (
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
+        <Animated.View style={[styles.arriveResultOverlay, { opacity: fadeAnim }]}>
+          <StepFadeIn key={`arrive-result-${stepIndex}`} style={styles.arriveResultCard}>
+            <Text style={styles.instructionText}>足跡を刻みました</Text>
+            <Text style={[styles.instructionText, { fontSize: 15, color: '#AEAEB2', marginTop: -4 }]}>スポットの気配と情報が更新されます</Text>
+            <FloatingTapHint />
+          </StepFadeIn>
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  // ── D-1: 新規登録説明（customUI: 'newspot-explain'）── フッターモック付き
   if (currentStep.customUI === 'newspot-explain') {
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.fullOverlayClear, { opacity: fadeAnim }]}>
           <StepFadeIn key={`newspot-${stepIndex}`} style={styles.centerCard}>
-            <Text style={styles.instructionText}>近くにスポットがない場合{'\n'}フッターのボタンが ＋ に変わります</Text>
+            <Text style={styles.instructionText}>停めた場所にスポット表示がない場合{'\n'}ボタンが ＋ に変わります</Text>
             {/* フッターモック */}
             <View style={styles.mockFooterBar}>
               <Ionicons name="home-outline" size={24} color="#8E8E93" />
@@ -278,7 +292,6 @@ export function TutorialGuide() {
               <Ionicons name="person-outline" size={24} color="#8E8E93" />
               <Ionicons name="settings-outline" size={24} color="#8E8E93" />
             </View>
-            <Text style={styles.instructionText}>タップで写真を1枚撮るだけで{'\n'}その場に新しいスポットが生まれます</Text>
             <FloatingTapHint />
           </StepFadeIn>
         </Animated.View>
@@ -650,32 +663,56 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
-  // ── フローステップ ─────────────────────────────
-  flowSteps: {
+  // ── B-4: モックナビモーダル ─────────────────────
+  navConfirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 9998,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  navConfirmTextWrap: {
+    position: 'absolute',
+    top: SCREEN_H * 0.25,
+    left: SAFE_MARGIN,
+    right: SAFE_MARGIN,
+    alignItems: 'center',
+  },
+  mockNavModal: {
+    width: '100%',
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 36,
+  },
+  mockNavTitle: { color: '#F2F2F7', fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  mockNavSub: { color: '#8E8E93', fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 16 },
+  mockNavOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginVertical: 12,
+    gap: 12,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#333333',
   },
-  flowStep: {
+  mockNavOptionText: { color: '#F2F2F7', fontSize: 16 },
+  mockNavCancel: { marginTop: 12, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: '#2C2C2E' },
+  mockNavCancelText: { color: '#8E8E93', fontSize: 15, fontWeight: '600' },
+  // ── C-4b: arrive-result（スポットカード + 気配変更） ──
+  arriveResultOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.40)',
+    zIndex: 9998,
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    gap: 6,
+    paddingHorizontal: SAFE_MARGIN,
   },
-  flowIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+  arriveResultCard: {
+    marginTop: SCREEN_H * 0.15,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  flowLabel: {
-    color: '#AEAEB2',
-    fontSize: 11,
-    fontWeight: '600',
+    gap: 8,
   },
   // ── モック通知カード ────────────────────────────
   mockNotif: {

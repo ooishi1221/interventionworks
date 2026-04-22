@@ -634,10 +634,10 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
               style={[styles.footerShotBtn, shotUploading && { opacity: 0.5 }]}
               onPress={() => {
                 // チュートリアル: 到着ワンショットのデモ
-                if (tutorial.isStep('oneshot-do')) {
+                if (tutorial.isStep('arrive-oneshot')) {
                   const asset = RNImage.resolveAssetSource(require('../../assets/tutorial-bike.jpg'));
                   onOneshotCeremony?.({ photoUri: asset.uri, spotName: spot.name });
-                  tutorial.advanceTutorial(); // → oneshot-ceremony（TutorialGuide非表示、セレモニー全画面）
+                  tutorial.advanceTutorial(); // → arrive-ceremony（TutorialGuide非表示、セレモニー全画面）
                   return;
                 }
                 handleOneShot();

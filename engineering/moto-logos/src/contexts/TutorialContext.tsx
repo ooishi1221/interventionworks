@@ -1,7 +1,7 @@
 /**
- * TutorialContext — インタラクティブガイドツアーの状態管理 v2
+ * TutorialContext — インタラクティブガイドツアーの状態管理 v3
  *
- * ワンショット構造改革対応: 探す → 案内バナー → 到着通知 → ワンショット → 新規登録 → 気配 → ライダーノート
+ * CEO仕様準拠: A排気量 → B探す → C到着 → D新規登録 → E気配 → 完了
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ParkingPin } from '../types';
@@ -15,6 +15,14 @@ type WaitFor =
   | 'tap-target'   // 指定ターゲットのタップ（コンポーネントが報告）
   | 'tap-anywhere'  // 画面どこでもタップ
   | 'auto';         // 自動遷移（delay後）
+
+export type CustomUI =
+  | 'presence-intro'
+  | 'explore-banner'
+  | 'explore-nav-confirm'
+  | 'arrive-notify'
+  | 'arrive-result'
+  | 'newspot-explain';
 
 export interface StepDef {
   id: string;
@@ -30,14 +38,14 @@ export interface StepDef {
   /** シーンアイコン（Ionicons名） */
   sceneIcon?: string;
   /** 特殊カスタムUI識別子（TutorialGuide が分岐に使う） */
-  customUI?: 'presence-intro' | 'explore-banner' | 'explore-notify' | 'explore-flow' | 'newspot-explain';
+  customUI?: CustomUI;
 }
 
 export const STEPS: StepDef[] = [
-  // ── Phase: Setup ──────────────────────────────────
+  // ── A. セットアップ（排気量選択）──────────────────
   { id: 'setup', phase: 'setup', instruction: '', target: null, waitFor: 'button' },
 
-  // ── Scene 1: バイク置き場を探す ───────────────────
+  // ── B. バイク置き場を探す ─────────────────────────
   {
     id: 'scene-explore',
     phase: 'explore',
@@ -47,13 +55,15 @@ export const STEPS: StepDef[] = [
     sceneTitle: 'バイク置き場を探す',
     sceneIcon: 'compass-outline',
   },
+  // B-1: FABスポットライト
   {
     id: 'explore-nearby',
     phase: 'explore',
-    instruction: 'ここをタップすると\n現在の位置から近いバイク置き場を\n3つ探します',
+    instruction: 'タップすると\n現在の位置から近いバイク置き場を探します',
     target: 'nearby-fab',
     waitFor: 'tap-target',
   },
+  // B-2: カードスポットライト
   {
     id: 'explore-result',
     phase: 'explore',
@@ -61,82 +71,95 @@ export const STEPS: StepDef[] = [
     target: 'search-result-card',
     waitFor: 'tap-target',
   },
+  // B-3: 案内開始スポットライト
   {
     id: 'explore-nav',
     phase: 'explore',
-    instruction: '案内開始でGoogleマップに飛べます\nタップしてみましょう',
+    instruction: '案内開始でGoogleマップに遷移します\nタップしてみましょう',
     target: 'nav-button',
     waitFor: 'tap-target',
   },
-  // ── 案内中の説明（バナー+ピンをハイライト）────
+  // B-4: 確認カード（Googleマップ / 住所をコピー）+ テキスト
+  {
+    id: 'explore-nav-confirm',
+    phase: 'explore',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-anywhere',
+    customUI: 'explore-nav-confirm',
+  },
+  // B-5: 案内中バナー + ピンオレンジ
   {
     id: 'explore-banner',
     phase: 'explore',
-    instruction: '案内中はヘッダーにバナーが表示され\n目的地のピンもオレンジに光ります',
+    instruction: '案内中はヘッダーにバナーが表示されます',
     target: null,
     waitFor: 'tap-anywhere',
     customUI: 'explore-banner',
   },
-  // ── 到着通知（モックカード付き）────
-  {
-    id: 'explore-notify',
-    phase: 'explore',
-    instruction: '',
-    target: null,
-    waitFor: 'tap-anywhere',
-    customUI: 'explore-notify',
-  },
-  // ── 到着フロー画像（スポット表示→ワンショット→気配更新）────
-  {
-    id: 'explore-flow',
-    phase: 'explore',
-    instruction: '',
-    target: null,
-    waitFor: 'tap-anywhere',
-    customUI: 'explore-flow',
-  },
-  // ── サーチタブ説明（ターゲットなし。穴を開けると実タップが貫通して進行不能になる） ────
-  {
-    id: 'explore-search',
-    phase: 'explore',
-    instruction: 'サーチタブから\nエリア名や施設名でも検索できます',
-    target: null,
-    waitFor: 'tap-anywhere',
-  },
 
-  // ── Scene 2: ワンショットで足跡を刻む ─────────────
+  // ── C. 到着したら ─────────────────────────────────
   {
-    id: 'scene-oneshot',
+    id: 'scene-arrive',
     phase: 'arrival',
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
-    sceneTitle: 'ワンショットで足跡を刻む',
-    sceneIcon: 'camera-outline',
+    sceneTitle: '到着したら',
+    sceneIcon: 'flag-outline',
   },
+  // C-1: 500m通知の説明
   {
-    id: 'oneshot-do',
+    id: 'arrive-notify-explain',
+    phase: 'arrival',
+    instruction: '目的地の500m圏内に入ると\n通知が届きます',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  // C-2: モック通知カード（タップ可能）
+  {
+    id: 'arrive-notify',
+    phase: 'arrival',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-anywhere',
+    customUI: 'arrive-notify',
+  },
+  // C-3: ワンショットボタンスポットライト
+  {
+    id: 'arrive-oneshot',
     phase: 'arrival',
     instruction: 'ワンショットボタンをタップして\n足跡を刻みましょう',
     target: 'oneshot-button',
     waitFor: 'tap-target',
   },
+  // C-4a: セレモニー演出（TutorialGuide非表示）
   {
-    id: 'oneshot-ceremony',
+    id: 'arrive-ceremony',
     phase: 'arrival',
     instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
   },
+  // C-4b: スポットカード再表示 + 気配の色変更
   {
-    id: 'oneshot-result',
+    id: 'arrive-result',
     phase: 'arrival',
-    instruction: '足跡を刻みました！\nスポットの気配と情報が更新されます\n\nフッターの 📷 からも\n近くのスポットを更新できます',
+    instruction: '',
+    target: null,
+    waitFor: 'tap-anywhere',
+    customUI: 'arrive-result',
+  },
+  // C-5: AI自動更新の説明
+  {
+    id: 'arrive-ai',
+    phase: 'arrival',
+    instruction: '看板などをワンショットすると\n自動で情報が更新されます',
     target: null,
     waitFor: 'tap-anywhere',
   },
 
-  // ── Scene 3: 新しいスポットの登録 ─────────────────
+  // ── D. 新しいスポットの登録 ───────────────────────
   {
     id: 'scene-newspot',
     phase: 'arrival',
@@ -146,6 +169,7 @@ export const STEPS: StepDef[] = [
     sceneTitle: '新しいスポットの登録',
     sceneIcon: 'add-circle-outline',
   },
+  // D-1: ＋ボタンの説明（フッターモック付き）
   {
     id: 'newspot-explain',
     phase: 'arrival',
@@ -154,15 +178,32 @@ export const STEPS: StepDef[] = [
     waitFor: 'tap-anywhere',
     customUI: 'newspot-explain',
   },
+  // D-2: 実際にやってみよう
   {
-    id: 'newspot-ai',
+    id: 'newspot-prompt',
     phase: 'arrival',
-    instruction: '写真に写った看板や料金表から\nAIが情報を自動更新します\n\n※ 1日1回更新',
+    instruction: 'ワンショットするだけで\nその場に新しいスポットが登録されます\n\n実際にやってみましょう',
+    target: null,
+    waitFor: 'tap-anywhere',
+  },
+  // D-3a: ＋ボタンスポットライト
+  {
+    id: 'newspot-do',
+    phase: 'arrival',
+    instruction: '＋ ボタンをタップ',
+    target: 'camera-button',
+    waitFor: 'tap-target',
+  },
+  // D-3b: セレモニー演出（TutorialGuide非表示）
+  {
+    id: 'newspot-ceremony',
+    phase: 'arrival',
+    instruction: '',
     target: null,
     waitFor: 'tap-anywhere',
   },
 
-  // ── Scene 4: スポットの気配 ───────────────────────
+  // ── E. スポットの気配 ─────────────────────────────
   {
     id: 'scene-presence',
     phase: 'presence',
@@ -181,7 +222,7 @@ export const STEPS: StepDef[] = [
     customUI: 'presence-intro',
   },
 
-  // ── Phase: Complete ───────────────────────────────
+  // ── 完了 ──────────────────────────────────────────
   {
     id: 'complete',
     phase: 'complete',
@@ -192,6 +233,7 @@ export const STEPS: StepDef[] = [
 ];
 
 // ─── ダミースポット（チュートリアル用: 東京駅八重洲口） ──
+// 初期状態は "cold"（半年以上前）。C-4でセレモニー後に "live" に変化させて色変更を見せる
 export const DUMMY_SPOT: ParkingPin = {
   id: '_tutorial_spot_',
   name: '東京駅八重洲口バイク駐車場',
@@ -202,8 +244,8 @@ export const DUMMY_SPOT: ParkingPin = {
   capacity: 30,
   source: 'seed',
   address: '東京都中央区八重洲1丁目',
-  updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  lastConfirmedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // live状態
+  updatedAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+  lastConfirmedAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(), // cold状態
 };
 
 /** チュートリアル: 東京駅周辺の最寄り3件（FAB検索用） */
@@ -266,6 +308,8 @@ interface TutorialContextValue {
   finishTutorial: () => void;
   /** 特定ステップかチェック */
   isStep: (id: string) => boolean;
+  /** ダミースポットを "live" 状態にする（C-4 気配色変更デモ用） */
+  markDummyConfirmed: () => void;
 }
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
@@ -276,7 +320,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [exiting, setExiting] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const targets = useRef<Record<string, TargetRect>>({});
-  const [dummySpot] = useState<ParkingPin>(DUMMY_SPOT);
+  const [dummySpot, setDummySpot] = useState<ParkingPin>(DUMMY_SPOT);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentStep = STEPS[stepIndex] ?? STEPS[0];
@@ -327,7 +371,17 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const startTutorial = useCallback(() => {
     setStepIndex(0);
     setActive(true);
+    setDummySpot(DUMMY_SPOT); // cold状態にリセット
     targets.current = {};
+  }, []);
+
+  // C-4: セレモニー後にダミースポットを "live" に変化させる
+  const markDummyConfirmed = useCallback(() => {
+    setDummySpot((prev) => ({
+      ...prev,
+      lastConfirmedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
   }, []);
 
   const finishTutorial = useCallback(() => {
@@ -358,7 +412,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     startTutorial,
     finishTutorial,
     isStep,
-  }), [active, exiting, stepIndex, currentStep, phase, dummySpot, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep]);
+    markDummyConfirmed,
+  }), [active, exiting, stepIndex, currentStep, phase, dummySpot, registerTarget, getTarget, advanceTutorial, startTutorial, finishTutorial, isStep, markDummyConfirmed]);
 
   return (
     <TutorialContext.Provider value={value}>

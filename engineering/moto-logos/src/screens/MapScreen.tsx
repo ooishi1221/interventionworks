@@ -373,9 +373,16 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleCeremonyComplete = useCallback(() => {
     setCeremony(null);
-    // チュートリアル: セレモニー完了で次へ
-    if (tutorial.isStep('oneshot-ceremony')) {
-      tutorial.advanceTutorial(); // → oneshot-result
+    // チュートリアル C-4: セレモニー完了 → ダミースポットをliveにして次へ
+    if (tutorial.isStep('arrive-ceremony')) {
+      tutorial.markDummyConfirmed(); // cold → live
+      tutorial.advanceTutorial(); // → arrive-result
+      pendingCardSpotRef.current = null;
+      return;
+    }
+    // チュートリアル D-3: 新規登録セレモニー完了
+    if (tutorial.isStep('newspot-ceremony')) {
+      tutorial.advanceTutorial(); // → scene-presence
       pendingCardSpotRef.current = null;
       return;
     }
@@ -798,6 +805,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
   const handleQuickReport = async () => {
     if (reportLoading) return;
+
+    // チュートリアル D-3: ＋ボタンタップ → セレモニー直接発火（GPS/カメラ/Firestoreスキップ）
+    if (tutorial.isStep('newspot-do')) {
+      const asset = Image.resolveAssetSource(require('../../assets/tutorial-bike.jpg'));
+      handleOneshotCeremony({ photoUri: asset.uri, spotName: '新しいスポット' });
+      tutorial.advanceTutorial(); // → newspot-ceremony
+      return;
+    }
+
     try {
       // 1. GPS取得
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -1030,39 +1046,45 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   useEffect(() => {
     if (!tutorial.active) return;
 
-    // explore-nav: SpotDetailSheet 自動表示
+    // B-3: explore-nav: SpotDetailSheet 自動表示
     if (tutorial.isStep('explore-nav')) {
       if (!selected) setSelected(tutorial.dummySpot);
     }
-    // explore-banner: シートを閉じてバナー+ピンを見せる + ピンをオレンジに
+    // B-4: explore-nav-confirm: シートはそのまま（TutorialGuideがモックナビモーダルを表示）
+    // B-5: explore-banner: シートを閉じてバナー+ピンを見せる + ピンをオレンジに
     if (tutorial.isStep('explore-banner')) {
       setSelected(null);
       setSearchResults([]);
       setNavTargetId(tutorial.dummySpot.id);
     }
-    // explore-search: サーチタブ説明（SearchOverlayも確実に閉じる）
-    if (tutorial.isStep('explore-search')) {
-      setSelected(null);
-      setSearchResults([]);
-      setSearchVisible(false);
-    }
-    // scene-oneshot 以降: ピンオレンジ解除 + SearchOverlay確実に閉じ
-    if (tutorial.isStep('scene-oneshot')) {
+    // C: scene-arrive: ピンオレンジ解除 + SearchOverlay確実に閉じ
+    if (tutorial.isStep('scene-arrive')) {
       setNavTargetId(null);
       setSelected(null);
       setSearchVisible(false);
     }
-    // oneshot-do: ダミースポットカードを自動表示 → ワンショットボタンをスポットライト
-    if (tutorial.isStep('oneshot-do')) {
+    // C-1: arrive-notify-explain: シート閉じ状態を維持
+    // C-2: arrive-notify: シート閉じ状態を維持
+    // C-3: arrive-oneshot: ダミースポットカードを自動表示 → ワンショットボタンをスポットライト
+    if (tutorial.isStep('arrive-oneshot')) {
       if (!selected) {
         setTimeout(() => selectSpotWithOffset(tutorial.dummySpot), 800);
       }
     }
-    // oneshot-result 以降: シートを閉じる
-    if (tutorial.isStep('oneshot-result') || tutorial.isStep('scene-newspot') || tutorial.isStep('newspot-explain') || tutorial.isStep('newspot-ai')) {
+    // C-4b: arrive-result: セレモニー後にスポットカード再表示（気配がliveに変わっている）
+    if (tutorial.isStep('arrive-result')) {
+      setTimeout(() => selectSpotWithOffset(tutorial.dummySpot), 300);
+    }
+    // C-5: arrive-ai + D: シートを閉じる
+    if (tutorial.isStep('arrive-ai') || tutorial.isStep('scene-newspot') || tutorial.isStep('newspot-explain') || tutorial.isStep('newspot-prompt')) {
       setSelected(null);
     }
-    // scene-presence: 検索結果を閉じて地図を見せる
+    // D-3: newspot-do: シートを閉じた状態で中央＋ボタンをスポットライト
+    if (tutorial.isStep('newspot-do')) {
+      setSelected(null);
+    }
+    // D-3b: newspot-ceremony: シート閉じ状態を維持
+    // E: scene-presence: 検索結果を閉じて地図を見せる
     if (tutorial.isStep('scene-presence')) {
       setSelected(null);
       setSearchResults([]);

@@ -20,18 +20,18 @@ import {
   ScrollView,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { UserCC } from '../types';
 import { useTutorial } from '../contexts/TutorialContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 // ─── CC 選択肢 ──────────────────────────────────────
-const CC_OPTIONS: { value: UserCC; label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
-  { value: 50,   label: '50cc',  color: '#8E8E93', icon: 'moped' },
-  { value: 125,  label: '125cc', color: '#30D158', icon: 'scooter' },
-  { value: 400,  label: '400cc', color: '#0A84FF', icon: 'motorbike' },
-  { value: null,  label: '大型',  color: '#FF9F0A', icon: 'motorbike' },
+const CC_OPTIONS: { value: UserCC; label: string; color: string }[] = [
+  { value: 50,   label: '50cc',  color: '#8E8E93' },
+  { value: 125,  label: '125cc', color: '#30D158' },
+  { value: 400,  label: '400cc', color: '#0A84FF' },
+  { value: null,  label: '大型',  color: '#FF9F0A' },
 ];
 
 interface Props {
@@ -130,15 +130,15 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <MaterialCommunityIcons name="racing-helmet" size={48} color="#FF9F0A" />
+            <Ionicons name="footsteps-outline" size={48} color="#FF9F0A" />
             <View style={{ height: 16 }} />
             <Text style={styles.heroText}>
-              ライダーが作る{'\n'}ライダーのための駐輪場マップ。
+              ワンショットが足跡になる。{'\n'}足跡が誰かの地図になる。
             </Text>
 
             <View style={{ height: 28 }} />
 
-            <Text style={styles.ccLabel}>探したい排気量のバイクは？</Text>
+            <Text style={styles.ccLabel}>バイクの排気量は？</Text>
             <View style={{ height: 10 }} />
             <View style={styles.ccRow}>
               {CC_OPTIONS.map((opt) => {
@@ -150,11 +150,6 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
                     onPress={() => selectCC(opt.value)}
                     activeOpacity={0.7}
                   >
-                    <MaterialCommunityIcons
-                      name={opt.icon}
-                      size={20}
-                      color={selected ? opt.color : '#8E8E93'}
-                    />
                     <Text style={[styles.ccChipLabel, selected && { color: opt.color, fontWeight: '800' }]}>
                       {opt.label}
                     </Text>
@@ -189,7 +184,7 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
               ワンショットが足跡を刻む。{'\n'}足跡が誰かの地図になる。
             </Text>
             <View style={{ height: 48 }} />
-            <Animated.View style={[styles.primaryBtnGreen, { transform: [{ scale: pulseScale }] }]}>
+            <Animated.View style={[styles.primaryBtnOrange, { transform: [{ scale: pulseScale }] }]}>
               <Text style={styles.primaryBtnText}>さあはじめよう！</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </Animated.View>
@@ -239,9 +234,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 28,
     borderRadius: 24,
   },
-  primaryBtnGreen: {
+  primaryBtnOrange: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#30D158',
+    backgroundColor: '#FF6B00',
     paddingVertical: 14, paddingHorizontal: 28,
     borderRadius: 24,
   },
