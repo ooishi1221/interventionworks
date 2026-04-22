@@ -3,11 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './auth-provider';
-import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'ダッシュボード', icon: '📊' },
-  { href: '/moderation', label: 'モデレーション', icon: '🛡️', badge: true },
   { href: '/reports', label: '通報管理', icon: '🚩' },
   { href: '/freshness', label: '鮮度アラート', icon: '🕐' },
   { href: '/map-updates', label: '地図更新', icon: '🗺️' },
@@ -28,14 +26,6 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [pendingCount, setPendingCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/dashboard/stats')
-      .then((res) => res.json())
-      .then((data) => setPendingCount(data.pendingSpots))
-      .catch(() => {});
-  }, []);
 
   return (
     <aside className="w-60 min-h-screen bg-surface border-r border-border flex flex-col">
@@ -63,11 +53,6 @@ export function Sidebar() {
             >
               <span>{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              {item.badge && pendingCount != null && pendingCount > 0 && (
-                <span className="ml-auto text-xs font-medium bg-fresh-yellow/20 text-fresh-yellow px-1.5 py-0.5 rounded-full">
-                  {pendingCount}
-                </span>
-              )}
             </Link>
           );
         })}

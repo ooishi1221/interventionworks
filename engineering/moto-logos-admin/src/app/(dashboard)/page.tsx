@@ -274,30 +274,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 4: Top Areas & Moderation Queue */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+      {/* Row 4: Top Areas */}
+      <div className="mb-8">
         <div className="bg-card border border-border rounded-xl p-5">
           <h3 className="text-sm text-text-secondary mb-4">エリア別スポット数 Top 10</h3>
           <TopAreasTable areas={kpi?.topAreas} />
         </div>
-        <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-sm text-text-secondary mb-1">モデレーション処理速度</h3>
-          <p className="text-3xl font-bold font-[family-name:var(--font-inter)] mt-4">
-            {kpi?.moderationAvgDays != null
-              ? `${kpi.moderationAvgDays.toFixed(1)} 日`
-              : '--'}
-          </p>
-          <p className="text-xs text-text-secondary mt-2">
-            審査待ちスポットの平均処理日数
-          </p>
-        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatsCard label="スポット総数" value={stats?.totalSpots ?? 0} />
         <StatsCard label="ユーザー総数" value={stats?.totalUsers ?? 0} />
-        <StatsCard label="審査待ち" value={stats?.pendingSpots ?? 0} accent />
         <StatsCard label="レビュー総数" value={stats?.totalReviews ?? 0} />
       </div>
 

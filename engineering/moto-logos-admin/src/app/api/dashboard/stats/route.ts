@@ -7,17 +7,15 @@ export async function GET() {
   try {
     await requireAuth();
 
-    const [spotsCount, usersCount, pendingCount, reviewsCount] = await Promise.all([
+    const [spotsCount, usersCount, reviewsCount] = await Promise.all([
       adminDb.collection(COLLECTIONS.SPOTS).count().get(),
       adminDb.collection(COLLECTIONS.USERS).count().get(),
-      adminDb.collection(COLLECTIONS.SPOTS).where('status', '==', 'pending').count().get(),
       adminDb.collection(COLLECTIONS.REVIEWS).count().get(),
     ]);
 
     const stats: DashboardStats = {
       totalSpots: spotsCount.data().count,
       totalUsers: usersCount.data().count,
-      pendingSpots: pendingCount.data().count,
       totalReviews: reviewsCount.data().count,
     };
 

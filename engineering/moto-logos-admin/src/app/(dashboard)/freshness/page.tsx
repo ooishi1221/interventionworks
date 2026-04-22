@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/components/auth-provider';
 
 // ─────────────────────────────────────────────────────
@@ -66,6 +66,8 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 // ページコンポーネント
 // ─────────────────────────────────────────────────────
 
+type ModerationAction = 'approve' | 'reject' | 'delete';
+
 export default function FreshnessPage() {
   const { user } = useAuth();
   const [data, setData] = useState<FreshnessData | null>(null);
@@ -73,6 +75,10 @@ export default function FreshnessPage() {
   const [activeTab, setActiveTab] = useState<CategoryKey>('over6months');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [singleLoading, setSingleLoading] = useState<string | null>(null);
+  const [moderating, setModerating] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const canEdit = user?.role === 'super_admin' || user?.role === 'moderator';
 
@@ -123,6 +129,31 @@ export default function FreshnessPage() {
       }
     } finally {
       setSingleLoading(null);
+    }
+  };
+
+  // pending スポットの承認 / 却下 / 削除
+  const handleModerate = async (spotId: string, action: ModerationAction, reason?: string) => {
+    setModerating(spotId);
+    try {
+      const res = await fetch(`/api/spots/${spotId}/moderate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'エラーが発生しました');
+        return;
+      }
+
+      setRejectTarget(null);
+      setRejectReason('');
+      setDeleteTarget(null);
+      await fetchData();
+    } finally {
+      setModerating(null);
     }
   };
 
@@ -211,57 +242,137 @@ export default function FreshnessPage() {
                   className: 'bg-text-secondary/20 text-text-secondary',
                 };
                 const isPending = spot.status === 'pending';
+                const isBusy = moderating === spot.id;
 
                 return (
-                  <tr key={spot.id} className="border-b border-border/50 hover:bg-card/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{spot.name}</div>
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
-                      {spot.address || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
-                      {spot.updatedAt
-                        ? new Date(spot.updatedAt).toLocaleDateString('ja-JP')
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    {canEdit && (
+                  <Fragment key={spot.id}>
+                    <tr className="border-b border-border/50 hover:bg-card/50 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          {isPending ? (
-                            <span className="text-xs text-text-secondary">pending済み</span>
-                          ) : (
-                            <button
-                              onClick={() => handleSinglePending(spot.id)}
-                              disabled={singleLoading === spot.id}
-                              className="px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              {singleLoading === spot.id ? '処理中...' : 'pending化'}
-                            </button>
-                          )}
-                          <button
-                            onClick={async () => {
-                              const res = await fetch('/api/notifications/verify-spot', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ spotId: spot.id }),
-                              });
-                              const data = await res.json();
-                              alert(res.ok ? `確認依頼を${data.sentCount}件送信しました` : data.error);
-                            }}
-                            className="px-3 py-1.5 text-xs font-medium text-fresh-blue hover:bg-fresh-blue/10 rounded-lg transition-colors"
-                          >
-                            確認依頼
-                          </button>
-                        </div>
+                        <div className="font-medium">{spot.name}</div>
                       </td>
+                      <td className="px-4 py-3 text-text-secondary text-xs">
+                        {spot.address || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-text-secondary text-xs">
+                        {spot.updatedAt
+                          ? new Date(spot.updatedAt).toLocaleDateString('ja-JP')
+                          : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      </td>
+                      {canEdit && (
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            {isPending ? (
+                              <>
+                                <button
+                                  onClick={() => handleModerate(spot.id, 'approve')}
+                                  disabled={isBusy}
+                                  className="px-3 py-1.5 text-xs font-medium bg-success/15 text-success hover:bg-success/25 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  承認
+                                </button>
+                                <button
+                                  onClick={() => setRejectTarget(spot.id)}
+                                  disabled={isBusy}
+                                  className="px-3 py-1.5 text-xs font-medium bg-danger/15 text-danger hover:bg-danger/25 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  却下
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget(spot.id)}
+                                  disabled={isBusy}
+                                  className="px-3 py-1.5 text-xs font-medium bg-fresh-red/15 text-fresh-red hover:bg-fresh-red/25 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  削除
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleSinglePending(spot.id)}
+                                disabled={singleLoading === spot.id}
+                                className="px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {singleLoading === spot.id ? '処理中...' : 'pending化'}
+                              </button>
+                            )}
+                            <button
+                              onClick={async () => {
+                                const res = await fetch('/api/notifications/verify-spot', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ spotId: spot.id }),
+                                });
+                                const data = await res.json();
+                                alert(res.ok ? `確認依頼を${data.sentCount}件送信しました` : data.error);
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-fresh-blue hover:bg-fresh-blue/10 rounded-lg transition-colors"
+                            >
+                              確認依頼
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                    {canEdit && rejectTarget === spot.id && (
+                      <tr className="border-b border-border/50 bg-danger/5">
+                        <td colSpan={5} className="px-4 py-3">
+                          <label className="block text-xs text-text-secondary mb-1">却下理由（必須）</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="例: 恒久閉鎖を確認、重複..."
+                              className="flex-1 bg-surface border border-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-accent"
+                            />
+                            <button
+                              onClick={() => handleModerate(spot.id, 'reject', rejectReason)}
+                              disabled={!rejectReason.trim() || isBusy}
+                              className="px-3 py-1.5 text-xs font-medium bg-danger text-white hover:bg-danger/80 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              確定
+                            </button>
+                            <button
+                              onClick={() => { setRejectTarget(null); setRejectReason(''); }}
+                              className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground transition-colors"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </tr>
+                    {canEdit && deleteTarget === spot.id && (
+                      <tr className="border-b border-border/50 bg-fresh-red/5">
+                        <td colSpan={5} className="px-4 py-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs text-fresh-red">
+                              このスポットを完全に削除しますか？この操作は取り消せません。
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleModerate(spot.id, 'delete')}
+                                disabled={isBusy}
+                                className="px-3 py-1.5 text-xs font-medium bg-fresh-red text-white hover:bg-fresh-red/80 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                削除する
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(null)}
+                                className="px-3 py-1.5 text-xs text-text-secondary hover:text-foreground transition-colors"
+                              >
+                                取消
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })
             )}

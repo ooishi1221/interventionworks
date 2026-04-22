@@ -16,6 +16,15 @@ interface UserDetail {
   bannedBy?: string;
   createdAt: string;
   updatedAt: string;
+  lastActiveAt?: string;
+  launchCount?: number;
+  lastPlatform?: string;
+  lastDeviceModel?: string;
+  lastDeviceBrand?: string;
+  lastOsVersion?: string;
+  lastAppVersion?: string;
+  spotCount?: number;
+  photoCount?: number;
 }
 
 interface SpotItem {
@@ -64,6 +73,11 @@ export default function UserDetailPage() {
   const [notifySending, setNotifySending] = useState(false);
 
   const canEdit = admin?.role === 'super_admin' || admin?.role === 'moderator';
+  const canDelete = admin?.role === 'super_admin';
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -194,6 +208,29 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteReason.trim()) {
+      alert('削除理由を入力してください');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const params = new URLSearchParams({ reason: deleteReason.trim() });
+      const res = await fetch(`/api/users/${userId}?${params}`, { method: 'DELETE' });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || '削除に失敗しました');
+        return;
+      }
+
+      alert('ユーザーを削除しました');
+      router.push('/users');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleUnban = async () => {
     if (!confirm('このユーザーのBANを解除しますか？')) return;
     setProcessing(true);
@@ -272,7 +309,7 @@ export default function UserDetailPage() {
             </div>
           </div>
 
-          {/* BAN / UNBAN / 通知ボタン */}
+          {/* BAN / UNBAN / 通知 / 削除ボタン */}
           {canEdit && (
             <div className="flex gap-2">
               <button
@@ -299,12 +336,21 @@ export default function UserDetailPage() {
                   BAN
                 </button>
               )}
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={processing || deleting}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-fresh-red text-white hover:bg-fresh-red/80 disabled:opacity-50 transition-colors"
+                >
+                  削除
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {/* ステータス情報 */}
-        <div className="grid grid-cols-2 gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-card rounded-lg p-3">
             <p className="text-xs text-text-secondary mb-1">BANステータス</p>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${banBadge.className}`}>
@@ -316,6 +362,48 @@ export default function UserDetailPage() {
             <p className="text-sm">
               {userDetail.createdAt ? new Date(userDetail.createdAt).toLocaleDateString('ja-JP') : '-'}
             </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">最終ログイン</p>
+            <p className="text-sm">
+              {userDetail.lastActiveAt
+                ? new Date(userDetail.lastActiveAt).toLocaleString('ja-JP')
+                : '-'}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">起動回数</p>
+            <p className="text-sm font-[family-name:var(--font-inter)]">
+              {userDetail.launchCount ?? 0}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">スポット投稿</p>
+            <p className="text-sm font-[family-name:var(--font-inter)]">
+              {userDetail.spotCount ?? 0}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">写真投稿</p>
+            <p className="text-sm font-[family-name:var(--font-inter)]">
+              {userDetail.photoCount ?? 0}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">OS</p>
+            <p className="text-sm">
+              {userDetail.lastPlatform ?? '-'}
+              {userDetail.lastOsVersion ? ` / ${userDetail.lastOsVersion}` : ''}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-3">
+            <p className="text-xs text-text-secondary mb-1">端末 / アプリ</p>
+            <p className="text-sm truncate">
+              {userDetail.lastDeviceModel ?? '-'}
+            </p>
+            {userDetail.lastAppVersion && (
+              <p className="text-xs text-text-secondary mt-0.5">v{userDetail.lastAppVersion}</p>
+            )}
           </div>
         </div>
 
@@ -492,6 +580,50 @@ export default function UserDetailPage() {
                 className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-50 transition-colors"
               >
                 {notifySending ? '送信中...' : '送信'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除モーダル */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold mb-4 text-fresh-red">ユーザーを削除</h3>
+            <p className="text-sm text-text-secondary mb-4">
+              対象: <span className="text-foreground font-medium">{userDetail.displayName}</span>
+            </p>
+            <div className="mb-4 p-3 bg-fresh-red/10 border border-fresh-red/30 rounded-lg text-xs text-fresh-red">
+              Firestore の users ドキュメントと Firebase Auth アカウントを削除します。
+              投稿済みのスポット・レビューは残存（createdBy は残りますが匿名扱い）。この操作は取り消せません。
+            </div>
+
+            <label className="block text-sm text-text-secondary mb-1">削除理由（必須）</label>
+            <textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder="削除理由を入力..."
+              rows={3}
+              className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground resize-none focus:outline-none focus:border-accent mb-4"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteReason('');
+                }}
+                className="px-4 py-2 text-sm rounded-lg text-text-secondary hover:text-foreground transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting || !deleteReason.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-fresh-red text-white hover:bg-fresh-red/80 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? '削除中...' : '削除を実行'}
               </button>
             </div>
           </div>

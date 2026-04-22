@@ -5,6 +5,35 @@ import { requireAuth } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { COLLECTIONS, type UserResponse, type AdminRole, type BanStatus } from '@/lib/types';
 
+type SortKey = 'createdAt' | 'lastActiveAt' | 'launchCount' | 'spotCount' | 'photoCount';
+const SORT_KEYS: SortKey[] = ['createdAt', 'lastActiveAt', 'launchCount', 'spotCount', 'photoCount'];
+
+function mapUser(doc: FirebaseFirestore.QueryDocumentSnapshot): UserResponse {
+  const data = doc.data();
+  const user: UserResponse = {
+    id: doc.id,
+    displayName: data.displayName,
+    createdAt: data.createdAt?.toDate().toISOString() || '',
+    updatedAt: data.updatedAt?.toDate().toISOString() || '',
+  };
+  if (data.banStatus) user.banStatus = data.banStatus;
+  if (data.banReason) user.banReason = data.banReason;
+  if (data.bannedAt) user.bannedAt = data.bannedAt.toDate().toISOString();
+  if (data.banUntil !== undefined) {
+    user.banUntil = data.banUntil?.toDate().toISOString() || null;
+  }
+  if (data.lastActiveAt) user.lastActiveAt = data.lastActiveAt.toDate().toISOString();
+  if (typeof data.launchCount === 'number') user.launchCount = data.launchCount;
+  if (data.lastPlatform) user.lastPlatform = data.lastPlatform;
+  if (data.lastDeviceModel) user.lastDeviceModel = data.lastDeviceModel;
+  if (data.lastDeviceBrand) user.lastDeviceBrand = data.lastDeviceBrand;
+  if (data.lastOsVersion) user.lastOsVersion = data.lastOsVersion;
+  if (data.lastAppVersion) user.lastAppVersion = data.lastAppVersion;
+  if (typeof data.spotCount === 'number') user.spotCount = data.spotCount;
+  if (typeof data.photoCount === 'number') user.photoCount = data.photoCount;
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAuth();
@@ -14,13 +43,16 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const q = searchParams.get('q')?.trim().toLowerCase() || '';
     const banStatusFilter = searchParams.get('banStatus') as BanStatus | null;
+    const sortByParam = searchParams.get('sortBy') as SortKey | null;
+    const sortBy: SortKey = sortByParam && SORT_KEYS.includes(sortByParam) ? sortByParam : 'createdAt';
+    const order: 'asc' | 'desc' = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
     let query: FirebaseFirestore.Query = adminDb
       .collection(COLLECTIONS.USERS)
-      .orderBy('createdAt', 'desc');
+      .orderBy(sortBy, order);
 
-    // Firestore の where フィルタ（banStatus, rank）
-    if (banStatusFilter && ['active', 'suspended', 'banned'].includes(banStatusFilter)) {
+    // Firestore の where フィルタ（banStatus）。active は未設定ドキュメントも含めるため後段でフィルタ
+    if (banStatusFilter && banStatusFilter !== 'active' && ['suspended', 'banned'].includes(banStatusFilter)) {
       query = query.where('banStatus', '==', banStatusFilter);
     }
     if (cursor) {
@@ -37,7 +69,14 @@ export async function GET(request: NextRequest) {
 
     let filteredDocs = snapshot.docs;
 
-    // displayName の部分一致フィルタ（クエリ q がある場合）
+    // banStatus == 'active' のときは未設定ドキュメントも含めたいので別処理
+    if (banStatusFilter === 'active') {
+      filteredDocs = filteredDocs.filter((doc) => {
+        const data = doc.data();
+        return !data.banStatus || data.banStatus === 'active';
+      });
+    }
+
     if (q) {
       filteredDocs = filteredDocs.filter((doc) => {
         const name = (doc.data().displayName || '').toLowerCase();
@@ -45,58 +84,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // banStatus フィルタが 'active' の場合、banStatus フィールドが存在しないドキュメントも含める
-    // （banStatus 未設定 = active とみなす）
-    if (banStatusFilter === 'active') {
-      // Firestore の where で banStatus == 'active' としたが、
-      // 未設定ドキュメントは除外されるため、再度フィルタなしで取得
-      const allQuery = adminDb
-        .collection(COLLECTIONS.USERS)
-        .orderBy('createdAt', 'desc');
-      let activeQuery = allQuery;
-      if (cursor) {
-        const cursorDoc = await adminDb.collection(COLLECTIONS.USERS).doc(cursor).get();
-        if (cursorDoc.exists) {
-          activeQuery = activeQuery.startAfter(cursorDoc);
-        }
-      }
-
-      const allSnapshot = await activeQuery.limit(fetchLimit).get();
-      filteredDocs = allSnapshot.docs.filter((doc) => {
-        const data = doc.data();
-        const isActive = !data.banStatus || data.banStatus === 'active';
-        if (!isActive) return false;
-        if (q) {
-          const name = (data.displayName || '').toLowerCase();
-          return name.includes(q);
-        }
-        return true;
-      });
-    }
-
     const hasMore = filteredDocs.length > limit;
     const docs = hasMore ? filteredDocs.slice(0, limit) : filteredDocs;
 
-    const users: UserResponse[] = docs.map((doc) => {
-      const data = doc.data();
-      const user: UserResponse = {
-        id: doc.id,
-        displayName: data.displayName,
-        createdAt: data.createdAt?.toDate().toISOString() || '',
-        updatedAt: data.updatedAt?.toDate().toISOString() || '',
-      };
-      if (data.banStatus) user.banStatus = data.banStatus;
-      if (data.banReason) user.banReason = data.banReason;
-      if (data.bannedAt) user.bannedAt = data.bannedAt.toDate().toISOString();
-      if (data.banUntil !== undefined) {
-        user.banUntil = data.banUntil?.toDate().toISOString() || null;
-      }
-      return user;
-    });
+    const users: UserResponse[] = docs.map(mapUser);
 
     const nextCursor = hasMore ? docs[docs.length - 1].id : null;
 
-    return NextResponse.json({ users, nextCursor });
+    return NextResponse.json({ users, nextCursor, sortBy, order });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal error';
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;

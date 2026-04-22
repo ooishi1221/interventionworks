@@ -66,7 +66,6 @@ export async function GET() {
       spotsSnap,
       todaySpotsSnap,
       todayValidationsSnap,
-      moderationSnap,
     ] = await Promise.all([
       // 1. 過去30日間のアクティビティ
       adminDb
@@ -89,12 +88,6 @@ export async function GET() {
         .collection(COLLECTIONS.VALIDATIONS)
         .where('createdAt', '>=', todayStart)
         .where('createdAt', '<=', todayEnd)
-        .get(),
-
-      // 5. モデレーションログ: spot.update アクション
-      adminDb
-        .collection(COLLECTIONS.MODERATION_LOGS)
-        .where('action', '==', 'spot.update')
         .get(),
     ]);
 
@@ -260,42 +253,7 @@ export async function GET() {
     }
 
     // ─────────────────────────────────────────────────
-    // 7. Moderation Queue Time
-    // ─────────────────────────────────────────────────
-    let totalDays = 0;
-    let resolvedCount = 0;
-
-    for (const doc of moderationSnap.docs) {
-      const data = doc.data();
-      const prev = data.previousState as Record<string, unknown> | undefined;
-      const next = data.newState as Record<string, unknown> | undefined;
-
-      // Only count status transitions (e.g. pending → active or pending → closed)
-      if (
-        prev?.status === 'pending' &&
-        next?.status &&
-        next.status !== 'pending'
-      ) {
-        const createdAt = tsToDate(data.createdAt);
-        const prevUpdatedAt = tsToDate(prev.updatedAt as FirebaseFirestore.Timestamp | undefined);
-
-        if (createdAt && prevUpdatedAt) {
-          const diffMs = createdAt.getTime() - prevUpdatedAt.getTime();
-          const diffDays = diffMs / (1000 * 60 * 60 * 24);
-          if (diffDays >= 0) {
-            totalDays += diffDays;
-            resolvedCount++;
-          }
-        }
-      }
-    }
-
-    const moderationAvgDays = resolvedCount > 0
-      ? Math.round((totalDays / resolvedCount) * 100) / 100
-      : 0;
-
-    // ─────────────────────────────────────────────────
-    // 8. Geographic Coverage (Top 10 areas)
+    // 7. Geographic Coverage (Top 10 areas)
     // ─────────────────────────────────────────────────
     const topAreas = Array.from(areaCounts.entries())
       .map(([area, count]) => ({ area, count }))
@@ -335,7 +293,6 @@ export async function GET() {
       verificationRate,
       freshness: { fresh, stale, critical },
       temperatureDistribution,
-      moderationAvgDays,
       topAreas,
       reviewRate,
       photoAttachRate,

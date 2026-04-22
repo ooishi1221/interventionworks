@@ -20,10 +20,13 @@ import {
   writeBatch,
   Timestamp,
   GeoPoint,
+  increment,
   type DocumentData,
 } from 'firebase/firestore';
 import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { db, getFirebaseAuth } from './config';
 import { COLLECTIONS } from './firestoreTypes';
 import type { SpotCapacity, PhotoTag, HazardType, TheftAlertStatus } from './firestoreTypes';
@@ -273,6 +276,15 @@ export async function addUserSpotToFirestore(
     updatedAt: now, lastVerifiedAt: now, createdAt: now,
   });
   await setDoc(doc(db, COLLECTIONS.SPOTS, `user_${localId}`), data);
+
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (uid) {
+    await setDoc(
+      doc(db, COLLECTIONS.USERS, uid),
+      { spotCount: increment(1) },
+      { merge: true },
+    ).catch((e) => captureError(e, { context: 'increment_spot_count' }));
+  }
 }
 
 export async function deleteUserSpotFromFirestore(localId: number): Promise<void> {
@@ -500,6 +512,14 @@ export async function addReview(
     createdAt: now,
     updatedAt: now,
   }));
+
+  if (photoUrls.length > 0) {
+    await setDoc(
+      doc(db, COLLECTIONS.USERS, userId),
+      { photoCount: increment(photoUrls.length) },
+      { merge: true },
+    ).catch((e) => captureError(e, { context: 'increment_photo_count' }));
+  }
 }
 
 /** 自分の口コミを全件取得（spotName 付き） */
@@ -573,21 +593,37 @@ async function getCurrentUserId(): Promise<string> {
 }
 
 /**
- * アプリ起動時に 1日1回 Firestore へアクティビティを記録。
- * DAU/WAU/MAU の集計元データになる。
+ * アプリ起動時のアクティビティ記録。
+ * - `user_activity/{uid_YYYY-MM-DD}`: DAU/WAU/MAU 集計用（1日1件、setDoc で上書き）
+ * - `users/{uid}`: Admin 画面向けに最終ログイン・起動回数・端末情報を denormalize
  */
 export async function logActivity(): Promise<void> {
   try {
     const userId = await getCurrentUserId();
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const docId = `${userId}_${today}`;
+    const now = Timestamp.now();
 
     await setDoc(doc(db, COLLECTIONS.USER_ACTIVITY, docId), {
       userId,
       date: today,
       platform: Platform.OS,
-      lastActiveAt: Timestamp.now(),
+      lastActiveAt: now,
     });
+
+    await setDoc(
+      doc(db, COLLECTIONS.USERS, userId),
+      {
+        lastActiveAt: now,
+        launchCount: increment(1),
+        lastPlatform: Platform.OS,
+        lastDeviceModel: Device.modelName ?? null,
+        lastDeviceBrand: Device.brand ?? null,
+        lastOsVersion: Device.osVersion ?? null,
+        lastAppVersion: Constants.expoConfig?.version ?? null,
+      },
+      { merge: true },
+    );
   } catch (e) {
     captureError(e, { context: 'log_activity' });
   }

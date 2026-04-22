@@ -23,7 +23,8 @@
 - `badge_definitions`, `settings/point_rules` コレクションはコード参照なし。手動削除は任意（コスト影響なし）
 
 ### 維持
-- モデレーション・通報管理・セキュリティ・重複検出・監査ログはそのまま維持
+- 通報管理・セキュリティ・重複検出・監査ログはそのまま維持
+- モデレーションキュー（`/moderation`）は `/freshness` に統合して削除（2026-04-20）。pending スポットの承認/却下/削除は鮮度アラート画面から行う
 
 ## 技術スタック
 
@@ -76,12 +77,11 @@ Firebase Auth Custom Claims でロールを管理。
 | 画面 | パス | 概要 |
 |------|------|------|
 | ダッシュボード | `/` | KPIカード（DAU/WAU/MAU/スティッキネス/リテンション/足跡率/検証率）+ トレンドグラフ + 鮮度/温度分布 + エリアカバレッジ |
-| モデレーション | `/moderation` | 審査待ちスポットの承認/却下 |
 | 通報管理 | `/reports` | ユーザー通報の確認・対応 |
 | スポット管理 | `/spots` | CRUD + 一括操作 + CSV入出力 + 編集履歴リンク |
-| ユーザー管理 | `/users` | 一覧・検索・フィルタ・BAN管理 |
+| ユーザー管理 | `/users` | 一覧・検索・ソート（登録日/最終ログイン/起動回数/スポット数/写真数）・端末情報表示・BAN管理 |
 | ユーザー詳細 | `/users/[id]` | 投稿履歴・レビュー履歴・BAN/UNBAN・通知送信 |
-| 鮮度アラート | `/freshness` | 未更新スポット一覧 + 一括pending化 + スポット確認依頼通知 |
+| 鮮度アラート | `/freshness` | 未更新スポット一覧 + 一括pending化 + スポット確認依頼通知 + pending スポットの承認/却下/削除（旧モデレーションキューを統合） |
 | 重複検出 | `/duplicates` | 重複候補スポット一覧（50m以内 + 名称類似）+ マージ機能 |
 | セキュリティ | `/security` | 異常検知・複数アカウント・写真確認キュー・BAN解除申請（4タブ） |
 | 通知管理 | `/notifications` | お知らせ投稿・一覧・編集・削除・並び替え + 一斉通知・エリア別セグメント通知 |
@@ -96,13 +96,13 @@ Firebase Auth Custom Claims でロールを管理。
 
 | パス | 概要 |
 |------|------|
-| `/api/dashboard/stats` | スポット総数・ユーザー総数・審査待ち・レビュー総数 |
-| `/api/dashboard/kpi` | DAU/WAU/MAU + スティッキネス + リテンション + 足跡率 + 検証率 + 鮮度分布 + 温度分布 + エリアカバレッジ + モデレーション処理時間 |
+| `/api/dashboard/stats` | スポット総数・ユーザー総数・レビュー総数 |
+| `/api/dashboard/kpi` | DAU/WAU/MAU + スティッキネス + リテンション + 足跡率 + 検証率 + 鮮度分布 + 温度分布 + エリアカバレッジ |
 | `/api/dashboard/freshness` | 鮮度アラート（GET: カテゴリ別一覧 / POST: 一括pending化） |
 | `/api/audit-log` | モデレーション監査ログ（ページネーション + targetType/targetId フィルタ対応） |
 | `/api/spots` | スポット CRUD + bulk-status / bulk-update / export / import |
-| `/api/users` | ユーザー CRUD + 検索 + フィルタ（banStatus） |
-| `/api/users/[id]` | GET: 詳細取得 / PATCH: displayName 更新（監査ログ付き） |
+| `/api/users` | ユーザー CRUD + 検索 + フィルタ（banStatus）+ ソート（sortBy=createdAt/lastActiveAt/launchCount/spotCount/photoCount, order=asc/desc）。最終ログイン・起動回数・端末情報を返却 |
+| `/api/users/[id]` | GET: 詳細取得（起動回数・端末情報含む）/ PATCH: displayName 更新 / DELETE: ユーザー削除（super_admin 限定、Firestore + Auth 削除、関連スポット・レビューは残存） |
 | `/api/users/[id]/ban` | ユーザーBAN（一時停止/永久停止） |
 | `/api/users/[id]/unban` | BAN解除 |
 | `/api/reports` | 通報管理 + resolve |
