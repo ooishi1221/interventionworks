@@ -577,33 +577,40 @@ eas update --branch preview
 - `TutorialOverlay` (`src/components/TutorialOverlay.tsx`): セットアップ画面 + 完了画面
 - `TutorialGuide` (`src/components/TutorialGuide.tsx`): スポットライト（4矩形暗幕）+ パルスグロー + 指示テキスト
 
-**フロー（18ステップ — 全ステップがユーザータップで進行）:**
+**フロー（22ステップ — CEO仕様v3準拠、全ステップがユーザータップで進行）:**
 
 | # | ステップ | 内容 |
 |---|---------|------|
-| 1 | setup | CC選択（ニックネームはRiderScreen初回訪問時に入力） |
-| 2 | scene-explore | シーンカード「バイク置き場を探す」 |
-| 3 | explore-nearby | 周辺検索FABタップ → 東京駅ダミー3件表示 |
-| 4 | explore-result | 結果カードタップ → スポット詳細表示 |
-| 5 | explore-nav | ナビボタンタップ → 案内開始アラート（Googleマップで案内） |
-| 6 | explore-search | サーチタブタップ → SearchOverlay表示 |
-| 7 | explore-search-info | 上野チップを target にして「人気エリアの上野を選択してみましょう」（チュートリアル中は文字入力ロック+他チップ無効化） |
-| 8 | explore-search-result | 上野ダミー3件注入 → 検索結果表示 |
-| 9 | scene-presence | シーンカード「スポットの『気配』」 |
-| 10 | presence-intro | 6段階カラーパネル表示（live/warm/trace/faint/cold/silent + 各意味） |
-| 11 | presence-action-intro | 「気配はワンショットで更新されます。やってみましょう」 |
-| 12 | presence-show-untouched | 未踏ダミーに地図寄せ + カード自動オープン → silent ゲージを見せる |
-| 13 | presence-camera | ワンショットボタンタップ → ダミーセレモニー発火 + ピンを silent → live に切替 |
-| 14 | presence-ceremony | OneshotCeremony演出 → 完了で次へ。直後にカード再オープン（live ゲージ可視化） |
-| 15 | presence-done | 「気配がつきました！MAPのピンとカードのステータスが更新されました」 |
-| 16 | presence-ai-update | 「看板など文字や写っている場合 AIが判別して最新の状態に更新されます ※1日1回更新となります」 |
-| 17 | presence-encourage | 「ワンショットで気配をどんどん残しましょう！」 |
-| 18 | complete | 「ワンショットを撮るほど、地図が育つ。さあはじめよう！」 |
+| A | setup | CC選択（footstepsアイコン +「ワンショットが足跡になる。足跡が誰かの地図になる。」） |
+| B-0 | scene-explore | シーンカード「バイク置き場を探す」 |
+| B-1 | explore-nearby | 周辺検索FABタップ → 東京駅ダミー3件表示 |
+| B-2 | explore-result | 結果カードタップ → スポット詳細表示 |
+| B-3 | explore-nav | ナビボタンタップ |
+| B-4 | explore-nav-confirm | モックナビモーダル（Googleマップ/住所コピー）+ テキスト |
+| B-5 | explore-banner | 案内バナー + ピンオレンジ表示（動的測定でバナー枠を合わせる） |
+| C-0 | scene-arrive | シーンカード「到着したら」 |
+| C-1 | arrive-notify-explain | 「500m圏内に入ると通知が届きます」 |
+| C-2 | arrive-notify | モック通知カード（タップで次へ） |
+| C-3 | arrive-oneshot | ワンショットボタンタップ → ダミーセレモニー発火 |
+| C-4a | arrive-ceremony | OneshotCeremony演出 → 完了で markDummyConfirmed() |
+| C-4b | arrive-result | スポットカード再表示で気配色変更を実物で見せる（cold→live） |
+| C-5 | arrive-ai | 「看板などをワンショットすると自動で情報が更新されます」 |
+| D-0 | scene-newspot | シーンカード「新しいスポットの登録」 |
+| D-1 | newspot-explain | ＋ボタンの説明（フッターモック付き） |
+| D-2 | newspot-prompt | 「実際にやってみましょう」 |
+| D-3a | newspot-do | ＋ボタンスポットライト → タップで handleQuickReport インターセプト |
+| D-3b | newspot-ceremony | セレモニー演出（tutorial-bike.jpg） |
+| E-0 | scene-presence | シーンカード「スポットの『気配』」 |
+| E-1 | presence-intro | 6段階カラーパネル（live〜silent、スタッガーフェードイン） |
+| F | complete | 「さあはじめよう！」オレンジボタン #FF6B00 |
 
 **ダミーデータ:**
-- スポット: 東京駅八重洲口バイク駐車場（`_tutorial_spot_`）+ 周辺2件 + 上野3件 + 丸の内仲通り（`_tutorial_untouched_`、silent状態）
-- 写真: `assets/tutorial-parking.jpg`（セレモニー演出用）
-- 未踏ダミーの気配状態は TutorialContext の `untouchedConfirmed` state で制御。`markUntouchedConfirmed()` で lastConfirmedAt = now を付与 → live に色変化
+- スポット: 東京駅八重洲口バイク駐車場（`_tutorial_spot_`、初期cold状態）+ 周辺2件
+- 写真: `assets/tutorial-bike.jpg`（D-3セレモニー用）、`assets/tutorial-parking.jpg`（C-3セレモニー用）
+- DUMMY_SPOTは初期cold（200日前）→ C-4で `markDummyConfirmed()` により live に変化
+- ステップ切替時に `targets.current = {}` でクリア（render中実行、スポットライト先出し防止）
+- complete画面: TutorialGuide暗幕をフェードアウトせず維持（チラつき防止）
+- finishTutorialのsetTimeoutをstartTutorialでキャンセル（再開バグ防止）
 - Firestoreへの書き込みなし（チュートリアル中は全インターセプト）
 
 **チュートリアル終了後:** ダミーデータ削除、GPS現在地にマップ移動、周辺スポット自動フェッチ
