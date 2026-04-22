@@ -238,6 +238,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   // ── サーチ結果（最寄りリスト用） ──────────────────────
   const [searchResults, setSearchResults] = useState<{ spot: ParkingPin; distanceM: number }[]>([]);
   const [searchAreaName, setSearchAreaName] = useState<string | null>(null);
+  // テキスト検索のランドマークピン（検索地点を示す）
+  const [searchLandmark, setSearchLandmark] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
 
   const lastFetchRegionRef = useRef<Region | null>(null);
 
@@ -343,7 +345,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       .sort((a, b) => a.distanceM - b.distanceM)
       .slice(0, 3);
     setSearchResults(sorted);
-    setSearchAreaName(null);
+    setSearchAreaName(null); setSearchLandmark(null);
   }, [fetchSpotsForRegion, userCC]);
 
   // ── ワンショットセレモニー ────────────────────────────
@@ -513,7 +515,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       setSelected(null);
       setSearchVisible(false);
       setSearchResults([]);
-      setSearchAreaName(null);
+      setSearchLandmark(null);
+      setSearchAreaName(null); setSearchLandmark(null);
 
       if (lastLocationRef.current) {
         const region = {
@@ -762,6 +765,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
 
     setSearchResults(sorted);
     setSearchAreaName(result.areaName);
+    setSearchLandmark({ latitude: result.latitude, longitude: result.longitude, name: result.areaName });
     onSearchPhaseChange?.('nearby');
     setSearching(false);
   }, [userCC, onSearchPhaseChange]);
@@ -943,7 +947,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     if (tutorial.active && wasInactive) {
       setSelected(null);
       setSearchResults([]);
-      setSearchAreaName(null);
+      setSearchAreaName(null); setSearchLandmark(null);
       onSearchPhaseChange?.('idle');
       mapRef.current?.animateToRegion(
         {
@@ -1317,6 +1321,22 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             <SpotPin spot={selected} wide={false} selected />
           </Marker>
         )}
+
+        {/* ── 検索ランドマークピン（テキスト検索地点） ──── */}
+        {searchLandmark && (
+          <Marker
+            coordinate={{ latitude: searchLandmark.latitude, longitude: searchLandmark.longitude }}
+            anchor={{ x: 0.5, y: 1 }}
+            accessibilityLabel={`検索地点: ${searchLandmark.name}`}
+            zIndex={90}
+            tracksViewChanges={false}
+            {...{ cluster: false } as any}
+          >
+            <View style={styles.landmarkPin}>
+              <Ionicons name="location" size={28} color="#FF453A" />
+            </View>
+          </Marker>
+        )}
       </ClusteredMapView>
 
       {/* 暗幕は SearchOverlay が担当 */}
@@ -1352,7 +1372,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           onClear={() => {
             // × でリストだけ閉じる。地図位置は今見ているエリアのまま維持
             setSearchResults([]);
-            setSearchAreaName(null);
+            setSearchAreaName(null); setSearchLandmark(null);
             onSearchPhaseChange?.('idle');
           }}
         />
@@ -1375,7 +1395,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             }
             if (searchResults.length > 0) {
               setSearchResults([]);
-              setSearchAreaName(null);
+              setSearchAreaName(null); setSearchLandmark(null);
               onSearchPhaseChange?.('idle');
             } else {
               onSearchPhaseChange?.('nearby');
@@ -1444,6 +1464,17 @@ const BOTTOM_BASE = TAB_BAR_H + 2; // タブバー直上にぴったり
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  // ── 検索ランドマークピン ──────────────────────────
+  landmarkPin: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // iOS shadow for visibility on dark map
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
 
   // ── 暗幕（検索フォーカス中） ──────────────────────
   dimOverlay: {
