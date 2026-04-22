@@ -43,7 +43,9 @@ import { FontSize, Spacing } from './src/constants/theme';
 import { collection, getDocs, query, orderBy, limit, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from './src/firebase/config';
 import { ParkingPin, UserCC } from './src/types';
+import type { CenterButtonContext } from './src/types/centerButton';
 import { getFirstVehicle, getFootprintCount } from './src/db/database';
+import { checkAndCleanupStaleGeofence } from './src/utils/geofenceService';
 import { LogBox } from 'react-native';
 import { Text as RNText } from 'react-native';
 
@@ -148,6 +150,8 @@ function App() {
   const oneShotBtnRef = useRef<View>(null);
   const searchTabRef = useRef<View>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [centerCtx, setCenterCtx] = useState<CenterButtonContext>({ mode: 'new-spot' });
+  const [spotDetailVisible, setSpotDetailVisible] = useState(false);
 
   // ── 匿名認証（Firestoreアクセスに必須）─────────────
   useEffect(() => {
@@ -262,6 +266,54 @@ function App() {
     })();
   }, [status, legalConsented]);
 
+  // ── ジオフェンス到着通知タップ → スポットカード表示 ──
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((res) => {
+      const d = res.notification.request.content.data;
+      if (d?.type === 'geofence_arrival' && d.spotId) {
+        setFocusSpot({
+          id: d.spotId as string,
+          name: (d.spotName as string) ?? '',
+          latitude: d.spotLat as number,
+          longitude: d.spotLng as number,
+          maxCC: null,
+          isFree: null,
+          capacity: null,
+          source: 'seed',
+        });
+        setTab('map');
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  // コールドスタート: アプリ kill 後に通知タップで起動した場合
+  useEffect(() => {
+    if (!authReady) return;
+    Notifications.getLastNotificationResponseAsync().then((res) => {
+      if (!res) return;
+      const d = res.notification.request.content.data;
+      if (d?.type === 'geofence_arrival' && d.spotId) {
+        setFocusSpot({
+          id: d.spotId as string,
+          name: (d.spotName as string) ?? '',
+          latitude: d.spotLat as number,
+          longitude: d.spotLng as number,
+          maxCC: null,
+          isFree: null,
+          capacity: null,
+          source: 'seed',
+        });
+        setTab('map');
+      }
+    });
+  }, [authReady]);
+
+  // ── 起動時にスタイルジオフェンスをクリーンアップ ──
+  useEffect(() => {
+    checkAndCleanupStaleGeofence().catch(() => {});
+  }, []);
+
   const finishTutorial = useCallback(async () => {
     setTutorialVisible(false);
     AsyncStorage.setItem(TUTORIAL_KEY, 'true');
@@ -370,6 +422,41 @@ function App() {
           <StatusBar style="light" />
 
           <View style={styles.content}>
+            {/* 📍 案内中バナー（画面上部） */}
+            {centerCtx.activeNavName && tab === 'map' && (
+              <SafeAreaView style={styles.navBannerSafe} pointerEvents="box-none">
+                <View style={styles.navBanner}>
+                  <TouchableOpacity
+                    style={styles.navBannerContent}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (centerCtx.activeNavSpot) {
+                        mapScreenRef.current?.selectAndShowSpot(centerCtx.activeNavSpot);
+                      }
+                    }}
+                  >
+                    <Ionicons name="navigate" size={14} color="#FF6B00" />
+                    <Text style={styles.navBannerText} numberOfLines={1} ellipsizeMode="tail">
+                      {centerCtx.activeNavName} へ案内中
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.navBannerClose}
+                    onPress={() => {
+                      import('./src/utils/geofenceService').then(({ cleanupGeofence }) =>
+                        cleanupGeofence().catch(() => {}),
+                      );
+                      setCenterCtx((prev) => ({ ...prev, activeNavName: undefined, activeNavSpot: undefined }));
+                      mapScreenRef.current?.refreshNavigation();
+                    }}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons name="close" size={16} color="#999" />
+                  </TouchableOpacity>
+                </View>
+              </SafeAreaView>
+            )}
+
             {/* MapScreen は常にマウント（タブ切替で位置を保持するため） */}
             <View style={[StyleSheet.absoluteFillObject, tab !== 'map' && { opacity: 0 }]} pointerEvents={tab === 'map' ? 'auto' : 'none'}>
               <MapScreen
@@ -389,6 +476,8 @@ function App() {
                     setPendingPrompt('notification');
                   }
                 }}
+                onCenterButtonContextChange={setCenterCtx}
+                onSpotDetailVisible={setSpotDetailVisible}
               />
             </View>
             {tab === 'rider' && (
@@ -458,20 +547,32 @@ function App() {
                 />
               </TouchableOpacity>
 
-              {/* 📸 ワンショット（中央突き出し） */}
-              <View style={styles.oneShotWrapper}>
+              {/* 📸 ワンショット（中央突き出し・アイコン切替。スポット詳細シート表示中は隠す） */}
+              <View style={[styles.oneShotWrapper, spotDetailVisible && { opacity: 0, pointerEvents: 'none' }]}>
                 <TouchableOpacity
                   ref={oneShotBtnRef}
                   style={styles.oneShotBtn}
                   onPress={() => {
                     if (tab !== 'map') setTab('map');
-                    mapScreenRef.current?.triggerOneShot();
+                    if (centerCtx.mode !== 'new-spot' && centerCtx.spot) {
+                      mapScreenRef.current?.selectAndShowSpot(centerCtx.spot);
+                    } else {
+                      mapScreenRef.current?.triggerOneShot();
+                    }
                   }}
                   activeOpacity={0.8}
-                  accessibilityLabel="ワンショットで足跡を刻む"
+                  accessibilityLabel={
+                    centerCtx.mode === 'new-spot'
+                      ? 'ワンショットで足跡を刻む'
+                      : `${centerCtx.spotName ?? 'スポット'}でワンショット`
+                  }
                   accessibilityRole="button"
                 >
-                  <Ionicons name="camera" size={32} color="#FFF" />
+                  <Ionicons
+                    name={centerCtx.mode === 'new-spot' ? 'add' : 'camera'}
+                    size={32}
+                    color="#FFF"
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -613,6 +714,39 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 8,
+  },
+  navBannerSafe: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  navBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(26,26,26,0.95)',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingLeft: 14,
+    paddingRight: 8,
+  },
+  navBannerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  navBannerText: {
+    color: '#F5F5F5',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  navBannerClose: {
+    padding: 6,
   },
 });
 

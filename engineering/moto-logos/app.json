@@ -20,7 +20,6 @@
           "locationAlwaysAndWhenInUsePermission": "駐輪場の近接検知のため位置情報を使用します。"
         }
       ],
-      "./plugins/withYahooNaviAndroid",
       "./plugins/withDisableLint",
       [
         "@sentry/react-native",
@@ -47,12 +46,12 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
-          "comgooglemaps",
-          "yjnavi",
-          "yjnavicar",
-          "ynavigation"
+          "comgooglemaps"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {

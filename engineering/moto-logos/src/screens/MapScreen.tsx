@@ -41,6 +41,9 @@ import { SearchResultsList } from '../components/SearchResultsList';
 import { useTutorial, TUTORIAL_NEARBY_RESULTS, TUTORIAL_SEARCH_RESULTS, DUMMY_SPOT, DUMMY_UNTOUCHED_SPOT } from '../contexts/TutorialContext';
 import { LinkNudgeCard } from '../components/LinkNudgeCard';
 import { BetaFeedbackButton } from '../components/BetaFeedbackButton';
+import { getNavigationTarget } from '../utils/navigationState';
+import { cleanupGeofence } from '../utils/geofenceService';
+import type { CenterButtonContext } from '../types/centerButton';
 
 // GPS取得前のフォールバック: 東京中心（首都圏ユーザーが大半）
 const TOKYO_FALLBACK: Region = {
@@ -63,10 +66,12 @@ const SpotPin = React.memo(function SpotPin({
   spot,
   wide,
   selected,
+  navigating,
 }: {
   spot: ParkingPin;
   wide?: boolean;
   selected?: boolean;
+  navigating?: boolean;
 }) {
   const fresh = spotFreshness(spot);
 
@@ -79,6 +84,15 @@ const SpotPin = React.memo(function SpotPin({
         <View style={styles.pinSelected}>
           <FontAwesome5 name="motorcycle" size={18} color="#fff" />
         </View>
+      </View>
+    );
+  }
+
+  // 案内中: オレンジ発光（選択時より控えめ）
+  if (navigating) {
+    return (
+      <View style={[styles.pinLarge, styles.pinNavigating]}>
+        <FontAwesome5 name="motorcycle" size={14} color="#fff" />
       </View>
     );
   }
@@ -133,6 +147,8 @@ export interface MapScreenHandle {
   triggerOneShot: () => void;
   searchNearby: () => void;
   openTextSearch: () => void;
+  selectAndShowSpot: (spot: ParkingPin) => void;
+  refreshNavigation: () => void;
 }
 
 type SearchPhase = 'idle' | 'nearby' | 'text';
@@ -150,10 +166,14 @@ interface Props {
   nickname?: string;
   /** ワンショットセレモニー完了時（チュートリアル外）のコールバック。通知プロンプト発火に使う */
   onOneshotCompleted?: () => void;
+  /** 中央ボタンのコンテキスト（近くのスポット or 新規登録）を親に通知 */
+  onCenterButtonContextChange?: (ctx: CenterButtonContext) => void;
+  /** スポット詳細シートの表示状態を親に通知 */
+  onSpotDetailVisible?: (visible: boolean) => void;
 }
 
 export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
-  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange, ceremonyEnabled = true, nickname, onOneshotCompleted },
+  { userCC, onChangeCC, focusSpot, focusReviewId, onFocusConsumed, refreshTrigger, searchPhase = 'idle', onSearchPhaseChange, ceremonyEnabled = true, nickname, onOneshotCompleted, onCenterButtonContextChange, onSpotDetailVisible },
   ref
 ) {
   const user = useUser();
@@ -173,7 +193,15 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
   const [locationDenied, setLocationDenied]   = useState(false);
   const [wideZoom, setWideZoom]               = useState(true);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [navTrigger, setNavTrigger] = useState(0);
+  const [navTargetId, setNavTargetId] = useState<string | null>(null);
   const nearbyFabRef = useRef<View>(null);
+
+  // スポット詳細シートの表示状態を親に通知
+  useEffect(() => {
+    onSpotDetailVisible?.(selected !== null);
+  }, [selected, onSpotDetailVisible]);
 
   /**
    * スポット選択時にピンがシート (Peek 28%) で隠れない位置に来るよう地図をオフセット。
@@ -441,6 +469,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             ),
           ]);
           lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          setCurrentUserLocation(lastLocationRef.current);
           const gpsRegion: Region = {
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
@@ -496,6 +525,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
         Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
           .then((loc) => {
             lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+            setCurrentUserLocation(lastLocationRef.current);
             const region = {
               latitude: loc.coords.latitude,
               longitude: loc.coords.longitude,
@@ -528,7 +558,72 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }
       setSearchVisible(true);
     },
-  }), [locationGranted, fetchSpotsForRegion, doSearchNearby, tutorial]);
+    selectAndShowSpot: (spot: ParkingPin) => {
+      selectSpotWithOffset(spot);
+    },
+    refreshNavigation: () => {
+      setNavTrigger((n) => n + 1);
+    },
+  }), [locationGranted, fetchSpotsForRegion, doSearchNearby, tutorial, selectSpotWithOffset]);
+
+  // ── 中央ボタンコンテキスト計算 ────────────────────
+  useEffect(() => {
+    if (tutorial.active) {
+      onCenterButtonContextChange?.({ mode: 'new-spot' });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const loc = currentUserLocation;
+
+      // 案内中のスポット（バナー表示用 + ピンハイライト用。距離に関係なく常に取得）
+      const navTarget = await getNavigationTarget();
+      if (!cancelled) setNavTargetId(navTarget?.id ?? null);
+      const navSpotForBanner = navTarget
+        ? (allSpotsRaw.find((s) => s.id === navTarget.id) ?? { id: navTarget.id, name: navTarget.name, latitude: navTarget.latitude, longitude: navTarget.longitude, maxCC: null, isFree: null, capacity: null, source: 'seed' as const })
+        : undefined;
+
+      if (!loc) {
+        if (!cancelled) onCenterButtonContextChange?.({ mode: 'new-spot', activeNavName: navTarget?.name, activeNavSpot: navSpotForBanner });
+        return;
+      }
+
+      // 案内先が 200m 以内なら中央ボタンも案内先を優先
+      if (navTarget && !cancelled) {
+        const dist = haversineMeters(loc.latitude, loc.longitude, navTarget.latitude, navTarget.longitude);
+        if (dist <= 200) {
+          onCenterButtonContextChange?.({
+            mode: 'nav-target',
+            spotName: navTarget.name,
+            spot: navSpotForBanner!,
+            activeNavName: navTarget.name,
+            activeNavSpot: navSpotForBanner,
+          });
+          return;
+        }
+      }
+
+      // 最寄りの既存スポット (200m以内)
+      let nearest: ParkingPin | null = null;
+      let nearestDist = Infinity;
+      for (const s of allSpotsRaw) {
+        const d = haversineMeters(loc.latitude, loc.longitude, s.latitude, s.longitude);
+        if (d <= 200 && d < nearestDist) {
+          nearest = s;
+          nearestDist = d;
+        }
+      }
+
+      if (!cancelled) {
+        if (nearest) {
+          onCenterButtonContextChange?.({ mode: 'nearest-spot', spotName: nearest.name, spot: nearest, activeNavName: navTarget?.name, activeNavSpot: navSpotForBanner });
+        } else {
+          onCenterButtonContextChange?.({ mode: 'new-spot', activeNavName: navTarget?.name, activeNavSpot: navSpotForBanner });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentUserLocation, allSpotsRaw, tutorial.active, onCenterButtonContextChange, navTrigger]);
 
   // お気に入りからのジャンプ
   useEffect(() => {
@@ -559,6 +654,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     lastLocationRef.current = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+    setCurrentUserLocation(lastLocationRef.current);
     const region = {
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
@@ -802,6 +898,8 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
       }, 600);
       // セレモニー演出（ハプティックはセレモニー内）+ 新規ピンを完了後に再オープン
       handleOneshotCeremony({ photoUri, spotName: name, spot: newPin });
+      // ジオフェンスクリーンアップ（新規登録でも到着扱い）
+      cleanupGeofence().catch(() => {});
     } catch (e: unknown) {
       captureError(e, { context: 'quickReport' });
       const message = e instanceof Error ? e.message : String(e);
@@ -931,6 +1029,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             lat = loc.coords.latitude;
             lng = loc.coords.longitude;
             lastLocationRef.current = { latitude: lat, longitude: lng };
+            setCurrentUserLocation(lastLocationRef.current);
           }
         } catch (e) {
           captureError(e, { context: 'tutorial_end_gps' });
@@ -1159,9 +1258,9 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
           );
         }}
       >
-        {/* 通常ピン: 選択中は除外してクラスタリング対象に */}
+        {/* 通常ピン: 選択中・案内中は除外してクラスタリング対象に */}
         {allSpots
-          .filter((spot) => spot.id !== selected?.id)
+          .filter((spot) => spot.id !== selected?.id && spot.id !== navTargetId)
           .map((spot) => (
             // key に lastConfirmedAt を含めることで気配が変わった瞬間に Marker を
             // 再マウント → native bitmap が新色で撮り直される。tracksViewChanges=false
@@ -1189,6 +1288,25 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             strokeWidth={1}
           />
         ))}
+        {/* 案内中ピン: クラスタリング対象外・常にオレンジ発光 */}
+        {navTargetId && navTargetId !== selected?.id && (() => {
+          const navSpot = allSpots.find((s) => s.id === navTargetId);
+          if (!navSpot) return null;
+          return (
+            <Marker
+              key={`nav_${navSpot.id}`}
+              coordinate={{ latitude: navSpot.latitude, longitude: navSpot.longitude }}
+              onPress={() => selectSpotWithOffset(navSpot)}
+              anchor={{ x: 0.5, y: 0.5 }}
+              accessibilityLabel={`${navSpot.name} (案内中)`}
+              zIndex={90}
+              tracksViewChanges={false}
+              {...{ cluster: false } as any}
+            >
+              <SpotPin spot={navSpot} wide={false} navigating />
+            </Marker>
+          );
+        })()}
         {/* 選択中ピン: クラスタリング対象外で常に強調表示 */}
         {selected && (
           <Marker
@@ -1198,6 +1316,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             accessibilityLabel={`${selected.name} (選択中)`}
             zIndex={100}
             tracksViewChanges={false}
+            {...{ cluster: false } as any}
           >
             <SpotPin spot={selected} wide={false} selected />
           </Marker>
@@ -1304,6 +1423,7 @@ export const MapScreen = forwardRef<MapScreenHandle, Props>(function MapScreen(
             onClose={() => setSelected(null)}
             onSpotUpdated={handleProximitySpotUpdated}
             onOneshotCeremony={handleOneshotCeremony}
+            onNavChanged={() => setNavTrigger((n) => n + 1)}
             highlightReviewId={focusReviewId}
             nickname={nickname}
           />
@@ -1550,6 +1670,15 @@ const styles = StyleSheet.create({
     borderWidth: 3, borderColor: '#fff',
     ...Platform.select({
       ios: { shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 12 },
+      default: {},
+    }),
+  },
+  pinNavigating: {
+    backgroundColor: '#FF6B00',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+    ...Platform.select({
+      ios: { shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
       default: {},
     }),
   },

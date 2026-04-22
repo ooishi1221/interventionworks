@@ -57,10 +57,31 @@ export async function markLocationPromptShown(): Promise<void> {
   } catch { /* noop */ }
 }
 
+// ── バックグラウンド位置情報（ジオフェンス用） ─────────
+
+const BG_LOC_PROMPT_KEY = 'moto_logos_bg_loc_prompt_shown';
+
+export async function shouldShowBackgroundLocationPrompt(): Promise<boolean> {
+  try {
+    const shown = await AsyncStorage.getItem(BG_LOC_PROMPT_KEY);
+    if (shown === 'true') return false;
+    const { status } = await Location.getBackgroundPermissionsAsync();
+    return status !== 'granted';
+  } catch {
+    return false;
+  }
+}
+
+export async function markBackgroundLocationPromptShown(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(BG_LOC_PROMPT_KEY, 'true');
+  } catch { /* noop */ }
+}
+
 // ── テスト用リセット（開発時のみ） ─────────────────────
 
 export async function resetPermissionPrompts(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([NOTIF_PROMPT_KEY, LOC_PROMPT_KEY]);
+    await AsyncStorage.multiRemove([NOTIF_PROMPT_KEY, LOC_PROMPT_KEY, BG_LOC_PROMPT_KEY]);
   } catch { /* noop */ }
 }

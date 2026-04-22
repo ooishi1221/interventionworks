@@ -58,6 +58,10 @@ import { useUser } from '../contexts/UserContext';
 import { useUserBlocks } from '../contexts/UserBlocksContext';
 import { spotFreshness, freshnessLabel, lastConfirmedText, FRESHNESS_STYLE } from '../utils/freshness';
 import { ReportModal } from './ReportModal';
+import * as Location from 'expo-location';
+import { haversineMeters } from '../utils/distance';
+import { registerArrivalGeofence, cleanupGeofence } from '../utils/geofenceService';
+import { getNavigationTarget, setNavigationTarget } from '../utils/navigationState';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -101,13 +105,14 @@ interface Props {
   onSpotSelect?: (spot: ParkingPin) => void;
   onSpotUpdated?: (spotId?: string) => void;
   onOneshotCeremony?: (data: { photoUri: string; spotName: string }) => void;
+  onNavChanged?: () => void;
   highlightReviewId?: string;
   nickname?: string;
 }
 
 
 // ─── メインコンポーネント ──────────────────────────────
-export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, onOneshotCeremony, highlightReviewId, nickname }: Props) {
+export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, onOneshotCeremony, onNavChanged, highlightReviewId, nickname }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const user = useUser();
   const tutorial = useTutorial();
@@ -246,41 +251,10 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
     Linking.openURL(directNav).catch(() =>
       Linking.openURL(`https://maps.google.com/maps?daddr=${lat},${lng}`)
     );
-  };
-
-  const openYahooNavi = async () => {
-    const lat = spot.latitude;
-    const lng = spot.longitude;
-    if (!lat || !lng) return;
-    const name = spot.name?.trim() ? encodeURIComponent(spot.name) : '';
-    const namePart = name ? `&name=${name}` : '';
-    // Yahoo!カーナビ 公式 URL スキーム（2024〜）: yjnavi://
-    // 旧スキーム ynavigation:// / yjnavicar:// もフォールバックで試す
-    // iOS/Android 共通で openURL を順次試行（canOpenURL は LSApplicationQueriesSchemes /
-    // <queries> 未登録だと false を返すため信用できない）
-    const links = [
-      `yjnavi://v1/routesearch?lat=${lat}&lon=${lng}${namePart}`,
-      `ynavigation://v1/route?lat=${lat}&lon=${lng}${namePart}&type=drive`,
-      `yjnavicar://v1/map?lat=${lat}&lon=${lng}${namePart}`,
-    ];
-    for (const link of links) {
-      try {
-        await Linking.openURL(link);
-        return;
-      } catch { /* try next */ }
-    }
-    // 両方失敗 → 未インストール → ストアへ誘導
-    const store = Platform.select({
-      android: 'https://play.google.com/store/apps/details?id=jp.co.yahoo.android.apps.navi',
-      ios: 'https://apps.apple.com/jp/app/yahoo-%E3%82%AB%E3%83%BC%E3%83%8A%E3%83%93/id890808217',
-    });
-    Alert.alert(
-      'Yahoo!カーナビ',
-      'アプリがインストールされていません',
-      [
-        { text: 'ストアを開く', onPress: () => { if (store) Linking.openURL(store); } },
-        { text: 'OK', style: 'cancel' },
-      ],
+    // ナビターゲット即保存 → バナー即時反映 → ジオフェンスは非同期で登録
+    setNavigationTarget(spot).then(() => onNavChanged?.());
+    registerArrivalGeofence(spot).catch((e) =>
+      captureError(e, { context: 'geofence_register_google' }),
     );
   };
 
@@ -288,15 +262,54 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
     const t = spot.address ? `${spot.name}\n${spot.address}` : `${spot.name}\n${spot.latitude}, ${spot.longitude}`;
     await Clipboard.setStringAsync(t);
     Alert.alert('コピーしました', spot.address ?? `${spot.latitude}, ${spot.longitude}`);
+    // ナビターゲット即保存 → バナー即時反映 → ジオフェンスは非同期で登録
+    setNavigationTarget(spot).then(() => onNavChanged?.());
+    registerArrivalGeofence(spot).catch((e) =>
+      captureError(e, { context: 'geofence_register_copy' }),
+    );
   };
 
-  const handleNav = () => {
+  const handleNav = async () => {
+    const current = await getNavigationTarget();
+    if (current && current.id !== spot.id) {
+      Alert.alert(
+        '案内先を変更',
+        `${current.name} に案内中です。\n${spot.name} に変更しますか？`,
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: '変更する', onPress: () => setNavModalOpen(true) },
+        ],
+      );
+      return;
+    }
     setNavModalOpen(true);
   };
 
   // ── ワンショット: カメラ → アップロード → 鮮度更新 ─────
   const handleOneShot = async () => {
     if (shotUploading) return;
+
+    // GPS 200m 近接チェック（チュートリアル中はスキップ）
+    if (!tutorial.active) {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          const dist = haversineMeters(loc.coords.latitude, loc.coords.longitude, spot.latitude, spot.longitude);
+          if (dist > 200) {
+            Alert.alert(
+              'スポットから離れています',
+              `${spot.name}の近く（200m以内）でワンショットしてください。`,
+            );
+            return;
+          }
+        }
+        // パーミッション未取得時はブロックしない（正規ユーザーのUXを守る）
+      } catch {
+        // GPS取得失敗時もブロックしない
+      }
+    }
+
     const uri = await showPicker();
     if (!uri) return; // キャンセル
 
@@ -341,6 +354,9 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
       onOneshotCeremony?.({ photoUri: uri, spotName: spot.name });
       onSpotUpdated?.(spot.id); // ← spotId 渡してローカルで即 live に楽観的更新
       await loadAll();
+
+      // ジオフェンス到着通知をクリーンアップ（到着+ワンショット完了）
+      cleanupGeofence().then(() => onNavChanged?.()).catch(() => {});
     } catch (e: unknown) {
       captureError(e, { context: 'oneshot' });
       const message = e instanceof Error ? e.message : String(e);
@@ -386,14 +402,6 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
             >
               <Ionicons name="navigate-circle" size={22} color={C.blue} />
               <Text style={styles.navModalOptionText}>Googleマップ</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navModalOption}
-              onPress={() => { setNavModalOpen(false); openYahooNavi(); }}
-            >
-              <Ionicons name="car" size={22} color="#FF0033" />
-              <Text style={styles.navModalOptionText}>Yahoo!カーナビ</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -605,7 +613,7 @@ export function SpotDetailSheet({ spot, onClose, onSpotSelect, onSpotUpdated, on
                   // チュートリアル: 実リンクを開かず説明テキストで進む
                   Alert.alert(
                     '案内開始',
-                    'GoogleマップやYahoo!カーナビで案内が始まります',
+                    'Googleマップで案内が始まります',
                     [{ text: 'OK', onPress: () => tutorial.advanceTutorial() }],
                     { cancelable: false },
                   );
