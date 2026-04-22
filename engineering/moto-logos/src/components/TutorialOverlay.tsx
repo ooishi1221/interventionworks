@@ -62,9 +62,9 @@ export function TutorialOverlay({ visible, onFinish, userCC, onChangeCC }: Props
 
   useEffect(() => {
     if (showOverlay) {
-      // complete 画面: TutorialGuide のフェードアウトを待ってから出す。
-      // setup 画面: 初回表示なのですぐ。
-      const waitForGuideFadeOut = tutorial.phase === 'complete' ? 500 : 0;
+      // complete 画面: TutorialGuide は暗幕を維持するのでフェードアウト待ち不要。
+      // コンテンツだけ少し遅らせて表示。
+      const waitForGuideFadeOut = 0;
       fadeAnim.setValue(0);
       contentFade.setValue(0);
       Animated.timing(fadeAnim, {

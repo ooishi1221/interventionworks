@@ -79,6 +79,23 @@ function SearchTabTutorialTarget({ btnRef }: { btnRef: React.RefObject<View | nu
   return null;
 }
 
+// ── チュートリアル: バナーのターゲット登録 ──
+function NavBannerTutorialTarget({ bannerRef }: { bannerRef: React.RefObject<View | null> }) {
+  const tutorial = useTutorial();
+  useEffect(() => {
+    if (!tutorial.active || !bannerRef.current) return;
+    const measure = () => {
+      bannerRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+        if (w > 0) tutorial.registerTarget('nav-banner', { x, y, w, h, borderRadius: 12 });
+      });
+    };
+    const t1 = setTimeout(measure, 200);
+    const t2 = setTimeout(measure, 500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [tutorial.active, tutorial.stepIndex]);
+  return null;
+}
+
 // ── チュートリアルスキップボタン ──────────────────────
 function TutorialSkipButton({ onSkip }: { onSkip: () => void }) {
   const tutorial = useTutorial();
@@ -177,6 +194,7 @@ function App() {
   const mapScreenRef = useRef<MapScreenHandle>(null);
   const oneShotBtnRef = useRef<View>(null);
   const searchTabRef = useRef<View>(null);
+  const navBannerRef = useRef<View>(null);
   const [authReady, setAuthReady] = useState(false);
   const [centerCtx, setCenterCtx] = useState<CenterButtonContext>({ mode: 'new-spot' });
   const [spotDetailVisible, setSpotDetailVisible] = useState(false);
@@ -454,7 +472,8 @@ function App() {
             {/* 📍 案内中バナー（画面上部） */}
             {centerCtx.activeNavName && tab === 'map' && (
               <SafeAreaView style={styles.navBannerSafe} pointerEvents="box-none">
-                <View style={styles.navBanner}>
+                <NavBannerTutorialTarget bannerRef={navBannerRef} />
+                <View ref={navBannerRef} style={styles.navBanner}>
                   <TouchableOpacity
                     style={styles.navBannerContent}
                     activeOpacity={0.7}

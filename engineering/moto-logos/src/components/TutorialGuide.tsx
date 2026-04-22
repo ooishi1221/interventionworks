@@ -85,7 +85,6 @@ export function TutorialGuide() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
   const prevStepRef = useRef(stepIndex);
-  const [fadingToComplete, setFadingToComplete] = useState(false);
 
   // ── Android edge-to-edge 座標補正 ────────────────────
   // measureInWindow はスクリーン絶対座標を返すが、
@@ -94,8 +93,14 @@ export function TutorialGuide() {
   const spotlightRef = useRef<View>(null);
   const originRef = useRef({ x: 0, y: 0 });
 
+  // チュートリアル再開時にprevStepRefをリセット（2回目のfade-inが正しく動くように）
+  useEffect(() => {
+    if (active && stepIndex === 0) {
+      prevStepRef.current = 0;
+    }
+  }, [active]);
+
   // 暗幕の opacity だけ管理。コンテンツの fade は <StepFadeIn key={stepIndex}> に委譲。
-  // 共有 contentAnim 方式は「state 更新→新JSXが opacity 1 で1フレーム表示→useEffect で setValue(0)→fade-in」のフリッカーを起こすため廃止。
   useEffect(() => {
     if (active && phase !== 'setup' && phase !== 'complete') {
       const isFirstAppearance = prevStepRef.current === 0 && stepIndex > 0;
@@ -120,15 +125,9 @@ export function TutorialGuide() {
     }
   }, [active, stepIndex, phase]);
 
-  // complete フェーズへの遷移: 暗幕フェードアウト
-  useEffect(() => {
-    if (active && phase === 'complete') {
-      setFadingToComplete(true);
-      Animated.timing(fadeAnim, { toValue: 0, duration: 700, useNativeDriver: true }).start(() => {
-        setFadingToComplete(false);
-      });
-    }
-  }, [phase, active]);
+  // complete フェーズ: 暗幕をそのまま維持（TutorialOverlayがフェードインしてから消える）
+  // 以前はフェードアウトしていたが、TutorialOverlayのフェードインとの隙間で
+  // マップが見えてチラつく問題があったため、静的維持に変更。
 
   // 終了時フェードアウト
   useEffect(() => {
@@ -168,14 +167,13 @@ export function TutorialGuide() {
   // セットアップはTutorialOverlayが処理する
   // exiting中はフェードアウトのため表示を維持
   if ((!active && !exiting) || phase === 'setup') return null;
-  if (phase === 'complete' && !fadingToComplete) return null;
   // セレモニー演出中は全面OneshotCeremonyが担当
   if (currentStep.id === 'arrive-ceremony' || currentStep.id === 'newspot-ceremony') return null;
 
-  // complete フェーズへのフェードアウト中: 暗幕のみ表示
-  if (phase === 'complete' && fadingToComplete) {
+  // complete フェーズ: 暗幕を維持してTutorialOverlayが上に乗るまでマップを隠す
+  if (phase === 'complete') {
     return (
-      <Animated.View style={[styles.sceneOverlay, { opacity: fadeAnim }]} pointerEvents="none" />
+      <View style={styles.sceneOverlay} pointerEvents="none" />
     );
   }
   const target = currentStep.target ? getTarget(currentStep.target) : null;
@@ -189,14 +187,21 @@ export function TutorialGuide() {
 
   // ── 案内中バナー説明（customUI: 'explore-banner'）— 薄暗幕でバナー+ピン見せる＋ハイライト枠 ──
   if (currentStep.customUI === 'explore-banner') {
+    const bannerRect = getTarget('nav-banner');
     return (
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.exploreBannerOverlay, { opacity: fadeAnim }]}>
-          {/* バナーのハイライト枠（パルスグロー付き） */}
-          <Animated.View style={[styles.bannerFrame, {
-            opacity: pulseAnim,
-            transform: [{ scale: pulseAnim.interpolate({ inputRange: [0.5, 1], outputRange: [1.0, 1.03] }) }],
-          }]} />
+          {/* バナーのハイライト枠（動的測定 + パルスグロー） */}
+          {bannerRect && bannerRect.w > 0 && (
+            <Animated.View style={[styles.bannerFrame, {
+              top: bannerRect.y - 4,
+              left: bannerRect.x - 4,
+              width: bannerRect.w + 8,
+              height: bannerRect.h + 8,
+              opacity: pulseAnim,
+              transform: [{ scale: pulseAnim.interpolate({ inputRange: [0.5, 1], outputRange: [1.0, 1.03] }) }],
+            }]} />
+          )}
           <StepFadeIn key={`banner-${stepIndex}`} style={styles.centerCard}>
             <Text style={styles.instructionText}>{currentStep.instruction}</Text>
             <FloatingTapHint />
@@ -533,10 +538,6 @@ const styles = StyleSheet.create({
   },
   bannerFrame: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 67 : 44,
-    left: 14,
-    right: 14,
-    height: 38,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#FF9F0A',

@@ -322,6 +322,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const targets = useRef<Record<string, TargetRect>>({});
   const [dummySpot, setDummySpot] = useState<ParkingPin>(DUMMY_SPOT);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentStep = STEPS[stepIndex] ?? STEPS[0];
   const phase = active ? currentStep.phase : 'inactive';
@@ -379,6 +380,13 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, [active, stepIndex, advanceTutorial]);
 
   const startTutorial = useCallback(() => {
+    // 前回の finishTutorial の遅延リセットが残っていたらキャンセル
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
+    advancingRef.current = false;
+    setExiting(false);
     setStepIndex(0);
     setActive(true);
     setDummySpot(DUMMY_SPOT); // cold状態にリセット
@@ -397,10 +405,12 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const finishTutorial = useCallback(() => {
     setExiting(true);
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
-    setTimeout(() => {
+    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+    finishTimerRef.current = setTimeout(() => {
       setActive(false);
       setExiting(false);
       setStepIndex(0);
+      finishTimerRef.current = null;
     }, 400);
   }, []);
 
