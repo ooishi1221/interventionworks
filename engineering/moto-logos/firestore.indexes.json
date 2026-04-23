@@ -32,6 +32,14 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "reviewedAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "ASCENDING" },
+        { "fieldPath": "photoUrls", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
