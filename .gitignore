@@ -7,5 +7,7 @@ dist/
 desktop.ini
 Untitled
 .claude/
+.agents/
+skills-lock.json
 engineering/motopark-butler/scripts/serviceAccount.json
 .slack_images/

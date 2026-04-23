@@ -132,17 +132,31 @@ npm run security-check
 - [ ] エラーメッセージ・ログ・Sentry 送信データに PII / シークレットが混入していないか
 - [ ] `security-check` の audit 結果で**新規**の high / critical が増えていないか（既知分は本ドキュメントに allowlist 追記で明示）
 
-### 既知の audit 結果（2026-04-23 時点）
+### 既知の audit 結果
 
-`npm run security-check` 実行時に現時点で検出される未対応項目。新規導入ではないため運用継続、ただし四半期レビュー対象:
+**2026-04-23 時点: 全プロジェクトで high/critical ゼロ。** β 社内テスト段階で `npm audit fix` を実行し、transitive 経由の critical protobufjs（Gemini SDK）+ high x3（@xmldom/xmldom / basic-ftp）を一括解消済み（commit `2678e06`）。
 
-| プロジェクト | パッケージ | 深刻度 | 経由 | 判断 |
-|-------------|-----------|--------|------|------|
-| moto-logos | `@xmldom/xmldom` | high | firebase-admin → @google-cloud/* | XML を外部入力として扱わないため攻撃面は実質ゼロ。firebase-admin 更新待ち |
-| moto-logos-admin | `@xmldom/xmldom` / `basic-ftp` | high | firebase-admin → @google-cloud/storage | 同上。FTP は使わない |
-| moto-logos-slack | `basic-ftp` | high | firebase-admin → @google-cloud/storage | 同上 |
+moderate / low は残るが、実際の攻撃シナリオが成立しない依存（uuid v3/v5/v6 の buf 引数未使用、fast-xml-parser を外部入力で使わない等）。四半期レビューで再評価する。
 
-**新規 high/critical が出た場合:** 即 `npm audit fix` を試す → 壊れる場合は overrides でピン留め → それもできない場合は本テーブルに追加理由を明記。
+**新規 high/critical が出た場合:**
+1. `npm audit fix` で非-breaking 修正を試す
+2. breaking のみで修正可能な場合、社内テスト段階なら許容（β 前なら即修正）
+3. どちらも不可なら overrides でピン留め + 本ドキュメントに保留理由を明記
+
+### 認可監査の結果（2026-04-23 実施）
+
+Admin Dashboard の全 58 API Route を監査（Explore agent + サンプル目視検証）:
+
+- **Critical/High: ゼロ**
+- 56/58 ルートが `requireAuth(minimumRole)` + Session Cookie + ROLE_HIERARCHY で一貫保護
+- 破壊系（ban/unban/role/delete/bulk-delete/dev-reset）は全て `moderator` 以上、または `super_admin` 限定
+- cron は `CRON_SECRET` Bearer で保護
+- 公開エンドポイント（`/api/public/*`, `/api/auth/*`）は意図的
+- 1件の medium 穴（ban_appeals POST が body.userId を信じる）は修正済み（commit `7e8605a`）
+
+詳細は git log を参照。次の監査トリガー:
+- 新規 API Route 追加時（PR レビューチェック項目）
+- admin 脱退/権限変更時
 
 ---
 
