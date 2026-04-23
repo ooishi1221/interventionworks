@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { COLLECTIONS } from '@/lib/types';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 const APPEALS_COLLECTION = 'ban_appeals';
+const APPEAL_COOLDOWN_DAYS = 30;
 
 /**
  * GET /api/moderation/appeals
@@ -50,34 +51,72 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/moderation/appeals
- * アプリからBAN解除申請を送信（認証不要 — BANされたユーザーが送るため）
+ * アプリからBAN解除申請を送信。
+ *
+ * 認可設計:
+ * - admin session は不要（BANされたユーザーが管理画面にログインできないため）
+ * - ただし Firebase ID トークンは必須。トークンから uid を抽出し、body の userId は信じない
+ *   （body の userId を信じると、外部から誰でも任意 uid で申請レコードを量産できる）
+ * - BAN は Firestore フラグであり Firebase Auth は生きているため、BAN されたユーザーも ID トークンは取得可能
  */
 export async function POST(request: Request) {
   try {
-    const { userId, displayName, reason } = (await request.json()) as {
-      userId?: string;
+    const authHeader = request.headers.get('authorization') ?? '';
+    const idToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!idToken) {
+      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+    }
+
+    let verifiedUid: string;
+    try {
+      const decoded = await adminAuth.verifyIdToken(idToken);
+      verifiedUid = decoded.uid;
+    } catch {
+      return NextResponse.json({ error: '認証トークンが無効です' }, { status: 401 });
+    }
+
+    const { displayName, reason } = (await request.json()) as {
       displayName?: string;
       reason?: string;
     };
 
-    if (!userId || !reason?.trim()) {
-      return NextResponse.json({ error: 'userId と reason は必須です' }, { status: 400 });
+    if (!reason?.trim()) {
+      return NextResponse.json({ error: 'reason は必須です' }, { status: 400 });
     }
 
-    // 既存の pending 申請がないか確認
-    const existing = await adminDb
+    // 既存の pending 申請があれば拒否
+    const pending = await adminDb
       .collection(APPEALS_COLLECTION)
-      .where('userId', '==', userId)
+      .where('userId', '==', verifiedUid)
       .where('status', '==', 'pending')
       .limit(1)
       .get();
 
-    if (!existing.empty) {
+    if (!pending.empty) {
       return NextResponse.json({ error: '既に審査中の申請があります' }, { status: 409 });
     }
 
+    // 直近の rejected 申請があればクールダウン中として拒否（スパム防止）
+    const cooldownSince = Timestamp.fromDate(
+      new Date(Date.now() - APPEAL_COOLDOWN_DAYS * 24 * 60 * 60 * 1000)
+    );
+    const recentRejected = await adminDb
+      .collection(APPEALS_COLLECTION)
+      .where('userId', '==', verifiedUid)
+      .where('status', '==', 'rejected')
+      .where('reviewedAt', '>=', cooldownSince)
+      .limit(1)
+      .get();
+
+    if (!recentRejected.empty) {
+      return NextResponse.json(
+        { error: `前回の申請から ${APPEAL_COOLDOWN_DAYS} 日間は再申請できません` },
+        { status: 429 }
+      );
+    }
+
     await adminDb.collection(APPEALS_COLLECTION).add({
-      userId,
+      userId: verifiedUid,
       displayName: displayName || '',
       reason: reason.trim(),
       status: 'pending',
