@@ -74,10 +74,10 @@ cp .env.example .env
 `.env` を編集:
 
 ```env
-SLACK_BOT_TOKEN=xoxb-xxxx-xxxx-xxxx
-SLACK_APP_TOKEN=xapp-1-xxxx-xxxx
-SLACK_CHANNEL_ID=C0XXXXXXX
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ  # 既存のものを維持
+SLACK_BOT_TOKEN=<bot-token-starts-with-xoxb>
+SLACK_APP_TOKEN=<app-token-starts-with-xapp>
+SLACK_CHANNEL_ID=<channel-id-starts-with-C>
+SLACK_WEBHOOK_URL=<incoming-webhook-url>  # 既存のものを維持
 ```
 
 ### 9. 起動

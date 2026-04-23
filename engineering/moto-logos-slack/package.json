@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
-    "notify": "node src/notify.js"
+    "notify": "node src/notify.js",
+    "security-check": "npm run --prefix ../.. security-check"
   },
   "dependencies": {
     "@slack/bolt": "^4.1.0",

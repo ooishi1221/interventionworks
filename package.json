@@ -1,0 +1,21 @@
+{
+  "name": "interventionworks-security",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root-level security tooling (pre-commit secret scan + aggregated security-check). Projects remain independent npm packages.",
+  "scripts": {
+    "prepare": "husky",
+    "security-check": "node scripts/security-check.mjs",
+    "secretlint": "secretlint --secretlintignore .gitignore \"**/*\""
+  },
+  "devDependencies": {
+    "@secretlint/secretlint-rule-pattern": "^9.3.4",
+    "@secretlint/secretlint-rule-preset-recommend": "^9.3.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "secretlint": "^9.3.4"
+  },
+  "lint-staged": {
+    "*": "secretlint --maskSecrets"
+  }
+}

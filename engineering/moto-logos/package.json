@@ -7,7 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "preflight": "node scripts/preflight.mjs"
+    "preflight": "node scripts/preflight.mjs",
+    "security-check": "npm run --prefix ../.. security-check"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

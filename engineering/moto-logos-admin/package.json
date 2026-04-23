@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "backup": "node scripts/backup-firestore.mjs",
-    "restore": "node scripts/restore-firestore.mjs"
+    "restore": "node scripts/restore-firestore.mjs",
+    "security-check": "npm run --prefix ../.. security-check"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
