@@ -22,9 +22,11 @@ export default function HeroIntro() {
 
   return (
     <div className={`hero-intro ${phase}`} aria-hidden="true">
+      <span className="hero-intro-meta">FIELD NOTE — №&nbsp;000</span>
       <h1 className="hero-intro-text">
         これは<span className="accent">存在証明</span>だ。
       </h1>
+      <span className="hero-intro-sub">A FIELD NOTE FOR URBAN RIDERS</span>
     </div>
   )
 }

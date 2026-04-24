@@ -63,7 +63,7 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
   return (
     <form onSubmit={handleSubmit} className={`beta-form ${compact ? 'compact' : ''}`} id="beta-form">
       {remaining === 0 && (
-        <div className="beta-remaining full">定員に達しました</div>
+        <div className="beta-form-error">DEFINITELY FULL / 定員に達しました</div>
       )}
 
       <div className="beta-os-row">
@@ -89,33 +89,35 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
         </label>
       </div>
 
-      <div className="beta-form-row">
-        <input
-          type="email"
-          required
-          placeholder={placeholder}
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value)
-            if (status === 'error' || status === 'duplicate') setStatus('idle')
-          }}
-          className="beta-form-input"
-          disabled={status === 'submitting' || remaining === 0}
-        />
-        <button
-          type="submit"
-          className="btn-primary beta-form-btn"
-          disabled={status === 'submitting' || remaining === 0}
-        >
-          {status === 'submitting' ? '送信中...' : 'βテスターに参加する'}
-        </button>
-      </div>
+      <input
+        type="email"
+        required
+        placeholder={placeholder}
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value)
+          if (status === 'error' || status === 'duplicate') setStatus('idle')
+        }}
+        disabled={status === 'submitting' || remaining === 0}
+      />
+
+      <button
+        type="submit"
+        className="beta-form-btn"
+        disabled={status === 'submitting' || remaining === 0}
+      >
+        {status === 'submitting' ? '送信中...' : 'βテスターに参加する →'}
+      </button>
 
       <p className="beta-form-note">
         {os === 'ios'
           ? '※ TestFlight で招待メールをお送りします。Apple ID のメールをご入力ください。'
           : '※ Firebase App Distribution で招待メールをお送りします。Google アカウントのメールをご入力ください。'}
       </p>
+
+      {remaining !== null && remaining > 0 && (
+        <p className="beta-form-remaining">REMAINING — {remaining} / {BETA_LIMIT} SEATS</p>
+      )}
 
       {status === 'duplicate' && (
         <p className="beta-form-error">このメールアドレスは登録済みです。</p>

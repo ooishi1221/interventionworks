@@ -1,59 +1,86 @@
-import IPhoneFrame from './IPhoneFrame'
+const values = [
+  {
+    num: '01',
+    note: 'FIELD NOTE — № 003 / RITUAL',
+    caption: 'SS — №01 / DETAIL VIEW',
+    headline: (
+      <>
+        撮るだけ。<br />
+        それが<span className="accent">セレモニー</span>になる。
+      </>
+    ),
+    body: (
+      <>
+        到着して、写真1枚。それだけ。グローブをしたまま、片手で。
+        分類も評価も入力もいらない。AI が裏で全部やる。
+        <br /><br />
+        やったのは「停めた」じゃない。「足跡を刻んだ」だ。
+      </>
+    ),
+    image: '/images/ss-detail.png',
+  },
+  {
+    num: '02',
+    note: 'FIELD NOTE — № 004 / TRACE',
+    caption: 'SS — №02 / MAP VIEW',
+    headline: (
+      <>
+        気配。<br />
+        <span className="accent">3日前の足跡</span>は、まだ生きてる。
+      </>
+    ),
+    body: (
+      <>
+        「今日」「3日前」「先週」。地図のピンには時間が刻まれている。
+        古い情報は静かに薄れ、新しい足跡が地図を更新する。
+        <br /><br />
+        誰かのワンショットが、今夜走る道のヒントになる。
+      </>
+    ),
+    image: '/images/ss-map.png',
+  },
+  {
+    num: '03',
+    note: 'FIELD NOTE — № 005 / ALTRUISM',
+    caption: 'SS — №03 / PROFILE VIEW',
+    headline: (
+      <>
+        自分のために撮る。<br />
+        それが<span className="accent">誰かの地図</span>になる。
+      </>
+    ),
+    body: (
+      <>
+        報告じゃない。貢献じゃない。ランクもない。星もない。
+        ただ、自分のノートに残った1枚が、どこかの誰かの今夜を救う。
+        <br /><br />
+        利己が利他になる。設計された偶然。
+      </>
+    ),
+    image: '/images/ss-report.png',
+  },
+]
 
 export default function CoreValues() {
-  const values = [
-    {
-      num: '01',
-      label: 'ONE SHOT',
-      headline: '撮るだけ。それが足跡になる。',
-      body: 'グローブしたまま写真1枚。AIが場所もカテゴリも判別する。ライダーは分類しない。撮るだけでいい。それだけで地図に足跡が刻まれる。',
-      screenshot: '/images/ss-detail.png',
-      alt: 'スポット詳細画面',
-    },
-    {
-      num: '02',
-      label: 'FRESHNESS',
-      headline: '情報は鮮度で語る。',
-      body: '最近ライダーが立ち寄った場所は鮮やかに光る。時間が経てば霞んでいく。鮮度が高い場所ほど信頼できる。誰かの足跡がそのまま情報の鮮度になる。',
-      screenshot: '/images/ss-map.png',
-      alt: 'マップ画面',
-    },
-    {
-      num: '03',
-      label: 'ALTRUISM',
-      headline: '自分の1枚が誰かの安心になる。',
-      body: '到着して撮った1枚が知らない誰かを救っている。貢献しようなんて思わなくていい。自分のために撮るだけでいい。',
-      screenshot: '/images/ss-report.png',
-      alt: '記録画面',
-    },
-  ]
-
   return (
-    <section className="section core-values-alt">
-      <div className="container">
-        <h2 className="section-title reveal">
-          評価もランクも競争もない。<br />
-          あるのは<span className="accent">ワンショット</span>だけ。
-        </h2>
-        <div className="cv-list">
-          {values.map((v, i) => (
-            <div
-              className={`cv-row reveal ${i % 2 === 1 ? 'cv-row-reverse' : ''}`}
-              key={i}
-            >
-              <div className="cv-phone">
-                <IPhoneFrame src={v.screenshot} alt={v.alt} />
-              </div>
-              <div className="cv-text">
-                <span className="cv-num">{v.num}</span>
-                <span className="cv-label">{v.label}</span>
-                <h3>{v.headline}</h3>
-                <p>{v.body}</p>
-              </div>
+    <>
+      {values.map((v, i) => (
+        <section key={v.num} className={`value-page ${i % 2 === 1 ? 'flip' : ''}`}>
+          <div className="container">
+            <div className="vp-text">
+              <div className="vp-meta reveal">{v.note}</div>
+              <span className="vp-index reveal">{v.num}</span>
+              <h2 className="vp-title reveal">{v.headline}</h2>
+              <p className="vp-body reveal">{v.body}</p>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
+            <div className="vp-image" data-caption={v.caption}>
+              <span className="vp-image-corner tl" aria-hidden="true"></span>
+              <span className="vp-image-corner br" aria-hidden="true"></span>
+              <img src={v.image} alt="" />
+            </div>
+          </div>
+        </section>
+      ))}
+    </>
   )
 }

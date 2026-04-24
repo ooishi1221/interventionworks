@@ -1,29 +1,29 @@
 import { useState } from 'react'
 
-const faqData = [
+const faqs = [
   {
-    q: '費用はかかりますか？',
-    a: 'βテスト期間中は無償です。',
+    q: 'βテストはいつから？',
+    a: '2026年Q2を予定。準備が整い次第、登録順に招待リンクをお送りします。',
   },
   {
-    q: 'TestFlightって何ですか？',
-    a: 'Appleが提供する公式のテスト配布サービスです。App Storeからインストールでき通常のアプリと同じように使えます。テスト期間が終わればそのまま正式版に移行します。',
+    q: '料金は？',
+    a: 'βテスト期間中は無償です。本リリース時の料金は未定ですが、βテスターには優遇措置を予定しています。',
   },
   {
-    q: 'Androidでも参加できますか？',
-    a: 'はい。Google Play内部テストで配布します。招待リンクからインストールするだけで通常のアプリと同じように使えます。',
+    q: 'iOS / Android 両方対応？',
+    a: 'はい。TestFlight（iOS）と Firebase App Distribution（Android）の両方で配布予定。登録時に選択してください。',
   },
   {
-    q: 'β期間はいつまでですか？',
-    a: '正式リリースまで継続します。テスト中のフィードバックがそのまま次のアップデートに反映されます。',
+    q: '個人情報の扱いは？',
+    a: 'βテスト招待のみに使用します。第三者提供は一切ありません。テスト終了後はオプトアウト可能。',
   },
   {
-    q: '東京以外のエリアでも使えますか？',
-    a: 'βテストはまず東京に集中しています。データ密度を確保してから大阪・名古屋・福岡と都市単位で拡大していきます。',
+    q: '対応エリアは？',
+    a: '初期は首都圏（東京・神奈川・千葉・埼玉）から。順次、大阪・名古屋・福岡へ拡張予定。',
   },
   {
-    q: '個人情報の取り扱いは？',
-    a: 'メールアドレスはβテストの招待送信のみに使用します。第三者への提供は一切ありません。',
+    q: '撮った写真は公開される？',
+    a: '公開されるのは「位置」「気配」「概況」のみ。写真自体は自分のノートに残ります。',
   },
 ]
 
@@ -31,24 +31,40 @@ export default function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section className="section faq">
+    <section className="section">
       <div className="container">
-        <h2 className="section-title reveal">よくある質問</h2>
+        <div className="section-head">
+          <div className="section-tag">
+            <span className="num-label">FIELD NOTE — №&nbsp;008</span>
+            <span className="index">FAQ</span>
+            <span className="num-label">FREQUENTLY ASKED</span>
+          </div>
+          <div>
+            <h2 className="section-title reveal">
+              想定された<span className="accent">疑問</span>。
+            </h2>
+          </div>
+        </div>
+
         <div className="faq-list">
-          {faqData.map((item, i) => (
-            <div key={i} className="faq-item">
-              <button
-                className="faq-question"
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+          {faqs.map((item, i) => {
+            const num = `Q.${String(i + 1).padStart(2, '0')}`
+            const open = openIndex === i
+            return (
+              <div
+                key={i}
+                className={`faq-item ${open ? 'open' : ''}`}
+                onClick={() => setOpenIndex(open ? null : i)}
               >
-                {item.q}
-                <span className={`faq-toggle ${openIndex === i ? 'open' : ''}`}>+</span>
-              </button>
-              {openIndex === i && (
-                <div className="faq-answer">{item.a}</div>
-              )}
-            </div>
-          ))}
+                <div className="faq-q">
+                  <span className="q-num">{num}</span>
+                  <span>{item.q}</span>
+                  <span className="toggle">+</span>
+                </div>
+                <div className="faq-a">{item.a}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

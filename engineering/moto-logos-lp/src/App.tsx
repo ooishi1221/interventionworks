@@ -8,7 +8,6 @@ import PhotoBreak from './components/PhotoBreak'
 import CoreValues from './components/CoreValues'
 import Faq from './components/Faq'
 import FinalCta from './components/FinalCta'
-import About from './components/About'
 import Footer from './components/Footer'
 import StickyHeader from './components/StickyCta'
 import './App.css'
@@ -19,16 +18,21 @@ function App() {
 
   return (
     <>
+      <div className="grid-bg" aria-hidden="true"></div>
+      <div className="crosshair tl" aria-hidden="true"></div>
+      <div className="crosshair tr" aria-hidden="true"></div>
+      <div className="crosshair bl" aria-hidden="true"></div>
+      <div className="crosshair br" aria-hidden="true"></div>
+
       <StickyHeader />
       <Hero />
-      <HowTo />
-      <BetaPerks />
       <Philosophy />
-      <PhotoBreak />
       <CoreValues />
+      <PhotoBreak />
+      <BetaPerks />
+      <HowTo />
       <Faq />
       <FinalCta />
-      <About />
       <Footer />
     </>
   )

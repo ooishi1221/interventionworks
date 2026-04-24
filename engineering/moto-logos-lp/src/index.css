@@ -1,19 +1,33 @@
 :root {
-  --bg: #0D0D0D;
-  --surface: #1A1A1A;
-  --card: #242424;
+  /* === v2 Editorial × Map Infrastructure palette === */
+  --ink: #0B0806;
+  --ink-soft: #15100C;
+  --paper: #F5F2EA;
+  --paper-dim: #8A8278;
+  --paper-mute: #5C564E;
   --accent: #FF6B00;
-  --accent-light: #FF8C33;
-  --text: #F5F5F5;
-  --text-secondary: #A0A0A0;
-  --border: #333333;
+  --accent-glow: #FF8A2E;
+  --accent-deep: #B8431F;
+  --grid: rgba(245, 242, 234, 0.045);
+  --grid-strong: rgba(255, 107, 0, 0.07);
+  --hairline: rgba(245, 242, 234, 0.12);
+
+  /* Legacy aliases (kept for compatibility) */
+  --bg: var(--ink);
+  --surface: var(--ink-soft);
+  --card: var(--ink-soft);
+  --accent-light: var(--accent-glow);
+  --text: var(--paper);
+  --text-secondary: var(--paper-dim);
+  --border: var(--hairline);
   --fresh-blue: #0A84FF;
   --fresh-yellow: #FF9F0A;
   --fresh-red: #FF453A;
   --success: #30D158;
 
-  --font-sans: 'Noto Sans JP', system-ui, sans-serif;
-  --font-mono: 'Inter', ui-monospace, monospace;
+  --font-mincho: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'YuMincho', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-mincho);
 
   --space-xs: 4px;
   --space-sm: 8px;
@@ -23,12 +37,12 @@
   --space-xxl: 48px;
   --space-3xl: 64px;
 
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
   --radius-full: 9999px;
 
-  --max-width: 1080px;
+  --max-width: 1280px;
 }
 
 *, *::before, *::after {
@@ -43,14 +57,37 @@ html {
 }
 
 body {
-  font-family: var(--font-sans);
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--font-mincho);
+  background: var(--ink);
+  color: var(--paper);
   line-height: 1.8;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Global film grain */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.10;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Global vignette */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
 }
 
 img, video {

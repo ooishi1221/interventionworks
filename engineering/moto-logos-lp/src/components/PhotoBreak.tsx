@@ -1,8 +1,10 @@
 export default function PhotoBreak() {
   return (
-    <div className="photo-break">
-      <img src="/images/photo-break-bike.jpg" alt="" className="photo-break-img" />
-      <p className="photo-break-text reveal-wipe-center">自分の1枚が誰かの地図になる。</p>
-    </div>
+    <section className="photo-break">
+      <div className="photo-break-bg" data-parallax="0.12" aria-hidden="true"></div>
+      <p className="photo-quote reveal reveal-wipe-center">
+        自分の1枚が<br />誰かの地図になる。
+      </p>
+    </section>
   )
 }
