@@ -62,9 +62,6 @@ export default function BetaForm({ compact }: { compact?: boolean }) {
 
   return (
     <form onSubmit={handleSubmit} className={`beta-form ${compact ? 'compact' : ''}`} id="beta-form">
-      {remaining !== null && remaining > 0 && (
-        <div className="beta-remaining">残り <strong>{remaining}</strong> 枠</div>
-      )}
       {remaining === 0 && (
         <div className="beta-remaining full">定員に達しました</div>
       )}
