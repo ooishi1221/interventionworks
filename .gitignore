@@ -1,13 +1,16 @@
 node_modules/
 .expo/
+.firebase/
 dist/
 *.log
 .env
 .env.*
 desktop.ini
 Untitled
+.DS_Store
 .claude/
 .agents/
 skills-lock.json
 engineering/motopark-butler/scripts/serviceAccount.json
+*-adminsdk-*.json
 .slack_images/

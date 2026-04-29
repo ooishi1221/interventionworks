@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moto-Logos / Field Note for Urban Riders</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink: #0B0806;
+      --ink-soft: #15100C;
+      --ink-deep: #07050380;
+      --paper: #F5F2EA;
+      --paper-dim: #8A8278;
+      --paper-mute: #5C564E;
+      --accent: #FF6B00;
+      --accent-glow: #FF8A2E;
+      --accent-deep: #B8431F;
+      --grid: rgba(245, 242, 234, 0.045);
+      --grid-strong: rgba(255, 107, 0, 0.07);
+      --hairline: rgba(245, 242, 234, 0.12);
+      --font-mincho: 'Shippori Mincho B1', 'Hiragino Mincho ProN', serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    html, body { height: 100%; }
+
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--font-mono);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* === Film grain (always on top) === */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.10;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* === Vignette === */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+    }
+
+    /* === Map grid background (fixed) === */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* === Sticky nav === */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(11, 8, 6, 0.78);
+      border-bottom: 1px solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--paper);
+    }
+    .nav-brand .mark {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: 11px;
+    }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .nav-cta:hover { background: var(--accent); color: var(--ink); }
+
+    /* === Edge crosshairs === */
+    .crosshair {
+      position: fixed;
+      width: 16px;
+      height: 16px;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .crosshair::before, .crosshair::after {
+      content: '';
+      position: absolute;
+      background: var(--paper-dim);
+    }
+    .crosshair::before { top: 50%; left: 0; right: 0; height: 1px; }
+    .crosshair::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+    .crosshair.tl { top: 70px; left: 18px; }
+    .crosshair.tr { top: 70px; right: 18px; }
+    .crosshair.bl { bottom: 18px; left: 18px; }
+    .crosshair.br { bottom: 18px; right: 18px; }
+
+    /* === Reveal animation system === */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    .reveal.d1 { transition-delay: 0.15s; }
+    .reveal.d2 { transition-delay: 0.3s; }
+    .reveal.d3 { transition-delay: 0.45s; }
+    .reveal.d4 { transition-delay: 0.6s; }
+    .reveal.d5 { transition-delay: 0.75s; }
+
+    .wipe { clip-path: inset(0 50% 0 50%); transition: clip-path 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+    .wipe.in { clip-path: inset(0 0 0 0); }
+
+    /* ============================================================ */
+    /* INTRO — fullscreen black slate                                */
+    /* ============================================================ */
+    .intro {
+      position: fixed;
+      inset: 0;
+      background: var(--ink);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 32px;
+      transition: opacity 1.2s ease-in-out, visibility 1.2s;
+    }
+    .intro.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+    .intro .meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: introMeta 0.6s 0.2s ease-out forwards;
+    }
+    .intro .title {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(36px, 6vw, 72px);
+      letter-spacing: -0.02em;
+      color: var(--paper);
+      opacity: 0;
+      animation: introTitle 0.9s 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .intro .sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--paper-dim);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: introMeta 0.6s 0.85s ease-out forwards;
+    }
+    @keyframes introMeta { to { opacity: 1; } }
+    @keyframes introTitle { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ============================================================ */
+    /* HERO                                                          */
+    /* ============================================================ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      padding: 100px 48px 80px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 32px;
+      z-index: 3;
+    }
+
+    .hero-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1500px;
+    }
+
+    .field-note {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 36px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .field-note .rule {
+      flex: 0 0 96px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.7;
+    }
+
+    .h-display {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(64px, 12vw, 184px);
+      line-height: 0.92;
+      letter-spacing: -0.025em;
+      color: var(--paper);
+    }
+
+    .title-line {
+      display: block;
+      overflow: hidden;
+      padding: 0.04em 0;
+    }
+    .title-line .inner {
+      display: inline-block;
+      transform: translateY(110%);
+      animation: titleSlide 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: 1.4s;
+    }
+    .title-line.l2 .inner { animation-delay: 1.6s; }
+    @keyframes titleSlide { to { transform: translateY(0); } }
+
+    .h-display .accent { color: var(--accent); }
+
+    .hero-sub {
+      margin-top: 36px;
+      font-family: var(--font-mincho);
+      font-weight: 500;
+      font-size: clamp(15px, 1.4vw, 19px);
+      line-height: 1.95;
+      color: var(--paper-dim);
+      max-width: 540px;
+      letter-spacing: 0.02em;
+    }
+    .hero-sub strong {
+      color: var(--paper);
+      font-weight: 700;
+    }
+
+    .hero-bottom {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      gap: 56px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--paper-dim);
+    }
+
+    .meta-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meta-block strong {
+      color: var(--paper);
+      font-family: var(--font-mincho);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0;
+      text-transform: none;
+      margin-top: 4px;
+    }
+    .meta-block .footer-text {
+      color: var(--paper-dim);
+      font-size: 10px;
+      margin-top: 10px;
+      letter-spacing: 0.18em;
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 36px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.4s ease, box-shadow 0.4s ease;
+    }
+    .cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: -1;
+    }
+    .cta:hover::before { transform: scaleX(1); }
+    .cta:hover { color: var(--ink); box-shadow: 0 0 32px rgba(255, 107, 0, 0.35); }
+    .cta .arrow {
+      font-family: var(--font-mincho);
+      font-size: 18px;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .cta:hover .arrow { transform: translateX(6px); }
+
+    .ticker {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .ticker .num {
+      font-family: var(--font-mincho);
+      font-size: 56px;
+      font-weight: 800;
+      color: var(--paper);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .ticker .num .unit {
+      font-size: 16px;
+      color: var(--paper-dim);
+      margin-left: 6px;
+      letter-spacing: 0;
+    }
+
+    /* Live status */
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--paper);
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 14px var(--accent-glow);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Hero contour */
+    .contour {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 120%;
+      height: 280px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .contour path { stroke-dasharray: 2200; stroke-dashoffset: 2200; animation: drawLine 2.4s 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .contour path:nth-child(2) { animation-delay: 2.05s; }
+    .contour path:nth-child(3) { animation-delay: 2.3s; }
+    .contour path:nth-child(4) { animation-delay: 2.55s; }
+    @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+    /* ============================================================ */
+    /* SECTION skeleton                                              */
+    /* ============================================================ */
+    .section {
+      position: relative;
+      padding: 120px 48px;
+      z-index: 3;
+      border-top: 1px solid var(--hairline);
+    }
+    .section .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 80px;
+      align-items: start;
+      margin-bottom: 80px;
+    }
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 220px;
+    }
+    .section-tag .index {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: 56px;
+      color: var(--paper);
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      font-feature-settings: "ss01";
+    }
+    .section-tag .num-label {
+      color: var(--paper-dim);
+    }
+    .section-title {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--paper);
+    }
+    .section-title .accent { color: var(--accent); }
+    .section-lede {
+      margin-top: 28px;
+      font-family: var(--font-mincho);
+      font-size: clamp(15px, 1.3vw, 18px);
+      line-height: 1.95;
+      color: var(--paper-dim);
+      max-width: 640px;
+    }
+
+    /* ============================================================ */
+    /* PHILOSOPHY                                                    */
+    /* ============================================================ */
+    .philosophy {
+      position: relative;
+      padding: 160px 48px;
+      overflow: hidden;
+      border-top: 1px solid var(--hairline);
+      z-index: 3;
+    }
+    .philosophy-bg {
+      position: absolute;
+      inset: -10% 0;
+      background: url('../public/images/rider-journey.jpg') center/cover no-repeat;
+      opacity: 0.22;
+      filter: grayscale(0.4) contrast(1.1);
+      will-change: transform;
+      z-index: -1;
+    }
+    .philosophy-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(11,8,6,0.85) 0%, rgba(11,8,6,0.55) 50%, rgba(11,8,6,0.95) 100%);
+    }
+    .philosophy .container { max-width: 1100px; margin: 0 auto; }
+
+    .quote-block {
+      font-family: var(--font-mincho);
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1.7;
+      color: var(--paper);
+      letter-spacing: 0.01em;
+      max-width: 880px;
+    }
+    .quote-block p + p { margin-top: 1.6em; }
+    .quote-block .dim { color: var(--paper-dim); }
+    .quote-block strong {
+      color: var(--accent);
+      font-weight: 700;
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 4px;
+    }
+
+    .quote-divider {
+      width: 64px;
+      height: 1px;
+      background: var(--accent);
+      margin: 56px 0;
+    }
+
+    /* ============================================================ */
+    /* CORE VALUES — editorial pages                                 */
+    /* ============================================================ */
+    .values { padding: 0; border: none; }
+    .value-page {
+      position: relative;
+      padding: 140px 48px;
+      border-top: 1px solid var(--hairline);
+      overflow: hidden;
+    }
+    .value-page .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .value-page.flip .container {
+      grid-template-columns: 1fr 1.1fr;
+    }
+    .value-page.flip .vp-text { order: 2; }
+    .value-page.flip .vp-image { order: 1; }
+
+    .vp-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .vp-meta::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+    }
+    .vp-index {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(80px, 10vw, 144px);
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      color: var(--paper);
+      margin-bottom: 12px;
+      display: block;
+    }
+    .vp-title {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(28px, 3vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--paper);
+      margin-bottom: 24px;
+    }
+    .vp-title .accent { color: var(--accent); }
+    .vp-body {
+      font-family: var(--font-mincho);
+      font-size: 16px;
+      line-height: 1.95;
+      color: var(--paper-dim);
+      max-width: 480px;
+    }
+    .vp-image {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      max-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--hairline);
+      overflow: hidden;
+    }
+    .vp-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .vp-image::after {
+      content: attr(data-caption);
+      position: absolute;
+      bottom: -28px;
+      left: 0;
+      right: 0;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--paper-dim);
+      text-align: center;
+    }
+    .vp-image-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+    }
+    .vp-image-corner.tl { top: 8px; left: 8px; border-top: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+    .vp-image-corner.br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+
+    /* ============================================================ */
+    /* INDEX (BetaPerks) — editorial list                            */
+    /* ============================================================ */
+    .index-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .index-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 280px;
+      gap: 48px;
+      padding: 48px 0;
+      border-top: 1px solid var(--hairline);
+      align-items: start;
+      transition: background 0.3s ease, padding-left 0.3s ease;
+    }
+    .index-row:last-child { border-bottom: 1px solid var(--hairline); }
+    .index-row:hover {
+      background: linear-gradient(90deg, rgba(255,107,0,0.04), transparent);
+      padding-left: 16px;
+    }
+    .ix-num {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: 32px;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .ix-title {
+      font-family: var(--font-mincho);
+      font-weight: 700;
+      font-size: clamp(22px, 2vw, 28px);
+      color: var(--paper);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .ix-title .label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.35em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .ix-body {
+      font-family: var(--font-mincho);
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--paper-dim);
+    }
+
+    /* ============================================================ */
+    /* PHOTO BREAK                                                    */
+    /* ============================================================ */
+    .photo-break {
+      position: relative;
+      min-height: 70vh;
+      padding: 0;
+      border-top: 1px solid var(--hairline);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+    }
+    .photo-break-bg {
+      position: absolute;
+      inset: -10% -5%;
+      background: url('../public/images/photo-break-bike.jpg') center/cover no-repeat;
+      filter: grayscale(0.3) contrast(1.1);
+      will-change: transform;
+      z-index: -1;
+    }
+    .photo-break-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(11,8,6,0.7) 0%, rgba(11,8,6,0.45) 50%, rgba(11,8,6,0.85) 100%);
+    }
+    .photo-quote {
+      font-family: var(--font-mincho);
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 56px);
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+      color: var(--paper);
+      text-align: center;
+      max-width: 900px;
+      padding: 0 32px;
+    }
+    .photo-quote::before, .photo-quote::after {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.4em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin: 0 auto 24px;
+    }
+    .photo-quote::before { content: '— FIELD NOTE'; }
+    .photo-quote::after { content: 'MOTO-LOGOS'; margin: 24px auto 0; }
+
+    /* ============================================================ */
+    /* HOWTO                                                         */
+    /* ============================================================ */
+    .howto-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--hairline);
+      border: 1px solid var(--hairline);
+    }
+    .howto-step {
+      background: var(--ink);
+      padding: 56px 40px;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+    .howto-step:hover { background: var(--ink-soft); }
+    .howto-step .step-num {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: 96px;
+      line-height: 1;
+      color: var(--accent);
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      display: block;
+    }
+    .howto-step .step-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--paper-dim);
+      margin-bottom: 16px;
+    }
+    .howto-step .step-title {
+      font-family: var(--font-mincho);
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--paper);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    .howto-step .step-body {
+      font-family: var(--font-mincho);
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--paper-dim);
+    }
+
+    /* ============================================================ */
+    /* FAQ                                                           */
+    /* ============================================================ */
+    .faq-list { max-width: 880px; margin: 0 auto; }
+    .faq-item {
+      border-top: 1px solid var(--hairline);
+      padding: 32px 0;
+      cursor: pointer;
+    }
+    .faq-item:last-child { border-bottom: 1px solid var(--hairline); }
+    .faq-q {
+      display: grid;
+      grid-template-columns: 32px 1fr 24px;
+      gap: 16px;
+      align-items: baseline;
+      font-family: var(--font-mincho);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--paper);
+      letter-spacing: -0.01em;
+    }
+    .faq-q .q-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+    }
+    .faq-q .toggle {
+      font-family: var(--font-mincho);
+      font-size: 22px;
+      color: var(--accent);
+      transition: transform 0.3s ease;
+      text-align: right;
+    }
+    .faq-item.open .faq-q .toggle { transform: rotate(45deg); }
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+      padding-left: 48px;
+      font-family: var(--font-mincho);
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--paper-dim);
+    }
+    .faq-item.open .faq-a {
+      max-height: 400px;
+      padding-top: 16px;
+    }
+
+    /* ============================================================ */
+    /* BETA FORM                                                     */
+    /* ============================================================ */
+    .beta-form {
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+    .form-row label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: 1px solid var(--hairline);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--paper-dim);
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+    .form-row label.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .form-row input[type="radio"] { display: none; }
+    .form-row label::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+    }
+    .form-row label.active::before {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .beta-form input[type="email"] {
+      padding: 18px 20px;
+      background: transparent;
+      border: 1px solid var(--hairline);
+      color: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      transition: border-color 0.3s ease;
+    }
+    .beta-form input[type="email"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .beta-form input[type="email"]::placeholder { color: var(--paper-mute); }
+    .beta-form button {
+      padding: 20px 36px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .beta-form button:hover {
+      background: var(--accent-glow);
+      box-shadow: 0 0 32px rgba(255, 107, 0, 0.4);
+    }
+
+    /* ============================================================ */
+    /* FINAL CTA                                                     */
+    /* ============================================================ */
+    .final {
+      position: relative;
+      min-height: 90vh;
+      padding: 140px 48px;
+      border-top: 1px solid var(--hairline);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      z-index: 3;
+    }
+    .final-bg {
+      position: absolute;
+      inset: -10% 0;
+      background: url('../public/images/hero-bg.jpg') center/cover no-repeat;
+      opacity: 0.28;
+      filter: grayscale(0.5) contrast(1.15);
+      animation: kenBurns 22s ease-in-out infinite alternate;
+      z-index: -1;
+    }
+    .final-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(11,8,6,0.7) 0%, rgba(11,8,6,0.4) 30%, rgba(11,8,6,0.7) 70%, rgba(11,8,6,0.95) 100%);
+    }
+    @keyframes kenBurns {
+      0% { transform: scale(1) translate(0, 0); }
+      100% { transform: scale(1.15) translate(-2%, -1%); }
+    }
+    .final .container { max-width: 1280px; margin: 0 auto; width: 100%; }
+    .final-headline {
+      font-family: var(--font-mincho);
+      font-weight: 800;
+      font-size: clamp(40px, 6vw, 96px);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      color: var(--paper);
+      max-width: 1000px;
+    }
+    .final-headline .accent { color: var(--accent); }
+
+    /* ============================================================ */
+    /* FOOTER                                                        */
+    /* ============================================================ */
+    footer {
+      position: relative;
+      padding: 80px 48px 60px;
+      border-top: 1px solid var(--hairline);
+      z-index: 3;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--paper-dim);
+    }
+    footer .colophon {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 48px;
+      max-width: 1280px;
+      margin: 0 auto 60px;
+    }
+    footer .col-title {
+      color: var(--accent);
+      margin-bottom: 16px;
+      font-size: 9px;
+    }
+    footer .col-content {
+      font-family: var(--font-mincho);
+      font-size: 16px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--paper);
+      line-height: 1.5;
+    }
+    footer .col-content .small {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--paper-dim);
+    }
+    footer .legal {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      padding-top: 24px;
+      border-top: 1px solid var(--hairline);
+    }
+
+    /* ============================================================ */
+    /* RESPONSIVE                                                    */
+    /* ============================================================ */
+    @media (max-width: 900px) {
+      .nav { padding: 14px 20px; font-size: 9px; }
+      .nav-cta { padding: 8px 12px; font-size: 9px; }
+
+      .hero { padding: 90px 22px 80px; }
+      .hero-bottom { grid-template-columns: 1fr; gap: 28px; align-items: start; }
+      .ticker { text-align: left; align-items: flex-start; }
+
+      .section { padding: 80px 22px; }
+      .philosophy { padding: 100px 22px; }
+      .section-head { grid-template-columns: 1fr; gap: 40px; margin-bottom: 56px; }
+      .section-tag { width: auto; flex-direction: row; align-items: baseline; gap: 16px; }
+      .section-tag .index { font-size: 40px; }
+
+      .value-page { padding: 80px 22px; }
+      .value-page .container, .value-page.flip .container { grid-template-columns: 1fr; gap: 48px; }
+      .value-page.flip .vp-text, .value-page.flip .vp-image { order: unset; }
+
+      .index-row { grid-template-columns: 56px 1fr; }
+      .index-row .ix-body { grid-column: 2; }
+
+      .howto-grid { grid-template-columns: 1fr; }
+
+      .final { padding: 100px 22px; }
+
+      footer { padding: 60px 22px 40px; }
+      footer .colophon { grid-template-columns: 1fr; gap: 28px; }
+      footer .legal { flex-direction: column; gap: 8px; }
+
+      .crosshair.tl { top: 60px; left: 12px; }
+      .crosshair.tr { top: 60px; right: 12px; }
+      .crosshair.bl { bottom: 12px; left: 12px; }
+      .crosshair.br { bottom: 12px; right: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== INTRO ===== -->
+  <div class="intro" id="intro">
+    <span class="meta">FIELD NOTE — №&nbsp;000</span>
+    <span class="title">これは存在証明だ。</span>
+    <span class="sub">A FIELD NOTE FOR URBAN RIDERS</span>
+  </div>
+
+  <div class="grid-bg"></div>
+  <div class="crosshair tl"></div>
+  <div class="crosshair tr"></div>
+  <div class="crosshair bl"></div>
+  <div class="crosshair br"></div>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <span class="mark">M</span>
+      <span>MOTO-LOGOS</span>
+    </div>
+    <a class="nav-cta" href="#beta">βテスター参加 →</a>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <svg class="contour" viewBox="0 0 1920 280" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,240 Q480,180 960,210 T1920,200" stroke="#FF6B00" stroke-width="1" fill="none" />
+      <path d="M0,200 Q480,140 960,170 T1920,160" stroke="#B8431F" stroke-width="0.6" fill="none" />
+      <path d="M0,160 Q480,100 960,130 T1920,120" stroke="#F5F2EA" stroke-width="0.5" fill="none" opacity="0.6" />
+      <path d="M0,120 Q480,60 960,90 T1920,80" stroke="#F5F2EA" stroke-width="0.5" fill="none" opacity="0.4" />
+    </svg>
+
+    <div class="hero-center">
+      <div class="field-note">
+        <span class="rule"></span>
+        <span>FIELD NOTE — №&nbsp;001</span>
+      </div>
+
+      <h1 class="h-display">
+        <span class="title-line"><span class="inner">足跡を、</span></span>
+        <span class="title-line l2"><span class="inner">刻め<span class="accent">。</span></span></span>
+      </h1>
+
+      <p class="hero-sub">
+        ナビは駐車場を教えてくれても駐輪場は知らない。<br />
+        <strong>ワンショットが足跡になる。足跡が誰かの地図になる。</strong>
+      </p>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="meta-block">
+        <span class="live"><span class="dot"></span>LIVE / β REGISTRATION OPEN</span>
+        <strong>都市ライダーの存在証明</strong>
+        <span class="footer-text">TOKYO — OSAKA — NAGOYA — FUKUOKA</span>
+      </div>
+
+      <a href="#beta" class="cta">
+        <span>βテスターに参加する</span>
+        <span class="arrow">→</span>
+      </a>
+
+      <div class="ticker">
+        <span>SPOTS WAITING</span>
+        <span class="num">1,300<span class="unit">/PIN</span></span>
+        <span>FOR YOUR FIRST SHOT</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PHILOSOPHY ===== -->
+  <section class="philosophy">
+    <div class="philosophy-bg" data-parallax="0.18"></div>
+    <div class="container">
+      <div class="field-note reveal">
+        <span class="rule"></span>
+        <span>FIELD NOTE — №&nbsp;002 / WHY</span>
+      </div>
+      <div class="quote-block">
+        <p class="reveal d1 dim">
+          渋谷で停める場所が見つからず3周した夜。<br />
+          新宿で「大型お断り」の看板を着いてから読んだ朝。
+        </p>
+        <p class="reveal d2">
+          ナビは駐車場を教えてくれても駐輪場は知らない。<br />
+          Google Maps は車のための地図だ。<br />
+          <span class="dim">バイク乗りはいつだって地図の上では透明人間だった。</span>
+        </p>
+      </div>
+
+      <div class="quote-divider reveal d3"></div>
+
+      <div class="quote-block">
+        <p class="reveal d3">
+          だから自分たちの地図をつくることにした。<br />
+          写真1枚。それだけでいい。
+        </p>
+        <p class="reveal d4">
+          <strong>ワンショットが足跡になる。</strong><br />
+          <strong>足跡が誰かの地図になる。</strong>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CORE VALUES ===== -->
+  <div class="values">
+    <!-- value 01 -->
+    <section class="value-page">
+      <div class="container">
+        <div class="vp-text">
+          <div class="vp-meta reveal">FIELD NOTE — №&nbsp;003 / RITUAL</div>
+          <span class="vp-index reveal d1">01</span>
+          <h2 class="vp-title reveal d2">
+            撮るだけ。<br />
+            それが<span class="accent">セレモニー</span>になる。
+          </h2>
+          <p class="vp-body reveal d3">
+            到着して、写真1枚。それだけ。グローブをしたまま、片手で。
+            分類も評価も入力もいらない。AI が裏で全部やる。
+            <br /><br />
+            君がやったのは「停めた」じゃない。「足跡を刻んだ」だ。
+          </p>
+        </div>
+        <div class="vp-image" data-caption="SS — №01 / DETAIL VIEW">
+          <span class="vp-image-corner tl"></span>
+          <span class="vp-image-corner br"></span>
+          <img src="../public/images/ss-detail.png" alt="" />
+        </div>
+      </div>
+    </section>
+
+    <!-- value 02 -->
+    <section class="value-page flip">
+      <div class="container">
+        <div class="vp-text">
+          <div class="vp-meta reveal">FIELD NOTE — №&nbsp;004 / FRESHNESS</div>
+          <span class="vp-index reveal d1">02</span>
+          <h2 class="vp-title reveal d2">
+            鮮度。<br />
+            <span class="accent">3日前の足跡</span>は、生きてる。
+          </h2>
+          <p class="vp-body reveal d3">
+            「今日確認」「3日前」「先週」。地図のピンには時間が刻まれている。
+            古い情報は静かに薄れ、新しい足跡が地図を更新する。
+            <br /><br />
+            誰かのワンショットが、君が走る今夜のヒントになる。
+          </p>
+        </div>
+        <div class="vp-image" data-caption="SS — №02 / MAP VIEW">
+          <span class="vp-image-corner tl"></span>
+          <span class="vp-image-corner br"></span>
+          <img src="../public/images/ss-map.png" alt="" />
+        </div>
+      </div>
+    </section>
+
+    <!-- value 03 -->
+    <section class="value-page">
+      <div class="container">
+        <div class="vp-text">
+          <div class="vp-meta reveal">FIELD NOTE — №&nbsp;005 / ALTRUISM</div>
+          <span class="vp-index reveal d1">03</span>
+          <h2 class="vp-title reveal d2">
+            自分のために撮る。<br />
+            それが<span class="accent">誰かの地図</span>になる。
+          </h2>
+          <p class="vp-body reveal d3">
+            報告じゃない。貢献じゃない。ランクもない。星もない。
+            ただ、自分のノートに残った1枚が、どこかの誰かの今夜を救う。
+            <br /><br />
+            利己が利他になる。設計された偶然。
+          </p>
+        </div>
+        <div class="vp-image" data-caption="SS — №03 / PROFILE VIEW">
+          <span class="vp-image-corner tl"></span>
+          <span class="vp-image-corner br"></span>
+          <img src="../public/images/ss-report.png" alt="" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== PHOTO BREAK ===== -->
+  <section class="photo-break">
+    <div class="photo-break-bg" data-parallax="0.12"></div>
+    <p class="photo-quote reveal wipe">
+      自分の1枚が<br />誰かの地図になる。
+    </p>
+  </section>
+
+  <!-- ===== INDEX (BetaPerks) ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-tag">
+          <span class="num-label">FIELD NOTE — №&nbsp;006</span>
+          <span class="index">BETA</span>
+          <span class="num-label">FOR EARLY RIDERS</span>
+        </div>
+        <div>
+          <h2 class="section-title reveal">
+            最初に地図に<br /><span class="accent">足跡を残す</span>者へ。
+          </h2>
+          <p class="section-lede reveal d1">
+            βテスター3つの特権。1,300件のスポットがまだ匿名のまま、最初の足跡を待っている。
+          </p>
+        </div>
+      </div>
+
+      <div class="index-list">
+        <div class="index-row reveal">
+          <span class="ix-num">01</span>
+          <div class="ix-title">
+            <span class="label">FIRST FOOTPRINT</span>
+            最初のライダーになれる権利。
+          </div>
+          <div class="ix-body">
+            誰よりも早く地図に自分の足跡を残せる。<br />
+            あとから来る数千人がその足跡を踏む。
+          </div>
+        </div>
+
+        <div class="index-row reveal d1">
+          <span class="ix-num">02</span>
+          <div class="ix-title">
+            <span class="label">DIRECT LINE</span>
+            開発に直接介入できる回線。
+          </div>
+          <div class="ix-body">
+            君のフィードバックが、次のアップデートになる。<br />
+            βテスターのチャンネルは開発者と直結。
+          </div>
+        </div>
+
+        <div class="index-row reveal d2">
+          <span class="ix-num">03</span>
+          <div class="ix-title">
+            <span class="label">WARM UP THE MAP</span>
+            空白の地図を、温める権利。
+          </div>
+          <div class="ix-body">
+            1,300件のスポットがまだ無音のままだ。<br />
+            最初のワンショットで地図に体温を吹き込む。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOWTO ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-tag">
+          <span class="num-label">FIELD NOTE — №&nbsp;007</span>
+          <span class="index">HOW</span>
+          <span class="num-label">HOW TO JOIN</span>
+        </div>
+        <div>
+          <h2 class="section-title reveal">
+            参加の<span class="accent">手続き</span>。
+          </h2>
+          <p class="section-lede reveal d1">
+            3ステップ。所要1分。すべて無料。
+          </p>
+        </div>
+      </div>
+
+      <div class="howto-grid">
+        <div class="howto-step reveal">
+          <span class="step-num">01</span>
+          <div class="step-label">STEP / 申込</div>
+          <div class="step-title">メールアドレスを置いていけ。</div>
+          <div class="step-body">
+            下のフォームから登録。OS（iOS / Android）を選択するだけ。30秒で完了。
+          </div>
+        </div>
+        <div class="howto-step reveal d1">
+          <span class="step-num">02</span>
+          <div class="step-label">STEP / 招待</div>
+          <div class="step-title">招待リンクが届く。</div>
+          <div class="step-body">
+            βテスト開始時、登録順に招待。TestFlight / Play Console 経由でインストール。
+          </div>
+        </div>
+        <div class="howto-step reveal d2">
+          <span class="step-num">03</span>
+          <div class="step-label">STEP / 撮影</div>
+          <div class="step-title">最初のワンショットを刻め。</div>
+          <div class="step-body">
+            アプリを開いて、撮るだけ。地図上に君の最初の足跡が現れる。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-tag">
+          <span class="num-label">FIELD NOTE — №&nbsp;008</span>
+          <span class="index">FAQ</span>
+          <span class="num-label">FREQUENTLY ASKED</span>
+        </div>
+        <div>
+          <h2 class="section-title reveal">
+            想定された<span class="accent">疑問</span>。
+          </h2>
+        </div>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.01</span><span>βテストはいつから？</span><span class="toggle">+</span></div>
+          <div class="faq-a">2026年Q2を予定。準備が整い次第、登録順に招待リンクをお送りします。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.02</span><span>料金は？</span><span class="toggle">+</span></div>
+          <div class="faq-a">βテスト期間中は完全無料。本リリース時の料金は未定ですが、βテスターには優遇措置を予定しています。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.03</span><span>iOS / Android 両方対応？</span><span class="toggle">+</span></div>
+          <div class="faq-a">はい。TestFlight（iOS）と Play Console（Android）の両方で配布予定です。登録時に選択してください。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.04</span><span>個人情報の扱いは？</span><span class="toggle">+</span></div>
+          <div class="faq-a">βテスト招待のみに使用します。第三者提供は一切ありません。テスト終了後はオプトアウト可能です。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.05</span><span>対応エリアは？</span><span class="toggle">+</span></div>
+          <div class="faq-a">初期は首都圏（東京・神奈川・千葉・埼玉）から。順次、大阪・名古屋・福岡へ拡張予定。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="q-num">Q.06</span><span>撮った写真は公開される？</span><span class="toggle">+</span></div>
+          <div class="faq-a">公開されるのは「位置」「鮮度」「概況」のみ。写真自体は君のノートに残ります。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FINAL CTA ===== -->
+  <section class="final" id="beta">
+    <div class="final-bg"></div>
+    <div class="container">
+      <div class="field-note reveal">
+        <span class="rule"></span>
+        <span>FIELD NOTE — №&nbsp;009 / ENLISTMENT</span>
+      </div>
+      <h2 class="final-headline reveal d1">
+        この地図の<br />
+        <span class="accent">最初のライダー</span>になれ。
+      </h2>
+      <p class="hero-sub reveal d2" style="margin-top: 32px;">
+        1,300件のスポットが、最初のワンショットを待っている。<br />
+        メールアドレスだけ。30秒で完了。
+      </p>
+
+      <form class="beta-form reveal d3" onsubmit="event.preventDefault(); alert('プロトタイプ：実フォームは Firestore 連携');">
+        <div class="form-row">
+          <label class="active"><input type="radio" name="os" value="ios" checked /> iOS</label>
+          <label><input type="radio" name="os" value="android" /> Android</label>
+        </div>
+        <input type="email" placeholder="apple-id@example.com（TestFlight 招待用）" required />
+        <button type="submit">βテスターに参加する →</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="colophon">
+      <div>
+        <div class="col-title">COLOPHON</div>
+        <div class="col-content">
+          MOTO-LOGOS は、都市ライダーのための<br />
+          存在証明プロジェクトです。
+          <span class="small">
+            企画・開発・運営：株式会社ウィットワン -Wit-One-<br />
+            A FIELD NOTE FOR URBAN RIDERS — VOL. 01
+          </span>
+        </div>
+      </div>
+      <div>
+        <div class="col-title">CONTACT</div>
+        <div class="col-content">
+          <a href="mailto:hello@witone.co.jp" style="color: inherit; text-decoration: none; border-bottom: 1px solid var(--accent);">hello@witone.co.jp</a>
+          <span class="small">取材・協業のお問い合わせ</span>
+        </div>
+      </div>
+      <div>
+        <div class="col-title">COORDINATES</div>
+        <div class="col-content">
+          35.6595° N<br />
+          139.7004° E
+          <span class="small">TOKYO, JAPAN</span>
+        </div>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 株式会社ウィットワン -Wit-One-</span>
+      <span>"INTERVENE IN THE WORLD."</span>
+    </div>
+  </footer>
+
+  <script>
+    // === Intro auto-hide ===
+    setTimeout(() => {
+      document.getElementById('intro').classList.add('hide');
+    }, 2400);
+
+    // === Reveal observer ===
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // === Parallax ===
+    const parallaxEls = document.querySelectorAll('[data-parallax]');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          parallaxEls.forEach(el => {
+            const speed = parseFloat(el.dataset.parallax);
+            const rect = el.parentElement.getBoundingClientRect();
+            const offset = rect.top * speed;
+            el.style.transform = `translateY(${offset}px)`;
+          });
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+
+    // === FAQ accordion ===
+    document.querySelectorAll('.faq-item').forEach(item => {
+      item.addEventListener('click', () => item.classList.toggle('open'));
+    });
+
+    // === Form OS toggle ===
+    document.querySelectorAll('.form-row label').forEach(lbl => {
+      lbl.addEventListener('click', () => {
+        document.querySelectorAll('.form-row label').forEach(l => l.classList.remove('active'));
+        lbl.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
