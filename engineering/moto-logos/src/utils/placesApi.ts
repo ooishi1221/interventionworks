@@ -10,9 +10,18 @@
  *   const { latitude, longitude, name } = await getPlaceDetails(suggestions[0].placeId, token);
  */
 
-// Places API 専用キー。app.json の android.config.googleMaps.apiKey と同じ値だが
-// ハードコードで EAS env の注入漏れを回避。リリース時に HTTP referrer 制限を検討。
-const API_KEY = 'AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o';
+// Places API 専用キー。EXPO_PUBLIC_* で注入し、ソースには持たない。
+// 本番リリース前に GCP コンソール側で API restrictions
+// (Android package + SHA-1 / iOS Bundle ID / HTTP referrer) を必ず設定すること。
+function getApiKey(): string {
+  const key = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+  if (!key) {
+    throw new Error(
+      'EXPO_PUBLIC_GOOGLE_PLACES_API_KEY が未設定です。.env または EAS Secrets を確認してください。'
+    );
+  }
+  return key;
+}
 
 export interface PlaceSuggestion {
   placeId: string;
@@ -67,7 +76,7 @@ export async function autocompletePlaces(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Goog-Api-Key': API_KEY,
+        'X-Goog-Api-Key': getApiKey(),
         // iOS/Android の Bundle/Package ヘッダーを明示的に空にして、
         // Google 側でのアプリ制限判定に影響しないようにする
         'X-Ios-Bundle-Identifier': '',
@@ -79,7 +88,7 @@ export async function autocompletePlaces(
   );
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`autocomplete ${res.status} key=${API_KEY.slice(0, 12)}: ${text.slice(0, 200)}`);
+    throw new Error(`autocomplete ${res.status}: ${text.slice(0, 200)}`);
   }
   const data = await res.json();
   type RawSuggestion = {
@@ -113,7 +122,7 @@ export async function getPlaceDetails(
     `https://places.googleapis.com/v1/places/${placeId}?sessionToken=${encodeURIComponent(sessionToken)}`,
     {
       headers: {
-        'X-Goog-Api-Key': API_KEY,
+        'X-Goog-Api-Key': getApiKey(),
         'X-Goog-FieldMask': 'location,displayName',
       },
     },
