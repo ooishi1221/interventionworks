@@ -10,14 +10,19 @@
  *   const { latitude, longitude, name } = await getPlaceDetails(suggestions[0].placeId, token);
  */
 
-// Places API 専用キー。EXPO_PUBLIC_* で注入し、ソースには持たない。
-// 本番リリース前に GCP コンソール側で API restrictions
-// (Android package + SHA-1 / iOS Bundle ID / HTTP referrer) を必ず設定すること。
+import { Platform } from 'react-native';
+
+// Places API キー。Application restrictions は GCP 側で 1 種類しか設定できないため、
+// Android / iOS で別キーを発行し、platform で使い分ける。ソースには値を持たない。
 function getApiKey(): string {
-  const key = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+  const key =
+    Platform.OS === 'ios'
+      ? process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY_IOS
+      : process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY_ANDROID;
   if (!key) {
+    const envName = `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY_${Platform.OS.toUpperCase()}`;
     throw new Error(
-      'EXPO_PUBLIC_GOOGLE_PLACES_API_KEY が未設定です。.env または EAS Secrets を確認してください。'
+      `${envName} が未設定です。.env または EAS Secrets を確認してください。`
     );
   }
   return key;
