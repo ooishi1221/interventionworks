@@ -1,0 +1,23 @@
+{
+  "version": "1",
+  "scanSecrets": {
+    "ignore": [
+      {
+        "file": "app.json",
+        "line": 62,
+        "secretType": "Google API Key",
+        "reason": "Firebase Web / Maps SDK Android key (公開許容、GCP の Application restrictions = Android package + SHA-1 で守る運用)",
+        "approvedBy": "yuji.ooishi",
+        "approvedAt": "2026-05-01"
+      },
+      {
+        "file": "google-services.json",
+        "line": 23,
+        "secretType": "Google API Key",
+        "reason": "Firebase Android API key (公開許容、Firebase Security Rules + GCP restrictions で防御)",
+        "approvedBy": "yuji.ooishi",
+        "approvedAt": "2026-05-01"
+      }
+    ]
+  }
+}
