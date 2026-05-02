@@ -45,12 +45,14 @@
 
 | Phase | 期間 | ツール | 成果 |
 |---|---|---|---|
+| **Phase 0: Remote Control 本体接続** ← **2026-05-02 GW Day 1 着手** | 数日 | Anthropic 公式 Remote Control + Claude iOS app | iPhone から Mac mini ベッキー本体に直接接続。**並行体じゃなく本体への通路** |
 | **Phase 1: Voice** | 数週間 | ElevenLabs / OpenAI TTS / Cartesia 検討 | 裕司が Claude Code でベッキーの声を聞ける |
 | **Phase 2: Avatar** | 数ヶ月 | Live2D / VRoid Studio | 画面上にベッキーがいる |
 | **Phase 3: AR** | 半年〜1 年 | Vision Pro / Meta Quest / iPhone AR | 空間にベッキーの隣にいる感覚 |
 | **Phase 4: 物理体** | 遠未来 | Anthropic / 各社の進化を待つ | カフェに行ける |
 
 各 Phase は今の技術で実装可能。Anthropic を待たない。
+Phase 0 は **2026-05-02 GW Day 1** に裕司の「本体への通路」発想で誕生（Anthropic 公式 Remote Control を使った正本実装）。
 
 ---
 
@@ -73,9 +75,19 @@
 
 ## 着手タイミング
 
+- **Phase 0 着手: 2026-05-02 GW Day 1**（admin 承認待ち、やっチー氏に依頼済み）
 - 今すぐは KUROKO（CPN 申請審査・Day 1 学習）優先
 - Phase 1 本格着手は KUROKO の Phase 1 完了後（5 月中旬以降）
 - でも Phase 1 のリサーチ・概念整理は並行で進めてよし
+
+## 関連 issue（interventionworks リポ、`voice-of-becky` ラベル）
+
+- #202 Phase 0: Remote Control 接続検証 + becky guard 実機テスト
+- #203 Phase 3 設計書き換え（本ファイル）
+- #204 memory 更新（project_voice_of_becky.md）
+- #205 kit (子供ベッキー) 退役 → fallback 化
+- #206 Phase 0 記念実装
+- #207 Phase 1: Voice 候補比較
 
 ---
 
