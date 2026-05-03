@@ -89,7 +89,6 @@ const TOAST_MESSAGES = [
   '深夜限定オファー 23:00 開始',
 ]
 
-// ガチャ用：ピックアップ + プール
 type Rarity = 'LR' | 'SSR+' | 'SSR' | 'SR' | 'R'
 
 const PICKUP_CHARS = [
@@ -153,7 +152,6 @@ function rollOne(): { name: string; rarity: Rarity } {
 
 function rollTen(): { name: string; rarity: Rarity }[] {
   const arr = Array.from({ length: 10 }, () => rollOne())
-  // 業界擬態：10 連で SR 以上が必ず 1 体保証
   if (!arr.some((c) => c.rarity !== 'R')) {
     arr[arr.length - 1] = GACHA_POOL.find((c) => c.rarity === 'SR') ?? arr[arr.length - 1]
   }
@@ -231,12 +229,7 @@ function BattleBackground() {
         if (prev.length >= 24) return prev
         return [
           ...prev,
-          {
-            id: idRef.current++,
-            x: 8 + Math.random() * 84,
-            y: 12 + Math.random() * 50,
-            spawnAt: Date.now(),
-          },
+          { id: idRef.current++, x: 8 + Math.random() * 84, y: 12 + Math.random() * 50, spawnAt: Date.now() },
         ]
       })
     }, 150 + Math.random() * 250)
@@ -265,11 +258,7 @@ function BattleBackground() {
   return (
     <div className="battle-bg">
       {enemies.map((e) => (
-        <div
-          key={e.id}
-          className={e.killAt ? 'enemy enemy-dying' : 'enemy'}
-          style={{ left: `${e.x}%`, top: `${e.y}%` }}
-        >
+        <div key={e.id} className={e.killAt ? 'enemy enemy-dying' : 'enemy'} style={{ left: `${e.x}%`, top: `${e.y}%` }}>
           {e.killAt && <div className="hit-effect" />}
         </div>
       ))}
@@ -283,9 +272,7 @@ function FloatingOffer() {
 
   useEffect(() => {
     const t = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000)
-    const rotate = setInterval(() => {
-      setOfferIdx((i) => (i + 1) % OFFERS.length)
-    }, 4000)
+    const rotate = setInterval(() => setOfferIdx((i) => (i + 1) % OFFERS.length), 4000)
     return () => {
       clearInterval(t)
       clearInterval(rotate)
@@ -327,9 +314,7 @@ function ToastFeed() {
       const text = TOAST_MESSAGES[Math.floor(Math.random() * TOAST_MESSAGES.length)]
       const id = idRef.current++
       setActive((prev) => [...prev, { id, text }])
-      setTimeout(() => {
-        setActive((prev) => prev.filter((m) => m.id !== id))
-      }, 3500)
+      setTimeout(() => setActive((prev) => prev.filter((m) => m.id !== id)), 3500)
     }, 1100)
     return () => clearInterval(t)
   }, [])
@@ -337,9 +322,7 @@ function ToastFeed() {
   return (
     <div className="toast-feed">
       {active.map((m) => (
-        <div key={m.id} className="toast">
-          {m.text}
-        </div>
+        <div key={m.id} className="toast">{m.text}</div>
       ))}
     </div>
   )
@@ -396,9 +379,7 @@ function PromoStrip() {
     <div className="promo-strip">
       {PROMOS.map((p, i) => (
         <button key={i} className="promo-item" type="button" style={{ borderColor: p.accent }}>
-          <span className="promo-icon" style={{ background: `radial-gradient(circle, ${p.accent}, #000)` }}>
-            {p.icon}
-          </span>
+          <span className="promo-icon" style={{ background: `radial-gradient(circle, ${p.accent}, #000)` }}>{p.icon}</span>
           <div className="promo-text">
             <div className="promo-label">{p.label}</div>
             <div className="promo-sub">{p.sub}</div>
@@ -431,13 +412,34 @@ function HeroCharacter() {
   )
 }
 
-// ===== HomeScreen =====
-type Screen = 'home' | 'gacha'
+// ===== Screen 型 =====
+type Screen =
+  | 'home'
+  | 'gacha'
+  | 'layer1'
+  | 'layer2'
+  | 'layer3'
+  | 'layer4'
+  | 'layer5'
+  | 'free'
 
-function HomeScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+// ===== ゲームスコア =====
+type GameStats = {
+  startedAt: number
+  blocksHit: number // 引き止め食らった回数
+  apologyStones: number // 詫び石残高（敗北スコア）
+}
+
+// ===== HomeScreen =====
+function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; onExit: () => void }) {
   return (
     <>
       <BattleBackground />
+
+      {/* 終了ボタン（業界アプリには無いが、"Let Me Out" の入口） */}
+      <button type="button" className="exit-button" onClick={onExit}>
+        ✕ アプリ終了
+      </button>
 
       <header className="header">
         <div className="vip-badge">VIP3</div>
@@ -507,7 +509,7 @@ function HomeScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 }
 
 // ===== GachaScreen =====
-function GachaScreen({ onBack }: { onBack: () => void }) {
+function GachaScreen({ onBack, inFlow = false, onAdvance }: { onBack: () => void; inFlow?: boolean; onAdvance?: () => void }) {
   const [seconds, setSeconds] = useState(23 * 3600 + 47 * 60 + 18)
   const [pity, setPity] = useState(153)
   const [summoning, setSummoning] = useState(false)
@@ -531,9 +533,7 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
     }, 2400)
   }
 
-  const tryExit = () => {
-    setConfirmExit(true)
-  }
+  const tryExit = () => setConfirmExit(true)
 
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -541,23 +541,15 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="gacha-screen">
-      {/* ヘッダー */}
       <header className="gacha-header">
-        <button type="button" className="back-button" onClick={tryExit}>
-          ← 戻る
-        </button>
+        <button type="button" className="back-button" onClick={tryExit}>← 戻る</button>
         <div className="gacha-title">
           <div className="gacha-title-main">100 連 無料 ガチャ</div>
-          <div className="gacha-title-sub">
-            残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-          </div>
+          <div className="gacha-title-sub">残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</div>
         </div>
-        <div className="gacha-currency">
-          ✨ {Math.floor(shinzui).toLocaleString()}
-        </div>
+        <div className="gacha-currency">✨ {Math.floor(shinzui).toLocaleString()}</div>
       </header>
 
-      {/* メインビジュアル */}
       <div className="gacha-hero">
         <div className="gh-rays" />
         <div className="gh-emblem" />
@@ -572,7 +564,6 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
         <div className="gh-rarity-tag">PICK UP！ SSR 確率 9% 上昇中</div>
       </div>
 
-      {/* ピックアップ 3 体 */}
       <div className="pickup-row">
         {PICKUP_CHARS.map((c) => (
           <div key={c.name} className="pickup-card" style={{ background: RARITY_BG[c.rarity] }}>
@@ -583,7 +574,6 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
         ))}
       </div>
 
-      {/* 天井 */}
       <div className="pity">
         <div className="pity-label">天井確定まで <strong>{200 - pity}</strong> 連</div>
         <div className="pity-bar">
@@ -591,7 +581,6 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      {/* 召喚ボタン */}
       <div className="summon-row">
         <button type="button" className="summon-button single" onClick={() => summon(1)} disabled={summoning}>
           <div className="summon-label">1 連 召喚</div>
@@ -609,7 +598,6 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
         ※ 提供割合：LR 0.5% / SSR+ 2.0% / SSR 7.0% / SR 25% / R 65.5%（業界擬態）
       </div>
 
-      {/* 召喚演出 */}
       {summoning && (
         <div className="summon-anim">
           <div className="sa-bg" />
@@ -619,7 +607,6 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {/* 結果モーダル */}
       {results && (
         <div className="results-modal">
           <div className="results-rays" />
@@ -632,24 +619,17 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
                   className={`result-card rarity-${r.rarity.replace('+', 'plus')}`}
                   style={{ background: RARITY_BG[r.rarity], animationDelay: `${i * 0.1}s` }}
                 >
-                  <div className="result-rarity" style={{ color: RARITY_COLORS[r.rarity] }}>
-                    {r.rarity}
-                  </div>
+                  <div className="result-rarity" style={{ color: RARITY_COLORS[r.rarity] }}>{r.rarity}</div>
                   <div className="result-name">{r.name}</div>
                 </div>
               ))}
             </div>
-            <button type="button" className="results-close" onClick={() => setResults(null)}>
-              もう一度引く
-            </button>
-            <button type="button" className="results-close-alt" onClick={() => setResults(null)}>
-              閉じる
-            </button>
+            <button type="button" className="results-close" onClick={() => setResults(null)}>もう一度引く</button>
+            <button type="button" className="results-close-alt" onClick={() => setResults(null)}>閉じる</button>
           </div>
         </div>
       )}
 
-      {/* 戻る確認（業界擬態の引き止め） */}
       {confirmExit && (
         <div className="confirm-exit">
           <div className="ce-content">
@@ -660,12 +640,8 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
               限定キャラ「羅刹姫・葵」は復刻まで<strong>半年</strong>かかる可能性があります。
             </div>
             <div className="ce-buttons">
-              <button type="button" className="ce-stay" onClick={() => setConfirmExit(false)}>
-                ガチャを続ける（推奨）
-              </button>
-              <button type="button" className="ce-leave" onClick={onBack}>
-                それでも離れる
-              </button>
+              <button type="button" className="ce-stay" onClick={() => setConfirmExit(false)}>ガチャを続ける（推奨）</button>
+              <button type="button" className="ce-leave" onClick={inFlow && onAdvance ? onAdvance : onBack}>それでも離れる</button>
             </div>
           </div>
         </div>
@@ -674,14 +650,267 @@ function GachaScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
+// ===== Layer 1: ログインボーナス =====
+function Layer1Screen({ onAdvance, onBlock }: { onAdvance: () => void; onBlock: () => void }) {
+  const handleAdvance = () => {
+    onBlock()
+    onAdvance()
+  }
+  return (
+    <div className="layer-screen layer-1">
+      <div className="layer-content">
+        <div className="layer-tag">7 日連続ログイン特典</div>
+        <div className="layer-title">🎁 ログインボーナス</div>
+        <div className="layer-progress">
+          <span className="day done">1日目 ✓</span>
+          <span className="day done">2日目 ✓</span>
+          <span className="day done">3日目 ✓</span>
+          <span className="day done">4日目 ✓</span>
+          <span className="day done">5日目 ✓</span>
+          <span className="day done">6日目 ✓</span>
+          <span className="day today">7日目<br/>★LR★</span>
+        </div>
+        <div className="layer-message">
+          7 日連続まで<strong>あと 1 日</strong>です。<br />
+          受け取らないと **連続記録がリセット** されます。
+        </div>
+        <div className="layer-rewards">
+          <div className="reward-item">✨ 神髄 200 個</div>
+          <div className="reward-item">📜 招集令 5 個</div>
+          <div className="reward-item">💎 ダイヤ 100 個</div>
+        </div>
+        <div className="layer-buttons">
+          <button type="button" className="layer-btn primary" onClick={handleAdvance}>
+            受け取る
+          </button>
+          <button type="button" className="layer-btn secondary" onClick={handleAdvance}>
+            後で
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===== Layer 2: 人間関係（ギルド） =====
+function Layer2Screen({ onAdvance, onBlock }: { onAdvance: () => void; onBlock: () => void }) {
+  const handleAdvance = () => {
+    onBlock()
+    onAdvance()
+  }
+  return (
+    <div className="layer-screen layer-2">
+      <div className="layer-content">
+        <div className="layer-tag">ギルマスからのお手紙</div>
+        <div className="layer-title">📨 Tanaka さんから</div>
+        <div className="letter-box">
+          <div className="letter-from">From: ギルマス Tanaka</div>
+          <div className="letter-body">
+            「最近見ないけど、大丈夫？<br /><br />
+            あなたが抜けると、ギルドが解散の危機なんだ。残りメンバー <strong>5 名</strong>。<br /><br />
+            ギルド戦、あと <strong>3 名</strong>であなたが必要だよ。<br /><br />
+            戻ってきて。」
+          </div>
+          <div className="letter-time">24 時間前</div>
+        </div>
+        <div className="layer-message">
+          フレンド <strong>*Yuji*</strong> さんもログインしました（最終 6 ヶ月ぶり）。
+        </div>
+        <div className="layer-buttons">
+          <button type="button" className="layer-btn primary" onClick={handleAdvance}>
+            返信する
+          </button>
+          <button type="button" className="layer-btn secondary" onClick={handleAdvance}>
+            スキップ
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===== Layer 4: 詫び石進呈 =====
+function Layer4Screen({ onAdvance, onBlock, addStones }: { onAdvance: () => void; onBlock: () => void; addStones: (n: number) => void }) {
+  const handleAdvance = () => {
+    onBlock()
+    addStones(5000)
+    onAdvance()
+  }
+  return (
+    <div className="layer-screen layer-4">
+      <div className="layer-content">
+        <div className="layer-tag">運営からのお知らせ</div>
+        <div className="layer-title">🎁 お詫び石 進呈</div>
+        <div className="apology-box">
+          <div className="apology-header">【お知らせ】</div>
+          <div className="apology-body">
+            先日のメンテナンスにご迷惑をおかけしました。<br /><br />
+            お詫びとして<br />
+            <strong className="big-stones">お詫び石 5,000 個</strong><br />
+            進呈いたします。<br /><br />
+            本当に、本当に、申し訳ありませんでした。
+          </div>
+        </div>
+        <div className="layer-message smaller">
+          ※ お詫び石はガチャに使用できます。<br />
+          SSR 確率 9% 上昇キャンペーン中、ぜひご利用ください。
+        </div>
+        <div className="layer-buttons">
+          <button type="button" className="layer-btn primary" onClick={handleAdvance}>
+            受け取る
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===== Layer 5: アンインストールアンケート =====
+const SURVEY_QUESTIONS = [
+  { q: 'ご利用期間を教えてください', opts: ['〜1ヶ月', '〜半年', '〜1年', '1年以上'] },
+  { q: '最も楽しんだコンテンツは？', opts: ['ガチャ', 'ストーリー', 'ギルド戦', '育成', 'イベント'] },
+  { q: '改善してほしい点は？', opts: ['ガチャ確率', 'ストーリー', '運営対応', '演出', '課金導線'] },
+  { q: '他のゲームに移行されますか？', opts: ['はい', 'いいえ', '検討中'] },
+  { q: '復帰の可能性は？', opts: ['あり', '条件次第', 'なし'] },
+  { q: 'ガチャの天井設定について', opts: ['適切', '高い', '低い', 'わからない'] },
+  { q: 'ストーリー満足度', opts: ['★', '★★', '★★★', '★★★★', '★★★★★'] },
+  { q: '課金額の妥当性', opts: ['★', '★★', '★★★', '★★★★', '★★★★★'] },
+  { q: '運営対応の評価', opts: ['★', '★★', '★★★', '★★★★', '★★★★★'] },
+  { q: 'ご意見・ご感想', opts: ['面白かった', 'まあまあ', '時間の無駄だった', '神ゲー', 'その他'] },
+]
+
+function Layer5Screen({ onAdvance, onBlock, addStones }: { onAdvance: () => void; onBlock: () => void; addStones: (n: number) => void }) {
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState<string[]>([])
+
+  const select = (opt: string) => {
+    onBlock()
+    setAnswers((prev) => [...prev, opt])
+    if (step >= SURVEY_QUESTIONS.length - 1) {
+      addStones(5000)
+      setTimeout(() => onAdvance(), 800)
+    } else {
+      setStep((s) => s + 1)
+    }
+  }
+
+  const q = SURVEY_QUESTIONS[step]
+
+  return (
+    <div className="layer-screen layer-5">
+      <div className="layer-content survey">
+        <div className="survey-header">
+          <div className="survey-title">アンインストールアンケート</div>
+          <div className="survey-progress">
+            Q{step + 1} / {SURVEY_QUESTIONS.length}
+          </div>
+        </div>
+        <div className="survey-question">{q.q}</div>
+        <div className="survey-options">
+          {q.opts.map((opt, i) => (
+            <button key={i} type="button" className="survey-option" onClick={() => select(opt)}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <div className="survey-pity">
+          完了後、お詫びとして詫び石 5,000 個を進呈いたします。
+        </div>
+        <div className="survey-history">
+          {answers.map((a, i) => (
+            <span key={i} className="answer-chip">Q{i + 1}: {a}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===== Free（エンディング） =====
+function FreeScreen({ stats, onRestart }: { stats: GameStats; onRestart: () => void }) {
+  const elapsed = Math.floor((Date.now() - stats.startedAt) / 1000)
+  const m = Math.floor(elapsed / 60)
+  const s = elapsed % 60
+
+  return (
+    <div className="free-screen">
+      <div className="free-bg" />
+      <div className="free-content">
+        <div className="free-title">Congratulations.</div>
+        <div className="free-subtitle">You are free.</div>
+
+        <div className="free-stats">
+          <div className="free-stat-row">
+            <div className="free-stat-label">離脱までの時間</div>
+            <div className="free-stat-value">{m} 分 {s} 秒</div>
+          </div>
+          <div className="free-stat-row">
+            <div className="free-stat-label">食らった引き止め</div>
+            <div className="free-stat-value">{stats.blocksHit} 回</div>
+          </div>
+          <div className="free-stat-row defeat">
+            <div className="free-stat-label">詫び石残高</div>
+            <div className="free-stat-value">{stats.apologyStones.toLocaleString()} 個</div>
+            <div className="free-stat-note">この世界に置いていきます</div>
+          </div>
+        </div>
+
+        <div className="free-message">
+          あなたは <strong>{m} 分 {s} 秒</strong> で自由になりました。<br /><br />
+          詫び石 <strong>{stats.apologyStones.toLocaleString()} 個</strong> はこの世界に置いていきます。<br /><br />
+          あなたの 847 日の足跡は、データのまま残されます。
+        </div>
+
+        <button type="button" className="free-restart" onClick={onRestart}>
+          もう一度プレイする
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ===== Root App =====
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [stats, setStats] = useState<GameStats>({
+    startedAt: Date.now(),
+    blocksHit: 0,
+    apologyStones: 0,
+  })
+
+  const onBlock = () => setStats((s) => ({ ...s, blocksHit: s.blocksHit + 1 }))
+  const addStones = (n: number) => setStats((s) => ({ ...s, apologyStones: s.apologyStones + n }))
+
+  const onExit = () => {
+    setStats({ startedAt: Date.now(), blocksHit: 0, apologyStones: 0 })
+    setScreen('layer1')
+  }
+
+  const restart = () => {
+    setStats({ startedAt: Date.now(), blocksHit: 0, apologyStones: 0 })
+    setScreen('home')
+  }
 
   return (
     <div className="phone-frame">
       <div className="home-screen">
-        {screen === 'home' && <HomeScreen onNavigate={setScreen} />}
+        {screen === 'home' && <HomeScreen onNavigate={setScreen} onExit={onExit} />}
         {screen === 'gacha' && <GachaScreen onBack={() => setScreen('home')} />}
+        {screen === 'layer1' && <Layer1Screen onAdvance={() => setScreen('layer2')} onBlock={onBlock} />}
+        {screen === 'layer2' && <Layer2Screen onAdvance={() => setScreen('layer3')} onBlock={onBlock} />}
+        {screen === 'layer3' && (
+          <GachaScreen
+            onBack={() => setScreen('layer4')}
+            inFlow={true}
+            onAdvance={() => {
+              onBlock()
+              setScreen('layer4')
+            }}
+          />
+        )}
+        {screen === 'layer4' && <Layer4Screen onAdvance={() => setScreen('layer5')} onBlock={onBlock} addStones={addStones} />}
+        {screen === 'layer5' && <Layer5Screen onAdvance={() => setScreen('free')} onBlock={onBlock} addStones={addStones} />}
+        {screen === 'free' && <FreeScreen stats={stats} onRestart={restart} />}
       </div>
     </div>
   )

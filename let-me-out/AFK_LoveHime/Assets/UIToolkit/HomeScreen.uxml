@@ -1,0 +1,244 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="HomeScreen.uss" />
+
+    <ui:VisualElement name="phone-frame" class="phone-frame">
+        <ui:VisualElement name="home-screen" class="home-screen">
+
+            <!-- Battle Background (敵スポーン領域) -->
+            <ui:VisualElement name="battle-bg" class="battle-bg" picking-mode="Ignore" />
+
+            <!-- Header: VIP + 通貨バー -->
+            <ui:VisualElement name="header" class="header">
+                <ui:Label text="VIP3" class="vip-badge" />
+                <ui:VisualElement name="currency-bar" class="currency-bar">
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="🪙" class="currency-icon" />
+                        <ui:Label name="currency-gold-value" text="12,847" class="currency-value gold" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="💰" class="currency-icon" />
+                        <ui:Label name="currency-silver-value" text="84,392" class="currency-value silver" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="💎" class="currency-icon" />
+                        <ui:Label name="currency-diamond-value" text="1,234" class="currency-value diamond" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="🟡" class="currency-icon" />
+                        <ui:Label name="currency-genpou-value" text="5,840" class="currency-value genpou" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="🪨" class="currency-icon" />
+                        <ui:Label name="currency-stone-value" text="23,847" class="currency-value stone" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="🗝" class="currency-icon" />
+                        <ui:Label name="currency-key-value" text="47" class="currency-value key" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="📜" class="currency-icon" />
+                        <ui:Label name="currency-shouken-value" text="128" class="currency-value shouken" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="currency-item">
+                        <ui:Label text="✨" class="currency-icon" />
+                        <ui:Label name="currency-shinzui-value" text="9,847" class="currency-value shinzui" />
+                        <ui:Label text="＋" class="currency-plus" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Event Banner (上部中央、ローテ) -->
+            <ui:Label name="event-banner" text="🎁 コラボイベント 開催中" class="event-banner" />
+
+            <!-- Sidebar Left (アイコン x5 + Badge) -->
+            <ui:VisualElement name="sidebar-left" class="sidebar sidebar-left">
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-0" />
+                    <ui:Label text="限定" class="icon-label" />
+                    <ui:Label text="23:47" class="icon-sub" />
+                    <ui:Label class="badge" text="12" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-1" />
+                    <ui:Label text="祈願" class="icon-label" />
+                    <ui:Label text="七連" class="icon-sub" />
+                    <ui:Label class="badge" text="3" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-2" />
+                    <ui:Label text="福袋" class="icon-label" />
+                    <ui:Label text="残3個" class="icon-sub" />
+                    <ui:Label class="badge" text="3" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-3" />
+                    <ui:Label text="VIP" class="icon-label" />
+                    <ui:Label text="Lv.3" class="icon-sub" />
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-4" />
+                    <ui:Label text="成長" class="icon-label" />
+                    <ui:Label text="7日目" class="icon-sub" />
+                    <ui:Label class="badge" text="7" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Sidebar Right -->
+            <ui:VisualElement name="sidebar-right" class="sidebar sidebar-right">
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-10" />
+                    <ui:Label text="メール" class="icon-label" />
+                    <ui:Label text="12通" class="icon-sub" />
+                    <ui:Label class="badge" text="12" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-11" />
+                    <ui:Label text="ギルド" class="icon-label" />
+                    <ui:Label text="解散危機" class="icon-sub" />
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-12" />
+                    <ui:Label text="任務" class="icon-label" />
+                    <ui:Label text="3/8" class="icon-sub" />
+                    <ui:Label class="badge" text="5" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-13" />
+                    <ui:Label text="チャージ" class="icon-label" />
+                    <ui:Label text="6折" class="icon-sub" />
+                    <ui:Label class="badge" text="9" />
+                </ui:VisualElement>
+                <ui:VisualElement class="icon-button">
+                    <ui:VisualElement class="icon-graphic icon-14" />
+                    <ui:Label text="ショップ" class="icon-label" />
+                    <ui:Label text="新着" class="icon-sub" />
+                    <ui:Label class="badge" text="新" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Floating Offer (中央、ローテ) -->
+            <ui:VisualElement name="floating-offer" class="floating-offer">
+                <ui:Label name="offer-eyebrow" text="期間限定 ピックアップ" class="offer-eyebrow" />
+                <ui:Label name="offer-title" text="100 連 無料 ガチャ" class="offer-title" />
+                <ui:Label name="offer-timer" text="残り 23:47:18" class="offer-timer" />
+                <ui:Label text="いますぐ召喚 →" class="offer-cta" />
+            </ui:VisualElement>
+
+            <!-- Hero Character (KAGUYA-X 巨大演出) -->
+            <ui:VisualElement name="hero-character" class="hero-character" picking-mode="Ignore">
+                <ui:VisualElement class="hero-rays" />
+                <ui:VisualElement class="hero-aura" />
+                <ui:VisualElement class="hero-silhouette" />
+                <ui:VisualElement class="hero-frame">
+                    <ui:Label text="LR" class="hero-rarity" />
+                    <ui:Label text="KAGUYA-X" class="hero-name" />
+                    <ui:Label text="月へ、帰る前に" class="hero-tagline" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Battle Power (左下) -->
+            <ui:VisualElement class="battle-power">
+                <ui:VisualElement class="bp-frame">
+                    <ui:Label text="⚔" class="bp-icon" />
+                    <ui:VisualElement class="bp-stack">
+                        <ui:Label text="戦闘力" class="bp-label" />
+                        <ui:Label name="bp-value" text="8,492,371" class="bp-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label text="第 47 章 - 12 / 30" class="bp-stage" />
+            </ui:VisualElement>
+
+            <!-- Toast Container (動的に追加される) -->
+            <ui:VisualElement name="toast-feed" class="toast-feed" picking-mode="Ignore" />
+
+            <!-- Ticker -->
+            <ui:VisualElement class="ticker-container" picking-mode="Ignore">
+                <ui:Label name="ticker" text="您の英雄が降臨しました！素晴らしいです！　・　VIP6 限定 神髄ガチャ初回 6 折！　・　あなたは選ばれた主公です　・　累計課金 ¥9,800 達成で SSR 確定！" class="ticker" />
+            </ui:VisualElement>
+
+            <!-- Promo Strip (フッター上) -->
+            <ui:VisualElement class="promo-strip">
+                <ui:VisualElement class="promo-item promo-orange">
+                    <ui:Label text="🎁" class="promo-icon" />
+                    <ui:VisualElement class="promo-text">
+                        <ui:Label text="報酬受取" class="promo-label" />
+                        <ui:Label text="13/30" class="promo-sub" />
+                    </ui:VisualElement>
+                    <ui:Label class="badge" text="3" />
+                </ui:VisualElement>
+                <ui:VisualElement class="promo-item promo-blue">
+                    <ui:Label text="👥" class="promo-icon" />
+                    <ui:VisualElement class="promo-text">
+                        <ui:Label text="招待" class="promo-label" />
+                        <ui:Label text="残り 7 日" class="promo-sub" />
+                    </ui:VisualElement>
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="promo-item promo-green">
+                    <ui:Label text="🌱" class="promo-icon" />
+                    <ui:VisualElement class="promo-text">
+                        <ui:Label text="成長計画" class="promo-label" />
+                        <ui:Label text="Day 7" class="promo-sub" />
+                    </ui:VisualElement>
+                    <ui:Label class="badge" text="7" />
+                </ui:VisualElement>
+                <ui:VisualElement class="promo-item promo-pink">
+                    <ui:Label text="⚔" class="promo-icon" />
+                    <ui:VisualElement class="promo-text">
+                        <ui:Label text="ギルド戦" class="promo-label" />
+                        <ui:Label text="参加可能" class="promo-sub" />
+                    </ui:VisualElement>
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="promo-item promo-gold">
+                    <ui:Label text="🏆" class="promo-icon" />
+                    <ui:VisualElement class="promo-text">
+                        <ui:Label text="ランキング" class="promo-label" />
+                        <ui:Label text="47 位" class="promo-sub" />
+                    </ui:VisualElement>
+                    <ui:Label class="badge" text="9" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Footer: 5 メインボタン -->
+            <ui:VisualElement class="footer">
+                <ui:VisualElement class="footer-button">
+                    <ui:VisualElement class="footer-icon footer-icon-castle" />
+                    <ui:Label text="主城" class="footer-label" />
+                    <ui:Label class="badge" text="3" />
+                </ui:VisualElement>
+                <ui:VisualElement class="footer-button">
+                    <ui:VisualElement class="footer-icon footer-icon-sword" />
+                    <ui:Label text="武将" class="footer-label" />
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="footer-button highlight">
+                    <ui:VisualElement class="rainbow-pillar" />
+                    <ui:VisualElement class="footer-icon footer-icon-card" />
+                    <ui:Label text="ガチャ" class="footer-label" />
+                    <ui:Label class="badge" text="!" />
+                </ui:VisualElement>
+                <ui:VisualElement class="footer-button">
+                    <ui:VisualElement class="footer-icon footer-icon-bag" />
+                    <ui:Label text="バッグ" class="footer-label" />
+                    <ui:Label class="badge" text="9" />
+                </ui:VisualElement>
+                <ui:VisualElement class="footer-button">
+                    <ui:VisualElement class="footer-icon footer-icon-gear" />
+                    <ui:Label text="設定" class="footer-label" />
+                    <ui:Label class="badge" text="2" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

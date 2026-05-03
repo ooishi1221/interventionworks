@@ -1664,3 +1664,509 @@ html, body, #root {
   font-size: 11px;
   cursor: pointer;
 }
+
+/* ============================================== */
+/* ===== Let Me Out — 5 Layer Screens ===== */
+/* ============================================== */
+
+.exit-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 25;
+  background: rgba(0, 0, 0, 0.7);
+  color: #aaa;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.exit-button:hover {
+  background: rgba(40, 0, 0, 0.8);
+  color: #fff;
+  border-color: #ff8080;
+}
+
+.layer-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: layer-fade-in 0.4s ease-out;
+  overflow-y: auto;
+}
+
+@keyframes layer-fade-in {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.layer-1 {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 215, 0, 0.4), transparent 70%),
+    linear-gradient(180deg, #2a1810 0%, #100805 100%);
+}
+
+.layer-2 {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(120, 80, 200, 0.4), transparent 70%),
+    linear-gradient(180deg, #20102a 0%, #050010 100%);
+}
+
+.layer-4 {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(200, 60, 60, 0.4), transparent 70%),
+    linear-gradient(180deg, #2a0808 0%, #100000 100%);
+}
+
+.layer-5 {
+  background: linear-gradient(180deg, #1a1a1a 0%, #050505 100%);
+}
+
+.layer-content {
+  background: linear-gradient(135deg, rgba(60, 30, 60, 0.95), rgba(20, 10, 30, 0.95));
+  border: 2px solid #ffd700;
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 92%;
+  width: 100%;
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.5);
+  text-align: center;
+}
+
+.layer-tag {
+  font-size: 10px;
+  color: #ffd700;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 4px #ff8000;
+}
+
+.layer-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 8px #ffd700, 0 0 16px #ff8000;
+  margin-bottom: 14px;
+  letter-spacing: 2px;
+}
+
+.layer-progress {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  margin: 12px 0;
+}
+
+.day {
+  flex: 1;
+  min-width: 0;
+  font-size: 9px;
+  padding: 4px 2px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: rgba(0,0,0,0.3);
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.day.done {
+  background: linear-gradient(135deg, #80c080, #406040);
+  color: #fff;
+  border-color: #80ff80;
+}
+
+.day.today {
+  background: linear-gradient(135deg, #ff8000, #aa3000);
+  color: #fff;
+  border-color: #ffd700;
+  box-shadow: 0 0 8px #ffd700;
+  font-weight: bold;
+  animation: today-pulse 1s infinite alternate;
+}
+
+@keyframes today-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.layer-message {
+  font-size: 12px;
+  color: #fff;
+  margin: 12px 0;
+  line-height: 1.6;
+}
+
+.layer-message strong {
+  color: #ffd700;
+  text-shadow: 0 0 4px #ff8000;
+}
+
+.layer-message.smaller {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.layer-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+}
+
+.reward-item {
+  background: linear-gradient(to right, #2a1a08, #1a0a04);
+  border: 1px solid #ffd700;
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 0 3px #ffd700;
+}
+
+.layer-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.layer-btn {
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 2px solid;
+  text-shadow: 0 0 3px #000;
+}
+
+.layer-btn.primary {
+  background: linear-gradient(to bottom, #ff8000, #aa3000);
+  color: #fff;
+  border-color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 200, 0, 0.7);
+  animation: layer-btn-pulse 1.5s infinite alternate;
+}
+
+@keyframes layer-btn-pulse {
+  0% { box-shadow: 0 0 12px rgba(255, 200, 0, 0.5); }
+  100% { box-shadow: 0 0 24px rgba(255, 200, 0, 0.95); }
+}
+
+.layer-btn.secondary {
+  background: rgba(0,0,0,0.5);
+  color: #888;
+  border-color: #444;
+}
+
+/* Layer 2: ギルド手紙 */
+.letter-box {
+  background: linear-gradient(135deg, rgba(80, 40, 100, 0.6), rgba(40, 20, 60, 0.6));
+  border: 1px solid #c0a0ff;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.letter-from {
+  font-size: 10px;
+  color: #c0a0ff;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.letter-body {
+  font-size: 12px;
+  color: #fff;
+  line-height: 1.7;
+}
+
+.letter-body strong {
+  color: #ff8080;
+  text-shadow: 0 0 3px #ff0000;
+}
+
+.letter-time {
+  font-size: 9px;
+  color: #888;
+  text-align: right;
+  margin-top: 8px;
+}
+
+/* Layer 4: お詫び */
+.apology-box {
+  background: linear-gradient(135deg, rgba(120, 40, 40, 0.7), rgba(40, 10, 10, 0.7));
+  border: 2px solid #ff4040;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.apology-header {
+  font-size: 14px;
+  color: #ff4040;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 0 0 4px #ff0000;
+}
+
+.apology-body {
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.7;
+}
+
+.big-stones {
+  display: block;
+  font-size: 24px;
+  color: #ffd700;
+  text-shadow: 0 0 8px #ff8000, 0 0 16px #ff4040;
+  margin: 8px 0;
+  letter-spacing: 2px;
+  animation: stones-pulse 1s infinite alternate;
+}
+
+@keyframes stones-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.05); filter: brightness(1.3); }
+}
+
+/* Layer 5: アンケート */
+.survey {
+  text-align: left;
+}
+
+.survey-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #5a4920;
+  padding-bottom: 8px;
+}
+
+.survey-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 4px #aaa;
+}
+
+.survey-progress {
+  font-size: 11px;
+  color: #ffd700;
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-question {
+  font-size: 15px;
+  color: #fff;
+  margin: 12px 0;
+  font-weight: bold;
+  text-shadow: 0 0 3px #000;
+  min-height: 32px;
+}
+
+.survey-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.survey-option {
+  background: rgba(50, 30, 50, 0.7);
+  border: 1px solid #888;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.survey-option:hover {
+  background: linear-gradient(to right, #ff8000, #aa3000);
+  border-color: #ffd700;
+  transform: translateX(4px);
+}
+
+.survey-pity {
+  font-size: 10px;
+  color: #ffd700;
+  text-align: center;
+  margin-top: 12px;
+  padding: 6px;
+  background: rgba(255, 215, 0, 0.1);
+  border-left: 3px solid #ffd700;
+  border-radius: 4px;
+}
+
+.survey-history {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.answer-chip {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 8px;
+  color: #888;
+}
+
+/* You are free（エンディング） */
+.free-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(120, 220, 255, 0.2), transparent 70%),
+    linear-gradient(180deg, #050810 0%, #000 100%);
+  animation: free-fade-in 1.2s ease-out;
+}
+
+@keyframes free-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.free-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle 2px at 10% 20%, #80c0ff, transparent 70%),
+    radial-gradient(circle 2px at 90% 30%, #fff, transparent 70%),
+    radial-gradient(circle 1px at 30% 60%, #c0e0ff, transparent 70%),
+    radial-gradient(circle 2px at 70% 80%, #fff, transparent 70%),
+    radial-gradient(circle 1px at 50% 10%, #80c0ff, transparent 70%),
+    radial-gradient(circle 2px at 20% 90%, #fff, transparent 70%),
+    radial-gradient(circle 1px at 80% 60%, #c0e0ff, transparent 70%);
+  animation: stars-drift 30s linear infinite;
+}
+
+@keyframes stars-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 80px; }
+}
+
+.free-content {
+  position: relative;
+  z-index: 1;
+  max-width: 88%;
+  text-align: center;
+  padding: 24px;
+}
+
+.free-title {
+  font-size: 32px;
+  color: #fff;
+  text-shadow: 0 0 12px #80c0ff, 0 0 24px #fff;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+  animation: free-title-glow 2s infinite alternate;
+}
+
+.free-subtitle {
+  font-size: 24px;
+  color: #80e0ff;
+  text-shadow: 0 0 8px #80c0ff;
+  letter-spacing: 3px;
+  margin-bottom: 28px;
+}
+
+@keyframes free-title-glow {
+  0% { text-shadow: 0 0 12px #80c0ff, 0 0 24px #fff; }
+  100% { text-shadow: 0 0 18px #80c0ff, 0 0 36px #fff, 0 0 48px #80c0ff; }
+}
+
+.free-stats {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #80c0ff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.free-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 6px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(128, 192, 255, 0.2);
+}
+
+.free-stat-row:last-of-type {
+  border-bottom: none;
+}
+
+.free-stat-row.defeat {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.free-stat-label {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.free-stat-value {
+  font-size: 16px;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 0 4px #80c0ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.free-stat-note {
+  font-size: 9px;
+  color: #ff8080;
+  margin-top: 4px;
+  text-align: right;
+  font-style: italic;
+}
+
+.free-message {
+  font-size: 12px;
+  color: #ddd;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  text-shadow: 0 0 3px #000;
+}
+
+.free-message strong {
+  color: #80e0ff;
+  text-shadow: 0 0 4px #80c0ff;
+}
+
+.free-restart {
+  background: rgba(0, 0, 0, 0.5);
+  color: #80c0ff;
+  border: 1px solid #80c0ff;
+  border-radius: 6px;
+  padding: 10px 24px;
+  font-size: 13px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.free-restart:hover {
+  background: rgba(128, 192, 255, 0.2);
+  color: #fff;
+}
