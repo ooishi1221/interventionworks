@@ -387,6 +387,104 @@ const KAGUYA_LINES = [
   'あなたが居ないと、私…',
 ]
 
+const TRASH_ITEMS = [
+  '🌿 木の枝 ×5',
+  '🪨 石ころ ×10',
+  '🟫 土塊 ×3',
+  '🌾 枯れ草 ×5',
+  '🍂 落ち葉 ×8',
+  '📕 朽ちた書物 ×1',
+  '🦴 動物の骨 ×1',
+  '🪶 鳥の羽 ×2',
+]
+
+function LoginBonusModal() {
+  const [open, setOpen] = useState(false)
+  const [showStamp, setShowStamp] = useState(false)
+  const [received, setReceived] = useState(false)
+
+  useEffect(() => {
+    // 毎回起動時に表示（業界アプリ文法、引き止め構造の典型）
+    const timer = setTimeout(() => setOpen(true), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!open) {
+      setShowStamp(false)
+      setReceived(false)
+      return
+    }
+    // モーダル着地 → 0.9 秒後に「済」スタンプがドーン
+    const stampTimer = setTimeout(() => setShowStamp(true), 900)
+    return () => clearTimeout(stampTimer)
+  }, [open])
+
+  if (!open) return null
+
+  const closeAll = () => {
+    setReceived(false)
+    setOpen(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={() => setOpen(false)}>
+      <div className="modal-flash" aria-hidden="true" />
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={() => setOpen(false)}
+          aria-label="閉じる"
+        >✕</button>
+        <div className="modal-image-wrapper">
+          <img
+            src="/popups/login-bonus.png"
+            alt="初心者ログインボーナス"
+            className="modal-image"
+          />
+          {showStamp && <div className="modal-stamp" aria-hidden="true">済</div>}
+          {/* 「受取」ボタンの click area（画像の下部金ボタン位置に透明オーバーレイ） */}
+          <button
+            type="button"
+            className="modal-receive-btn"
+            onClick={() => setReceived(true)}
+            aria-label="受取"
+          />
+        </div>
+      </div>
+
+      {received && (
+        <div
+          className="received-modal"
+          onClick={closeAll}
+        >
+          <div
+            className="received-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="received-title">📦 受領完了</div>
+            <div className="received-sub">主公、本日のログイン報酬を受け取りました</div>
+            <ul className="received-list">
+              {TRASH_ITEMS.map((item, i) => (
+                <li key={i} style={{ animationDelay: `${i * 60}ms` }}>{item}</li>
+              ))}
+            </ul>
+            <div className="received-thanks">ご来訪、誠にありがとうございました。</div>
+            <button
+              type="button"
+              className="received-ok"
+              onClick={closeAll}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function KaguyaDialog() {
   const [idx, setIdx] = useState(0)
   const [visible, setVisible] = useState(true)
@@ -563,6 +661,7 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
       <HeroCharacter />
       <KaguyaDialog />
       <GachaBanners onNavigate={onNavigate} />
+      <LoginBonusModal />
 
       <footer className="footer">
         {FOOTER_BUTTONS.map((label, i) => (
