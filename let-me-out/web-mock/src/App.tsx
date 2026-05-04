@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const CURRENCIES = [
-  { id: 'gold', name: '金貨', icon: '🪙', initial: 12847, incPerSec: 47, color: '#ffd700' },
-  { id: 'shinzui', name: '神髄', icon: '✨', initial: 9847, incPerSec: 12.5, color: '#cc88ff' },
-  { id: 'diamond', name: 'ダイヤ', icon: '💎', initial: 1234, incPerSec: 0.8, color: '#9be0ff' },
+  // gold = ゲームスコア（破壊で増える）
+  { id: 'gold', name: 'スコア', icon: '🪙', initial: 0, incPerSec: 0, color: '#ffd700' },
+  // shinzui = 神髄石（メンテ回避で増える、ガチャ用）
+  { id: 'shinzui', name: '神髄石', icon: '✨', initial: 0, incPerSec: 0, color: '#cc88ff' },
 ]
 
 const SIDEBAR_LEFT = [
@@ -180,7 +181,7 @@ function useTickingNumber(initial: number, incPerSec: number) {
   return value
 }
 
-function Badge() {
+function Badge({ whackable, hidden }: { whackable?: boolean; hidden?: boolean } = {}) {
   const [count, setCount] = useState(() => 1 + Math.floor(Math.random() * 25))
 
   useEffect(() => {
@@ -193,18 +194,36 @@ function Badge() {
     return () => clearTimeout(timeout)
   }, [])
 
-  return <div className="badge">{count > 99 ? '99+' : count}</div>
+  if (hidden) return null
+
+  return (
+    <div className={`badge ${whackable ? 'badge-whackable' : ''}`}>
+      {count > 99 ? '99+' : count}
+    </div>
+  )
 }
 
-function CurrencyItem({ currency }: { currency: (typeof CURRENCIES)[number] }) {
-  const value = useTickingNumber(currency.initial, currency.incPerSec)
+function CurrencyItem({
+  currency,
+  state,
+  value,
+}: {
+  currency: (typeof CURRENCIES)[number]
+  state?: IconAnimState
+  value?: number
+}) {
+  const ticking = useTickingNumber(currency.initial, currency.incPerSec)
+  const displayValue = value !== undefined ? value : ticking
   return (
-    <div className="currency-item">
+    <div
+      className={`currency-item ${animClassFor(state)}`}
+      data-icon-key={`curr-${currency.id}`}
+    >
       <div className="currency-icon-wrap">
         <span className="currency-icon">{currency.icon}</span>
       </div>
       <span className="currency-value" style={{ color: currency.color }}>
-        {formatNumber(value)}
+        {formatNumber(displayValue)}
       </span>
       <span className="currency-plus">＋</span>
     </div>
@@ -260,7 +279,7 @@ function BattleBackground() {
   )
 }
 
-function FloatingOffer() {
+function FloatingOffer({ iconState = {} }: { iconState?: Record<string, IconAnimState> }) {
   const [seconds, setSeconds] = useState(23 * 3600 + 47 * 60 + 18)
 
   useEffect(() => {
@@ -273,28 +292,32 @@ function FloatingOffer() {
 
   return (
     <div className="floating-offer-stack">
-      {OFFERS.map((o, i) => (
-        <button
-          key={i}
-          className="fo-item"
-          type="button"
-          style={{ borderColor: o.accent, animationDelay: `${i * 0.06}s` }}
-        >
-          <div
-            className="fo-icon"
-            style={{ background: `radial-gradient(circle, ${o.accent}, #200)` }}
+      {OFFERS.map((o, i) => {
+        const key = `fo-${i}`
+        return (
+          <button
+            key={i}
+            className={`fo-item ${animClassFor(iconState[key])}`}
+            type="button"
+            data-icon-key={key}
+            style={{ borderColor: o.accent, animationDelay: `${i * 0.06}s` }}
           >
-            <span>{o.icon}</span>
-          </div>
-          <div className="fo-text">
-            <div className="fo-title">{o.title}</div>
-            <div className="fo-sub">
-              {o.eyebrow} · 残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}
+            <div
+              className="fo-icon"
+              style={{ background: `radial-gradient(circle, ${o.accent}, #200)` }}
+            >
+              <span>{o.icon}</span>
             </div>
-          </div>
-          <div className="fo-cta">→</div>
-        </button>
-      ))}
+            <div className="fo-text">
+              <div className="fo-title">{o.title}</div>
+              <div className="fo-sub">
+                {o.eyebrow} · 残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}
+              </div>
+            </div>
+            <div className="fo-cta">→</div>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -377,14 +400,24 @@ function BattlePower() {
   )
 }
 
-const KAGUYA_LINES = [
+const KAGUYA_NORMAL_LINES = [
   '主公、おかえりなさい',
+  '会いたかった…',
   'もう、行ってしまうの？',
   'いま閉じても、詫び石が届きます',
   'あなたの 847 日、覚えていますよ',
   '次の召喚で、私がいるかもしれません',
   '7 日連続まで、あと 1 日です',
   'あなたが居ないと、私…',
+]
+
+const KAGUYA_EMERGENCY_LINES = [
+  '主公！ 赤バッジを タップして倒して！',
+  'スワイプで 連続で斬れる！',
+  '指で斬って！ 早く！',
+  'メンテが始まる前に！',
+  '全部 処理して！主公！',
+  'あと少し… 信じてる',
 ]
 
 const TRASH_ITEMS = [
@@ -398,16 +431,378 @@ const TRASH_ITEMS = [
   '🪶 鳥の羽 ×2',
 ]
 
-function LoginBonusModal() {
-  const [open, setOpen] = useState(false)
-  const [showStamp, setShowStamp] = useState(false)
-  const [received, setReceived] = useState(false)
+// ===== 緊急メンテナンス・カウントダウン（モグラ叩きゲームの開始装置） =====
+const MAINTENANCE_TOTAL_SEC = 15
+const COUNTDOWN_START_DELAY_MIN_MS = 12000
+const COUNTDOWN_START_DELAY_MAX_MS = 18000
+const SAFE_DURATION_MIN_MS = 15000
+const SAFE_DURATION_MAX_MS = 20000
+const TARGET_HITS_PER_ROUND = 10
+
+// 毎ラウンド固定 10 個（永久に続く覚醒の輪廻 — 同じ条件で永久ループ）
+const targetHitsForRound = (_round: number) => TARGET_HITS_PER_ROUND
+
+// ===== ステージ設計（ラウンド進行で段階的に解放） =====
+type DestroyablePrefix = 'sl' | 'sr' | 'fb' | 'b' | 'player' | 'curr' | 'gb' | 'fo'
+
+type StageConfig = {
+  label: string
+  swipeEnabled: boolean
+  destroyable: ReadonlyArray<DestroyablePrefix>
+  scorePerHit: number
+  hardPhaseFromSec: number   // 残り何秒からランダム badge スポーン (-1 で発動なし)
+  maintenanceSec: number     // メンテ時間（秒）
+  targetHits: number         // 必要タップ数
+  activeBadgeMax: number     // 同時に光る Badge 上限（0 で全部）
+  obstacles: boolean         // お邪魔発動するか
+  stoneReward: number        // メンテ回避時に獲得する神髄石
+}
+
+const STAGES: StageConfig[] = [
+  // S1: チュートリアル
+  { label: 'STAGE 1',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb'], scorePerHit: 10, hardPhaseFromSec: -1, maintenanceSec: 15, targetHits: 6,  activeBadgeMax: 3, obstacles: false, stoneReward: 50 },
+  // S2: 目標数微増
+  { label: 'STAGE 2',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb'], scorePerHit: 10, hardPhaseFromSec: -1, maintenanceSec: 15, targetHits: 8,  activeBadgeMax: 3, obstacles: false, stoneReward: 70 },
+  // S3: active 5 個に
+  { label: 'STAGE 3',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb'], scorePerHit: 12, hardPhaseFromSec: -1, maintenanceSec: 14, targetHits: 10, activeBadgeMax: 5, obstacles: false, stoneReward: 90 },
+  // S4: ハードフェーズ + ランダム badge 解放
+  { label: 'STAGE 4',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 15, hardPhaseFromSec: 6, maintenanceSec: 14, targetHits: 12, activeBadgeMax: 5, obstacles: false, stoneReward: 110 },
+  // S5: お邪魔発動 + 全 active
+  { label: 'STAGE 5',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 18, hardPhaseFromSec: 7, maintenanceSec: 13, targetHits: 14, activeBadgeMax: 0, obstacles: true,  stoneReward: 140 },
+  // S6: スワイプ解放
+  { label: 'STAGE 6',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 25, hardPhaseFromSec: 8, maintenanceSec: 13, targetHits: 16, activeBadgeMax: 0, obstacles: true,  stoneReward: 180 },
+  // S7: 目標増、メンテ短縮
+  { label: 'STAGE 7',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 30, hardPhaseFromSec: 9, maintenanceSec: 12, targetHits: 18, activeBadgeMax: 0, obstacles: true,  stoneReward: 220 },
+  // S8: 全 UI 破壊解放
+  { label: 'STAGE 8',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 35, hardPhaseFromSec: 9, maintenanceSec: 11, targetHits: 20, activeBadgeMax: 0, obstacles: true, stoneReward: 280 },
+  // S9: ハード長め、メンテ短縮
+  { label: 'STAGE 9',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 45, hardPhaseFromSec: 11, maintenanceSec: 10, targetHits: 22, activeBadgeMax: 0, obstacles: true, stoneReward: 350 },
+  // S10: 過酷モード（最高難度、これ以降同じ条件で永久輪廻）
+  { label: 'STAGE 10', swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 60, hardPhaseFromSec: 12, maintenanceSec: 9,  targetHits: 25, activeBadgeMax: 0, obstacles: true, stoneReward: 500 },
+]
+
+const stageFor = (round: number): StageConfig =>
+  STAGES[Math.min(round - 1, STAGES.length - 1)]
+
+const prefixOf = (key: string): DestroyablePrefix | null => {
+  if (key === 'player') return 'player'
+  if (key.startsWith('curr-')) return 'curr'
+  if (key.startsWith('gb-')) return 'gb'
+  if (key.startsWith('fo-')) return 'fo'
+  if (key.startsWith('sl-')) return 'sl'
+  if (key.startsWith('sr-')) return 'sr'
+  if (key.startsWith('fb-')) return 'fb'
+  return null
+}
+
+const isDestroyable = (key: string, stage: StageConfig): boolean => {
+  const p = prefixOf(key)
+  return p !== null && stage.destroyable.includes(p)
+}
+
+type GameMode = 'idle' | 'countdown' | 'safe' | 'maintenance'
+
+// アイコンの 4 段階アニメ: undefined（通常）→ exploding → gone → respawning → undefined
+type IconAnimState = 'exploding' | 'gone' | 'respawning'
+
+const animClassFor = (state: IconAnimState | undefined) =>
+  state ? `icon-${state}` : ''
+
+// ===== お邪魔 1: NOW LOADING（全画面、タップ不能） =====
+function NowLoadingOverlay() {
+  return (
+    <div className="now-loading-overlay" aria-hidden="true">
+      <div className="nl-spinner">⟳</div>
+      <div className="nl-text">NOW LOADING...</div>
+      <div className="nl-sub">サーバーと通信しています</div>
+    </div>
+  )
+}
+
+// ===== お邪魔 2: 機能解放チュートリアル（KAGUYA 大セリフ枠、スキップ不可） =====
+function TutorialOverlay() {
+  return (
+    <div className="tutorial-overlay" aria-hidden="true">
+      <div className="tu-content">
+        <div className="tu-name">⚠ KAGUYA-X</div>
+        <div className="tu-text">
+          主公！ ここは<strong>戦闘画面</strong>です！
+          <br />
+          赤いバッジを<strong>タップ</strong>すると未読が消えます。
+          <br />
+          スワイプで<strong>連続斬り</strong>もできます！
+        </div>
+        <button type="button" className="tu-skip" disabled>
+          スキップ（タップ無効）
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ===== お邪魔 3: 一括 DL ポップアップ（業界アプリ風 OS モーダル） =====
+function DownloadOverlay() {
+  return (
+    <div className="download-modal" aria-hidden="true">
+      <div className="dm-content">
+        <div className="dm-icon">📦</div>
+        <div className="dm-title">追加データのダウンロード</div>
+        <div className="dm-sub">
+          快適なプレイのために
+          <br />
+          <strong>2.0 GB</strong> のデータが必要です
+        </div>
+        <div className="dm-progress">
+          <div className="dm-progress-fill" />
+        </div>
+        <div className="dm-progress-text">12% (240 MB / 2.0 GB)</div>
+        <div className="dm-buttons">
+          <button type="button" className="dm-btn dm-btn-confirm">
+            ダウンロード
+          </button>
+          <button type="button" className="dm-btn dm-btn-cancel">
+            後で
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===== スワイプ軌跡（Fruit Ninja 風刀筋） =====
+function SwipeTrail() {
+  const [points, setPoints] = useState<Array<{ x: number; y: number; t: number }>>([])
 
   useEffect(() => {
-    // 毎回起動時に表示（業界アプリ文法、引き止め構造の典型）
-    const timer = setTimeout(() => setOpen(true), 1000)
-    return () => clearTimeout(timer)
+    let dragging = false
+
+    const onDown = (e: PointerEvent) => {
+      dragging = true
+      setPoints([{ x: e.clientX, y: e.clientY, t: Date.now() }])
+    }
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return
+      setPoints((prev) => [...prev, { x: e.clientX, y: e.clientY, t: Date.now() }])
+    }
+    const onUp = () => {
+      dragging = false
+    }
+
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
   }, [])
+
+  // 古い点を消す（フェードアウト）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now()
+      setPoints((prev) => prev.filter((p) => now - p.t < 240))
+    }, 30)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (points.length < 2) return null
+
+  const pointsStr = points.map((p) => `${p.x},${p.y}`).join(' ')
+
+  return (
+    <svg
+      className="swipe-trail"
+      width="100%"
+      height="100%"
+      preserveAspectRatio="none"
+      pointerEvents="none"
+    >
+      <defs>
+        <linearGradient id="trail-grad" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="rgba(255, 215, 0, 0)" />
+          <stop offset="80%" stopColor="rgba(255, 240, 180, 0.85)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
+        </linearGradient>
+      </defs>
+      {/* outer glow */}
+      <polyline
+        points={pointsStr}
+        stroke="rgba(255, 200, 50, 0.45)"
+        strokeWidth="14"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="blur(2px)"
+      />
+      {/* main trail */}
+      <polyline
+        points={pointsStr}
+        stroke="url(#trail-grad)"
+        strokeWidth="4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+// ===== モグラ叩きバッジ =====
+type BadgeType = 'normal' | 'critical' | 'apology'
+type WhackBadge = {
+  id: number
+  x: number // 0-100 (%)
+  y: number // 0-100 (%)
+  hp: number // 残りタップ回数
+  type: BadgeType
+  spawnedAt: number
+}
+
+const BADGE_LABELS: Record<BadgeType, string[]> = {
+  normal:   ['!', '!', 'NEW', '受取', '!', '!'],
+  critical: ['25', '47', '99', '12', '7'],
+  apology:  ['💎'],
+}
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function MaintenanceCountdown({ seconds }: { seconds: number }) {
+  const min = Math.floor(seconds / 60)
+  const sec = seconds % 60
+  const isCritical = seconds <= 10
+  return (
+    <div className={`maintenance-countdown ${isCritical ? 'mc-critical' : ''}`}>
+      <span className="mc-icon">⚠</span>
+      <span className="mc-text">緊急メンテナンス開始まで </span>
+      <span className="mc-timer">
+        {String(min).padStart(2, '0')}:{String(sec).padStart(2, '0')}
+      </span>
+    </div>
+  )
+}
+
+// 効果音 (SE) hook: 何度でも先頭から再生
+function useSE(src: string, muted: boolean, volume = 0.6) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    const a = new Audio(src)
+    a.volume = volume
+    audioRef.current = a
+  }, [src, volume])
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted
+  }, [muted])
+
+  return useCallback(() => {
+    if (muted) return
+    const a = audioRef.current
+    if (!a) return
+    a.currentTime = 0
+    a.play().catch(() => {})
+  }, [muted])
+}
+
+function BGMPlayer({
+  gameMode,
+  muted,
+  unlocked,
+}: {
+  gameMode: GameMode
+  muted: boolean
+  unlocked: boolean
+}) {
+  const homeBgmRef = useRef<HTMLAudioElement | null>(null)
+  const alertBgmRef = useRef<HTMLAudioElement | null>(null)
+
+  // ミュート反映
+  useEffect(() => {
+    const home = homeBgmRef.current
+    const alert = alertBgmRef.current
+    if (home) home.muted = muted
+    if (alert) alert.muted = muted
+  }, [muted])
+
+  useEffect(() => {
+    if (!unlocked) return
+    const home = homeBgmRef.current
+    const alert = alertBgmRef.current
+    if (!home || !alert) return
+
+    if (gameMode === 'idle' || gameMode === 'safe') {
+      // 通常時 / 回避後の安息: home BGM を最初から
+      alert.pause()
+      home.currentTime = 0
+      home.volume = 0.45
+      home.play().catch(() => {})
+    } else if (gameMode === 'countdown') {
+      // 緊急メンテ: maintenance BGM を最初から
+      home.pause()
+      alert.currentTime = 0
+      alert.volume = 0.55
+      alert.play().catch(() => {})
+    } else {
+      // maintenance（失敗）: 全停止
+      home.pause()
+      alert.pause()
+    }
+  }, [gameMode, unlocked])
+
+  return (
+    <>
+      <audio ref={homeBgmRef} src="/audio/home-bgm.mp3" loop preload="auto" />
+      <audio ref={alertBgmRef} src="/audio/maintenance-bgm.mp3" loop preload="auto" />
+    </>
+  )
+}
+
+function MaintenanceScreen({
+  muted,
+  onBackToTitle,
+}: {
+  muted: boolean
+  onBackToTitle: () => void
+}) {
+  useEffect(() => {
+    if (muted) return
+    const chime = new Audio('/audio/se-chime.mp3')
+    chime.volume = 0.65
+    chime.play().catch(() => {})
+    return () => {
+      chime.pause()
+    }
+  }, [muted])
+
+  // 6 秒後に自動でタイトルに戻る
+  useEffect(() => {
+    const t = setTimeout(onBackToTitle, 6000)
+    return () => clearTimeout(t)
+  }, [onBackToTitle])
+
+  return (
+    <div className="maintenance-screen" onClick={onBackToTitle}>
+      <div className="ms-icon">🔧</div>
+      <div className="ms-title">メンテナンス中</div>
+      <div className="ms-sub">
+        サービス停止中です。
+        <br />
+        復旧時刻は未定です。
+      </div>
+      <div className="ms-spinner">⟳</div>
+    </div>
+  )
+}
+
+function LoginBonusModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [showStamp, setShowStamp] = useState(false)
+  const [received, setReceived] = useState(false)
 
   useEffect(() => {
     if (!open) {
@@ -424,17 +819,17 @@ function LoginBonusModal() {
 
   const closeAll = () => {
     setReceived(false)
-    setOpen(false)
+    onClose()
   }
 
   return (
-    <div className="modal-overlay" onClick={() => setOpen(false)}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="modal-flash" aria-hidden="true" />
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           className="modal-close"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           aria-label="閉じる"
         >✕</button>
         <div className="modal-image-wrapper">
@@ -485,35 +880,48 @@ function LoginBonusModal() {
   )
 }
 
-function KaguyaDialog() {
+function KaguyaDialog({ gameMode }: { gameMode: GameMode }) {
+  const lines =
+    gameMode === 'countdown' ? KAGUYA_EMERGENCY_LINES : KAGUYA_NORMAL_LINES
   const [idx, setIdx] = useState(0)
   const [visible, setVisible] = useState(true)
 
+  // gameMode 変わったら index リセット
   useEffect(() => {
+    setIdx(0)
+    setVisible(true)
+  }, [gameMode])
+
+  useEffect(() => {
+    // 緊急時はセリフローテも速い
+    const interval = gameMode === 'countdown' ? 3500 : 5500
     const cycle = setInterval(() => {
       setVisible(false)
       setTimeout(() => {
-        setIdx((i) => (i + 1) % KAGUYA_LINES.length)
+        setIdx((i) => (i + 1) % lines.length)
         setVisible(true)
       }, 400)
-    }, 5500)
+    }, interval)
     return () => clearInterval(cycle)
-  }, [])
+  }, [gameMode, lines.length])
 
   return (
-    <div className={`kaguya-dialog ${visible ? '' : 'kd-hidden'}`} aria-hidden="true">
+    <div
+      className={`kaguya-dialog ${visible ? '' : 'kd-hidden'} ${gameMode === 'countdown' ? 'kd-emergency' : ''}`}
+      aria-hidden="true"
+    >
       <div className="kd-bubble">
-        {KAGUYA_LINES[idx]}
+        {lines[idx]}
         <div className="kd-tail" />
       </div>
     </div>
   )
 }
 
-function PlayerInfo() {
+function PlayerInfo({ state }: { state?: IconAnimState } = {}) {
   const power = useTickingNumber(8492371, 250)
   return (
-    <div className="player-info">
+    <div className={`player-info ${animClassFor(state)}`} data-icon-key="player">
       <div className="player-avatar">
         <span className="player-avatar-icon">👤</span>
         <div className="player-vip">VIP3</div>
@@ -558,13 +966,24 @@ function HeroCharacter() {
   )
 }
 
-function GachaBanners({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+function GachaBanners({
+  onNavigate,
+  pickupState,
+  shinzuiState,
+  countdownActive,
+}: {
+  onNavigate: (s: Screen) => void
+  pickupState?: IconAnimState
+  shinzuiState?: IconAnimState
+  countdownActive?: boolean
+}) {
   return (
     <div className="gacha-banners">
       <button
         type="button"
-        className="gacha-banner gb-pickup"
-        onClick={() => onNavigate('gacha')}
+        className={`gacha-banner gb-pickup ${animClassFor(pickupState)}`}
+        data-icon-key="gb-pickup"
+        onClick={() => !countdownActive && onNavigate('gacha')}
       >
         <img src="/banners/pickup.png" alt="ピックアップ召喚" className="gb-image" />
         <div className="gb-ribbon">ピックアップ</div>
@@ -572,8 +991,9 @@ function GachaBanners({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       </button>
       <button
         type="button"
-        className="gacha-banner gb-shinzui"
-        onClick={() => onNavigate('gacha')}
+        className={`gacha-banner gb-shinzui ${animClassFor(shinzuiState)}`}
+        data-icon-key="gb-shinzui"
+        onClick={() => !countdownActive && onNavigate('gacha')}
       >
         <img src="/banners/shinzui.png" alt="神髄召喚" className="gb-image" />
         <div className="gb-ribbon">神髄召喚</div>
@@ -585,6 +1005,7 @@ function GachaBanners({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
 // ===== Screen 型 =====
 type Screen =
+  | 'title'
   | 'home'
   | 'gacha'
   | 'layer1'
@@ -594,6 +1015,59 @@ type Screen =
   | 'layer5'
   | 'free'
 
+// ===== TitleScreen =====
+function TitleScreen({ onStart }: { onStart: () => void }) {
+  const bgmRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    const muted = localStorage.getItem('let-me-out-muted') === '1'
+    const a = new Audio('/audio/title-bgm.mp3')
+    a.loop = true
+    a.volume = 0.45
+    a.muted = muted
+    bgmRef.current = a
+    // 即時試行（iOS は最初のタップで unlock 必要）
+    a.play().catch(() => {})
+
+    const onFirstTap = () => {
+      a.play().catch(() => {})
+    }
+    window.addEventListener('pointerdown', onFirstTap, { once: true })
+
+    return () => {
+      a.pause()
+      a.src = ''
+      window.removeEventListener('pointerdown', onFirstTap)
+    }
+  }, [])
+
+  return (
+    <div className="title-screen-bg">
+      <img
+        src="/title-screen.png"
+        alt="放置恋姫 〜永久に続く覚醒の輪廻〜"
+        className="title-image"
+      />
+      {/* 舞う桜花弁 + 光粒 */}
+      <div className="ts-particles" aria-hidden="true">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className={`ts-petal ts-petal-${i}`}>
+            {i % 3 === 0 ? '✨' : '🌸'}
+          </div>
+        ))}
+      </div>
+      {/* スタートボタン位置の光輪（クリック透過） */}
+      <div className="title-start-glow" aria-hidden="true" />
+      <button
+        type="button"
+        className="title-start-btn"
+        onClick={onStart}
+        aria-label="ゲーム開始"
+      />
+    </div>
+  )
+}
+
 // ===== ゲームスコア =====
 type GameStats = {
   startedAt: number
@@ -602,13 +1076,556 @@ type GameStats = {
 }
 
 // ===== HomeScreen =====
-function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; onExit: () => void }) {
+function HomeScreen({
+  onNavigate,
+  onExit,
+  audioUnlocked = false,
+  kaguyaBombs = 0,
+  consumeKaguyaBomb,
+  visible = true,
+}: {
+  onNavigate: (s: Screen) => void
+  onExit: () => void
+  audioUnlocked?: boolean
+  kaguyaBombs?: number
+  consumeKaguyaBomb?: () => void
+  visible?: boolean
+}) {
+  const [gameMode, setGameMode] = useState<GameMode>('idle')
+  const [maintenanceSeconds, setMaintenanceSeconds] = useState(MAINTENANCE_TOTAL_SEC)
+  const [badges, setBadges] = useState<WhackBadge[]>([])
+  const [score, setScore] = useState(0)
+  const [hits, setHits] = useState(0)
+  const [round, setRound] = useState(1)
+  const [hitsThisRound, setHitsThisRound] = useState(0)
+  const [showAvoided, setShowAvoided] = useState(false)
+  const [muted, setMuted] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('let-me-out-muted') === '1'
+  })
+  const badgeIdRef = useRef(0)
+
+  const currentStage = stageFor(round)
+  const targetHits = currentStage.targetHits
+
+  // SE
+  const playSwordSE = useSE('/audio/se-whack.mp3', muted, 0.55) // スワイプ斬撃
+  const playPunchSE = useSE('/audio/se-tap-light.mp3', muted, 0.6) // タップ
+  const playAlarmSE = useSE('/audio/se-alarm.mp3', muted, 0.7)
+  const playClearSE = useSE('/audio/se-clear.mp3', muted, 0.7)
+  const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.45) // 爆発 A
+  const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.45) // 爆発 B
+  const playExplode = useCallback(() => {
+    if (Math.random() < 0.5) playExplodeA()
+    else playExplodeB()
+  }, [playExplodeA, playExplodeB])
+  // sweep 中フラグ（ref）
+  const swipeActiveRef = useRef(false)
+
+  // gameMode 切替時の SE 発火 + 暗転トランジション
+  const prevGameModeRef = useRef(gameMode)
+  const [battleTransition, setBattleTransition] = useState(false)
+  useEffect(() => {
+    const prev = prevGameModeRef.current
+    if (prev !== gameMode) {
+      if (gameMode === 'countdown') {
+        playAlarmSE()
+        setBattleTransition(true)
+        setTimeout(() => setBattleTransition(false), 700)
+      }
+      if (gameMode === 'safe') playClearSE()
+    }
+    prevGameModeRef.current = gameMode
+  }, [gameMode, playAlarmSE, playClearSE])
+
+  const toggleMute = () => {
+    setMuted((m) => {
+      const next = !m
+      localStorage.setItem('let-me-out-muted', next ? '1' : '0')
+      return next
+    })
+  }
+
+  // 初回 idle / safe からランダム遅延で countdown 開始
+  useEffect(() => {
+    if (gameMode === 'idle') {
+      const delay =
+        COUNTDOWN_START_DELAY_MIN_MS +
+        Math.random() * (COUNTDOWN_START_DELAY_MAX_MS - COUNTDOWN_START_DELAY_MIN_MS)
+      const timer = setTimeout(() => {
+        setMaintenanceSeconds(currentStage.maintenanceSec)
+        setHitsThisRound(0)
+        setGameMode('countdown')
+      }, delay)
+      return () => clearTimeout(timer)
+    }
+    if (gameMode === 'safe') {
+      const delay =
+        SAFE_DURATION_MIN_MS +
+        Math.random() * (SAFE_DURATION_MAX_MS - SAFE_DURATION_MIN_MS)
+      const timer = setTimeout(() => {
+        setMaintenanceSeconds(currentStage.maintenanceSec)
+        setHitsThisRound(0)
+        setGameMode('countdown')
+      }, delay)
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, currentStage.maintenanceSec])
+
+  // カウントダウン進行（リザルト表示中は停止）
+  useEffect(() => {
+    if (gameMode !== 'countdown') return
+    if (showAvoided) return // リザルト表示中はメンテ進行を止める
+    if (maintenanceSeconds <= 0) {
+      setGameMode('maintenance')
+      return
+    }
+    const timer = setTimeout(
+      () => setMaintenanceSeconds((s) => s - 1),
+      1000
+    )
+    return () => clearTimeout(timer)
+  }, [gameMode, maintenanceSeconds, showAvoided])
+
+  // ===== お邪魔要素（NOW LOADING / チュートリアル / 一括 DL / ログインボーナス） =====
+  type Obstacle = 'loading' | 'tutorial' | 'download' | 'login-bonus'
+  const [obstacle, setObstacle] = useState<Obstacle | null>(null)
+
+  useEffect(() => {
+    if (gameMode !== 'countdown') {
+      setObstacle(null)
+      return
+    }
+    // ステージで obstacles=false ならお邪魔発動なし
+    if (!currentStage.obstacles) {
+      setObstacle(null)
+      return
+    }
+    let timer: ReturnType<typeof setTimeout>
+    const schedule = () => {
+      // 7-13 秒に 1 回発動
+      timer = setTimeout(() => {
+        const r = Math.random()
+        // 確率分布: loading 35% / tutorial 25% / download 20% / login-bonus 20%
+        const next: Obstacle =
+          r < 0.35 ? 'loading'
+          : r < 0.6 ? 'tutorial'
+          : r < 0.8 ? 'download'
+          : 'login-bonus'
+        setObstacle(next)
+        // ログボはタップで閉じる前提なので、自動消滅は遅め
+        const duration =
+          next === 'loading' ? 1800
+          : next === 'tutorial' ? 2800
+          : next === 'download' ? 3500
+          : 6000 // login-bonus
+        setTimeout(() => {
+          setObstacle(null)
+          schedule()
+        }, duration)
+      }, 7000 + Math.random() * 6000)
+    }
+    schedule()
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, currentStage.label])
+
+  // 神髄石（メンテ回避ボーナス、ガチャ用通貨）
+  const [shinzuiStone, setShinzuiStone] = useState(0)
+
+  // 必要タップ数達成 → リザルト画面（タップで次へ）
+  useEffect(() => {
+    if (gameMode !== 'countdown') return
+    if (hitsThisRound >= targetHits && !showAvoided) {
+      setShowAvoided(true)
+      setShinzuiStone((s) => s + currentStage.stoneReward)
+      // gameMode を 'safe' に **しない**（プレイヤータップ待ち）
+      // ただし maintenance タイマーが進まないように、countdown は維持してロジックで止める
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, hitsThisRound, targetHits])
+
+  // リザルト画面でタップ → safe に遷移 + round 進行
+  const proceedFromAvoided = () => {
+    setShowAvoided(false)
+    setRound((r) => r + 1)
+    setGameMode('safe')
+  }
+
+  // ステージごとのハードフェーズ判定（残り N 秒以下で動的バッジが降ってくる、-1 なら発動なし）
+  const isHardPhase =
+    gameMode === 'countdown' &&
+    currentStage.hardPhaseFromSec >= 0 &&
+    maintenanceSeconds <= currentStage.hardPhaseFromSec
+  useEffect(() => {
+    if (!isHardPhase) {
+      setBadges([])
+      return
+    }
+    const spawn = () => {
+      setBadges((prev) => {
+        if (prev.length >= 10) return prev
+        const r = Math.random()
+        const type: BadgeType =
+          r < 0.1 ? 'apology' : r < 0.35 ? 'critical' : 'normal'
+        const hp = type === 'critical' ? 3 : 1
+        return [
+          ...prev,
+          {
+            id: ++badgeIdRef.current,
+            x: 8 + Math.random() * 84,
+            y: 14 + Math.random() * 70,
+            hp,
+            type,
+            spawnedAt: Date.now(),
+          },
+        ]
+      })
+    }
+    const interval = setInterval(spawn, 700 + Math.random() * 800)
+    return () => clearInterval(interval)
+  }, [isHardPhase])
+
+  // バッジ自動消滅: スポーン後 4.5 秒で消える
+  useEffect(() => {
+    if (!isHardPhase) return
+    const cleanup = setInterval(() => {
+      const now = Date.now()
+      setBadges((prev) => prev.filter((b) => now - b.spawnedAt < 4500))
+    }, 200)
+    return () => clearInterval(cleanup)
+  }, [isHardPhase])
+
+  // 既存アイコン上の赤バッジ叩き（icon-button / footer-button の onClick で発火）
+  // アイコンの 4 段階アニメ: undefined（通常）→ exploding → gone → respawning → undefined
+  const [iconState, setIconState] = useState<Record<string, IconAnimState>>({})
+
+  const whackIconBadge = (key: string) => {
+    if (iconState[key]) return // すでに消えてる or アニメ中
+    // ステージで破壊不可なら無視
+    if (!isDestroyable(key, currentStage)) return
+    // active 制限ありの場合 (S1)、active 集合に含まれない key は無視 + 補充
+    if (currentStage.activeBadgeMax > 0) {
+      if (!activeBadgeKeys.has(key)) return
+      setActiveBadgeKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        const candidates = allIconKeys.filter((k) => !next.has(k) && k !== key)
+        if (candidates.length > 0) {
+          next.add(candidates[Math.floor(Math.random() * candidates.length)])
+        }
+        return next
+      })
+    }
+    // SE: 斬撃 or タップ + 爆発（両方鳴らして派手に）
+    if (swipeActiveRef.current) {
+      playSwordSE()
+    } else {
+      playPunchSE()
+    }
+    playExplode()
+    setScore((s) => s + currentStage.scorePerHit)
+    setHits((h) => h + 1)
+    setHitsThisRound((h) => h + 1)
+
+    // 4 段階アニメ:
+    // 0     : exploding（弾け飛ぶ 0.45s）
+    // 0.45s : gone（完全消滅、3-5 秒）
+    // 3-5s  : respawning（もわっと出現 0.55s）
+    // 3.55-5.55s : undefined（通常表示）
+    setIconState((prev) => ({ ...prev, [key]: 'exploding' }))
+    const goneAt = 450
+    const respawnAt = 3500 + Math.random() * 2000
+    const doneAt = respawnAt + 550
+
+    setTimeout(() => {
+      setIconState((prev) => ({ ...prev, [key]: 'gone' }))
+    }, goneAt)
+    setTimeout(() => {
+      setIconState((prev) => ({ ...prev, [key]: 'respawning' }))
+    }, respawnAt)
+    setTimeout(() => {
+      setIconState((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }, doneAt)
+  }
+
+  // ゲームモード切替時、アニメ中の状態をリセット（safe / idle で全要素復活）
+  useEffect(() => {
+    if (gameMode === 'idle' || gameMode === 'safe') setIconState({})
+  }, [gameMode])
+
+  // KAGUYA 全爆破: 全 destroyable オブジェクトを一気に exploding 化
+  const [bombFlash, setBombFlash] = useState(false)
+  const detonateBomb = () => {
+    if (kaguyaBombs <= 0) return
+    if (gameMode !== 'countdown') return
+    consumeKaguyaBomb?.()
+    playExplode()
+    playExplodeA()
+    playExplodeB()
+    // 全 destroyable な key をリストアップ
+    const allDestroyableKeys: string[] = []
+    const candidateKeys = [
+      ...allIconKeys,
+      'player',
+      'curr-gold', 'curr-shinzui', 'curr-diamond',
+      'gb-pickup', 'gb-shinzui',
+      'fo-0', 'fo-1', 'fo-2', 'fo-3', 'fo-4', 'fo-5',
+    ]
+    candidateKeys.forEach((key) => {
+      if (!iconState[key] && isDestroyable(key, currentStage)) {
+        allDestroyableKeys.push(key)
+      }
+    })
+    // 一気に exploding 状態へ
+    const newState: Record<string, IconAnimState> = { ...iconState }
+    allDestroyableKeys.forEach((key) => { newState[key] = 'exploding' })
+    setIconState(newState)
+    // hits を一気に加算
+    const count = allDestroyableKeys.length
+    setHitsThisRound((h) => h + count)
+    setHits((h) => h + count)
+    setScore((s) => s + count * currentStage.scorePerHit)
+    // 4 段階アニメ進行（exploding → gone → respawning → undefined）
+    setTimeout(() => {
+      setIconState((prev) => {
+        const next = { ...prev }
+        allDestroyableKeys.forEach((key) => {
+          if (next[key] === 'exploding') next[key] = 'gone'
+        })
+        return next
+      })
+    }, 450)
+    setTimeout(() => {
+      setIconState((prev) => {
+        const next = { ...prev }
+        allDestroyableKeys.forEach((key) => {
+          if (next[key] === 'gone') next[key] = 'respawning'
+        })
+        return next
+      })
+    }, 3500)
+    setTimeout(() => {
+      setIconState((prev) => {
+        const next = { ...prev }
+        allDestroyableKeys.forEach((key) => { delete next[key] })
+        return next
+      })
+    }, 4050)
+    // 画面フラッシュ
+    setBombFlash(true)
+    setTimeout(() => setBombFlash(false), 700)
+  }
+
+  // ステージ進行時のアンロック演出
+  const [stageUnlockMsg, setStageUnlockMsg] = useState<{ icon: string; title: string; sub: string } | null>(null)
+  const prevRoundRef = useRef(round)
+  useEffect(() => {
+    if (round > prevRoundRef.current) {
+      let msg: { icon: string; title: string; sub: string } | null = null
+      // 機能解放のあるラウンドでだけメッセージを出す（細かい難易度上昇は無音で進む）
+      if (round === 3) msg = { icon: '⚡', title: 'サブターゲット 5 個に', sub: '同時に光る赤バッジが増えた' }
+      else if (round === 4) msg = { icon: '⚠', title: '緊急通知が降ってくる', sub: 'ハードフェーズ 解放' }
+      else if (round === 5) msg = { icon: '🚨', title: '業界アプリの妨害 開始', sub: 'NOW LOADING / DL モーダル / 強制チュートリアル' }
+      else if (round === 6) msg = { icon: '⚔', title: 'スワイプ斬り 解放', sub: '指で滑らせて連続斬り' }
+      else if (round === 8) msg = { icon: '💥', title: '解放: 全 UI 破壊', sub: '通貨もバナーも斬り倒せる' }
+      else if (round === 10) msg = { icon: '🔥', title: '過酷モード 突入', sub: '最高難度 — 永久輪廻の到達点' }
+      if (msg) {
+        setStageUnlockMsg(msg)
+        setTimeout(() => setStageUnlockMsg(null), 3800)
+      }
+    }
+    prevRoundRef.current = round
+  }, [round])
+
+  // 既存ロジックの下位互換用（badge が消えてる ≒ icon が見えてない期間）
+  const iconBadgesHidden: Record<string, boolean> = {}
+  Object.entries(iconState).forEach(([k, v]) => {
+    if (v === 'exploding' || v === 'gone') iconBadgesHidden[k] = true
+  })
+
+  // S1 で同時に光るバッジを制限する（3 個だけ）
+  const [activeBadgeKeys, setActiveBadgeKeys] = useState<Set<string>>(new Set())
+  const allIconKeys: string[] = [
+    'sl-0', 'sl-1', 'sl-2', 'sl-3', 'sl-4',
+    'sr-0', 'sr-1', 'sr-2', 'sr-3', 'sr-4',
+    'fb-0', 'fb-1', 'fb-2', 'fb-3', 'fb-4',
+  ]
+
+  useEffect(() => {
+    if (gameMode !== 'countdown') {
+      setActiveBadgeKeys(new Set())
+      return
+    }
+    if (currentStage.activeBadgeMax > 0) {
+      const shuffled = [...allIconKeys].sort(() => Math.random() - 0.5)
+      setActiveBadgeKeys(new Set(shuffled.slice(0, currentStage.activeBadgeMax)))
+    } else {
+      setActiveBadgeKeys(new Set(allIconKeys))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, currentStage.activeBadgeMax, round])
+
+  const isWhackable = (key: string): boolean => {
+    if (gameMode !== 'countdown') return false
+    if (currentStage.activeBadgeMax > 0) {
+      return activeBadgeKeys.has(key)
+    }
+    return true
+  }
+
+  const isBadgeVisible = (key: string): boolean => {
+    if (iconBadgesHidden[key]) return false // explode アニメ中
+    if (gameMode !== 'countdown') return false // 通常時は赤バッジ表示しない
+    if (currentStage.activeBadgeMax > 0) {
+      return activeBadgeKeys.has(key)
+    }
+    return true
+  }
+
+  // スワイプ連続消し（移動量 6px 以上で「スワイプ確定」）
+  useEffect(() => {
+    if (gameMode !== 'countdown') return
+
+    let pressing = false
+    let initialX = 0
+    let initialY = 0
+    const sweptKeys = new Set<string>()
+
+    const sweep = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y)
+      if (!el) return
+      const target = (el as Element).closest(
+        '[data-icon-key], .whack-badge'
+      ) as HTMLElement | null
+      if (!target) return
+
+      // 動的バッジ
+      if (target.classList.contains('whack-badge')) {
+        const id = target.dataset.badgeId
+        if (id && !sweptKeys.has(`b-${id}`)) {
+          sweptKeys.add(`b-${id}`)
+          hitBadge(parseInt(id, 10))
+        }
+        return
+      }
+      // 全 UI 要素を破壊対象（PlayerInfo / 通貨 / GachaBanner / floating-offer / アイコン）
+      const key = target.dataset.iconKey
+      if (key && !sweptKeys.has(key)) {
+        sweptKeys.add(key)
+        whackIconBadge(key)
+      }
+    }
+
+    const onDown = (e: PointerEvent) => {
+      pressing = true
+      initialX = e.clientX
+      initialY = e.clientY
+      sweptKeys.clear()
+      swipeActiveRef.current = false
+      // pointerdown 時点では何もしない（タップになるかスワイプになるか不明）
+    }
+    const onMove = (e: PointerEvent) => {
+      if (!pressing) return
+      // ステージでスワイプ未解放なら何もしない（タップ単独のみ反応）
+      if (!currentStage.swipeEnabled) return
+      const dist = Math.hypot(e.clientX - initialX, e.clientY - initialY)
+      if (!swipeActiveRef.current && dist > 6) {
+        // スワイプ確定 — 初期位置から sweep 開始
+        swipeActiveRef.current = true
+        sweep(initialX, initialY)
+      }
+      if (swipeActiveRef.current) {
+        sweep(e.clientX, e.clientY)
+      }
+    }
+    const onUp = (e: PointerEvent) => {
+      // タップ単独（移動なし）の場合、その位置を sweep（タップ判定）
+      if (pressing && !swipeActiveRef.current) {
+        sweep(e.clientX, e.clientY)
+      }
+      pressing = false
+      setTimeout(() => {
+        swipeActiveRef.current = false
+      }, 100)
+      sweptKeys.clear()
+    }
+
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, currentStage.swipeEnabled])
+
+  const hitBadge = (id: number) => {
+    // 動的バッジは prefix 'b' として扱う、stage 'b' 含む時だけ破壊可能
+    if (!currentStage.destroyable.includes('b')) return
+    if (swipeActiveRef.current) {
+      playSwordSE()
+    } else {
+      playPunchSE()
+    }
+    playExplode()
+    setBadges((prev) => {
+      const target = prev.find((b) => b.id === id)
+      if (!target) return prev
+      const newHp = target.hp - 1
+      if (newHp <= 0) {
+        // ランダムバッジは critical / apology はスコア倍率を維持しつつ stage 基準
+        const baseScore = currentStage.scorePerHit
+        const points =
+          target.type === 'critical' ? Math.round(baseScore * 1.5)
+          : target.type === 'apology' ? Math.round(baseScore * 2.5)
+          : baseScore
+        setScore((s) => s + points)
+        setHits((h) => h + 1)
+        setHitsThisRound((h) => h + 1)
+        // 詫び石は 2 秒延命（業界の引き止め構造）
+        if (target.type === 'apology') {
+          setMaintenanceSeconds((s) => Math.min(MAINTENANCE_TOTAL_SEC + 30, s + 2))
+        }
+        return prev.filter((b) => b.id !== id)
+      }
+      return prev.map((b) => (b.id === id ? { ...b, hp: newHp } : b))
+    })
+  }
+
+  if (gameMode === 'maintenance') {
+    return <MaintenanceScreen muted={muted} onBackToTitle={() => onNavigate('title')} />
+  }
+
   return (
     <>
-      {/* キャラ背景（Luma 生成 動画ループ） */}
+      <BGMPlayer gameMode={gameMode} muted={muted} unlocked={audioUnlocked} />
+
+      {/* countdown ヘッダー（visible に関係なく常時表示、ガチャ画面の上にも被さる） */}
+      {gameMode === 'countdown' && !visible && (
+        <MaintenanceCountdown seconds={maintenanceSeconds} />
+      )}
+
+      <div
+        className="home-content"
+        style={{ display: visible ? 'contents' : 'none' }}
+      >
+
+      {/* キャラ背景（Luma 生成 動画ループ）。countdown 中は battle 動画に切替 */}
       <video
-        className="character-bg"
-        src="/heroes/kaguya-x.mp4"
+        key={gameMode === 'countdown' ? 'battle' : 'idle'}
+        className={`character-bg ${gameMode === 'countdown' ? 'character-bg-emergency' : ''}`}
+        src={gameMode === 'countdown' ? '/heroes/kaguya-x-battle.mp4' : '/heroes/kaguya-x.mp4'}
         autoPlay
         loop
         muted
@@ -616,74 +1633,250 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
         aria-hidden="true"
       />
 
+      {/* 暗転トランジション（countdown 開始時） */}
+      {battleTransition && <div className="battle-transition" aria-hidden="true" />}
+
+      {/* 緊急メンテ赤 vignette overlay（点滅） */}
+      {gameMode === 'countdown' && (
+        <div className="emergency-overlay" aria-hidden="true" />
+      )}
+
       <header className="header">
-        <PlayerInfo />
+        <PlayerInfo state={iconState['player']} />
         <div className="currency-bar">
-          {CURRENCIES.map((c) => (
-            <CurrencyItem key={c.id} currency={c} />
-          ))}
+          {CURRENCIES.map((c) => {
+            const liveValue =
+              c.id === 'gold' ? score : c.id === 'shinzui' ? shinzuiStone : undefined
+            return (
+              <CurrencyItem
+                key={c.id}
+                currency={c}
+                state={iconState[`curr-${c.id}`]}
+                value={liveValue}
+              />
+            )
+          })}
         </div>
       </header>
 
-      {/* 流れるティッカー（ヘッダーの直下） */}
-      <div className="ticker-container ticker-under-header">
-        <div className="ticker">
-          您の英雄が降臨しました！素晴らしいです！　・　VIP6 限定 神髄ガチャ初回 6 折！　・　あなたは選ばれた主公です　・　累計課金 ¥9,800 達成で SSR 確定！　・　羅刹姫・葵 復刻ガチャ開催中　・　お詫び石 進呈中　・　深夜限定オファー 23:00 開始
+      {/* 通常時はティッカー、緊急メンテ告知が始まったら上書き */}
+      {gameMode === 'countdown' ? (
+        <MaintenanceCountdown seconds={maintenanceSeconds} />
+      ) : (
+        <div className="ticker-container ticker-under-header">
+          <div className="ticker">
+            您の英雄が降臨しました！素晴らしいです！　・　VIP6 限定 神髄ガチャ初回 6 折！　・　あなたは選ばれた主公です　・　累計課金 ¥9,800 達成で SSR 確定！　・　羅刹姫・葵 復刻ガチャ開催中　・　お詫び石 進呈中　・　深夜限定オファー 23:00 開始
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* スコア表示 + 赤バッジ（countdown 中のみ） */}
+      {gameMode === 'countdown' && (
+        <>
+          <div className="whack-score">
+            <span className="ws-round">{currentStage.label}</span>
+            <span className="ws-progress">
+              <span className="ws-value">{hitsThisRound}</span>
+              <span className="ws-divider">/</span>
+              <span className="ws-target">{targetHits}</span>
+            </span>
+            <span className="ws-stones">✨ {shinzuiStone}</span>
+          </div>
+          {badges.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              className={`whack-badge wb-${b.type}`}
+              data-badge-id={b.id}
+              style={{ left: `${b.x}%`, top: `${b.y}%` }}
+              onClick={(e) => {
+                e.stopPropagation()
+                hitBadge(b.id)
+              }}
+              aria-label="赤バッジを叩く"
+            >
+              {b.type === 'apology'
+                ? '💎'
+                : b.type === 'critical'
+                ? `${pickRandom(BADGE_LABELS.critical)}`
+                : pickRandom(BADGE_LABELS.normal)}
+            </button>
+          ))}
+        </>
+      )}
+
+      {/* KAGUYA bomb（countdown 中、所持 > 0 で表示） */}
+      {gameMode === 'countdown' && kaguyaBombs > 0 && (
+        <button
+          type="button"
+          className="kaguya-bomb-btn"
+          onClick={detonateBomb}
+          aria-label="KAGUYA-X 全爆破"
+        >
+          <span className="kbb-icon">🌙</span>
+          <span className="kbb-count">×{kaguyaBombs}</span>
+        </button>
+      )}
+
+      {/* 全爆破フラッシュ */}
+      {bombFlash && <div className="bomb-flash" aria-hidden="true" />}
+
+      {/* ステージ解放演出 */}
+      {stageUnlockMsg && (
+        <div className="stage-unlock">
+          <div className="stage-unlock-content">
+            <div className="su-icon">{stageUnlockMsg.icon}</div>
+            <div className="su-title">{stageUnlockMsg.title}</div>
+            <div className="su-sub">{stageUnlockMsg.sub}</div>
+          </div>
+        </div>
+      )}
+
+      {/* メンテ回避リザルト（タップで次へ） */}
+      {showAvoided && (
+        <div className="avoided-overlay" onClick={proceedFromAvoided}>
+          <div className="avoided-content" onClick={proceedFromAvoided}>
+            <div className="avoided-icon">✓</div>
+            <div className="avoided-title">緊急メンテナンス回避</div>
+            <div className="avoided-stage">{currentStage.label} CLEAR</div>
+            <div className="avoided-stats">
+              <div className="as-row"><span>処理した赤バッジ</span><span>{hitsThisRound}</span></div>
+              <div className="as-row"><span>累計スコア</span><span>{score}pt</span></div>
+              <div className="as-row as-reward"><span>獲得 神髄石</span><span>✨ +{currentStage.stoneReward}</span></div>
+            </div>
+            <div className="avoided-tap">タップで次のステージへ</div>
+          </div>
+        </div>
+      )}
+
+      {/* safe 中: 次の緊急メンテへの予兆を控えめに */}
+      {gameMode === 'safe' && (
+        <div className="safe-indicator">
+          R{round} 待機中…
+        </div>
+      )}
 
 
 
       <aside className="sidebar sidebar-left">
-        {SIDEBAR_LEFT.map((item, i) => (
-          <button key={i} className="icon-button" type="button">
-            <div className="icon-graphic" data-id={i} />
-            <span className="icon-label">{item.label}</span>
-            <span className="icon-sub">{item.sub}</span>
-            <Badge />
-          </button>
-        ))}
+        {SIDEBAR_LEFT.map((item, i) => {
+          const key = `sl-${i}`
+          const animClass = iconState[key]
+            ? `icon-${iconState[key]}`
+            : ''
+          return (
+            <button
+              key={i}
+              className={`icon-button ${animClass}`}
+              type="button"
+              data-icon-key={key}
+              onClick={() => gameMode === 'countdown' && whackIconBadge(key)}
+            >
+              <div className="icon-graphic" data-id={i} />
+              <span className="icon-label">{item.label}</span>
+              <span className="icon-sub">{item.sub}</span>
+              <Badge whackable={isWhackable(key)} hidden={!isBadgeVisible(key)} />
+            </button>
+          )
+        })}
       </aside>
 
       <aside className="sidebar sidebar-right">
-        {SIDEBAR_RIGHT.map((item, i) => (
-          <button key={i} className="icon-button" type="button">
-            <div className="icon-graphic" data-id={i + 10} />
-            <span className="icon-label">{item.label}</span>
-            <span className="icon-sub">{item.sub}</span>
-            <Badge />
-          </button>
-        ))}
+        {SIDEBAR_RIGHT.map((item, i) => {
+          const key = `sr-${i}`
+          const animClass = iconState[key]
+            ? `icon-${iconState[key]}`
+            : ''
+          return (
+            <button
+              key={i}
+              className={`icon-button ${animClass}`}
+              type="button"
+              data-icon-key={key}
+              onClick={() => gameMode === 'countdown' && whackIconBadge(key)}
+            >
+              <div className="icon-graphic" data-id={i + 10} />
+              <span className="icon-label">{item.label}</span>
+              <span className="icon-sub">{item.sub}</span>
+              <Badge whackable={isWhackable(key)} hidden={!isBadgeVisible(key)} />
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          className="sound-toggle"
+          onClick={toggleMute}
+          aria-label={muted ? '音を出す' : '音を消す'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
         <button type="button" className="exit-button" onClick={onExit}>✕ 終了</button>
       </aside>
 
-      <FloatingOffer />
+      <FloatingOffer iconState={iconState} />
       <HeroCharacter />
-      <KaguyaDialog />
-      <GachaBanners onNavigate={onNavigate} />
-      <LoginBonusModal />
+      <KaguyaDialog gameMode={gameMode} />
+      <GachaBanners
+        onNavigate={onNavigate}
+        pickupState={iconState['gb-pickup']}
+        shinzuiState={iconState['gb-shinzui']}
+        countdownActive={gameMode === 'countdown'}
+      />
+      {gameMode === 'countdown' && <SwipeTrail />}
+
+      {/* お邪魔要素 */}
+      {obstacle === 'loading' && <NowLoadingOverlay />}
+      {obstacle === 'tutorial' && <TutorialOverlay />}
+      {obstacle === 'download' && <DownloadOverlay />}
+      <LoginBonusModal
+        open={obstacle === 'login-bonus'}
+        onClose={() => setObstacle(null)}
+      />
 
       <footer className="footer">
-        {FOOTER_BUTTONS.map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            className={`footer-button ${label === 'ガチャ' ? 'highlight' : ''}`}
-            onClick={() => label === 'ガチャ' && onNavigate('gacha')}
-          >
-            {label === 'ガチャ' && <div className="rainbow-pillar" />}
-            <div className="footer-icon" data-key={FOOTER_KEYS[i]} />
-            <span className="footer-label">{label}</span>
-            <Badge />
-          </button>
-        ))}
+        {FOOTER_BUTTONS.map((label, i) => {
+          const key = `fb-${i}`
+          const animClass = iconState[key] ? `icon-${iconState[key]}` : ''
+          return (
+            <button
+              key={label}
+              type="button"
+              className={`footer-button ${label === 'ガチャ' ? 'highlight' : ''} ${animClass}`}
+              data-icon-key={key}
+              onClick={() => {
+                if (gameMode === 'countdown') {
+                  whackIconBadge(key)
+                } else if (label === 'ガチャ') {
+                  onNavigate('gacha')
+                }
+              }}
+            >
+              {label === 'ガチャ' && <div className="rainbow-pillar" />}
+              <div className="footer-icon" data-key={FOOTER_KEYS[i]} />
+              <span className="footer-label">{label}</span>
+              <Badge whackable={isWhackable(key)} hidden={!isBadgeVisible(key)} />
+            </button>
+          )
+        })}
       </footer>
+
+      </div>
     </>
   )
 }
 
 // ===== GachaScreen =====
-function GachaScreen({ onBack, inFlow = false, onAdvance }: { onBack: () => void; inFlow?: boolean; onAdvance?: () => void }) {
+function GachaScreen({
+  onBack,
+  inFlow = false,
+  onAdvance,
+  addKaguyaBomb,
+}: {
+  onBack: () => void
+  inFlow?: boolean
+  onAdvance?: () => void
+  addKaguyaBomb?: () => void
+}) {
   const [seconds, setSeconds] = useState(23 * 3600 + 47 * 60 + 18)
   const [pity, setPity] = useState(153)
   const [summoning, setSummoning] = useState(false)
@@ -704,6 +1897,11 @@ function GachaScreen({ onBack, inFlow = false, onAdvance }: { onBack: () => void
       setResults(r)
       setSummoning(false)
       setPity((p) => Math.min(200, p + count))
+      // KAGUYA-X が含まれていたら、ホーム画面に「全爆破ボム」追加
+      const kaguyaCount = r.filter((c) => c.name === 'KAGUYA-X').length
+      if (kaguyaCount > 0 && addKaguyaBomb) {
+        for (let i = 0; i < kaguyaCount; i++) addKaguyaBomb()
+      }
     }, 2400)
   }
 
@@ -1058,12 +2256,46 @@ function FreeScreen({ stats, onRestart }: { stats: GameStats; onRestart: () => v
 
 // ===== Root App =====
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home')
+  const [screen, setScreen] = useState<Screen>('title')
   const [stats, setStats] = useState<GameStats>({
     startedAt: Date.now(),
     blocksHit: 0,
     apologyStones: 0,
   })
+
+  const [audioUnlocked, setAudioUnlocked] = useState(false)
+  const [kaguyaBombs, setKaguyaBombs] = useState(0)
+  const addKaguyaBomb = () => setKaguyaBombs((s) => s + 1)
+  const consumeKaguyaBomb = () => setKaguyaBombs((s) => Math.max(0, s - 1))
+
+  // 起動時グローバル audio unlock（最初のユーザータップで全 BGM/SE を unlock）
+  useEffect(() => {
+    const sources = [
+      '/audio/title-bgm.mp3',
+      '/audio/home-bgm.mp3',
+      '/audio/maintenance-bgm.mp3',
+      '/audio/se-whack.mp3',
+      '/audio/se-tap-light.mp3',
+      '/audio/se-alarm.mp3',
+      '/audio/se-clear.mp3',
+      '/audio/se-explode-3.mp3',
+      '/audio/se-explode-4.mp3',
+      '/audio/se-chime.mp3',
+    ]
+    const unlock = () => {
+      sources.forEach((src) => {
+        const a = new Audio(src)
+        a.muted = true
+        a.play().then(() => {
+          a.pause()
+          a.src = ''
+        }).catch(() => {})
+      })
+      setAudioUnlocked(true)
+    }
+    window.addEventListener('pointerdown', unlock, { once: true })
+    return () => window.removeEventListener('pointerdown', unlock)
+  }, [])
 
   const onBlock = () => setStats((s) => ({ ...s, blocksHit: s.blocksHit + 1 }))
   const addStones = (n: number) => setStats((s) => ({ ...s, apologyStones: s.apologyStones + n }))
@@ -1081,8 +2313,19 @@ export default function App() {
   return (
     <div className="phone-frame">
       <div className="home-screen">
-        {screen === 'home' && <HomeScreen onNavigate={setScreen} onExit={onExit} />}
-        {screen === 'gacha' && <GachaScreen onBack={() => setScreen('home')} />}
+        {screen === 'title' && <TitleScreen onStart={() => setScreen('home')} />}
+        {/* home / gacha では HomeScreen を常に mount（visible で表示制御）→ countdown / BGM 継続 */}
+        {(screen === 'home' || screen === 'gacha') && (
+          <HomeScreen
+            onNavigate={setScreen}
+            onExit={onExit}
+            audioUnlocked={audioUnlocked}
+            kaguyaBombs={kaguyaBombs}
+            consumeKaguyaBomb={consumeKaguyaBomb}
+            visible={screen === 'home'}
+          />
+        )}
+        {screen === 'gacha' && <GachaScreen onBack={() => setScreen('home')} addKaguyaBomb={addKaguyaBomb} />}
         {screen === 'layer1' && <Layer1Screen onAdvance={() => setScreen('layer2')} onBlock={onBlock} />}
         {screen === 'layer2' && <Layer2Screen onAdvance={() => setScreen('layer3')} onBlock={onBlock} />}
         {screen === 'layer3' && (

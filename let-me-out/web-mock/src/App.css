@@ -97,6 +97,66 @@ html, body, #root {
   pointer-events: none;
   /* 月光 glow だけ CSS で添える（動画自体が動くので CSS animation 不要） */
   filter: drop-shadow(0 0 10px rgba(208, 168, 255, 0.4));
+  transition: filter 0.6s ease;
+}
+
+/* 緊急メンテ時: KAGUYA は通常色のまま、軽く赤 glow だけ追加 */
+.character-bg-emergency {
+  filter: drop-shadow(0 0 18px rgba(255, 50, 50, 0.6));
+}
+
+/* ===== 暗転トランジション（countdown 開始時、battle 突入演出） ===== */
+.battle-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 800;
+  background: #000;
+  pointer-events: none;
+  animation: battle-trans 0.7s ease-out forwards;
+}
+
+@keyframes battle-trans {
+  0%   { opacity: 1; }
+  35%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===== 緊急メンテ赤 vignette overlay（キャラ中央は透明） ===== */
+.emergency-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* character-bg(1) の上、header(10) の下 */
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 65% at 50% 55%,
+      transparent 0%,
+      transparent 50%,
+      rgba(180, 0, 0, 0.55) 90%,
+      rgba(40, 0, 0, 0.85) 100%);
+  animation: emergency-pulse 1.1s ease-in-out infinite alternate;
+}
+
+/* もうひとつ重ねて周辺だけ赤く点滅（中央は透明） */
+.emergency-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 65% at 50% 55%,
+      transparent 0%,
+      transparent 55%,
+      rgba(255, 0, 0, 0.25) 100%);
+  animation: emergency-flash 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes emergency-pulse {
+  0%   { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@keyframes emergency-flash {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 /* ===== 戦闘背景 ===== */
@@ -459,9 +519,37 @@ html, body, #root {
   justify-content: center;
   padding: 0 4px;
   box-shadow: 0 0 6px rgba(255, 0, 0, 0.95);
-  animation: badge-pulse 0.5s infinite alternate;
+  animation: badge-pop-in 0.4s ease-out backwards, badge-pulse 0.5s 0.4s infinite alternate;
   border: 1px solid #fff;
   z-index: 2;
+}
+
+@keyframes badge-pop-in {
+  0%   { opacity: 0; transform: scale(0); }
+  60%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* whackable: countdown 中、ターゲットとして光る + クリックは親 button に通す */
+.badge-whackable {
+  pointer-events: none; /* クリックを親に透過、アイコン全体タップで判定 */
+  z-index: 70;
+  transform-origin: center;
+  animation: badge-whackable-glow 0.6s ease-in-out infinite alternate;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 1), 0 0 18px rgba(255, 200, 0, 0.5);
+}
+
+/* 親 button が active の時、Badge も縮む（タップ feedback の演出） */
+.icon-button:active .badge-whackable,
+.footer-button:active .badge-whackable {
+  transform: scale(0.7);
+  box-shadow: 0 0 18px rgba(255, 220, 50, 1);
+  transition: transform 0.08s;
+}
+
+@keyframes badge-whackable-glow {
+  0%   { box-shadow: 0 0 8px rgba(255, 0, 0, 0.9), 0 0 14px rgba(255, 200, 0, 0.4); }
+  100% { box-shadow: 0 0 14px rgba(255, 0, 0, 1), 0 0 22px rgba(255, 200, 0, 0.7); }
 }
 
 @keyframes badge-pulse {
@@ -470,6 +558,990 @@ html, body, #root {
 }
 
 /* ===== 限定オファー ===== */
+/* ===== 緊急メンテナンス・カウントダウン（モグラ叩きゲーム開始装置） ===== */
+.maintenance-countdown {
+  position: absolute;
+  top: 50px; /* header height = 50 の真下 */
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: linear-gradient(to right, rgba(180, 0, 0, 0.95), rgba(120, 0, 0, 0.95), rgba(180, 0, 0, 0.95));
+  color: #ffd700;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
+  padding: 5px 8px;
+  border-bottom: 2px solid #ffd700;
+  letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.2);
+  animation: mc-pulse 1.4s ease-in-out infinite;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.maintenance-countdown.mc-critical {
+  animation: mc-blink-critical 0.5s ease-in-out infinite;
+  background: linear-gradient(to right, rgba(255, 0, 0, 0.98), rgba(180, 0, 0, 0.98), rgba(255, 0, 0, 0.98));
+}
+
+.mc-icon {
+  margin-right: 4px;
+  font-size: 13px;
+  animation: mc-icon-shake 0.5s ease-in-out infinite alternate;
+  display: inline-block;
+}
+
+.mc-text {
+  letter-spacing: 0.5px;
+}
+
+.mc-timer {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 4px #ff0, 0 0 10px #f00;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-left: 4px;
+}
+
+@keyframes mc-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.85; }
+}
+
+@keyframes mc-blink-critical {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+@keyframes mc-icon-shake {
+  0%   { transform: translateX(-1px) rotate(-3deg); }
+  100% { transform: translateX(1px)  rotate(3deg); }
+}
+
+/* ===== お邪魔 1: NOW LOADING（全画面、タップ不能） ===== */
+.now-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: not-allowed;
+  animation: nl-fade-in 0.2s ease-out;
+  backdrop-filter: blur(4px);
+}
+
+.nl-spinner {
+  font-size: 56px;
+  color: #ffd700;
+  animation: nl-spin 0.9s linear infinite;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.nl-text {
+  font-size: 16px;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 3px;
+  animation: nl-blink 1s ease-in-out infinite alternate;
+}
+
+.nl-sub {
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
+
+@keyframes nl-fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes nl-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes nl-blink {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* ===== お邪魔 2: 機能解放チュートリアル ===== */
+.tutorial-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 320;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+  animation: nl-fade-in 0.2s ease-out;
+}
+
+.tu-content {
+  background: linear-gradient(135deg, rgba(40, 0, 30, 0.96), rgba(60, 20, 60, 0.96));
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  padding: 16px 18px 14px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 90px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 18px rgba(255, 215, 0, 0.4);
+  animation: tu-slide-up 0.4s ease-out;
+  position: relative;
+}
+
+.tu-name {
+  background: linear-gradient(135deg, #ffd700, #ff8000);
+  color: #1a0815;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 11px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 10px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 1px #fff;
+}
+
+.tu-text {
+  font-size: 13px;
+  color: #fff8e0;
+  line-height: 1.7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.tu-text strong {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.tu-skip {
+  margin-top: 12px;
+  padding: 7px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #888;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: not-allowed;
+  font-size: 11px;
+  width: 100%;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+}
+
+@keyframes tu-slide-up {
+  0%   { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== お邪魔 3: 一括 DL ポップアップ（業界 OS モーダル風） ===== */
+.download-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 310;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: nl-fade-in 0.2s ease-out;
+}
+
+.dm-content {
+  background: linear-gradient(180deg, #f4f4f4, #d8d8d8);
+  border: 1px solid #888;
+  border-radius: 10px;
+  padding: 18px 16px 14px;
+  width: 100%;
+  max-width: 280px;
+  color: #222;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+  animation: dm-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+
+.dm-icon {
+  font-size: 36px;
+  margin-bottom: 6px;
+}
+
+.dm-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.dm-sub {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.dm-sub strong {
+  color: #d32020;
+  font-size: 14px;
+}
+
+.dm-progress {
+  width: 100%;
+  height: 8px;
+  background: #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.dm-progress-fill {
+  width: 12%;
+  height: 100%;
+  background: linear-gradient(90deg, #4080ff, #20a0ff);
+  animation: dm-progress 4s linear infinite;
+}
+
+.dm-progress-text {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.dm-btn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid;
+}
+
+.dm-btn-confirm {
+  background: linear-gradient(180deg, #4090ff, #2070dd);
+  color: #fff;
+  border-color: #1860c0;
+}
+
+.dm-btn-cancel {
+  background: #fff;
+  color: #888;
+  border-color: #aaa;
+}
+
+@keyframes dm-pop-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dm-progress {
+  0%   { width: 12%; }
+  100% { width: 28%; }
+}
+
+/* ===== スワイプ軌跡（Fruit Ninja 風刀筋） ===== */
+.swipe-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ===== 斬られたアイコン: 派手に弾け飛ぶ ===== */
+.icon-exploding {
+  animation: icon-explode-mega 0.5s cubic-bezier(0.42, 0, 0.85, 0.4) forwards;
+  pointer-events: none;
+  position: relative;
+  z-index: 80;
+}
+
+/* 爆発の閃光（::before） */
+.icon-exploding::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(circle,
+      rgba(255, 240, 180, 1) 0%,
+      rgba(255, 200, 50, 0.85) 25%,
+      rgba(255, 80, 40, 0.6) 55%,
+      rgba(255, 0, 0, 0.2) 80%,
+      transparent 100%);
+  border-radius: 50%;
+  animation: icon-explode-blast 0.5s ease-out forwards;
+  z-index: -1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* 散る破片（::after） */
+.icon-exploding::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle 6px at 20% 30%, rgba(255, 220, 100, 1), transparent),
+    radial-gradient(circle 5px at 80% 25%, rgba(255, 100, 50, 0.95), transparent),
+    radial-gradient(circle 4px at 30% 80%, rgba(255, 240, 200, 0.9), transparent),
+    radial-gradient(circle 7px at 75% 75%, rgba(255, 180, 30, 0.95), transparent),
+    radial-gradient(circle 5px at 50% 10%, rgba(255, 255, 200, 1), transparent),
+    radial-gradient(circle 4px at 10% 60%, rgba(255, 100, 100, 0.8), transparent);
+  animation: icon-explode-shards 0.5s ease-out forwards;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes icon-explode-mega {
+  0%   { transform: scale(1) rotate(0);          opacity: 1;   filter: brightness(1); }
+  10%  { transform: scale(1.3) rotate(-8deg);    opacity: 1;   filter: brightness(4) saturate(2); }
+  35%  { transform: scale(1.7) rotate(45deg);    opacity: 0.9; filter: brightness(3) blur(1px); }
+  100% { transform: scale(0.05) rotate(720deg);  opacity: 0;   filter: brightness(1) blur(8px); }
+}
+
+@keyframes icon-explode-blast {
+  0%   { opacity: 0; transform: scale(0.4); }
+  20%  { opacity: 1; transform: scale(1.4); }
+  60%  { opacity: 0.7; transform: scale(2.2); }
+  100% { opacity: 0; transform: scale(3); }
+}
+
+@keyframes icon-explode-shards {
+  0%   { opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.5); filter: blur(3px); }
+}
+
+/* 消失中: 完全非表示 + クリック不能 */
+.icon-gone {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* もわっと再出現 */
+.icon-respawning {
+  animation: icon-respawn 0.55s ease-out;
+  pointer-events: none;
+}
+
+@keyframes icon-respawn {
+  0%   { opacity: 0;   transform: scale(0.3); filter: blur(8px) brightness(2); }
+  40%  { opacity: 0.7; transform: scale(1.1); filter: blur(2px) brightness(1.6); }
+  70%  { opacity: 0.95; transform: scale(0.96); filter: blur(0.5px) brightness(1.2); }
+  100% { opacity: 1;   transform: scale(1);   filter: blur(0)   brightness(1); }
+}
+
+/* highlight ガチャボタンの special handling（scale 1.08 ベースを維持） */
+.footer-button.highlight.icon-exploding {
+  animation: highlight-explode 0.45s cubic-bezier(0.42, 0, 0.85, 0.4) forwards;
+}
+
+@keyframes highlight-explode {
+  0%   { transform: scale(1.08); opacity: 1; }
+  15%  { transform: scale(1.35) rotate(-6deg); opacity: 1; filter: brightness(3.5); }
+  100% { transform: scale(0.15) rotate(180deg); opacity: 0; filter: brightness(1); }
+}
+
+/* ===== モグラ叩き赤バッジ ===== */
+.whack-badge {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff6060, #c00010);
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 0 2px #000, 0 1px 1px rgba(0,0,0,0.6);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: wb-pop-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translate(-50%, -50%);
+  padding: 0;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.whack-badge:active {
+  transform: translate(-50%, -50%) scale(0.85);
+  box-shadow: 0 0 16px rgba(255, 200, 50, 0.9);
+}
+
+.whack-badge.wb-critical {
+  background: radial-gradient(circle at 35% 30%, #ffa030, #802000);
+  width: 42px;
+  height: 42px;
+  font-size: 15px;
+  border-color: #ffd700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.whack-badge.wb-apology {
+  background: radial-gradient(circle at 35% 30%, #d8b8ff, #4a2080);
+  border-color: #ffd700;
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  animation: wb-pop-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+             wb-apology-pulse 0.7s ease-in-out 0.3s infinite alternate;
+  box-shadow: 0 0 14px rgba(208, 168, 255, 0.9), 0 0 24px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes wb-pop-in {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes wb-apology-pulse {
+  0%   { box-shadow: 0 0 10px rgba(208, 168, 255, 0.6), 0 0 18px rgba(255, 215, 0, 0.4); }
+  100% { box-shadow: 0 0 18px rgba(208, 168, 255, 1), 0 0 32px rgba(255, 215, 0, 0.7); }
+}
+
+/* ===== スコア表示（countdown 直下、右寄せ） ===== */
+.whack-score {
+  position: absolute;
+  top: 78px;
+  right: 6px;
+  z-index: 35;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(40, 0, 20, 0.85));
+  color: #ffd700;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.ws-round  { color: #ff6060; font-size: 10px; font-weight: bold; padding-right: 4px; border-right: 1px solid rgba(255, 215, 0, 0.4); }
+.ws-progress { display: inline-flex; align-items: baseline; padding: 0 4px; }
+.ws-value  { color: #fff; font-size: 14px; }
+.ws-divider { color: #888; padding: 0 1px; }
+.ws-target { color: #aaa; font-size: 11px; }
+.ws-points { color: #ffd700; padding-left: 4px; border-left: 1px solid rgba(255, 215, 0, 0.4); }
+.ws-stones { color: #cc88ff; padding-left: 4px; border-left: 1px solid rgba(255, 215, 0, 0.4); font-size: 11px; text-shadow: 0 0 4px rgba(204, 136, 255, 0.6); }
+
+.avoided-reward {
+  font-size: 14px;
+  color: #cc88ff;
+  text-shadow: 0 0 8px rgba(204, 136, 255, 0.8);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(204, 136, 255, 0.4);
+  font-weight: bold;
+  letter-spacing: 1px;
+  animation: avoided-reward-pop 0.6s 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes avoided-reward-pop {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.8); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== KAGUYA 全爆破ボム ===== */
+.kaguya-bomb-btn {
+  position: absolute;
+  top: 78px;
+  left: 6px;
+  z-index: 90;
+  background: radial-gradient(circle at 35% 30%, #ffe0ff, #c060ff 50%, #500080);
+  border: 2px solid #ffd700;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  box-shadow:
+    0 0 16px rgba(204, 136, 255, 0.9),
+    0 0 32px rgba(255, 215, 0, 0.4),
+    inset 0 0 12px rgba(255, 255, 255, 0.4);
+  animation: kbb-pulse 1s ease-in-out infinite alternate;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kaguya-bomb-btn:active {
+  transform: scale(0.9);
+  filter: brightness(2);
+}
+
+.kbb-icon {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px #fff);
+}
+
+.kbb-count {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 4px #800080, 0 1px 2px rgba(0, 0, 0, 0.7);
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+
+@keyframes kbb-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 14px rgba(204, 136, 255, 0.7),
+      0 0 24px rgba(255, 215, 0, 0.3),
+      inset 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 26px rgba(204, 136, 255, 1),
+      0 0 48px rgba(255, 215, 0, 0.7),
+      inset 0 0 18px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* ===== 全爆破時のフラッシュ ===== */
+.bomb-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 700;
+  background: radial-gradient(circle, #fff 0%, #ffd700 30%, transparent 70%);
+  pointer-events: none;
+  animation: bomb-flash 0.7s ease-out forwards;
+}
+
+@keyframes bomb-flash {
+  0%   { opacity: 1; transform: scale(0.5); }
+  20%  { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(2.5); }
+}
+
+/* ===== ステージ解放演出（新機能アンロック） ===== */
+.stage-unlock {
+  position: absolute;
+  inset: 0;
+  z-index: 270;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.25), transparent 55%);
+  animation: su-bg-fade 3.8s ease-out forwards;
+}
+
+.stage-unlock-content {
+  background: linear-gradient(135deg, rgba(80, 30, 0, 0.92), rgba(40, 0, 30, 0.92));
+  border: 2px solid #ffd700;
+  border-radius: 14px;
+  padding: 24px 40px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.7), 0 8px 32px rgba(0, 0, 0, 0.7);
+  animation: su-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), su-glow 1.2s ease-in-out infinite alternate;
+}
+
+.su-icon {
+  font-size: 48px;
+  color: #ffd700;
+  margin-bottom: 8px;
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.9);
+  animation: su-icon-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.su-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 6px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.su-sub {
+  font-size: 11px;
+  color: #fff8e0;
+  letter-spacing: 0.5px;
+}
+
+@keyframes su-bg-fade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes su-pop {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes su-glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(255, 215, 0, 0.6), 0 8px 32px rgba(0, 0, 0, 0.7); }
+  50%      { box-shadow: 0 0 40px rgba(255, 215, 0, 1), 0 8px 32px rgba(0, 0, 0, 0.7); }
+}
+
+@keyframes su-icon-bounce {
+  0%   { transform: scale(0) rotate(-180deg); }
+  60%  { transform: scale(1.3) rotate(20deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* ===== メンテ回避リザルト（タップで次へ） ===== */
+.avoided-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 200, 100, 0.25), rgba(0, 0, 0, 0.6) 60%, rgba(0, 0, 0, 0.85));
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  animation: avoided-bg-fade 0.4s ease-out;
+}
+
+@keyframes avoided-bg-fade {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.avoided-content {
+  background: linear-gradient(135deg, rgba(0, 80, 40, 0.95), rgba(0, 30, 20, 0.95));
+  border: 2px solid #40ff80;
+  border-radius: 14px;
+  padding: 22px 26px;
+  text-align: center;
+  color: #fff;
+  width: 86%;
+  max-width: 320px;
+  box-shadow: 0 0 32px rgba(64, 255, 128, 0.7), 0 8px 24px rgba(0, 0, 0, 0.7);
+  animation: avoided-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.avoided-stage {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffd700;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+}
+
+.avoided-stats {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+
+.as-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: #fff8e0;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  font-variant-numeric: tabular-nums;
+}
+
+.as-row:last-child {
+  border-bottom: none;
+}
+
+.as-row span:first-child {
+  color: #aaa;
+  font-size: 10px;
+}
+
+.as-row span:last-child {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.as-reward span:last-child {
+  color: #cc88ff;
+  font-size: 14px;
+  text-shadow: 0 0 6px rgba(204, 136, 255, 0.7);
+}
+
+.avoided-tap {
+  font-size: 11px;
+  color: #ffd700;
+  margin-top: 14px;
+  letter-spacing: 1px;
+  animation: avoided-tap-blink 1s ease-in-out infinite alternate;
+  text-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes avoided-tap-blink {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+.avoided-icon {
+  font-size: 48px;
+  color: #40ff80;
+  margin-bottom: 8px;
+  text-shadow: 0 0 12px rgba(64, 255, 128, 0.9);
+}
+
+.avoided-title {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  color: #fff8e0;
+  text-shadow: 0 0 6px rgba(64, 255, 128, 0.6);
+}
+
+.avoided-sub {
+  font-size: 11px;
+  color: #ccc;
+  letter-spacing: 0.5px;
+}
+
+@keyframes avoided-pop {
+  0%   { opacity: 0; transform: scale(0.7) translateY(-12px); }
+  60%  { opacity: 1; transform: scale(1.06) translateY(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes avoided-fade {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===== safe 状態の予兆インジケータ ===== */
+.safe-indicator {
+  position: absolute;
+  top: 50px;
+  right: 6px;
+  z-index: 35;
+  background: rgba(0, 0, 0, 0.55);
+  color: #aaa;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
+  backdrop-filter: blur(2px);
+  animation: safe-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes safe-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* ===== Title Screen（業界アプリ風タイトル + スタートボタン） ===== */
+.title-screen-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  background: #0a0205;
+  cursor: pointer;
+  overflow: hidden;
+  animation: ts-fade-in 0.5s ease-out;
+}
+
+.title-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  /* Ken Burns: ゆっくり zoom + わずかな pan */
+  animation: ts-slow-zoom 14s ease-in-out infinite alternate;
+}
+
+@keyframes ts-slow-zoom {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.05) translate(-1%, -1%); }
+}
+
+/* 桜花弁・光粒の舞う粒子 */
+.ts-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.ts-petal {
+  position: absolute;
+  font-size: 16px;
+  animation: ts-petal-fall 14s linear infinite;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(255, 200, 220, 0.8));
+}
+
+.ts-petal-0 { left:  8%; font-size: 18px; animation-delay:  0s;   animation-duration: 13s; }
+.ts-petal-1 { left: 22%; font-size: 14px; animation-delay:  2.4s; animation-duration: 16s; }
+.ts-petal-2 { left: 38%; font-size: 20px; animation-delay:  4.8s; animation-duration: 12s; }
+.ts-petal-3 { left: 52%; font-size: 12px; animation-delay:  1.1s; animation-duration: 17s; }
+.ts-petal-4 { left: 66%; font-size: 16px; animation-delay:  6.2s; animation-duration: 14s; }
+.ts-petal-5 { left: 80%; font-size: 14px; animation-delay:  3.5s; animation-duration: 15s; }
+.ts-petal-6 { left: 14%; font-size: 13px; animation-delay:  8.0s; animation-duration: 18s; }
+.ts-petal-7 { left: 60%; font-size: 18px; animation-delay: 10.5s; animation-duration: 13s; }
+.ts-petal-8 { left: 30%; font-size: 15px; animation-delay:  5.7s; animation-duration: 16s; }
+.ts-petal-9 { left: 90%; font-size: 12px; animation-delay:  9.2s; animation-duration: 15s; }
+
+@keyframes ts-petal-fall {
+  0% {
+    top: -10%;
+    transform: translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  8%  { opacity: 0.85; }
+  92% { opacity: 0.85; }
+  100% {
+    top: 110%;
+    transform: translateX(40px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+/* スタートボタンの光輪（pulse、クリック透過） */
+.title-start-glow {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 46%;
+  height: 4.5%;
+  border-radius: 30px;
+  pointer-events: none;
+  z-index: 8;
+  animation: ts-start-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ts-start-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(255, 215, 0, 0.6),
+      0 0 14px rgba(255, 100, 50, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 14px rgba(255, 215, 0, 0),
+      0 0 28px rgba(255, 100, 50, 0.9);
+  }
+}
+
+.title-start-btn {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46%;
+  height: 4.5%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+@keyframes ts-fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ===== メンテナンス中画面（カウントダウン 0 で全画面） ===== */
+.maintenance-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  background: linear-gradient(180deg, #0a0205 0%, #1a0410 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  text-align: center;
+  padding: 40px;
+  animation: ms-fade-in 0.5s ease-out;
+}
+
+.ms-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  filter: grayscale(0.3);
+  animation: ms-icon-rotate 4s linear infinite;
+}
+
+.ms-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.ms-sub {
+  font-size: 12px;
+  color: #ccc;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+.ms-spinner {
+  margin-top: 32px;
+  font-size: 32px;
+  color: #ffd700;
+  animation: ms-spinner-rotate 1.2s linear infinite;
+}
+
+@keyframes ms-fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes ms-icon-rotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ms-spinner-rotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* ===== Login Bonus Modal（起動時ポップアップ攻勢、業界アプリ感の決定打） ===== */
 .modal-overlay {
   position: absolute;
@@ -787,6 +1859,34 @@ html, body, #root {
 @keyframes kd-pop {
   0%   { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.96); }
   100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* 緊急時の KAGUYA メッセージボード（警告色） */
+.kaguya-dialog.kd-emergency .kd-bubble {
+  background: linear-gradient(135deg, rgba(180, 0, 30, 0.94), rgba(120, 0, 20, 0.92));
+  border-color: rgba(255, 100, 100, 0.95);
+  color: #ffe0e0;
+  text-shadow: 0 0 4px #f00, 0 1px 2px rgba(0, 0, 0, 0.85);
+  animation: kd-emergency-pulse 0.7s ease-in-out infinite alternate;
+  letter-spacing: 0.6px;
+}
+
+.kaguya-dialog.kd-emergency .kd-bubble::before {
+  content: '⚠ KAGUYA-X';
+  background: linear-gradient(135deg, #ff4040, #800010);
+  color: #fff;
+  border: 1px solid rgba(255, 200, 100, 0.7);
+  text-shadow: 0 0 2px #fff, 0 0 4px #f00;
+}
+
+.kaguya-dialog.kd-emergency .kd-tail {
+  border-top-color: rgba(180, 0, 30, 0.94);
+  filter: drop-shadow(0 1px 0 rgba(255, 100, 100, 0.95));
+}
+
+@keyframes kd-emergency-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 12px rgba(255, 0, 0, 0.4); }
+  50%      { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 0, 0, 0.8); }
 }
 
 /* ===== Gacha Banners（右下、大型召喚ボタン x 2） ===== */
@@ -2305,6 +3405,25 @@ html, body, #root {
   backdrop-filter: blur(2px);
   letter-spacing: 1px;
   margin-top: 8px;
+}
+
+/* ===== サウンドトグル（sidebar-right の最後、exit-button の上） ===== */
+.sound-toggle {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 8px;
+  padding: 6px 4px;
+  font-size: 18px;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  margin-top: 6px;
+  line-height: 1;
+}
+
+.sound-toggle:active {
+  transform: scale(0.95);
 }
 
 .exit-button:hover {
