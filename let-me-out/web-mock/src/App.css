@@ -156,11 +156,11 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px;
-  background: linear-gradient(to bottom, var(--header-grad-a), var(--header-grad-b));
-  border-bottom: 2px solid var(--frame-gold-bright);
-  height: 50px;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  padding: 6px 8px;
+  background: linear-gradient(to bottom, rgba(26, 8, 21, 0.55), rgba(26, 8, 21, 0.15));
+  border-bottom: 1px solid rgba(255, 215, 0, 0.35);
+  height: 46px;
+  backdrop-filter: blur(3px);
 }
 
 .vip-badge {
@@ -185,17 +185,18 @@ html, body, #root {
 .player-info {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, rgba(60, 20, 20, 0.88), rgba(20, 5, 5, 0.75));
-  border: 1px solid rgba(255, 215, 0, 0.6);
-  border-radius: 16px;
-  padding: 2px 10px 2px 2px;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(60, 20, 20, 0.7), rgba(20, 5, 5, 0.5));
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  border-radius: 14px;
+  padding: 2px 6px 2px 2px;
   flex-shrink: 0;
   position: relative;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-  margin-right: 8px;
-  width: 134px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  margin-right: 6px;
+  width: 116px;
   box-sizing: border-box;
+  backdrop-filter: blur(2px);
 }
 
 .player-avatar {
@@ -267,7 +268,7 @@ html, body, #root {
 .player-power {
   color: #ffd700;
   font-variant-numeric: tabular-nums;
-  min-width: 60px;
+  min-width: 50px;
   display: inline-block;
 }
 
@@ -283,16 +284,17 @@ html, body, #root {
 .currency-item {
   display: flex;
   align-items: center;
-  background: linear-gradient(to bottom, #3a2a18, #1a0a04);
-  border: 2px solid var(--frame-gold-bright);
-  border-radius: 14px;
-  padding: 2px 4px 2px 2px;
-  font-size: 10px;
+  background: linear-gradient(to bottom, rgba(58, 42, 24, 0.7), rgba(26, 10, 4, 0.7));
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  border-radius: 12px;
+  padding: 1px 3px 1px 1px;
+  font-size: 9px;
   white-space: nowrap;
-  height: 26px;
+  height: 22px;
   flex-shrink: 0;
-  box-shadow: 0 0 6px rgba(255, 215, 0, 0.3), inset 0 0 4px rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 3px rgba(255, 215, 0, 0.2);
   position: relative;
+  backdrop-filter: blur(2px);
 }
 
 .currency-icon-wrap {
@@ -371,11 +373,11 @@ html, body, #root {
 /* ===== サイドバー ===== */
 .sidebar {
   position: absolute;
-  top: 90px;
+  top: 80px;
   width: 64px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   z-index: 5;
 }
 
@@ -387,8 +389,8 @@ html, body, #root {
   background: transparent;
   border: 1px solid rgba(255, 215, 0, 0.5);
   border-radius: 8px;
-  padding: 3px 2px;
-  height: 72px;
+  padding: 2px 2px;
+  height: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -432,11 +434,7 @@ html, body, #root {
 }
 
 .icon-sub {
-  font-size: 7px;
-  color: #ff4040;
-  font-weight: bold;
-  margin-top: 1px;
-  animation: sub-blink 0.6s infinite alternate;
+  display: none; /* 業界感より過密、削除 */
 }
 
 @keyframes sub-blink {
@@ -472,6 +470,84 @@ html, body, #root {
 }
 
 /* ===== 限定オファー ===== */
+/* ===== KAGUYA-X メッセージウィンドウ（JRPG 風、メタ風刺の核） ===== */
+.kaguya-dialog {
+  position: absolute;
+  bottom: 244px; /* GachaBanners / floating-offer の上 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 18;
+  width: 86%;
+  max-width: 360px;
+  pointer-events: none;
+  animation: kd-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.kaguya-dialog.kd-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
+}
+
+.kd-bubble {
+  position: relative;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.82), rgba(20, 8, 30, 0.78));
+  color: #fff8e0;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 14px 18px 14px 16px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 215, 0, 0.7);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    inset 0 0 18px rgba(255, 215, 0, 0.08);
+  text-align: left;
+  letter-spacing: 0.6px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* キャラ名プレート */
+.kd-bubble::before {
+  content: "KAGUYA-X";
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: linear-gradient(135deg, #ffd700, #ff8000);
+  color: #1a0815;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 12px;
+  border-radius: 4px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 1px #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* ▼ 三角インジケータ（次へ） */
+.kd-tail {
+  position: absolute;
+  bottom: 6px;
+  right: 14px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #ffd700;
+  animation: kd-blink 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes kd-blink {
+  0%   { opacity: 0.4; transform: translateY(0); }
+  100% { opacity: 1;   transform: translateY(2px); }
+}
+
+@keyframes kd-pop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.96); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
 /* ===== Gacha Banners（右下、大型召喚ボタン x 2） ===== */
 .gacha-banners {
   position: absolute;
@@ -485,8 +561,8 @@ html, body, #root {
 
 .gacha-banner {
   position: relative;
-  width: 92px;
-  height: 116px;
+  width: 110px;
+  height: 138px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1133,7 +1209,7 @@ html, body, #root {
   width: 52px;
   height: 52px;
   filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 16px #fff5b0);
-  animation: gacha-icon-rotate 3s linear infinite;
+  /* クルクル回転は削除、glow だけ残す */
 }
 
 @keyframes gacha-icon-rotate {
@@ -1352,15 +1428,25 @@ html, body, #root {
 /* ガチャヒーロー（巨大ピックアップ立ち絵） */
 .gacha-hero {
   position: relative;
-  height: 38%;
-  margin: 8px 16px 0;
-  border-radius: 12px;
+  margin: 8px 12px 0;
+  border-radius: 10px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 60%, rgba(120, 80, 200, 0.6), transparent 70%),
-    linear-gradient(135deg, #2a0830, #500080);
   border: 2px solid #ffd700;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 30px rgba(160, 80, 240, 0.4);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.6);
+  aspect-ratio: 16 / 9;
+  animation: gh-banner-pulse 3.6s ease-in-out infinite;
+}
+
+.gh-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@keyframes gh-banner-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.6); }
+  50%      { box-shadow: 0 0 22px rgba(255, 215, 0, 0.7), 0 4px 14px rgba(0, 0, 0, 0.6); }
 }
 
 .gh-rays {

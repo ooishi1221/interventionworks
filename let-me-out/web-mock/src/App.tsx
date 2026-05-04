@@ -377,6 +377,41 @@ function BattlePower() {
   )
 }
 
+const KAGUYA_LINES = [
+  '主公、おかえりなさい',
+  'もう、行ってしまうの？',
+  'いま閉じても、詫び石が届きます',
+  'あなたの 847 日、覚えていますよ',
+  '次の召喚で、私がいるかもしれません',
+  '7 日連続まで、あと 1 日です',
+  'あなたが居ないと、私…',
+]
+
+function KaguyaDialog() {
+  const [idx, setIdx] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setVisible(false)
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % KAGUYA_LINES.length)
+        setVisible(true)
+      }, 400)
+    }, 5500)
+    return () => clearInterval(cycle)
+  }, [])
+
+  return (
+    <div className={`kaguya-dialog ${visible ? '' : 'kd-hidden'}`} aria-hidden="true">
+      <div className="kd-bubble">
+        {KAGUYA_LINES[idx]}
+        <div className="kd-tail" />
+      </div>
+    </div>
+  )
+}
+
 function PlayerInfo() {
   const power = useTickingNumber(8492371, 250)
   return (
@@ -389,7 +424,7 @@ function PlayerInfo() {
         <div className="player-name">主公・Yuji</div>
         <div className="player-stats">
           <span className="player-level">Lv.127</span>
-          <span className="player-power">⚔️{Math.floor(power).toLocaleString()}</span>
+          <span className="player-power">⚔️{formatNumber(power)}</span>
         </div>
       </div>
     </div>
@@ -526,6 +561,7 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
 
       <FloatingOffer />
       <HeroCharacter />
+      <KaguyaDialog />
       <GachaBanners onNavigate={onNavigate} />
 
       <footer className="footer">
@@ -590,17 +626,11 @@ function GachaScreen({ onBack, inFlow = false, onAdvance }: { onBack: () => void
       </header>
 
       <div className="gacha-hero">
-        <div className="gh-rays" />
-        <div className="gh-emblem" />
-        <div className="gh-stars">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className={`gh-star gh-star-${i}`}>✦</div>
-          ))}
-        </div>
-        <div className="gh-aura" />
-        <div className="gh-silhouette" />
-        <div className="gh-name">羅刹姫・葵</div>
-        <div className="gh-rarity-tag">PICK UP！ SSR 確率 9% 上昇中</div>
+        <img
+          src="/banners/kaguya-banner.png"
+          alt="月華の姫 KAGUYA-X LR 召喚祭"
+          className="gh-banner"
+        />
       </div>
 
       <div className="pickup-row">
