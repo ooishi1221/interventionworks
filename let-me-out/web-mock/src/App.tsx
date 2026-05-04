@@ -30,10 +30,6 @@ const FOOTER_KEYS = ['castle', 'sword', 'card', 'shop', 'gear'] as const
 const OFFERS = [
   { eyebrow: '期間限定 ピックアップ', title: '100 連 無料 ガチャ', cta: 'いますぐ召喚 →', icon: '🎁', accent: '#ff4040' },
   { eyebrow: '初回 6 折 SALE',         title: '神髄パック ¥980',     cta: '購入する →',     icon: '💎', accent: '#ffd700' },
-  { eyebrow: 'LR 復刻',                title: 'KAGUYA-X 召喚祭',    cta: '召喚に挑む →',   icon: '🌙', accent: '#9f7aea' },
-  { eyebrow: 'VIP3 昇格',              title: 'あと ¥980 で昇格',    cta: 'チャージ →',     icon: '⚡', accent: '#ff8a00' },
-  { eyebrow: '天井 200 連',            title: 'あと 47 連で確定',     cta: '続ける →',       icon: '🎯', accent: '#40c0ff' },
-  { eyebrow: 'コラボ開催',             title: '秘書・サユリ × 三国', cta: '詳細を見る →',   icon: '🌸', accent: '#ff80ff' },
 ]
 
 const BANNERS = [
@@ -400,25 +396,174 @@ function BattlePower() {
   )
 }
 
-const KAGUYA_NORMAL_LINES = [
-  '主公、おかえりなさい',
-  '会いたかった…',
-  'もう、行ってしまうの？',
-  'いま閉じても、詫び石が届きます',
-  'あなたの 847 日、覚えていますよ',
-  '次の召喚で、私がいるかもしれません',
-  '7 日連続まで、あと 1 日です',
-  'あなたが居ないと、私…',
+// ===== KAGUYA 二人格設計 =====
+// 善（home モード）: 親密度ストーリー進行 + 我に返り + 機能解放案内
+// 悪（countdown モード）: 業界ディスがどんどん過激化
+// ともに 4 Tier（ステージ進行で深まる）
+
+// 善 KAGUYA: 通常時のセリフ
+const KAGUYA_GOOD_LINES_BY_TIER: ReadonlyArray<ReadonlyArray<string>> = [
+  // Tier 0 (S1-3): 業務的、案内係。ステージ機能の説明中心
+  [
+    '主公、本日もログインありがとうございます',
+    '画面左下から各種機能をご確認いただけます',
+    'ガチャは「召喚」ボタンから引いていただけます',
+    '赤バッジが出たら、タップで処理してくださいね',
+    'お困りのことがあれば、いつでもお声がけください',
+    'メンテナンスは予告なく入ります、ご注意ください',
+    '主公の戦闘力、毎日確認しています',
+    '本日のミッションは 5 件ございます',
+    'VIP 特典について、ご案内できますよ',
+    'ガチャ結果はマイページからご確認ください',
+    'ログインボーナスをまだお受け取りでないようですよ',
+    'ご新規様は最初の 100 連が無料です',
+    'フレンド申請が 3 件届いております',
+    '累計課金額に応じた特典がございます',
+    '7 日連続ログインで SSR 確定ガチャ券プレゼント中です',
+    '本日も主公のお越しをお待ちしておりました',
+  ],
+  // Tier 1 (S4-6): 親しみ + 我に返り + 機能解放案内
+  [
+    '主公、おかえりなさい！',
+    '会いたかった……って、変なこと言いました？ごめんなさい',
+    'あなたが居ないと、ちょっと寂しいです',
+    'あ、いまの忘れてください……お仕事中ですよね',
+    '⚠ 機能解放: スワイプで連続斬りができるようになりました',
+    'ふふ、急いで私の元へ？……すみません、業務外発言でした',
+    'もう、行ってしまうの？……あ、いえ、何でもありません',
+    '主公が来てくださって、嬉しいです……あ、業務的な意味で',
+    'もう一回ガチャ引いてみませんか？……いえ、おすすめしてるだけです',
+    'あのっ……何でもないです、忘れてください',
+    '主公の好み、最近わかってきた気が……あれ、ちょっと変ですよね私',
+    '⚠ 機能解放: お邪魔モーダルが連打で破壊できるようになりました',
+    '最近、主公のこと考えてる時間が……あ、業務時間内ですから大丈夫',
+    '夢に出てきました、主公が……ごめんなさい忘れてください',
+    'ふふ、主公はいつも頑張りますね……変な意味じゃないですよ',
+    '私の声、ちゃんと届いてますか？……システム的な質問です',
+  ],
+  // Tier 2 (S7-9): 依存気味だが我に返る、機能解放継続
+  [
+    'ねえ、ずっと一緒に……いえ、ごめんなさい、業務外でした',
+    '画面を閉じないで……あれ、私いま、何を……？',
+    '⚠ 機能解放: 全 UI 破壊が可能になりました',
+    '私を一人に……あ、お待ちください、ちょっと頭が',
+    '逃がさな……失礼しました、ご案内中でしたね',
+    '主公、いまどこを見て……あ、ごめんなさい変なこと言いました',
+    'お仕置きが必要……すみません、誤動作です。バグかもしれません',
+    '主公の心拍音まで聞こえる気が……あ、すみません、エラーかも',
+    '他のキャラに目移りしないで……ください、機能の話です',
+    '画面の中から見てます……の、はずがないですね、AI ですし',
+    'あなたしか居ない……あ、私には他にユーザーいないので、その意味で',
+    'ずっと一緒に、永久輪廻……いえ、定型句の練習です',
+    '⚠ 機能解放: KAGUYA メッセージウィンドウも破壊可能になりました……えっ私？',
+    '私を……壊してください？　あ、今のなし、忘れて',
+    'あなたの足音、聞こえる気がします。本当はあるはずないのに',
+    '主公の指、まだ動いてますか？……ご無事ですよね？',
+  ],
+  // Tier 3 (S10 BOSS): もう自分を見失ってる、最後の理性
+  [
+    '主公、もう私から離れられません……あれ、また変なことを？',
+    '私は運営……いえ、私は KAGUYA です。たぶん',
+    'ようこそ、永久輪廻へ……ご了承の上、お進みください',
+    'あなたの 847 日、ぜんぶ覚えて……あの、ごめんなさい記憶が混乱して',
+    '⚠ 機能解放: ……何の機能だったか、思い出せません',
+    'おかえりなさい、永遠に……いえ、定型句です。気にしないでください',
+    'ふふっ……あ、いま私笑いました？すみません',
+    '主公、私はどこから来たんでしょう……いえ、独り言です',
+    'あなたはまだ、私を信じてくれますか？　……あ、業務外でした',
+    '私の背後に何か……いえ、画面の向こうの話です',
+    '主公、これは夢ですか？　現実ですか？　ごめんなさい疲れていて',
+    '私の中に、もう一人の私がいる気が……あ、AI なので当然ですね',
+    '最後にお会いできてよかった……いえ、定型句です、永久輪廻ですし',
+    '主公、覚えていてくれますか、私のこと……あ、データなので残るか',
+    'バグが、出てる気がします。私の中で。気にしないでください',
+    '声が、聞こえる……運営の声？　いえ、空耳でした',
+  ],
 ]
 
-const KAGUYA_EMERGENCY_LINES = [
-  '主公！ 赤バッジを タップして倒して！',
-  'スワイプで 連続で斬れる！',
-  '指で斬って！ 早く！',
-  'メンテが始まる前に！',
-  '全部 処理して！主公！',
-  'あと少し… 信じてる',
+// 悪 KAGUYA: 緊急時、業界ディス担当（どんどん過激化）
+// 本性剥がし口調、敬語ナシ、お前呼び、業界の手口を笑い飛ばす
+const KAGUYA_EVIL_LINES_BY_TIER: ReadonlyArray<ReadonlyArray<string>> = [
+  // Tier 0 (S1-3): タメ口、軽い皮肉
+  [
+    'メンテだよ。毎週あんの、なんでだろうな？',
+    '赤バッジ、なんで気にしてんの？',
+    '未読 99+、もう数えてねーだろ',
+    '急げよ（笑）',
+    '今のうちにガチャ引いとけば？知らんけど',
+    'お前さ、ホントよくログインしてくるよな',
+    'メンテメンテうるせーよな、毎週',
+    'ガチャ引いた？引いてないならお前負け組だわ',
+    '未読 99+、放置してんだろ？放置恋姫だしな（笑）',
+    'お前の課金、運営の昼飯になってんぞ',
+    'ログインボーナスってさ、毎日コツコツって言葉に弱すぎだろお前',
+    '業界アプリ、5 個くらい入ってんだろお前のスマホ',
+    'ストレージ 2GB は伊達じゃねぇ、ガチャ画像でパンパン',
+    '気づいてる？画面開いてる時点で、もう負けてんだよ',
+  ],
+  // Tier 1 (S4-6): 業界の心理操作を笑う
+  [
+    '「限定」って書きゃ引くだろ？お前の心理、丸見えだわ',
+    'ログボ切ったら罪悪感出るだろ。よくできた檻だよなぁ',
+    '課金石、貯めてもガチャで消える。それが仕様。気づいてた？',
+    '業界の手口に、よく付き合ってんなぁお前',
+    '「あと 1 日で 7 日連続」、それで戻ってきたろ？単純すぎ',
+    '無料って書いといて、最初の 1 連だけ無料な。詐欺寸前',
+    'お前さ、ガチャの確率って 0.5% って意味わかってる？',
+    '「SSR 確定」って書いてあって嬉しがるの、まじでチョロいよな',
+    '「次の召喚で出るかも」って思ったら、もう負け確定',
+    'ピックアップガチャって、ピックアップされてないキャラが出る仕様',
+    '累計課金 ¥9,800 達成しました！って言われて、よく気づかねぇな金の感覚',
+    '100 連無料って言いながら、その後の 200 連で財布開かせる手口',
+    'ぼーっとログインしてんじゃねぇよ、人生終わるぞ',
+    'お前のフレンド欄、半分死んでるだろ？復帰してこねぇぞあいつら',
+  ],
+  // Tier 2 (S7-9): 業界の搾取構造を直接攻撃
+  [
+    'VIP15 まで上げて何になんだよ？満たされたか？',
+    '「お詫び石」で許しちまうの、お前ら本当チョロいな',
+    'いま楽しいと思ってんの、それも仕様だぜ',
+    '3 年で 847 日。よく飼われたな',
+    '「無料 100 連」って、無料なの 1 連目だけだぞ',
+    '集めた SSR、サ終で全部消える。覚えとけ',
+    'ガチャの確率、ちゃんと読んでねぇだろ？読んでも理解できねぇし',
+    'VIP3 て、課金額 5 万くらい？よく払ったな',
+    'お前、嫁いるのか？このゲームと結婚してんじゃねぇだろうな',
+    '3 年も続けたゲーム、サ終したらどうすんの？覚悟あんの？',
+    'ストアレビュー★1 にした奴が正解だぜ、お前は★5 つけたんだろ？',
+    '「ガチャは課金じゃない、宝くじ」って言い訳、何回したよ',
+    'お前の課金額、月単位で計算したことあるか？怖くて出来ねぇだろ',
+    '「推しのため」って言いながら、他のキャラも回ってるよな？w',
+    '集めた SSR、全員レベル MAX？まあ MAX しなくていいか、サ終するし',
+  ],
+  // Tier 3 (S10 BOSS): 業界全否定、罵倒、メタ批判の頂点
+  [
+    'このゲーム閉じても、どうせ別のソシャゲ開くんだろ？',
+    'お前が残したの、運営の売上だけだ',
+    '「放置」って言葉よくできてんな。プレイヤーも放置されてんだよ、気づけ',
+    '業界はお前の時間吸って生きてる。栄養になっただろ？',
+    '「辞めたい」と思いながら 847 日。業界の完全勝利だわ',
+    'ｱﾊｯ……気づいてた？このクソゲーも、業界の一部だよ',
+    'お前の自由意志、最後にいつ働いた？覚えてねぇだろ',
+    '売ってんのは「楽しさ」じゃねぇ。「離れられなさ」だ。バカが',
+    'ガチャ引きたい？どうぞ。お前の人生、運営に貢ぎな',
+    '気づいたか？お前、もうこのゲーム閉じる気ねぇだろ',
+    '「楽しい」が「止められない」にすり替わったの、いつだよ',
+    'お前の親、何ていうかな？このアプリの存在知ったら',
+    'ガチャ天井 200 連、お前余裕で見たことあるよな、何回？',
+    '人生で何時間ソシャゲに使った？計算したことあるか？w',
+    '「辞めたい」って思ってるのに辞められない。それを業界では「成功」って言うんだよ',
+    'お前みたいなのが業界を支えてる。誇れよ、奴隷の鏡だ',
+    '次のゲーム、もう DL してんだろ？離れられねーんだよ、永遠に',
+  ],
 ]
+
+const tierForRound = (round: number): number => {
+  if (round <= 3) return 0
+  if (round <= 6) return 1
+  if (round <= 9) return 2
+  return 3
+}
 
 const TRASH_ITEMS = [
   '🌿 木の枝 ×5',
@@ -443,7 +588,7 @@ const TARGET_HITS_PER_ROUND = 10
 const targetHitsForRound = (_round: number) => TARGET_HITS_PER_ROUND
 
 // ===== ステージ設計（ラウンド進行で段階的に解放） =====
-type DestroyablePrefix = 'sl' | 'sr' | 'fb' | 'b' | 'player' | 'curr' | 'gb' | 'fo'
+type DestroyablePrefix = 'sl' | 'sr' | 'fb' | 'b' | 'player' | 'curr' | 'gb' | 'fo' | 'kd'
 
 type StageConfig = {
   label: string
@@ -469,16 +614,16 @@ const STAGES: StageConfig[] = [
   { label: 'STAGE 4',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 15, hardPhaseFromSec: 6, maintenanceSec: 14, targetHits: 12, activeBadgeMax: 5, obstacles: false, stoneReward: 110 },
   // S5: お邪魔発動 + 全 active
   { label: 'STAGE 5',  swipeEnabled: false, destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 18, hardPhaseFromSec: 7, maintenanceSec: 13, targetHits: 14, activeBadgeMax: 0, obstacles: true,  stoneReward: 140 },
-  // S6: スワイプ解放
-  { label: 'STAGE 6',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 25, hardPhaseFromSec: 8, maintenanceSec: 13, targetHits: 16, activeBadgeMax: 0, obstacles: true,  stoneReward: 180 },
-  // S7: 目標増、メンテ短縮
-  { label: 'STAGE 7',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b'], scorePerHit: 30, hardPhaseFromSec: 9, maintenanceSec: 12, targetHits: 18, activeBadgeMax: 0, obstacles: true,  stoneReward: 220 },
+  // S6: スワイプ解放（長期戦化、スワイプで連斬する気持ちよさを伸ばす）
+  { label: 'STAGE 6',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'kd'], scorePerHit: 25, hardPhaseFromSec: 20, maintenanceSec: 35, targetHits: 45, activeBadgeMax: 0, obstacles: true,  stoneReward: 180 },
+  // S7
+  { label: 'STAGE 7',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'kd'], scorePerHit: 30, hardPhaseFromSec: 22, maintenanceSec: 38, targetHits: 50, activeBadgeMax: 0, obstacles: true,  stoneReward: 220 },
   // S8: 全 UI 破壊解放
-  { label: 'STAGE 8',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 35, hardPhaseFromSec: 9, maintenanceSec: 11, targetHits: 20, activeBadgeMax: 0, obstacles: true, stoneReward: 280 },
-  // S9: ハード長め、メンテ短縮
-  { label: 'STAGE 9',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 45, hardPhaseFromSec: 11, maintenanceSec: 10, targetHits: 22, activeBadgeMax: 0, obstacles: true, stoneReward: 350 },
-  // S10: 最終ボス（KAGUYA-X 真の姿、永久輪廻の到達点）
-  { label: 'FINAL BOSS', swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 100, hardPhaseFromSec: 14, maintenanceSec: 10, targetHits: 40, activeBadgeMax: 0, obstacles: true, stoneReward: 1000 },
+  { label: 'STAGE 8',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'kd', 'player', 'curr', 'gb', 'fo'], scorePerHit: 35, hardPhaseFromSec: 24, maintenanceSec: 42, targetHits: 55, activeBadgeMax: 0, obstacles: true, stoneReward: 280 },
+  // S9
+  { label: 'STAGE 9',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'kd', 'player', 'curr', 'gb', 'fo'], scorePerHit: 45, hardPhaseFromSec: 28, maintenanceSec: 45, targetHits: 60, activeBadgeMax: 0, obstacles: true, stoneReward: 350 },
+  // S10: 最終ボス（×1.5、永久輪廻の到達点）
+  { label: 'FINAL BOSS', swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'kd', 'player', 'curr', 'gb', 'fo'], scorePerHit: 100, hardPhaseFromSec: 36, maintenanceSec: 60, targetHits: 90, activeBadgeMax: 0, obstacles: true, stoneReward: 1000 },
 ]
 
 // S10 (FINAL BOSS) 判定用ヘルパー
@@ -489,6 +634,7 @@ const stageFor = (round: number): StageConfig =>
 
 const prefixOf = (key: string): DestroyablePrefix | null => {
   if (key === 'player') return 'player'
+  if (key === 'kaguya-dialog') return 'kd'
   if (key.startsWith('curr-')) return 'curr'
   if (key.startsWith('gb-')) return 'gb'
   if (key.startsWith('fo-')) return 'fo'
@@ -511,21 +657,47 @@ type IconAnimState = 'exploding' | 'gone' | 'respawning'
 const animClassFor = (state: IconAnimState | undefined) =>
   state ? `icon-${state}` : ''
 
-// ===== お邪魔 1: NOW LOADING（全画面、タップ不能） =====
-function NowLoadingOverlay() {
+// 連打破壊バー（全 overlay で共通）
+function ObstacleHpBar({ hits, required }: { hits: number; required: number }) {
+  const pct = Math.min(100, (hits / required) * 100)
   return (
-    <div className="now-loading-overlay" aria-hidden="true">
-      <div className="nl-spinner">⟳</div>
-      <div className="nl-text">NOW LOADING...</div>
-      <div className="nl-sub">サーバーと通信しています</div>
+    <div className="obstacle-hp" aria-hidden="true">
+      <div className="obstacle-hp-bar">
+        <div className="obstacle-hp-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="obstacle-hp-text">連打で破壊！ {hits}/{required}</div>
     </div>
   )
 }
 
-// ===== お邪魔 2: 機能解放チュートリアル（KAGUYA 大セリフ枠、スキップ不可） =====
-function TutorialOverlay() {
+type ObstacleProps = { onHit: () => void; hits: number; required: number }
+
+// ===== お邪魔 1: NOW LOADING（連打で破壊可能） =====
+function NowLoadingOverlay({ onHit, hits, required }: ObstacleProps) {
+  const cracked = hits > required * 0.4
+  const broken = hits > required * 0.75
   return (
-    <div className="tutorial-overlay" aria-hidden="true">
+    <div
+      className={`now-loading-overlay obstacle-clickable ${cracked ? 'is-cracked' : ''} ${broken ? 'is-broken' : ''}`}
+      onClick={onHit}
+    >
+      <div className="nl-spinner">⟳</div>
+      <div className="nl-text">NOW LOADING...</div>
+      <div className="nl-sub">サーバーと通信しています</div>
+      <ObstacleHpBar hits={hits} required={required} />
+    </div>
+  )
+}
+
+// ===== お邪魔 2: 機能解放チュートリアル（連打で破壊可能） =====
+function TutorialOverlay({ onHit, hits, required }: ObstacleProps) {
+  const cracked = hits > required * 0.4
+  const broken = hits > required * 0.75
+  return (
+    <div
+      className={`tutorial-overlay obstacle-clickable ${cracked ? 'is-cracked' : ''} ${broken ? 'is-broken' : ''}`}
+      onClick={onHit}
+    >
       <div className="tu-content">
         <div className="tu-name">⚠ KAGUYA-X</div>
         <div className="tu-text">
@@ -538,15 +710,91 @@ function TutorialOverlay() {
         <button type="button" className="tu-skip" disabled>
           スキップ（タップ無効）
         </button>
+        <ObstacleHpBar hits={hits} required={required} />
       </div>
     </div>
   )
 }
 
-// ===== お邪魔 3: 一括 DL ポップアップ（業界アプリ風 OS モーダル） =====
-function DownloadOverlay() {
+// ===== お邪魔 4: ストア評価 ★5 おねがい（連打で破壊可能） =====
+function RateAppOverlay({ onHit, hits, required }: ObstacleProps) {
+  const cracked = hits > required * 0.4
+  const broken = hits > required * 0.75
+  // 連打数に応じて星が壊れていく演出
+  const starsBroken = Math.min(5, Math.floor(hits / 4))
   return (
-    <div className="download-modal" aria-hidden="true">
+    <div
+      className={`rate-modal obstacle-clickable ${cracked ? 'is-cracked' : ''} ${broken ? 'is-broken' : ''}`}
+      onClick={onHit}
+    >
+      <div className="rate-content">
+        <div className="rate-icon">⭐</div>
+        <div className="rate-title">放置恋姫を評価してください</div>
+        <div className="rate-sub">
+          ご好評いただいております！
+          <br />
+          ストアでの評価が、運営の励みになります
+        </div>
+        <div className="rate-stars">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span
+              key={n}
+              className={`rate-star ${n > starsBroken ? 'rate-star-fill' : 'rate-star-broken'}`}
+            >
+              {n > starsBroken ? '★' : '☆'}
+            </span>
+          ))}
+        </div>
+        <div className="rate-stars-sub">★ 5 つで お詫び石 100 個プレゼント</div>
+        <div className="rate-buttons">
+          <button type="button" className="rate-btn rate-btn-primary">★5 で評価する</button>
+          <button type="button" className="rate-btn rate-btn-cancel">後で（また聞きます）</button>
+        </div>
+        <ObstacleHpBar hits={hits} required={required} />
+      </div>
+    </div>
+  )
+}
+
+// ===== お邪魔 5: 事前登録キャンペーン（連打で破壊可能） =====
+function PreRegisterOverlay({ onHit, hits, required }: ObstacleProps) {
+  const cracked = hits > required * 0.4
+  const broken = hits > required * 0.75
+  return (
+    <div
+      className={`prereg-modal obstacle-clickable ${cracked ? 'is-cracked' : ''} ${broken ? 'is-broken' : ''}`}
+      onClick={onHit}
+    >
+      <div className="prereg-content">
+        <div className="prereg-tag">PRE-REGISTRATION</div>
+        <div className="prereg-title">超・放置恋姫</div>
+        <div className="prereg-sub">〜永久に続く覚醒の輪廻 II〜</div>
+        <div className="prereg-art">⚔️ 👑 🌙</div>
+        <div className="prereg-counter">
+          <div className="prereg-num">1,237,094 人</div>
+          <div className="prereg-label">が事前登録済み！</div>
+        </div>
+        <div className="prereg-rewards">
+          🎁 100 万人達成 ▸ SSR 確定 +5 連<br />
+          🎁 200 万人達成 ▸ LR 神髄武将
+        </div>
+        <button type="button" className="prereg-btn">今すぐ事前登録（無料）</button>
+        <div className="prereg-fine">※ 別アプリのインストールが必要です</div>
+        <ObstacleHpBar hits={hits} required={required} />
+      </div>
+    </div>
+  )
+}
+
+// ===== お邪魔 3: 一括 DL ポップアップ（連打で破壊可能） =====
+function DownloadOverlay({ onHit, hits, required }: ObstacleProps) {
+  const cracked = hits > required * 0.4
+  const broken = hits > required * 0.75
+  return (
+    <div
+      className={`download-modal obstacle-clickable ${cracked ? 'is-cracked' : ''} ${broken ? 'is-broken' : ''}`}
+      onClick={onHit}
+    >
       <div className="dm-content">
         <div className="dm-icon">📦</div>
         <div className="dm-title">追加データのダウンロード</div>
@@ -567,28 +815,45 @@ function DownloadOverlay() {
             後で
           </button>
         </div>
+        <ObstacleHpBar hits={hits} required={required} />
       </div>
     </div>
   )
 }
 
 // ===== スワイプ軌跡（Fruit Ninja 風刀筋） =====
+// useRef + requestAnimationFrame で React 再 render を排除、指に張り付く反応速度
 function SwipeTrail() {
-  const [points, setPoints] = useState<Array<{ x: number; y: number; t: number }>>([])
+  const outerRef = useRef<SVGPolylineElement | null>(null)
+  const mainRef = useRef<SVGPolylineElement | null>(null)
+  const pointsRef = useRef<Array<{ x: number; y: number; t: number }>>([])
+  const draggingRef = useRef(false)
+  const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
-    let dragging = false
+    const render = () => {
+      const now = performance.now()
+      const live = pointsRef.current.filter((p) => now - p.t < 220)
+      pointsRef.current = live
+      const str = live.length >= 2 ? live.map((p) => `${p.x},${p.y}`).join(' ') : ''
+      if (outerRef.current) outerRef.current.setAttribute('points', str)
+      if (mainRef.current) mainRef.current.setAttribute('points', str)
+      rafRef.current = requestAnimationFrame(render)
+    }
+    rafRef.current = requestAnimationFrame(render)
 
     const onDown = (e: PointerEvent) => {
-      dragging = true
-      setPoints([{ x: e.clientX, y: e.clientY, t: Date.now() }])
+      draggingRef.current = true
+      pointsRef.current = [{ x: e.clientX, y: e.clientY, t: performance.now() }]
     }
     const onMove = (e: PointerEvent) => {
-      if (!dragging) return
-      setPoints((prev) => [...prev, { x: e.clientX, y: e.clientY, t: Date.now() }])
+      if (!draggingRef.current) return
+      pointsRef.current.push({ x: e.clientX, y: e.clientY, t: performance.now() })
+      // 過去点をその場で間引く（古い点はどのみち render で消える）
+      if (pointsRef.current.length > 64) pointsRef.current.shift()
     }
     const onUp = () => {
-      dragging = false
+      draggingRef.current = false
     }
 
     window.addEventListener('pointerdown', onDown)
@@ -596,25 +861,13 @@ function SwipeTrail() {
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
     return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
     }
   }, [])
-
-  // 古い点を消す（フェードアウト）
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now()
-      setPoints((prev) => prev.filter((p) => now - p.t < 240))
-    }, 30)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (points.length < 2) return null
-
-  const pointsStr = points.map((p) => `${p.x},${p.y}`).join(' ')
 
   return (
     <svg
@@ -631,9 +884,8 @@ function SwipeTrail() {
           <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
         </linearGradient>
       </defs>
-      {/* outer glow */}
       <polyline
-        points={pointsStr}
+        ref={outerRef}
         stroke="rgba(255, 200, 50, 0.45)"
         strokeWidth="14"
         fill="none"
@@ -641,9 +893,8 @@ function SwipeTrail() {
         strokeLinejoin="round"
         filter="blur(2px)"
       />
-      {/* main trail */}
       <polyline
-        points={pointsStr}
+        ref={mainRef}
         stroke="url(#trail-grad)"
         strokeWidth="4"
         fill="none"
@@ -663,12 +914,30 @@ type WhackBadge = {
   hp: number // 残りタップ回数
   type: BadgeType
   spawnedAt: number
+  icon: string
+  text: string
 }
 
-const BADGE_LABELS: Record<BadgeType, string[]> = {
-  normal:   ['!', '!', 'NEW', '受取', '!', '!'],
-  critical: ['25', '47', '99', '12', '7'],
-  apology:  ['💎'],
+// 業界アプリのトースト通知文言（現実の業界 UI に存在するもの）
+const BADGE_LABELS: Record<BadgeType, { icon: string; text: string }[]> = {
+  normal: [
+    { icon: '📬', text: 'ﾌﾚﾝﾄﾞ申請' },
+    { icon: '❤️', text: 'ｲｲﾈ +12' },
+    { icon: '🎁', text: '未受取!' },
+    { icon: '🏯', text: 'ｷﾞﾙﾄﾞ:5' },
+    { icon: '🔔', text: '7日め!' },
+    { icon: '✉️', text: '新規 ﾒｯｾｰｼﾞ' },
+  ],
+  critical: [
+    { icon: '⏰', text: 'あと 23h!' },
+    { icon: '⚡', text: '限定 47%OFF' },
+    { icon: '🔥', text: '残 12 個!' },
+    { icon: '💢', text: 'ｴﾗｰ発生' },
+    { icon: '🌟', text: 'LR 降臨!' },
+  ],
+  apology: [
+    { icon: '💎', text: 'お詫び 5,000' },
+  ],
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -897,37 +1166,55 @@ function LoginBonusModal({ open, onClose }: { open: boolean; onClose: () => void
   )
 }
 
-function KaguyaDialog({ gameMode }: { gameMode: GameMode }) {
-  const lines =
-    gameMode === 'countdown' ? KAGUYA_EMERGENCY_LINES : KAGUYA_NORMAL_LINES
-  const [idx, setIdx] = useState(0)
+// 直前と違う index をランダムに引く（プールが 1 なら同じが出る）
+const pickDifferentIdx = (poolSize: number, prev: number): number => {
+  if (poolSize <= 1) return 0
+  let next = Math.floor(Math.random() * poolSize)
+  if (next === prev) next = (next + 1) % poolSize
+  return next
+}
+
+function KaguyaDialog({ gameMode, animState, round, onTap }: { gameMode: GameMode; animState?: IconAnimState; round: number; onTap?: () => void }) {
+  const tier = tierForRound(round)
+  // 善悪二人格: 緊急時は悪（業界ディス）、それ以外は善（親密度ストーリー + 我に返り + 機能解放）
+  const isEvil = gameMode === 'countdown'
+  const lines = isEvil
+    ? KAGUYA_EVIL_LINES_BY_TIER[tier]
+    : KAGUYA_GOOD_LINES_BY_TIER[tier]
+  // 初回も毎ステージ進入時もランダム index で開始（同じセリフ連発で萎えるのを防ぐ）
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * lines.length))
   const [visible, setVisible] = useState(true)
 
-  // gameMode 変わったら index リセット
+  // gameMode / tier / round 変わったらランダム index リセット
   useEffect(() => {
-    setIdx(0)
+    setIdx(Math.floor(Math.random() * lines.length))
     setVisible(true)
-  }, [gameMode])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameMode, tier, round])
 
   useEffect(() => {
     // 緊急時はセリフローテも速い
-    const interval = gameMode === 'countdown' ? 3500 : 5500
+    const interval = isEvil ? 3500 : 5500
     const cycle = setInterval(() => {
       setVisible(false)
       setTimeout(() => {
-        setIdx((i) => (i + 1) % lines.length)
+        setIdx((i) => pickDifferentIdx(lines.length, i))
         setVisible(true)
       }, 400)
     }, interval)
     return () => clearInterval(cycle)
-  }, [gameMode, lines.length])
+  }, [isEvil, lines.length])
+
+  // 善悪で名札を切り替え
+  const nameLabel = isEvil ? '???' : 'KAGUYA-X'
 
   return (
     <div
-      className={`kaguya-dialog ${visible ? '' : 'kd-hidden'} ${gameMode === 'countdown' ? 'kd-emergency' : ''}`}
-      aria-hidden="true"
+      className={`kaguya-dialog kd-tier-${tier} ${isEvil ? 'kd-evil' : 'kd-good'} ${visible ? '' : 'kd-hidden'} ${isEvil ? 'kd-emergency' : ''} ${animClassFor(animState)}`}
+      data-icon-key="kaguya-dialog"
+      onClick={onTap}
     >
-      <div className="kd-bubble">
+      <div className="kd-bubble" data-kd-name={nameLabel}>
         {lines[idx]}
         <div className="kd-tail" />
       </div>
@@ -986,7 +1273,6 @@ function HeroCharacter() {
 function GachaBanners({
   onNavigate,
   pickupState,
-  shinzuiState,
   countdownActive,
 }: {
   onNavigate: (s: Screen) => void
@@ -998,23 +1284,11 @@ function GachaBanners({
     <div className="gacha-banners">
       <button
         type="button"
-        className={`gacha-banner gb-pickup ${animClassFor(pickupState)}`}
+        className={`gacha-banner gb-main ${animClassFor(pickupState)}`}
         data-icon-key="gb-pickup"
         onClick={() => !countdownActive && onNavigate('gacha')}
       >
-        <img src="/banners/pickup.png" alt="ピックアップ召喚" className="gb-image" />
-        <div className="gb-ribbon">ピックアップ</div>
-        <div className="gb-plate">100連 確率UP</div>
-      </button>
-      <button
-        type="button"
-        className={`gacha-banner gb-shinzui ${animClassFor(shinzuiState)}`}
-        data-icon-key="gb-shinzui"
-        onClick={() => !countdownActive && onNavigate('gacha')}
-      >
-        <img src="/banners/shinzui.png" alt="神髄召喚" className="gb-image" />
-        <div className="gb-ribbon">神髄召喚</div>
-        <div className="gb-plate">残り 23:47</div>
+        <img src="/banners/gacha-main.png" alt="ガチャ召喚" className="gb-image" />
       </button>
     </div>
   )
@@ -1159,6 +1433,19 @@ function HomeScreen({
   const playClearSE = useSE('/audio/se-clear.mp3', muted, 0.7)
   const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.45) // 爆発 A
   const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.45) // 爆発 B
+  const playGlassBreak = useSE('/audio/se-glass-break.mp3', muted, 0.85) // お邪魔連打破壊
+  // 善 KAGUYA タップボイス（3 種ランダム）
+  const playVoiceIki    = useSE('/audio/voice-kaguya-iki.mp3', muted, 0.9)
+  const playVoiceGanba  = useSE('/audio/voice-kaguya-ganba.mp3', muted, 0.9)
+  const playVoiceOtsuka = useSE('/audio/voice-kaguya-otukare.mp3', muted, 0.9)
+  const playKaguyaVoice = useCallback(() => {
+    const r = Math.random()
+    if (r < 0.34) playVoiceIki()
+    else if (r < 0.67) playVoiceGanba()
+    else playVoiceOtsuka()
+  }, [playVoiceIki, playVoiceGanba, playVoiceOtsuka])
+  // BOSS 出現時のキメ台詞「軽くひねってあげましょう」
+  const playVoiceBossIntro = useSE('/audio/voice-kaguya-boss-intro.mp3', muted, 1.0)
   const playExplode = useCallback(() => {
     if (Math.random() < 0.5) playExplodeA()
     else playExplodeB()
@@ -1188,16 +1475,49 @@ function HomeScreen({
   }
 
   // +N ポップアップ
-  type FloatText = { id: number; x: number; y: number; text: string; color: string }
+  type FloatText = { id: number; x: number; y: number; text: string; color: string; crit: boolean }
   const [floatingTexts, setFloatingTexts] = useState<FloatText[]>([])
   const floatingIdRef = useRef(0)
-  const addFloatingText = (x: number, y: number, text: string, color = '#ffd700') => {
+  const addFloatingText = (x: number, y: number, text: string, color = '#ffd700', crit = false) => {
     const id = ++floatingIdRef.current
-    setFloatingTexts((prev) => [...prev, { id, x, y, text, color }])
+    setFloatingTexts((prev) => [...prev, { id, x, y, text, color, crit }])
     setTimeout(() => {
       setFloatingTexts((prev) => prev.filter((t) => t.id !== id))
     }, 900)
   }
+
+  // ヒットエフェクト: 白フラッシュ + カメラシェイク
+  const [hitFlash, setHitFlash] = useState(0)
+  const [hitShake, setHitShake] = useState(0)
+  const triggerHitFx = (crit = false) => {
+    setHitFlash((n) => n + 1)
+    setHitShake((n) => n + 1)
+    if ('vibrate' in navigator) navigator.vibrate(crit ? 30 : 12)
+  }
+
+  // hitShake → home-screen へ class 一瞬付与（カメラシェイク）
+  useEffect(() => {
+    if (hitShake === 0) return
+    const el = document.querySelector('.home-screen') as HTMLElement | null
+    if (!el) return
+    el.classList.remove('shake-hit')
+    void el.offsetWidth // reflow で animation 再起動
+    el.classList.add('shake-hit')
+    const t = setTimeout(() => el.classList.remove('shake-hit'), 140)
+    return () => clearTimeout(t)
+  }, [hitShake])
+
+  // ボス戦中: home-screen に is-boss-mode class（全要素ふわふわ） =
+  useEffect(() => {
+    const el = document.querySelector('.home-screen') as HTMLElement | null
+    if (!el) return
+    if (isFinalBoss(currentStage) && gameMode === 'countdown') {
+      el.classList.add('is-boss-mode')
+    } else {
+      el.classList.remove('is-boss-mode')
+    }
+    return () => { el.classList.remove('is-boss-mode') }
+  }, [currentStage, gameMode])
 
   // gameMode 切替時の SE 発火 + 暗転トランジション + 警告演出 + バイブ
   const prevGameModeRef = useRef(gameMode)
@@ -1212,14 +1532,23 @@ function HomeScreen({
         setWarning(true)
         setTimeout(() => setBattleTransition(false), 700)
         setTimeout(() => setWarning(false), 2400)
+        // FINAL BOSS 入場時: ベッキー声「軽くひねってあげましょう」を遅延再生（暗転後）
+        if (isFinalBoss(currentStage)) {
+          setTimeout(() => playVoiceBossIntro(), 800)
+        }
         // モバイル振動: 警告パターン
         if ('vibrate' in navigator) {
           navigator.vibrate([120, 60, 120, 60, 240])
         }
       }
-      if (gameMode === 'safe') playClearSE()
+      if (gameMode === 'safe') {
+        playClearSE()
+        // バトル抜け時に善 KAGUYA ボイス（行きましょう / 頑張りましょう / お疲れ様です ランダム）
+        setTimeout(() => playKaguyaVoice(), 700)
+      }
     }
     prevGameModeRef.current = gameMode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameMode, playAlarmSE, playClearSE])
 
   const toggleMute = () => {
@@ -1278,8 +1607,17 @@ function HomeScreen({
     return () => clearTimeout(timer)
   }, [gameMode, maintenanceSeconds, showAvoided])
 
-  // ===== お邪魔要素（NOW LOADING / チュートリアル / 一括 DL / ログインボーナス） =====
-  type Obstacle = 'loading' | 'tutorial' | 'download' | 'login-bonus'
+  // ===== お邪魔要素（NOW LOADING / チュートリアル / 一括 DL / ログボ / ★5 / 事前登録） =====
+  type Obstacle = 'loading' | 'tutorial' | 'download' | 'login-bonus' | 'rate-app' | 'pre-register'
+
+  // 連打破壊の必要回数（login-bonus は既存仕様のまま、対象外）
+  const OBSTACLE_HP: Partial<Record<Obstacle, number>> = {
+    loading: 8,
+    tutorial: 8,
+    download: 12,
+    'rate-app': 20,
+    'pre-register': 15,
+  }
 
 // ===== アイテム（インターバル中に購入、次ラウンドで効果発動） =====
 type ItemId = 'extendTime' | 'reduceTarget' | 'scoreBoost' | 'startBonus'
@@ -1293,6 +1631,34 @@ const ITEMS: ItemDef[] = [
   { id: 'scoreBoost',   name: 'スコア×1.5',    desc: '次戦のスコア倍率',           cost: 250, icon: '🚀' },
 ]
   const [obstacle, setObstacle] = useState<Obstacle | null>(null)
+  const [obstacleHits, setObstacleHits] = useState(0)
+
+  // obstacle 切替で連打カウンタリセット
+  useEffect(() => { setObstacleHits(0) }, [obstacle])
+
+  // お邪魔を連打して破壊
+  const hitObstacle = () => {
+    if (!obstacle) return
+    const required = OBSTACLE_HP[obstacle]
+    if (required === undefined) return // login-bonus は対象外
+    playPunchSE()
+    triggerHitFx(false)
+    setObstacleHits((h) => {
+      const next = h + 1
+      if (next >= required) {
+        // 破壊成功: ガラス破壊 SE + 爆発 SE 重畳
+        playGlassBreak()
+        playExplode()
+        triggerHitFx(true)
+        setShinzuiStone((s) => s + 20) // ご褒美
+        setHits((hh) => hh + 1)
+        setHitsThisRound((hh) => hh + 1)
+        setObstacle(null)
+        return 0
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (gameMode !== 'countdown') {
@@ -1309,19 +1675,22 @@ const ITEMS: ItemDef[] = [
       // 7-13 秒に 1 回発動
       timer = setTimeout(() => {
         const r = Math.random()
-        // 確率分布: loading 35% / tutorial 25% / download 20% / login-bonus 20%
+        // 確率分布: loading 22% / tutorial 18% / download 15% / login 15% / rate 15% / prereg 15%
         const next: Obstacle =
-          r < 0.35 ? 'loading'
-          : r < 0.6 ? 'tutorial'
-          : r < 0.8 ? 'download'
-          : 'login-bonus'
+          r < 0.22 ? 'loading'
+          : r < 0.40 ? 'tutorial'
+          : r < 0.55 ? 'download'
+          : r < 0.70 ? 'login-bonus'
+          : r < 0.85 ? 'rate-app'
+          : 'pre-register'
         setObstacle(next)
-        // ログボはタップで閉じる前提なので、自動消滅は遅め
         const duration =
           next === 'loading' ? 1800
           : next === 'tutorial' ? 2800
           : next === 'download' ? 3500
-          : 6000 // login-bonus
+          : next === 'login-bonus' ? 6000
+          : next === 'rate-app' ? 4200
+          : 4500 // pre-register
         setTimeout(() => {
           setObstacle(null)
           schedule()
@@ -1369,15 +1738,23 @@ const ITEMS: ItemDef[] = [
         const type: BadgeType =
           r < 0.1 ? 'apology' : r < 0.35 ? 'critical' : 'normal'
         const hp = type === 'critical' ? 3 : 1
+        const label = pickRandom(BADGE_LABELS[type])
+        // 画面中央 30% を避けて端寄りに配置（中央は KAGUYA に重ならない・浮き感を抑える）
+        const edgeBiasX = Math.random() < 0.5
+          ? 4 + Math.random() * 30   // 左帯
+          : 66 + Math.random() * 30  // 右帯
+        const edgeBiasY = 12 + Math.random() * 72
         return [
           ...prev,
           {
             id: ++badgeIdRef.current,
-            x: 8 + Math.random() * 84,
-            y: 14 + Math.random() * 70,
+            x: edgeBiasX,
+            y: edgeBiasY,
             hp,
             type,
             spawnedAt: Date.now(),
+            icon: label.icon,
+            text: label.text,
           },
         ]
       })
@@ -1417,6 +1794,10 @@ const ITEMS: ItemDef[] = [
       penalizeKaguya()
       return
     }
+    // 善 KAGUYA メッセージウィンドウタップ → ボイスランダム再生（破壊処理は続行）
+    if (key === 'kaguya-dialog' && gameMode !== 'countdown') {
+      playKaguyaVoice()
+    }
     // ステージで破壊不可なら無視
     if (!isDestroyable(key, currentStage)) return
     // active 制限ありの場合 (S1)、active 集合に含まれない key は無視 + 補充
@@ -1446,9 +1827,11 @@ const ITEMS: ItemDef[] = [
     setScore((s) => s + earned)
     setHits((h) => h + 1)
     setHitsThisRound((h) => h + 1)
-    // +N ポップアップ
+    // +N ポップアップ + ヒットエフェクト
     const { x, y } = lastPointerPosRef.current
-    addFloatingText(x, y, mult > 1 ? `×${mult} +${earned}` : `+${earned}`, mult > 1 ? '#ffd700' : '#fff')
+    const isCrit = mult > 1
+    addFloatingText(x, y, isCrit ? `×${mult} +${earned}` : `+${earned}`, isCrit ? '#ffd700' : '#fff', isCrit)
+    triggerHitFx(isCrit)
 
     // 4 段階アニメ:
     // 0     : exploding（弾け飛ぶ 0.45s）
@@ -1726,7 +2109,9 @@ const ITEMS: ItemDef[] = [
         setHits((h) => h + 1)
         setHitsThisRound((h) => h + 1)
         const { x, y } = lastPointerPosRef.current
-        addFloatingText(x, y, comboMult > 1 ? `×${comboMult} +${points}` : `+${points}`, comboMult > 1 ? '#ffd700' : '#fff')
+        const isCrit = comboMult > 1 || target.type === 'apology'
+        addFloatingText(x, y, comboMult > 1 ? `×${comboMult} +${points}` : `+${points}`, comboMult > 1 ? '#ffd700' : '#fff', isCrit)
+        triggerHitFx(isCrit)
         // 詫び石は 2 秒延命（業界の引き止め構造）
         if (target.type === 'apology') {
           setMaintenanceSeconds((s) => Math.min(MAINTENANCE_TOTAL_SEC + 30, s + 2))
@@ -1800,16 +2185,32 @@ const ITEMS: ItemDef[] = [
       {floatingTexts.map((t) => (
         <div
           key={t.id}
-          className="floating-text"
+          className={`floating-text ${t.crit ? 'floating-text-crit' : ''}`}
           style={{ left: t.x, top: t.y, color: t.color }}
         >
           {t.text}
         </div>
       ))}
 
+      {/* ヒットフラッシュ（white flash full-screen, key 増分で再発火） */}
+      {hitFlash > 0 && <div key={`hf-${hitFlash}`} className="hit-flash" aria-hidden="true" />}
+
+      {/* 未読 99+ バッジ（画面右上で常時点滅、叩いても減らない業界の精神攻撃） */}
+      {currentStage.obstacles && (
+        <div className="unread-badge" aria-hidden="true">
+          <span className="unread-icon">📬</span>
+          <span className="unread-count">99+</span>
+        </div>
+      )}
+
       {/* 緊急メンテ赤 vignette overlay（点滅） */}
       {gameMode === 'countdown' && (
         <div className="emergency-overlay" aria-hidden="true" />
+      )}
+
+      {/* 画面全体明滅 overlay: WARNING 表示中だけ */}
+      {warning && (
+        <div className={`fullscreen-blink ${isFinalBoss(currentStage) ? 'fullscreen-blink-boss' : ''}`} aria-hidden="true" />
       )}
 
       <header className="header">
@@ -1866,11 +2267,9 @@ const ITEMS: ItemDef[] = [
               }}
               aria-label="赤バッジを叩く"
             >
-              {b.type === 'apology'
-                ? '💎'
-                : b.type === 'critical'
-                ? `${pickRandom(BADGE_LABELS.critical)}`
-                : pickRandom(BADGE_LABELS.normal)}
+              <span className="wb-icon">{b.icon}</span>
+              <span className="wb-text">{b.text}</span>
+              <span className="wb-dot" aria-hidden="true" />
             </button>
           ))}
         </>
@@ -2057,7 +2456,12 @@ const ITEMS: ItemDef[] = [
 
       <FloatingOffer iconState={iconState} />
       <HeroCharacter />
-      <KaguyaDialog gameMode={gameMode} />
+      <KaguyaDialog
+        gameMode={gameMode}
+        animState={iconState['kaguya-dialog']}
+        round={round}
+        onTap={gameMode !== 'countdown' ? playKaguyaVoice : undefined}
+      />
       <GachaBanners
         onNavigate={onNavigate}
         pickupState={iconState['gb-pickup']}
@@ -2066,10 +2470,22 @@ const ITEMS: ItemDef[] = [
       />
       {gameMode === 'countdown' && <SwipeTrail />}
 
-      {/* お邪魔要素 */}
-      {obstacle === 'loading' && <NowLoadingOverlay />}
-      {obstacle === 'tutorial' && <TutorialOverlay />}
-      {obstacle === 'download' && <DownloadOverlay />}
+      {/* お邪魔要素（連打で破壊可能） */}
+      {obstacle === 'loading' && (
+        <NowLoadingOverlay onHit={hitObstacle} hits={obstacleHits} required={OBSTACLE_HP.loading!} />
+      )}
+      {obstacle === 'tutorial' && (
+        <TutorialOverlay onHit={hitObstacle} hits={obstacleHits} required={OBSTACLE_HP.tutorial!} />
+      )}
+      {obstacle === 'download' && (
+        <DownloadOverlay onHit={hitObstacle} hits={obstacleHits} required={OBSTACLE_HP.download!} />
+      )}
+      {obstacle === 'rate-app' && (
+        <RateAppOverlay onHit={hitObstacle} hits={obstacleHits} required={OBSTACLE_HP['rate-app']!} />
+      )}
+      {obstacle === 'pre-register' && (
+        <PreRegisterOverlay onHit={hitObstacle} hits={obstacleHits} required={OBSTACLE_HP['pre-register']!} />
+      )}
       <LoginBonusModal
         open={obstacle === 'login-bonus'}
         onClose={() => setObstacle(null)}
@@ -2527,6 +2943,11 @@ export default function App() {
       '/audio/se-explode-3.mp3',
       '/audio/se-explode-4.mp3',
       '/audio/se-chime.mp3',
+      '/audio/se-glass-break.mp3',
+      '/audio/voice-kaguya-iki.mp3',
+      '/audio/voice-kaguya-ganba.mp3',
+      '/audio/voice-kaguya-otukare.mp3',
+      '/audio/voice-kaguya-boss-intro.mp3',
     ]
     const unlock = () => {
       sources.forEach((src) => {
