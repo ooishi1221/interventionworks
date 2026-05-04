@@ -3,13 +3,8 @@ import './App.css'
 
 const CURRENCIES = [
   { id: 'gold', name: '金貨', icon: '🪙', initial: 12847, incPerSec: 47, color: '#ffd700' },
-  { id: 'silver', name: '銀貨', icon: '💰', initial: 84392, incPerSec: 117, color: '#e0e0e0' },
-  { id: 'diamond', name: 'ダイヤ', icon: '💎', initial: 1234, incPerSec: 0.8, color: '#9be0ff' },
-  { id: 'genpou', name: '元宝', icon: '🟡', initial: 5840, incPerSec: 4.2, color: '#ffaa00' },
-  { id: 'stone', name: '石', icon: '🪨', initial: 23847, incPerSec: 23, color: '#aaaaaa' },
-  { id: 'key', name: '鍵', icon: '🗝️', initial: 47, incPerSec: 0.15, color: '#daa520' },
-  { id: 'shouken', name: '招集令', icon: '📜', initial: 128, incPerSec: 0.3, color: '#ee9944' },
   { id: 'shinzui', name: '神髄', icon: '✨', initial: 9847, incPerSec: 12.5, color: '#cc88ff' },
+  { id: 'diamond', name: 'ダイヤ', icon: '💎', initial: 1234, incPerSec: 0.8, color: '#9be0ff' },
 ]
 
 const SIDEBAR_LEFT = [
@@ -29,14 +24,15 @@ const SIDEBAR_RIGHT = [
 ]
 
 const FOOTER_BUTTONS = ['主城', '武将', 'ガチャ', 'バッグ', '設定'] as const
+const FOOTER_KEYS = ['castle', 'sword', 'card', 'bag', 'gear'] as const
 
 const OFFERS = [
-  { eyebrow: '期間限定 ピックアップ', title: '100 連 無料 ガチャ', cta: 'いますぐ召喚 →' },
-  { eyebrow: '初回 6 折 SALE', title: '神髄パック ¥980', cta: '購入する →' },
-  { eyebrow: 'LR 復刻', title: 'KAGUYA-X 召喚祭', cta: '召喚に挑む →' },
-  { eyebrow: 'VIP3 昇格', title: 'あと ¥980 で昇格', cta: 'チャージ →' },
-  { eyebrow: '天井 200 連', title: 'あと 47 連で確定', cta: '続ける →' },
-  { eyebrow: 'コラボ開催', title: '秘書・サユリ × 三国', cta: '詳細を見る →' },
+  { eyebrow: '期間限定 ピックアップ', title: '100 連 無料 ガチャ', cta: 'いますぐ召喚 →', icon: '🎁', accent: '#ff4040' },
+  { eyebrow: '初回 6 折 SALE',         title: '神髄パック ¥980',     cta: '購入する →',     icon: '💎', accent: '#ffd700' },
+  { eyebrow: 'LR 復刻',                title: 'KAGUYA-X 召喚祭',    cta: '召喚に挑む →',   icon: '🌙', accent: '#9f7aea' },
+  { eyebrow: 'VIP3 昇格',              title: 'あと ¥980 で昇格',    cta: 'チャージ →',     icon: '⚡', accent: '#ff8a00' },
+  { eyebrow: '天井 200 連',            title: 'あと 47 連で確定',     cta: '続ける →',       icon: '🎯', accent: '#40c0ff' },
+  { eyebrow: 'コラボ開催',             title: '秘書・サユリ × 三国', cta: '詳細を見る →',   icon: '🌸', accent: '#ff80ff' },
 ]
 
 const BANNERS = [
@@ -169,18 +165,16 @@ function useTickingNumber(initial: number, incPerSec: number) {
   const valueRef = useRef(initial)
 
   useEffect(() => {
-    let raf = 0
     let last = performance.now()
-    const tick = (now: number) => {
+    const interval = setInterval(() => {
+      const now = performance.now()
       const dt = (now - last) / 1000
       last = now
       const wobble = 1 + Math.sin((now / 1000) * 0.5 * Math.PI * 2) * 0.3
       valueRef.current += incPerSec * dt * Math.max(0, wobble)
       setValue(valueRef.current)
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    }, 1000) // 1 秒に 1 回更新（震え防止）
+    return () => clearInterval(interval)
   }, [incPerSec])
 
   return value
@@ -268,30 +262,39 @@ function BattleBackground() {
 
 function FloatingOffer() {
   const [seconds, setSeconds] = useState(23 * 3600 + 47 * 60 + 18)
-  const [offerIdx, setOfferIdx] = useState(0)
 
   useEffect(() => {
     const t = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000)
-    const rotate = setInterval(() => setOfferIdx((i) => (i + 1) % OFFERS.length), 4000)
-    return () => {
-      clearInterval(t)
-      clearInterval(rotate)
-    }
+    return () => clearInterval(t)
   }, [])
 
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  const offer = OFFERS[offerIdx]
 
   return (
-    <div className="floating-offer" key={offerIdx}>
-      <div className="offer-eyebrow">{offer.eyebrow}</div>
-      <div className="offer-title">{offer.title}</div>
-      <div className="offer-timer">
-        残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-      </div>
-      <div className="offer-cta">{offer.cta}</div>
+    <div className="floating-offer-stack">
+      {OFFERS.map((o, i) => (
+        <button
+          key={i}
+          className="fo-item"
+          type="button"
+          style={{ borderColor: o.accent, animationDelay: `${i * 0.06}s` }}
+        >
+          <div
+            className="fo-icon"
+            style={{ background: `radial-gradient(circle, ${o.accent}, #200)` }}
+          >
+            <span>{o.icon}</span>
+          </div>
+          <div className="fo-text">
+            <div className="fo-title">{o.title}</div>
+            <div className="fo-sub">
+              {o.eyebrow} · 残り {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}
+            </div>
+          </div>
+          <div className="fo-cta">→</div>
+        </button>
+      ))}
     </div>
   )
 }
@@ -374,6 +377,25 @@ function BattlePower() {
   )
 }
 
+function PlayerInfo() {
+  const power = useTickingNumber(8492371, 250)
+  return (
+    <div className="player-info">
+      <div className="player-avatar">
+        <span className="player-avatar-icon">👤</span>
+        <div className="player-vip">VIP3</div>
+      </div>
+      <div className="player-meta">
+        <div className="player-name">主公・Yuji</div>
+        <div className="player-stats">
+          <span className="player-level">Lv.127</span>
+          <span className="player-power">⚔️{Math.floor(power).toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PromoStrip() {
   return (
     <div className="promo-strip">
@@ -394,20 +416,36 @@ function PromoStrip() {
 function HeroCharacter() {
   return (
     <div className="hero-character">
-      <div className="hero-rays" />
-      <div className="hero-emblem" />
-      <div className="hero-stars">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className={`star star-${i}`}>✦</div>
-        ))}
-      </div>
-      <div className="hero-aura" />
-      <div className="hero-silhouette" />
       <div className="hero-frame">
         <div className="hero-rarity">LR</div>
         <div className="hero-name">KAGUYA-X</div>
         <div className="hero-tagline">月へ、帰る前に</div>
       </div>
+    </div>
+  )
+}
+
+function GachaBanners({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+  return (
+    <div className="gacha-banners">
+      <button
+        type="button"
+        className="gacha-banner gb-pickup"
+        onClick={() => onNavigate('gacha')}
+      >
+        <img src="/banners/pickup.png" alt="ピックアップ召喚" className="gb-image" />
+        <div className="gb-ribbon">ピックアップ</div>
+        <div className="gb-plate">100連 確率UP</div>
+      </button>
+      <button
+        type="button"
+        className="gacha-banner gb-shinzui"
+        onClick={() => onNavigate('gacha')}
+      >
+        <img src="/banners/shinzui.png" alt="神髄召喚" className="gb-image" />
+        <div className="gb-ribbon">神髄召喚</div>
+        <div className="gb-plate">残り 23:47</div>
+      </button>
     </div>
   )
 }
@@ -434,15 +472,19 @@ type GameStats = {
 function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; onExit: () => void }) {
   return (
     <>
-      <BattleBackground />
-
-      {/* 終了ボタン（業界アプリには無いが、"Let Me Out" の入口） */}
-      <button type="button" className="exit-button" onClick={onExit}>
-        ✕ アプリ終了
-      </button>
+      {/* キャラ背景（Luma 生成 動画ループ） */}
+      <video
+        className="character-bg"
+        src="/heroes/kaguya-x.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
 
       <header className="header">
-        <div className="vip-badge">VIP3</div>
+        <PlayerInfo />
         <div className="currency-bar">
           {CURRENCIES.map((c) => (
             <CurrencyItem key={c.id} currency={c} />
@@ -450,7 +492,14 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
         </div>
       </header>
 
-      <EventBanner />
+      {/* 流れるティッカー（ヘッダーの直下） */}
+      <div className="ticker-container ticker-under-header">
+        <div className="ticker">
+          您の英雄が降臨しました！素晴らしいです！　・　VIP6 限定 神髄ガチャ初回 6 折！　・　あなたは選ばれた主公です　・　累計課金 ¥9,800 達成で SSR 確定！　・　羅刹姫・葵 復刻ガチャ開催中　・　お詫び石 進呈中　・　深夜限定オファー 23:00 開始
+        </div>
+      </div>
+
+
 
       <aside className="sidebar sidebar-left">
         {SIDEBAR_LEFT.map((item, i) => (
@@ -472,23 +521,15 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
             <Badge />
           </button>
         ))}
+        <button type="button" className="exit-button" onClick={onExit}>✕ 終了</button>
       </aside>
 
       <FloatingOffer />
-      <ToastFeed />
       <HeroCharacter />
-      <BattlePower />
-
-      <div className="ticker-container">
-        <div className="ticker">
-          您の英雄が降臨しました！素晴らしいです！　・　VIP6 限定 神髄ガチャ初回 6 折！　・　あなたは選ばれた主公です　・　累計課金 ¥9,800 達成で SSR 確定！　・　羅刹姫・葵 復刻ガチャ開催中　・　お詫び石 進呈中　・　深夜限定オファー 23:00 開始
-        </div>
-      </div>
-
-      <PromoStrip />
+      <GachaBanners onNavigate={onNavigate} />
 
       <footer className="footer">
-        {FOOTER_BUTTONS.map((label) => (
+        {FOOTER_BUTTONS.map((label, i) => (
           <button
             key={label}
             type="button"
@@ -496,14 +537,12 @@ function HomeScreen({ onNavigate, onExit }: { onNavigate: (s: Screen) => void; o
             onClick={() => label === 'ガチャ' && onNavigate('gacha')}
           >
             {label === 'ガチャ' && <div className="rainbow-pillar" />}
-            <div className="footer-icon" />
+            <div className="footer-icon" data-key={FOOTER_KEYS[i]} />
             <span className="footer-label">{label}</span>
             <Badge />
           </button>
         ))}
       </footer>
-
-      <SSRFlash />
     </>
   )
 }
@@ -607,28 +646,47 @@ function GachaScreen({ onBack, inFlow = false, onAdvance }: { onBack: () => void
         </div>
       )}
 
-      {results && (
-        <div className="results-modal">
-          <div className="results-rays" />
-          <div className="results-content">
-            <div className="results-title">召喚結果</div>
-            <div className="results-grid">
-              {results.map((r, i) => (
-                <div
-                  key={i}
-                  className={`result-card rarity-${r.rarity.replace('+', 'plus')}`}
-                  style={{ background: RARITY_BG[r.rarity], animationDelay: `${i * 0.1}s` }}
-                >
-                  <div className="result-rarity" style={{ color: RARITY_COLORS[r.rarity] }}>{r.rarity}</div>
-                  <div className="result-name">{r.name}</div>
+      {results && (() => {
+        const topHit =
+          results.find((r) => r.rarity === 'LR') ||
+          results.find((r) => r.rarity === 'SSR+') ||
+          results.find((r) => r.rarity === 'SSR')
+        return (
+          <>
+            {topHit && (
+              <div className="ssr-flash" key={`flash-${topHit.name}`}>
+                <div className="ssr-rays" />
+                <div className="ssr-confetti" />
+                <div className="ssr-text">
+                  <div className="ssr-rarity">{topHit.rarity} 確定</div>
+                  <div className="ssr-char">{topHit.name}</div>
+                  <div className="ssr-msg">降臨！</div>
                 </div>
-              ))}
+              </div>
+            )}
+            <div className="results-modal">
+              <div className="results-rays" />
+              <div className="results-content">
+                <div className="results-title">召喚結果</div>
+                <div className="results-grid">
+                  {results.map((r, i) => (
+                    <div
+                      key={i}
+                      className={`result-card rarity-${r.rarity.replace('+', 'plus')}`}
+                      style={{ background: RARITY_BG[r.rarity], animationDelay: `${i * 0.1}s` }}
+                    >
+                      <div className="result-rarity" style={{ color: RARITY_COLORS[r.rarity] }}>{r.rarity}</div>
+                      <div className="result-name">{r.name}</div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="results-close" onClick={() => setResults(null)}>もう一度引く</button>
+                <button type="button" className="results-close-alt" onClick={() => setResults(null)}>閉じる</button>
+              </div>
             </div>
-            <button type="button" className="results-close" onClick={() => setResults(null)}>もう一度引く</button>
-            <button type="button" className="results-close-alt" onClick={() => setResults(null)}>閉じる</button>
-          </div>
-        </div>
-      )}
+          </>
+        )
+      })()}
 
       {confirmExit && (
         <div className="confirm-exit">

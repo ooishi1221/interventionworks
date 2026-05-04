@@ -35,6 +35,7 @@ html, body, #root {
 .phone-frame {
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* iOS Safari の動的ビューポート */
   max-width: 480px;
   max-height: 1066px;
   aspect-ratio: 9 / 20;
@@ -45,15 +46,57 @@ html, body, #root {
   border: 2px solid #2a1a1a;
 }
 
+/* 実機（狭幅）: 枠を消して全画面に張る */
+@media (max-width: 600px) {
+  .phone-frame {
+    max-width: none;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+/* PWA standalone 起動時（iOS / Android のホーム画面起動）: 枠を消して全画面に張る */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .phone-frame {
+    max-width: none;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    /* iOS の safe-area（time / home indicator）を避ける */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    background: #1a0815; /* safe-area 領域の背景色（status bar 透過時に見える） */
+  }
+}
+
 .home-screen {
   position: relative;
   width: 100%;
   height: 100%;
-  background:
-    radial-gradient(ellipse at 50% 80%, rgba(120, 30, 60, 0.5), transparent 70%),
-    linear-gradient(135deg, #1a0815 0%, #050008 50%, #000 100%);
+  background: linear-gradient(180deg, #87ceeb 0%, #b0d8f0 35%, #d4ebd4 70%, #b8d4a8 100%);
   overflow: hidden;
   font-size: 12px;
+}
+
+/* ===== キャラ背景（Luma 生成動画でグリグリ） ===== */
+.character-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center 60%;
+  pointer-events: none;
+  /* 月光 glow だけ CSS で添える（動画自体が動くので CSS animation 不要） */
+  filter: drop-shadow(0 0 10px rgba(208, 168, 255, 0.4));
 }
 
 /* ===== 戦闘背景 ===== */
@@ -138,6 +181,96 @@ html, body, #root {
   50% { filter: brightness(1.4); transform: scale(1.05); }
 }
 
+/* ===== Player Info（左上、放置少女風） ===== */
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(60, 20, 20, 0.88), rgba(20, 5, 5, 0.75));
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  border-radius: 16px;
+  padding: 2px 10px 2px 2px;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  margin-right: 8px;
+  width: 134px;
+  box-sizing: border-box;
+}
+
+.player-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff8a00, #aa3000);
+  border: 1px solid #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(255, 165, 0, 0.7);
+}
+
+.player-avatar-icon {
+  font-size: 16px;
+  filter: brightness(1.6) saturate(1.2);
+}
+
+.player-vip {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--vip-purple), #5a3088);
+  color: #fff;
+  font-size: 7px;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #c0a0ff;
+  text-shadow: 0 0 1px #000;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.player-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 3px;
+}
+
+.player-name {
+  font-size: 9px;
+  color: #ffd700;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 2px #000;
+  white-space: nowrap;
+}
+
+.player-stats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  font-weight: bold;
+  text-shadow: 0 0 2px #000;
+  white-space: nowrap;
+}
+
+.player-level {
+  color: #fff;
+}
+
+.player-power {
+  color: #ffd700;
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  display: inline-block;
+}
+
 .currency-bar {
   display: flex;
   gap: 4px;
@@ -180,23 +313,25 @@ html, body, #root {
 
 .currency-value {
   font-weight: bold;
-  text-shadow: 0 0 3px currentColor, 0 0 6px currentColor;
+  text-shadow: 0 0 2px currentColor;
   font-variant-numeric: tabular-nums;
-  min-width: 42px;
+  min-width: 36px;
+  font-size: 9px;
   text-align: right;
 }
 
 .currency-plus {
   color: #fff;
   background: linear-gradient(135deg, #ff8a00, #ff2020);
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
+  margin-left: 3px;
+  flex-shrink: 0;
   font-weight: bold;
   border: 1px solid #ffd700;
   box-shadow: 0 0 4px rgba(255, 100, 0, 0.8);
@@ -249,11 +384,11 @@ html, body, #root {
 
 .icon-button {
   position: relative;
-  background: linear-gradient(to bottom, rgba(60, 20, 60, 0.85), rgba(20, 5, 20, 0.85));
-  border: 1px solid var(--frame-gold);
+  background: transparent;
+  border: 1px solid rgba(255, 215, 0, 0.5);
   border-radius: 8px;
-  padding: 4px 2px;
-  height: 56px;
+  padding: 3px 2px;
+  height: 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -264,29 +399,30 @@ html, body, #root {
 }
 
 .icon-graphic {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  margin-bottom: 2px;
-  box-shadow: 0 0 8px rgba(255, 100, 0, 0.5);
-  animation: icon-rotate 8s linear infinite;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 1px;
+  background-image: url('/icons/icon-sheet.png');
+  background-size: 500% 400%;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  flex-shrink: 0;
 }
 
-@keyframes icon-rotate {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
-}
+/* Sprite sheet（5 列 × 4 行、3 行目までを使用） */
+/* Sidebar Left (data-id 0-4): 行 1 */
+.icon-graphic[data-id="0"]  { background-position:   0%   0%; }    /* 砂時計火炎 */
+.icon-graphic[data-id="1"]  { background-position:  25%   0%; }    /* 五芒星魔法陣 */
+.icon-graphic[data-id="2"]  { background-position:  50%   0%; }    /* 福袋 */
+.icon-graphic[data-id="3"]  { background-position:  75%   0%; }    /* 王冠 */
+.icon-graphic[data-id="4"]  { background-position: 100%   0%; }    /* 若芽 */
 
-.icon-graphic[data-id="0"] { background: radial-gradient(circle, #ff8a00, #aa3000); }
-.icon-graphic[data-id="1"] { background: radial-gradient(circle, #ff40c0, #800040); }
-.icon-graphic[data-id="2"] { background: radial-gradient(circle, #40ff40, #008000); }
-.icon-graphic[data-id="3"] { background: radial-gradient(circle, #9f7aea, #4a2080); }
-.icon-graphic[data-id="4"] { background: radial-gradient(circle, #00d0ff, #004080); }
-.icon-graphic[data-id="10"] { background: radial-gradient(circle, #ffd700, #aa7000); }
-.icon-graphic[data-id="11"] { background: radial-gradient(circle, #ff4040, #800000); }
-.icon-graphic[data-id="12"] { background: radial-gradient(circle, #40c0ff, #003080); }
-.icon-graphic[data-id="13"] { background: radial-gradient(circle, #c0c0c0, #404040); }
-.icon-graphic[data-id="14"] { background: radial-gradient(circle, #ff80ff, #800080); }
+/* Sidebar Right (data-id 10-14): 行 2 */
+.icon-graphic[data-id="10"] { background-position:   0% 33.33%; }  /* 巻物 */
+.icon-graphic[data-id="11"] { background-position:  25% 33.33%; }  /* 旗 */
+.icon-graphic[data-id="12"] { background-position:  50% 33.33%; }  /* 任務札 */
+.icon-graphic[data-id="13"] { background-position:  75% 33.33%; }  /* 金貨山 */
+.icon-graphic[data-id="14"] { background-position: 100% 33.33%; }  /* 露店 */
 
 .icon-label {
   font-size: 9px;
@@ -336,59 +472,173 @@ html, body, #root {
 }
 
 /* ===== 限定オファー ===== */
-.floating-offer {
+/* ===== Gacha Banners（右下、大型召喚ボタン x 2） ===== */
+.gacha-banners {
   position: absolute;
-  top: 14%;
+  bottom: 86px;
+  right: 4px;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.gacha-banner {
+  position: relative;
+  width: 92px;
+  height: 116px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 0, 64, 0.45));
+  animation: gb-pulse 2.4s ease-in-out infinite;
+}
+
+.gb-shinzui {
+  filter: drop-shadow(0 0 8px rgba(160, 80, 255, 0.5));
+  animation-delay: 0.6s;
+}
+
+@keyframes gb-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.gb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.gb-ribbon {
+  position: absolute;
+  top: 13%;
   left: 50%;
   transform: translateX(-50%);
+  color: #fff;
+  font-size: 8px;
+  font-weight: bold;
+  text-shadow: 0 0 2px #000, 0 0 4px #800020;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+.gb-plate {
+  position: absolute;
+  bottom: 13%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #5a3010;
+  font-size: 8px;
+  font-weight: bold;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.gb-shinzui .gb-plate {
+  color: #2a1a4a;
+}
+
+/* ===== Floating Offer Stack（左下、放置少女風 3 個縦積み） ===== */
+.floating-offer-stack {
+  position: absolute;
+  bottom: 86px;
+  left: 4px;
   z-index: 20;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 200, 50, 0.45), transparent 60%),
-    linear-gradient(135deg, #ff1744, #800020);
-  border: 2px solid #ffd700;
-  border-radius: 12px;
-  padding: 10px 16px;
-  text-align: center;
-  box-shadow: 0 0 24px rgba(255, 0, 64, 0.7), inset 0 0 12px rgba(255, 215, 0, 0.5);
-  animation: limit-blink 1.2s infinite, offer-swap 0.4s ease-out;
-  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 130px;
+  max-width: 36%;
+  height: 152px; /* 4 個分の高さ、5・6 個目は縦スクロールで見える */
+  overflow-y: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
 }
 
-@keyframes offer-swap {
-  0% { opacity: 0; transform: translateX(-50%) scale(0.8); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+.floating-offer-stack::-webkit-scrollbar {
+  display: none;
 }
 
-.offer-eyebrow {
+.fo-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(20, 8, 20, 0.78), rgba(0, 0, 0, 0.65));
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 3px 6px 3px 3px;
+  cursor: pointer;
+  color: #fff;
+  height: 34px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  animation: fo-slide-in 0.4s ease-out backwards;
+  font-family: inherit;
+  text-align: left;
+}
+
+@keyframes fo-slide-in {
+  0% { opacity: 0; transform: translateX(-30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.fo-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  filter: drop-shadow(0 0 2px #fff);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+.fo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  flex: 1;
+  min-width: 0;
+}
+
+.fo-title {
   font-size: 9px;
+  font-weight: bold;
   color: #ffd700;
   text-shadow: 0 0 2px #000;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.offer-title {
-  font-size: 18px;
+.fo-sub {
+  font-size: 7px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 6px #ff0, 0 0 12px #f80;
-  letter-spacing: 1px;
-}
-
-.offer-timer {
-  font-size: 11px;
-  color: #fff;
+  text-shadow: 0 0 2px #000;
   font-variant-numeric: tabular-nums;
-  margin-top: 4px;
-  font-weight: bold;
-  text-shadow: 0 0 4px #f00;
+  margin-top: 2px;
 }
 
-.offer-cta {
-  font-size: 11px;
+.fo-cta {
   color: #ffd700;
-  margin-top: 4px;
+  font-size: 13px;
   font-weight: bold;
+  flex-shrink: 0;
+  text-shadow: 0 0 4px #ff8000;
+  line-height: 1;
 }
 
 @keyframes limit-blink {
@@ -402,10 +652,26 @@ html, body, #root {
   bottom: 175px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60%;
-  height: 50%;
+  width: 80%;
+  height: 55%;
   z-index: 4;
   pointer-events: none;
+}
+
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter:
+    drop-shadow(0 0 12px rgba(208, 168, 255, 0.7))
+    drop-shadow(0 0 28px rgba(255, 215, 0, 0.4));
+  animation: hero-image-float 3s ease-in-out infinite alternate;
+}
+
+@keyframes hero-image-float {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-6px); }
 }
 
 .hero-rays {
@@ -520,6 +786,7 @@ html, body, #root {
 }
 
 .hero-frame {
+  display: none; /* 中央の LR ラベル退去（KAGUYA-X 顔を邪魔しない） */
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -627,14 +894,20 @@ html, body, #root {
 /* ===== トースト ===== */
 .toast-feed {
   position: absolute;
-  top: 110px;
-  right: 76px;
+  top: 96px;
+  right: 70px;
   z-index: 15;
   display: flex;
-  flex-direction: column-reverse;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
   pointer-events: none;
-  max-width: 60%;
+  width: 130px;
+  max-width: 35%;
+}
+
+.toast {
+  font-size: 9px;
+  padding: 4px 6px;
 }
 
 .toast {
@@ -671,6 +944,20 @@ html, body, #root {
   z-index: 7;
   padding: 4px 0;
   overflow: hidden;
+}
+
+/* ヘッダーの直下に流す */
+.ticker-container.ticker-under-header {
+  top: 50px; /* header height = 50 の真下 */
+  bottom: auto;
+  background: linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.7) 100%);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+  padding: 3px 0;
+  z-index: 9;
+}
+
+.ticker-container.ticker-under-header .ticker {
+  font-size: 9px;
 }
 
 .ticker {
@@ -711,7 +998,7 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(to bottom, rgba(40, 15, 40, 0.9), rgba(10, 5, 10, 0.9));
+  background: transparent;
   border: 1px solid;
   border-radius: 6px;
   padding: 3px 6px 3px 3px;
@@ -771,8 +1058,8 @@ html, body, #root {
 .footer-button {
   position: relative;
   flex: 1;
-  background: linear-gradient(to bottom, rgba(60, 20, 60, 0.5), rgba(0, 0, 0, 0.7));
-  border: 1px solid var(--frame-gold);
+  background: transparent;
+  border: 1px solid rgba(255, 215, 0, 0.4);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -781,7 +1068,7 @@ html, body, #root {
   cursor: pointer;
   color: #fff;
   padding: 4px 0;
-  overflow: hidden;
+  /* overflow: hidden 削除（badge が見切れる原因）。rainbow-pillar は内側 absolute で問題なし */
 }
 
 .footer-button.highlight {
@@ -823,20 +1110,29 @@ html, body, #root {
 }
 
 .footer-icon {
-  width: 38px;
-  height: 38px;
-  background: radial-gradient(circle, #ffd700, #aa7000);
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
   margin-bottom: 2px;
-  box-shadow: 0 0 8px var(--gacha-glow);
-  border: 2px solid #fff5b0;
+  background-image: url('/icons/icon-sheet.png');
+  background-size: 500% 400%;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 
+/* Footer (data-key): 行 3 */
+.footer-icon[data-key="castle"] { background-position:   0% 66.66%; }  /* 楼閣 */
+.footer-icon[data-key="sword"]  { background-position:  25% 66.66%; }  /* 兜 */
+.footer-icon[data-key="card"]   { background-position:  50% 66.66%; }  /* 宝箱 */
+.footer-icon[data-key="bag"]    { background-position:  75% 66.66%; }  /* 巾着 */
+.footer-icon[data-key="gear"]   { background-position: 100% 66.66%; }  /* 歯車 */
+
 .footer-button.highlight .footer-icon {
-  background: radial-gradient(circle, #fffadd, #ffd700);
-  box-shadow: 0 0 16px #ffd700, 0 0 32px #fff5b0;
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 16px #fff5b0);
   animation: gacha-icon-rotate 3s linear infinite;
 }
 
@@ -1670,18 +1966,18 @@ html, body, #root {
 /* ============================================== */
 
 .exit-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 25;
-  background: rgba(0, 0, 0, 0.7);
-  color: #aaa;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 3px 8px;
+  position: static;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 4px;
   font-size: 10px;
   cursor: pointer;
   backdrop-filter: blur(2px);
+  letter-spacing: 1px;
+  margin-top: 8px;
 }
 
 .exit-button:hover {

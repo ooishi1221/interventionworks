@@ -223,7 +223,7 @@
     padding-bottom: 4px;
 }
 
-/* Sidebar アイコン (Kenney 参照、tint で色付け、Sprite は C# でアタッチ) */
+/* Sidebar アイコン (Kenney 参照、Image 要素 + USS resource() で sprite 指定) */
 .icon-graphic {
     width: 32px;
     height: 32px;
@@ -234,6 +234,7 @@
     margin-bottom: 2px;
     background-color: rgba(0, 0, 0, 0.3);
     -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
 }
 .icon-0  { -unity-background-image-tint-color: rgb(255, 80, 80); }
 .icon-1  { -unity-background-image-tint-color: rgb(255, 215, 0); }
@@ -749,6 +750,7 @@
     margin-bottom: 2px;
     -unity-background-scale-mode: scale-to-fit;
     -unity-background-image-tint-color: rgb(255, 240, 200);
+    flex-shrink: 0;
 }
 
 .footer-icon-card   { -unity-background-image-tint-color: rgb(255, 215, 0); }

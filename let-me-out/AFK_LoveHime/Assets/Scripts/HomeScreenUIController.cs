@@ -9,10 +9,37 @@ namespace LetMeOut.HomeScreen
     /// HomeScreen.uxml + HomeScreen.uss を駆動する。
     /// 通貨 Tick / バッジ pulse / ヒーロー演出 / 戦闘背景 / トースト / ティッカー / オファーローテ。
     /// </summary>
+    [System.Serializable]
+    public class IconEntry
+    {
+        public string className;
+        public Sprite sprite;
+    }
+
     public class HomeScreenUIController : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private UIDocument uiDocument;
+
+        [Header("Icons (Inspector D&D)")]
+        [SerializeField] private List<IconEntry> iconMappings = new List<IconEntry>
+        {
+            new IconEntry { className = "icon-0" },               // exclamation
+            new IconEntry { className = "icon-1" },               // star
+            new IconEntry { className = "icon-2" },               // book_closed
+            new IconEntry { className = "icon-3" },               // trophy
+            new IconEntry { className = "icon-4" },               // award
+            new IconEntry { className = "icon-10" },              // menuList
+            new IconEntry { className = "icon-11" },              // multiplayer
+            new IconEntry { className = "icon-12" },              // checkmark
+            new IconEntry { className = "icon-13" },              // plus
+            new IconEntry { className = "icon-14" },              // shoppingCart
+            new IconEntry { className = "footer-icon-castle" },   // home
+            new IconEntry { className = "footer-icon-sword" },    // bow
+            new IconEntry { className = "footer-icon-card" },     // card
+            new IconEntry { className = "footer-icon-bag" },      // shoppingBasket
+            new IconEntry { className = "footer-icon-gear" },     // gear
+        };
 
         [Header("Battle BG")]
         [SerializeField] private float spawnIntervalMin = 0.15f;
@@ -159,65 +186,27 @@ namespace LetMeOut.HomeScreen
             // Ticker scroll
             tweens.Add(new TweeningElement { el = tickerLabel, toggleClass = "scroll", interval = 24f, toggleOn = false });
 
-            // Kenney sprite を各 icon にアタッチ
-            ApplyIconBackgrounds();
+            // Sprite は <ui:Image> の sprite プロパティに C# で代入（USS では Sprite アセット指定不可）
+            ApplyIconSprites();
         }
 
-        private static readonly (string className, string resourcePath)[] IconMappings = new[]
+        void ApplyIconSprites()
         {
-            ("icon-0", "Sprites/icons/exclamation"),
-            ("icon-1", "Sprites/icons/star"),
-            ("icon-2", "Sprites/icons/book_closed"),
-            ("icon-3", "Sprites/icons/trophy"),
-            ("icon-4", "Sprites/icons/award"),
-            ("icon-10", "Sprites/icons/menuList"),
-            ("icon-11", "Sprites/icons/multiplayer"),
-            ("icon-12", "Sprites/icons/checkmark"),
-            ("icon-13", "Sprites/icons/plus"),
-            ("icon-14", "Sprites/icons/shoppingCart"),
-            ("footer-icon-castle", "Sprites/icons/home"),
-            ("footer-icon-sword", "Sprites/icons/bow"),
-            ("footer-icon-card", "Sprites/icons/card"),
-            ("footer-icon-bag", "Sprites/icons/shoppingBasket"),
-            ("footer-icon-gear", "Sprites/icons/gear"),
-        };
-
-        void ApplyIconBackgrounds()
-        {
-            foreach (var (className, resourcePath) in IconMappings)
+            foreach (var entry in iconMappings)
             {
-                StyleBackground bg = default;
-                bool found = false;
-
-                var sprite = Resources.Load<Sprite>(resourcePath);
-                if (sprite != null)
+                if (entry.sprite == null)
                 {
-                    bg = new StyleBackground(sprite);
-                    found = true;
-                }
-                else
-                {
-                    var tex = Resources.Load<Texture2D>(resourcePath);
-                    if (tex != null)
-                    {
-                        bg = new StyleBackground(tex);
-                        found = true;
-                    }
-                }
-
-                if (!found)
-                {
-                    Debug.LogWarning($"[Icon] NOT found in Resources: {resourcePath} (class={className})");
+                    Debug.LogWarning($"[Icon] Sprite not assigned in Inspector: class={entry.className}");
                     continue;
                 }
-
+                var bg = new StyleBackground(entry.sprite);
                 int hits = 0;
-                foreach (var ve in root.Query<VisualElement>(className: className).ToList())
+                foreach (var ve in root.Query<VisualElement>(className: entry.className).ToList())
                 {
                     ve.style.backgroundImage = bg;
                     hits++;
                 }
-                Debug.Log($"[Icon] OK: {resourcePath} → class={className} ({hits} elements)");
+                Debug.Log($"[Icon] OK: class={entry.className} ({hits} elements, sprite={entry.sprite.name})");
             }
         }
 

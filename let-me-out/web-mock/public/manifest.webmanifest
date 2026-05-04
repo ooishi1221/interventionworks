@@ -1,0 +1,36 @@
+{
+  "name": "放置恋姫 〜永久に続く覚醒の輪廻〜",
+  "short_name": "放置恋姫",
+  "description": "中華のだるさ × 日本のキレ。永久に続く覚醒の輪廻、はじまる。",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "portrait",
+  "background_color": "#0a0510",
+  "theme_color": "#1a0815",
+  "lang": "ja",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
