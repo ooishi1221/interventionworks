@@ -24,8 +24,8 @@ const SIDEBAR_RIGHT = [
   { label: 'ショップ', sub: '新着' },
 ]
 
-const FOOTER_BUTTONS = ['主城', '武将', 'ガチャ', 'バッグ', '設定'] as const
-const FOOTER_KEYS = ['castle', 'sword', 'card', 'bag', 'gear'] as const
+const FOOTER_BUTTONS = ['主城', '武将', 'ガチャ', 'ショップ', '設定'] as const
+const FOOTER_KEYS = ['castle', 'sword', 'card', 'shop', 'gear'] as const
 
 const OFFERS = [
   { eyebrow: '期間限定 ピックアップ', title: '100 連 無料 ガチャ', cta: 'いますぐ召喚 →', icon: '🎁', accent: '#ff4040' },
@@ -477,9 +477,12 @@ const STAGES: StageConfig[] = [
   { label: 'STAGE 8',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 35, hardPhaseFromSec: 9, maintenanceSec: 11, targetHits: 20, activeBadgeMax: 0, obstacles: true, stoneReward: 280 },
   // S9: ハード長め、メンテ短縮
   { label: 'STAGE 9',  swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 45, hardPhaseFromSec: 11, maintenanceSec: 10, targetHits: 22, activeBadgeMax: 0, obstacles: true, stoneReward: 350 },
-  // S10: 過酷モード（最高難度、これ以降同じ条件で永久輪廻）
-  { label: 'STAGE 10', swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 60, hardPhaseFromSec: 12, maintenanceSec: 9,  targetHits: 25, activeBadgeMax: 0, obstacles: true, stoneReward: 500 },
+  // S10: 最終ボス（KAGUYA-X 真の姿、永久輪廻の到達点）
+  { label: 'FINAL BOSS', swipeEnabled: true,  destroyable: ['sl', 'sr', 'fb', 'b', 'player', 'curr', 'gb', 'fo'], scorePerHit: 100, hardPhaseFromSec: 14, maintenanceSec: 10, targetHits: 40, activeBadgeMax: 0, obstacles: true, stoneReward: 1000 },
 ]
+
+// S10 (FINAL BOSS) 判定用ヘルパー
+const isFinalBoss = (stage: StageConfig): boolean => stage.label === 'FINAL BOSS'
 
 const stageFor = (round: number): StageConfig =>
   STAGES[Math.min(round - 1, STAGES.length - 1)]
@@ -714,51 +717,65 @@ function BGMPlayer({
   gameMode,
   muted,
   unlocked,
+  isBoss,
 }: {
   gameMode: GameMode
   muted: boolean
   unlocked: boolean
+  isBoss: boolean
 }) {
   const homeBgmRef = useRef<HTMLAudioElement | null>(null)
   const alertBgmRef = useRef<HTMLAudioElement | null>(null)
+  const bossBgmRef = useRef<HTMLAudioElement | null>(null)
 
   // ミュート反映
   useEffect(() => {
     const home = homeBgmRef.current
     const alert = alertBgmRef.current
+    const boss = bossBgmRef.current
     if (home) home.muted = muted
     if (alert) alert.muted = muted
+    if (boss) boss.muted = muted
   }, [muted])
 
   useEffect(() => {
     if (!unlocked) return
     const home = homeBgmRef.current
     const alert = alertBgmRef.current
-    if (!home || !alert) return
+    const boss = bossBgmRef.current
+    if (!home || !alert || !boss) return
 
     if (gameMode === 'idle' || gameMode === 'safe') {
-      // 通常時 / 回避後の安息: home BGM を最初から
       alert.pause()
+      boss.pause()
       home.currentTime = 0
       home.volume = 0.45
       home.play().catch(() => {})
     } else if (gameMode === 'countdown') {
-      // 緊急メンテ: maintenance BGM を最初から
       home.pause()
-      alert.currentTime = 0
-      alert.volume = 0.55
-      alert.play().catch(() => {})
+      if (isBoss) {
+        alert.pause()
+        boss.currentTime = 0
+        boss.volume = 0.6
+        boss.play().catch(() => {})
+      } else {
+        boss.pause()
+        alert.currentTime = 0
+        alert.volume = 0.55
+        alert.play().catch(() => {})
+      }
     } else {
-      // maintenance（失敗）: 全停止
       home.pause()
       alert.pause()
+      boss.pause()
     }
-  }, [gameMode, unlocked])
+  }, [gameMode, unlocked, isBoss])
 
   return (
     <>
       <audio ref={homeBgmRef} src="/audio/home-bgm.mp3" loop preload="auto" />
       <audio ref={alertBgmRef} src="/audio/maintenance-bgm.mp3" loop preload="auto" />
+      <audio ref={bossBgmRef} src="/audio/boss-bgm.mp3" loop preload="auto" />
     </>
   )
 }
@@ -1103,10 +1120,37 @@ function HomeScreen({
     if (typeof window === 'undefined') return false
     return localStorage.getItem('let-me-out-muted') === '1'
   })
+  // 神髄石 + アクティブアイテム（targetHits / scoreMultiplier の計算で参照するので上に移動）
+  const [shinzuiStone, setShinzuiStone] = useState(0)
+  const [activeItems, setActiveItems] = useState<Set<ItemId>>(new Set())
+  // ショップ表示制御（safe 中は自動 open、それ以外は Footer のショップタップで open）
+  const [shopOpen, setShopOpen] = useState(false)
+  // 設定パネル（DEBUG ジャンプも兼ねる）
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const jumpToStage = (n: number) => {
+    setSettingsOpen(false)
+    setRound(n)
+    setHitsThisRound(0)
+    setShowAvoided(false)
+    setActiveItems(new Set())
+    setMaintenanceSeconds(STAGES[Math.min(n - 1, STAGES.length - 1)].maintenanceSec)
+    setGameMode('countdown')
+  }
   const badgeIdRef = useRef(0)
 
   const currentStage = stageFor(round)
-  const targetHits = currentStage.targetHits
+  // アイテム reduceTarget が active なら必要タップ数 -3
+  const targetHits = currentStage.targetHits - (activeItems.has('reduceTarget') ? 3 : 0)
+  // アイテム scoreBoost が active ならスコア 1.5 倍
+  const scoreMultiplier = activeItems.has('scoreBoost') ? 1.5 : 1
+
+  const buyItem = (item: ItemDef) => {
+    if (activeItems.has(item.id)) return
+    if (shinzuiStone < item.cost) return
+    setShinzuiStone((s) => s - item.cost)
+    setActiveItems((prev) => new Set(prev).add(item.id))
+  }
 
   // SE
   const playSwordSE = useSE('/audio/se-whack.mp3', muted, 0.55) // スワイプ斬撃
@@ -1121,17 +1165,57 @@ function HomeScreen({
   }, [playExplodeA, playExplodeB])
   // sweep 中フラグ（ref）
   const swipeActiveRef = useRef(false)
+  // 最後のポインタ座標（+N ポップアップ用）
+  const lastPointerPosRef = useRef({ x: 0, y: 0 })
 
-  // gameMode 切替時の SE 発火 + 暗転トランジション
+  // コンボシステム
+  const [combo, setCombo] = useState(0)
+  const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const comboMultiplier = (c: number): number => {
+    if (c >= 20) return 5
+    if (c >= 10) return 3
+    if (c >= 5) return 2
+    return 1
+  }
+  const incCombo = () => {
+    setCombo((c) => c + 1)
+    if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
+    comboTimerRef.current = setTimeout(() => setCombo(0), 1300)
+  }
+  const resetCombo = () => {
+    setCombo(0)
+    if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
+  }
+
+  // +N ポップアップ
+  type FloatText = { id: number; x: number; y: number; text: string; color: string }
+  const [floatingTexts, setFloatingTexts] = useState<FloatText[]>([])
+  const floatingIdRef = useRef(0)
+  const addFloatingText = (x: number, y: number, text: string, color = '#ffd700') => {
+    const id = ++floatingIdRef.current
+    setFloatingTexts((prev) => [...prev, { id, x, y, text, color }])
+    setTimeout(() => {
+      setFloatingTexts((prev) => prev.filter((t) => t.id !== id))
+    }, 900)
+  }
+
+  // gameMode 切替時の SE 発火 + 暗転トランジション + 警告演出 + バイブ
   const prevGameModeRef = useRef(gameMode)
   const [battleTransition, setBattleTransition] = useState(false)
+  const [warning, setWarning] = useState(false)
   useEffect(() => {
     const prev = prevGameModeRef.current
     if (prev !== gameMode) {
       if (gameMode === 'countdown') {
         playAlarmSE()
         setBattleTransition(true)
+        setWarning(true)
         setTimeout(() => setBattleTransition(false), 700)
+        setTimeout(() => setWarning(false), 2400)
+        // モバイル振動: 警告パターン
+        if ('vibrate' in navigator) {
+          navigator.vibrate([120, 60, 120, 60, 240])
+        }
       }
       if (gameMode === 'safe') playClearSE()
     }
@@ -1153,9 +1237,13 @@ function HomeScreen({
         COUNTDOWN_START_DELAY_MIN_MS +
         Math.random() * (COUNTDOWN_START_DELAY_MAX_MS - COUNTDOWN_START_DELAY_MIN_MS)
       const timer = setTimeout(() => {
-        setMaintenanceSeconds(currentStage.maintenanceSec)
-        setHitsThisRound(0)
+        // アイテム extendTime が active ならメンテ +5 秒
+        const baseSec = currentStage.maintenanceSec + (activeItems.has('extendTime') ? 5 : 0)
+        setMaintenanceSeconds(baseSec)
+        setHitsThisRound(activeItems.has('startBonus') ? 5 : 0)
         setGameMode('countdown')
+        // 1 ラウンド使い切り
+        setActiveItems(new Set())
       }, delay)
       return () => clearTimeout(timer)
     }
@@ -1164,9 +1252,11 @@ function HomeScreen({
         SAFE_DURATION_MIN_MS +
         Math.random() * (SAFE_DURATION_MAX_MS - SAFE_DURATION_MIN_MS)
       const timer = setTimeout(() => {
-        setMaintenanceSeconds(currentStage.maintenanceSec)
-        setHitsThisRound(0)
+        const baseSec = currentStage.maintenanceSec + (activeItems.has('extendTime') ? 5 : 0)
+        setMaintenanceSeconds(baseSec)
+        setHitsThisRound(activeItems.has('startBonus') ? 5 : 0)
         setGameMode('countdown')
+        setActiveItems(new Set())
       }, delay)
       return () => clearTimeout(timer)
     }
@@ -1190,6 +1280,18 @@ function HomeScreen({
 
   // ===== お邪魔要素（NOW LOADING / チュートリアル / 一括 DL / ログインボーナス） =====
   type Obstacle = 'loading' | 'tutorial' | 'download' | 'login-bonus'
+
+// ===== アイテム（インターバル中に購入、次ラウンドで効果発動） =====
+type ItemId = 'extendTime' | 'reduceTarget' | 'scoreBoost' | 'startBonus'
+
+type ItemDef = { id: ItemId; name: string; desc: string; cost: number; icon: string }
+
+const ITEMS: ItemDef[] = [
+  { id: 'extendTime',   name: 'メンテ +5 秒',  desc: '次戦のメンテ時間 +5 秒',     cost: 100, icon: '⏰' },
+  { id: 'reduceTarget', name: '目標 -3',       desc: '次戦の必要タップ数 -3',     cost: 150, icon: '🎯' },
+  { id: 'startBonus',   name: '開始時 +5 タップ済み', desc: '次戦開始時に hits +5', cost: 200, icon: '⚡' },
+  { id: 'scoreBoost',   name: 'スコア×1.5',    desc: '次戦のスコア倍率',           cost: 250, icon: '🚀' },
+]
   const [obstacle, setObstacle] = useState<Obstacle | null>(null)
 
   useEffect(() => {
@@ -1230,9 +1332,6 @@ function HomeScreen({
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameMode, currentStage.label])
-
-  // 神髄石（メンテ回避ボーナス、ガチャ用通貨）
-  const [shinzuiStone, setShinzuiStone] = useState(0)
 
   // 必要タップ数達成 → リザルト画面（タップで次へ）
   useEffect(() => {
@@ -1301,8 +1400,23 @@ function HomeScreen({
   // アイコンの 4 段階アニメ: undefined（通常）→ exploding → gone → respawning → undefined
   const [iconState, setIconState] = useState<Record<string, IconAnimState>>({})
 
+  // KAGUYA を叩いた時のペナルティ
+  const penalizeKaguya = () => {
+    resetCombo()
+    setHitsThisRound((h) => Math.max(0, h - 1))
+    playAlarmSE()
+    if ('vibrate' in navigator) navigator.vibrate(300)
+    const { x, y } = lastPointerPosRef.current
+    addFloatingText(x, y, '主公！', '#ff4040')
+  }
+
   const whackIconBadge = (key: string) => {
     if (iconState[key]) return // すでに消えてる or アニメ中
+    // KAGUYA は叩くとペナルティ
+    if (key === 'kaguya') {
+      penalizeKaguya()
+      return
+    }
     // ステージで破壊不可なら無視
     if (!isDestroyable(key, currentStage)) return
     // active 制限ありの場合 (S1)、active 集合に含まれない key は無視 + 補充
@@ -1325,9 +1439,16 @@ function HomeScreen({
       playPunchSE()
     }
     playExplode()
-    setScore((s) => s + currentStage.scorePerHit)
+    // コンボ + 倍率スコア + アイテム scoreBoost
+    incCombo()
+    const mult = comboMultiplier(combo + 1)
+    const earned = Math.round(currentStage.scorePerHit * mult * scoreMultiplier)
+    setScore((s) => s + earned)
     setHits((h) => h + 1)
     setHitsThisRound((h) => h + 1)
+    // +N ポップアップ
+    const { x, y } = lastPointerPosRef.current
+    addFloatingText(x, y, mult > 1 ? `×${mult} +${earned}` : `+${earned}`, mult > 1 ? '#ffd700' : '#fff')
 
     // 4 段階アニメ:
     // 0     : exploding（弾け飛ぶ 0.45s）
@@ -1357,6 +1478,12 @@ function HomeScreen({
   // ゲームモード切替時、アニメ中の状態をリセット（safe / idle で全要素復活）
   useEffect(() => {
     if (gameMode === 'idle' || gameMode === 'safe') setIconState({})
+  }, [gameMode])
+
+  // safe 中は自動でショップ open、countdown 開始で close
+  useEffect(() => {
+    if (gameMode === 'safe') setShopOpen(true)
+    if (gameMode === 'countdown') setShopOpen(false)
   }, [gameMode])
 
   // KAGUYA 全爆破: 全 destroyable オブジェクトを一気に exploding 化
@@ -1434,7 +1561,7 @@ function HomeScreen({
       else if (round === 5) msg = { icon: '🚨', title: '業界アプリの妨害 開始', sub: 'NOW LOADING / DL モーダル / 強制チュートリアル' }
       else if (round === 6) msg = { icon: '⚔', title: 'スワイプ斬り 解放', sub: '指で滑らせて連続斬り' }
       else if (round === 8) msg = { icon: '💥', title: '解放: 全 UI 破壊', sub: '通貨もバナーも斬り倒せる' }
-      else if (round === 10) msg = { icon: '🔥', title: '過酷モード 突入', sub: '最高難度 — 永久輪廻の到達点' }
+      else if (round === 10) msg = { icon: '👹', title: 'FINAL BOSS 出現', sub: 'KAGUYA-X 真の姿 — 永久輪廻の到達点' }
       if (msg) {
         setStageUnlockMsg(msg)
         setTimeout(() => setStageUnlockMsg(null), 3800)
@@ -1498,6 +1625,7 @@ function HomeScreen({
     const sweptKeys = new Set<string>()
 
     const sweep = (x: number, y: number) => {
+      lastPointerPosRef.current = { x, y }
       const el = document.elementFromPoint(x, y)
       if (!el) return
       const target = (el as Element).closest(
@@ -1514,7 +1642,7 @@ function HomeScreen({
         }
         return
       }
-      // 全 UI 要素を破壊対象（PlayerInfo / 通貨 / GachaBanner / floating-offer / アイコン）
+      // 全 UI 要素を破壊対象（PlayerInfo / 通貨 / GachaBanner / floating-offer / アイコン / KAGUYA）
       const key = target.dataset.iconKey
       if (key && !sweptKeys.has(key)) {
         sweptKeys.add(key)
@@ -1586,13 +1714,19 @@ function HomeScreen({
       if (newHp <= 0) {
         // ランダムバッジは critical / apology はスコア倍率を維持しつつ stage 基準
         const baseScore = currentStage.scorePerHit
-        const points =
-          target.type === 'critical' ? Math.round(baseScore * 1.5)
-          : target.type === 'apology' ? Math.round(baseScore * 2.5)
-          : baseScore
+        const typeMult =
+          target.type === 'critical' ? 1.5
+          : target.type === 'apology' ? 2.5
+          : 1
+        // コンボ加算 + アイテム scoreBoost
+        incCombo()
+        const comboMult = comboMultiplier(combo + 1)
+        const points = Math.round(baseScore * typeMult * comboMult * scoreMultiplier)
         setScore((s) => s + points)
         setHits((h) => h + 1)
         setHitsThisRound((h) => h + 1)
+        const { x, y } = lastPointerPosRef.current
+        addFloatingText(x, y, comboMult > 1 ? `×${comboMult} +${points}` : `+${points}`, comboMult > 1 ? '#ffd700' : '#fff')
         // 詫び石は 2 秒延命（業界の引き止め構造）
         if (target.type === 'apology') {
           setMaintenanceSeconds((s) => Math.min(MAINTENANCE_TOTAL_SEC + 30, s + 2))
@@ -1609,7 +1743,12 @@ function HomeScreen({
 
   return (
     <>
-      <BGMPlayer gameMode={gameMode} muted={muted} unlocked={audioUnlocked} />
+      <BGMPlayer
+        gameMode={gameMode}
+        muted={muted}
+        unlocked={audioUnlocked}
+        isBoss={isFinalBoss(currentStage)}
+      />
 
       {/* countdown ヘッダー（visible に関係なく常時表示、ガチャ画面の上にも被さる） */}
       {gameMode === 'countdown' && !visible && (
@@ -1623,18 +1762,50 @@ function HomeScreen({
 
       {/* キャラ背景（Luma 生成 動画ループ）。countdown 中は battle 動画に切替 */}
       <video
-        key={gameMode === 'countdown' ? 'battle' : 'idle'}
-        className={`character-bg ${gameMode === 'countdown' ? 'character-bg-emergency' : ''}`}
-        src={gameMode === 'countdown' ? '/heroes/kaguya-x-battle.mp4' : '/heroes/kaguya-x.mp4'}
+        key={gameMode === 'countdown' ? (isFinalBoss(currentStage) ? 'boss' : 'battle') : 'idle'}
+        className={`character-bg ${gameMode === 'countdown' ? 'character-bg-emergency' : ''} ${gameMode === 'countdown' && isFinalBoss(currentStage) ? 'character-bg-boss' : ''}`}
+        src={
+          gameMode === 'countdown'
+            ? (isFinalBoss(currentStage) ? '/heroes/kaguya-boss.mp4' : '/heroes/kaguya-x-battle.mp4')
+            : '/heroes/kaguya-x.mp4'
+        }
         autoPlay
         loop
         muted
         playsInline
         aria-hidden="true"
+        data-icon-key="kaguya"
       />
 
       {/* 暗転トランジション（countdown 開始時） */}
       {battleTransition && <div className="battle-transition" aria-hidden="true" />}
+
+      {/* WARNING バナー（黄黒ストライプ + ⚠ WARNING ⚠） */}
+      {warning && (
+        <div className="warning-banner" aria-hidden="true">
+          <div className="warning-banner-content">⚠ WARNING ⚠</div>
+        </div>
+      )}
+
+      {/* コンボ表示（5 連続以上） */}
+      {combo >= 5 && gameMode === 'countdown' && (
+        <div className="combo-display" key={combo}>
+          <span className="combo-x">×</span>
+          <span className="combo-value">{comboMultiplier(combo)}</span>
+          <span className="combo-label">{combo} COMBO</span>
+        </div>
+      )}
+
+      {/* +N ポップアップ（タップ位置から浮上） */}
+      {floatingTexts.map((t) => (
+        <div
+          key={t.id}
+          className="floating-text"
+          style={{ left: t.x, top: t.y, color: t.color }}
+        >
+          {t.text}
+        </div>
+      ))}
 
       {/* 緊急メンテ赤 vignette overlay（点滅） */}
       {gameMode === 'countdown' && (
@@ -1705,6 +1876,35 @@ function HomeScreen({
         </>
       )}
 
+      {/* 設定パネル（DEBUG ステージジャンプ含む） */}
+      {settingsOpen && (
+        <div className="shop-overlay" onClick={() => setSettingsOpen(false)}>
+          <div className="shop-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="shop-close"
+              onClick={() => setSettingsOpen(false)}
+              aria-label="閉じる"
+            >✕</button>
+            <div className="shop-title">⚙ 設定</div>
+            <div className="shop-sub">DEBUG: ステージジャンプ</div>
+            <div className="settings-jump-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`settings-jump-btn ${n === 10 ? 'settings-jump-boss' : ''}`}
+                  onClick={() => jumpToStage(n)}
+                >
+                  {n === 10 ? '👹 BOSS' : `S${n}`}
+                </button>
+              ))}
+            </div>
+            <div className="shop-tip">タップで指定ステージから即開始</div>
+          </div>
+        </div>
+      )}
+
       {/* KAGUYA bomb（countdown 中、所持 > 0 で表示） */}
       {gameMode === 'countdown' && kaguyaBombs > 0 && (
         <button
@@ -1749,10 +1949,52 @@ function HomeScreen({
         </div>
       )}
 
-      {/* safe 中: 次の緊急メンテへの予兆を控えめに */}
+      {/* safe 中の予兆 */}
       {gameMode === 'safe' && (
-        <div className="safe-indicator">
-          R{round} 待機中…
+        <div className="safe-indicator">R{round} 準備中…</div>
+      )}
+
+      {/* ショップ overlay（Footer ショップタップ or safe 中で表示） */}
+      {shopOpen && (
+        <div className="shop-overlay" onClick={() => setShopOpen(false)}>
+          <div className="shop-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="shop-close"
+              onClick={() => setShopOpen(false)}
+              aria-label="閉じる"
+            >✕</button>
+            <div className="shop-title">⏱ 次戦準備</div>
+            <div className="shop-sub">アイテムを購入して次のラウンドに備える</div>
+            <div className="shop-stones">所持: ✨ {shinzuiStone}</div>
+            <div className="shop-items">
+              {ITEMS.map((item) => {
+                const owned = activeItems.has(item.id)
+                const canBuy = !owned && shinzuiStone >= item.cost
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`shop-item ${owned ? 'shop-owned' : canBuy ? '' : 'shop-locked'}`}
+                    onClick={() => buyItem(item)}
+                    disabled={owned || !canBuy}
+                  >
+                    <div className="shop-icon">{item.icon}</div>
+                    <div className="shop-text">
+                      <div className="shop-name">{item.name}</div>
+                      <div className="shop-desc">{item.desc}</div>
+                    </div>
+                    <div className="shop-cost">
+                      {owned ? '✓ 装備中' : `✨ ${item.cost}`}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="shop-tip">
+              {gameMode === 'safe' ? '時間切れで自動的に次戦開始' : '緊急メンテ前に準備しよう'}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1848,6 +2090,10 @@ function HomeScreen({
                   whackIconBadge(key)
                 } else if (label === 'ガチャ') {
                   onNavigate('gacha')
+                } else if (label === 'ショップ') {
+                  setShopOpen(true)
+                } else if (label === '設定') {
+                  setSettingsOpen(true)
                 }
               }}
             >
