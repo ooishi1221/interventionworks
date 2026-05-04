@@ -1374,6 +1374,8 @@ function HomeScreen({
   kaguyaBombs = 0,
   consumeKaguyaBomb,
   visible = true,
+  shinzuiStone,
+  setShinzuiStone,
 }: {
   onNavigate: (s: Screen) => void
   onExit: () => void
@@ -1381,6 +1383,8 @@ function HomeScreen({
   kaguyaBombs?: number
   consumeKaguyaBomb?: () => void
   visible?: boolean
+  shinzuiStone: number
+  setShinzuiStone: React.Dispatch<React.SetStateAction<number>>
 }) {
   const [gameMode, setGameMode] = useState<GameMode>('idle')
   const [maintenanceSeconds, setMaintenanceSeconds] = useState(MAINTENANCE_TOTAL_SEC)
@@ -1394,13 +1398,14 @@ function HomeScreen({
     if (typeof window === 'undefined') return false
     return localStorage.getItem('let-me-out-muted') === '1'
   })
-  // 神髄石 + アクティブアイテム（targetHits / scoreMultiplier の計算で参照するので上に移動）
-  const [shinzuiStone, setShinzuiStone] = useState(0)
+  // shinzuiStone は App level から props で受け取る（GachaScreen と共有）
   const [activeItems, setActiveItems] = useState<Set<ItemId>>(new Set())
   // ショップ表示制御（safe 中は自動 open、それ以外は Footer のショップタップで open）
   const [shopOpen, setShopOpen] = useState(false)
   // 設定パネル（DEBUG ジャンプも兼ねる）
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // 主公キャラ: KAGUYA-X / SAKURA-87 / サユリ 切替（フッター「武将」タップで循環）。countdown 中は敵 KAGUYA 固定
+  const [selectedHero, setSelectedHero] = useState<'kaguya' | 'sakura' | 'sayuri'>('kaguya')
 
   const jumpToStage = (n: number) => {
     setSettingsOpen(false)
@@ -1427,13 +1432,43 @@ function HomeScreen({
   }
 
   // SE
-  const playSwordSE = useSE('/audio/se-whack.mp3', muted, 0.55) // スワイプ斬撃
-  const playPunchSE = useSE('/audio/se-tap-light.mp3', muted, 0.6) // タップ
+  const playSwordSE = useSE('/audio/se-kaguya-slash.mp3', muted, 0.75) // KAGUYA スワイプ連撃（剣で斬る5）
+  const playPunchSE = useSE('/audio/se-whack.mp3', muted, 0.65) // KAGUYA タップ斬撃（扇）
+  // SAKURA 用 SE: サブマシンガン（爆発に負けないよう大きめ）
+  const playSakuraGun1 = useSE('/audio/se-sakura-gun1.mp3', muted, 1.0) // タップ A
+  const playSakuraBolt = useSE('/audio/se-sakura-bolt.mp3', muted, 1.0) // タップ B (ボルトリリース)
+  const playSakuraGun2 = useSE('/audio/se-sakura-gun2.mp3', muted, 1.0) // スワイプ
+  // サユリ 用 SE: 平手打ち（タップ・スワイプとも）
+  const playSayuriSlap = useSE('/audio/se-sayuri-slap.mp3', muted, 0.95)
+  // 主公キャラに応じて SE 切替。SAKURA はリロード音時に空振り（return false）
+  const playHeroTapSE = useCallback((): boolean => {
+    if (selectedHero === 'sakura') {
+      // 18% でリロード（ボルトリリース） = 空振り
+      if (Math.random() < 0.18) {
+        playSakuraBolt()
+        return false
+      }
+      playSakuraGun1()
+      return true
+    }
+    if (selectedHero === 'sayuri') {
+      playSayuriSlap()
+      return true
+    }
+    playPunchSE()
+    return true
+  }, [selectedHero, playSakuraGun1, playSakuraBolt, playSayuriSlap, playPunchSE])
+  const playHeroSlashSE = useCallback(() => {
+    if (selectedHero === 'sakura') playSakuraGun2()
+    else if (selectedHero === 'sayuri') playSayuriSlap()
+    else playSwordSE()
+  }, [selectedHero, playSakuraGun2, playSayuriSlap, playSwordSE])
   const playAlarmSE = useSE('/audio/se-alarm.mp3', muted, 0.7)
   const playClearSE = useSE('/audio/se-clear.mp3', muted, 0.7)
-  const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.45) // 爆発 A
-  const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.45) // 爆発 B
+  const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.22) // 爆発 A
+  const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.22) // 爆発 B
   const playGlassBreak = useSE('/audio/se-glass-break.mp3', muted, 0.85) // お邪魔連打破壊
+  const playGlassCrack = useSE('/audio/se-glass-crack.mp3', muted, 0.7)  // お邪魔タップ毎
   // 善 KAGUYA タップボイス（3 種ランダム）
   const playVoiceIki    = useSE('/audio/voice-kaguya-iki.mp3', muted, 0.9)
   const playVoiceGanba  = useSE('/audio/voice-kaguya-ganba.mp3', muted, 0.9)
@@ -1480,7 +1515,12 @@ function HomeScreen({
   const floatingIdRef = useRef(0)
   const addFloatingText = (x: number, y: number, text: string, color = '#ffd700', crit = false) => {
     const id = ++floatingIdRef.current
-    setFloatingTexts((prev) => [...prev, { id, x, y, text, color, crit }])
+    setFloatingTexts((prev) => {
+      const next = [...prev, { id, x, y, text, color, crit }]
+      // 同時表示は 10 個まで、超えたら古いのから捨てる（DOM 数を抑える）
+      if (next.length > 10) next.shift()
+      return next
+    })
     setTimeout(() => {
       setFloatingTexts((prev) => prev.filter((t) => t.id !== id))
     }, 900)
@@ -1489,9 +1529,15 @@ function HomeScreen({
   // ヒットエフェクト: 白フラッシュ + カメラシェイク
   const [hitFlash, setHitFlash] = useState(0)
   const [hitShake, setHitShake] = useState(0)
+  // 連続ヒット間引き用（70ms 以内の連発はスキップ）
+  const lastHitFxRef = useRef(0)
   const triggerHitFx = (crit = false) => {
-    setHitFlash((n) => n + 1)
-    setHitShake((n) => n + 1)
+    const now = performance.now()
+    if (now - lastHitFxRef.current > 70) {
+      setHitFlash((n) => n + 1)
+      setHitShake((n) => n + 1)
+      lastHitFxRef.current = now
+    }
     if ('vibrate' in navigator) navigator.vibrate(crit ? 30 : 12)
   }
 
@@ -1641,7 +1687,7 @@ const ITEMS: ItemDef[] = [
     if (!obstacle) return
     const required = OBSTACLE_HP[obstacle]
     if (required === undefined) return // login-bonus は対象外
-    playPunchSE()
+    playGlassCrack() // ガラスにヒビが入る音
     triggerHitFx(false)
     setObstacleHits((h) => {
       const next = h + 1
@@ -1813,11 +1859,12 @@ const ITEMS: ItemDef[] = [
         return next
       })
     }
-    // SE: 斬撃 or タップ + 爆発（両方鳴らして派手に）
+    // SE: 斬撃 or タップ + 爆発（両方鳴らして派手に、キャラで音切替）
     if (swipeActiveRef.current) {
-      playSwordSE()
+      playHeroSlashSE()
     } else {
-      playPunchSE()
+      // リロード音は空振り（破壊しない）
+      if (!playHeroTapSE()) return
     }
     playExplode()
     // コンボ + 倍率スコア + アイテム scoreBoost
@@ -2033,6 +2080,20 @@ const ITEMS: ItemDef[] = [
       }
     }
 
+    // sweep は requestAnimationFrame で 1 frame 1 回まで（重い elementFromPoint 抑制）
+    let pendingX = -1
+    let pendingY = -1
+    let rafId: number | null = null
+    const scheduleSweep = (x: number, y: number) => {
+      pendingX = x
+      pendingY = y
+      if (rafId != null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        if (pendingX >= 0) sweep(pendingX, pendingY)
+      })
+    }
+
     const onDown = (e: PointerEvent) => {
       pressing = true
       initialX = e.clientX
@@ -2049,14 +2110,14 @@ const ITEMS: ItemDef[] = [
       if (!swipeActiveRef.current && dist > 6) {
         // スワイプ確定 — 初期位置から sweep 開始
         swipeActiveRef.current = true
-        sweep(initialX, initialY)
+        scheduleSweep(initialX, initialY)
       }
       if (swipeActiveRef.current) {
-        sweep(e.clientX, e.clientY)
+        scheduleSweep(e.clientX, e.clientY)
       }
     }
     const onUp = (e: PointerEvent) => {
-      // タップ単独（移動なし）の場合、その位置を sweep（タップ判定）
+      // タップ単独（移動なし）の場合、その位置を sweep（タップ判定、即時実行）
       if (pressing && !swipeActiveRef.current) {
         sweep(e.clientX, e.clientY)
       }
@@ -2073,6 +2134,7 @@ const ITEMS: ItemDef[] = [
     window.addEventListener('pointercancel', onUp)
 
     return () => {
+      if (rafId != null) cancelAnimationFrame(rafId)
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
@@ -2085,9 +2147,10 @@ const ITEMS: ItemDef[] = [
     // 動的バッジは prefix 'b' として扱う、stage 'b' 含む時だけ破壊可能
     if (!currentStage.destroyable.includes('b')) return
     if (swipeActiveRef.current) {
-      playSwordSE()
+      playHeroSlashSE()
     } else {
-      playPunchSE()
+      // リロード音は空振り（破壊しない）
+      if (!playHeroTapSE()) return
     }
     playExplode()
     setBadges((prev) => {
@@ -2145,14 +2208,22 @@ const ITEMS: ItemDef[] = [
         style={{ display: visible ? 'contents' : 'none' }}
       >
 
-      {/* キャラ背景（Luma 生成 動画ループ）。countdown 中は battle 動画に切替 */}
+      {/* キャラ背景（Luma 生成 動画ループ）。countdown 中は battle 動画に切替（敵は KAGUYA 固定）*/}
       <video
-        key={gameMode === 'countdown' ? (isFinalBoss(currentStage) ? 'boss' : 'battle') : 'idle'}
+        key={
+          gameMode === 'countdown'
+            ? (isFinalBoss(currentStage) ? 'boss' : 'battle')
+            : `idle-${selectedHero}`
+        }
         className={`character-bg ${gameMode === 'countdown' ? 'character-bg-emergency' : ''} ${gameMode === 'countdown' && isFinalBoss(currentStage) ? 'character-bg-boss' : ''}`}
         src={
           gameMode === 'countdown'
             ? (isFinalBoss(currentStage) ? '/heroes/kaguya-boss.mp4' : '/heroes/kaguya-x-battle.mp4')
-            : '/heroes/kaguya-x.mp4'
+            : (
+              selectedHero === 'kaguya' ? '/heroes/kaguya-x.mp4'
+              : selectedHero === 'sakura' ? '/heroes/sakura-87.mp4'
+              : '/heroes/sayuri.mp4'
+            )
         }
         autoPlay
         loop
@@ -2195,6 +2266,9 @@ const ITEMS: ItemDef[] = [
       {/* ヒットフラッシュ（white flash full-screen, key 増分で再発火） */}
       {hitFlash > 0 && <div key={`hf-${hitFlash}`} className="hit-flash" aria-hidden="true" />}
 
+      {/* 画面縁光エフェクト（叩いた時に四辺が光る、hit-flash と同期） */}
+      {hitFlash > 0 && <div key={`he-${hitFlash}`} className="hit-edge-glow" aria-hidden="true" />}
+
       {/* 未読 99+ バッジ（画面右上で常時点滅、叩いても減らない業界の精神攻撃） */}
       {currentStage.obstacles && (
         <div className="unread-badge" aria-hidden="true">
@@ -2228,6 +2302,9 @@ const ITEMS: ItemDef[] = [
               />
             )
           })}
+          {gameMode === 'safe' && (
+            <span className="header-round-prep">R{round} 準備中…</span>
+          )}
         </div>
       </header>
 
@@ -2300,6 +2377,13 @@ const ITEMS: ItemDef[] = [
               ))}
             </div>
             <div className="shop-tip">タップで指定ステージから即開始</div>
+            <button
+              type="button"
+              className="settings-exit-btn"
+              onClick={() => { setSettingsOpen(false); onExit() }}
+            >
+              ✕ ゲーム終了（タイトルへ戻る）
+            </button>
           </div>
         </div>
       )}
@@ -2348,10 +2432,7 @@ const ITEMS: ItemDef[] = [
         </div>
       )}
 
-      {/* safe 中の予兆 */}
-      {gameMode === 'safe' && (
-        <div className="safe-indicator">R{round} 準備中…</div>
-      )}
+      {/* safe 中の予兆表示はヘッダー currency-bar 末尾に統合済み */}
 
       {/* ショップ overlay（Footer ショップタップ or safe 中で表示） */}
       {shopOpen && (
@@ -2451,7 +2532,6 @@ const ITEMS: ItemDef[] = [
         >
           {muted ? '🔇' : '🔊'}
         </button>
-        <button type="button" className="exit-button" onClick={onExit}>✕ 終了</button>
       </aside>
 
       <FloatingOffer iconState={iconState} />
@@ -2510,6 +2590,11 @@ const ITEMS: ItemDef[] = [
                   setShopOpen(true)
                 } else if (label === '設定') {
                   setSettingsOpen(true)
+                } else if (label === '武将') {
+                  // KAGUYA → SAKURA → サユリ → KAGUYA 循環切替
+                  setSelectedHero((s) =>
+                    s === 'kaguya' ? 'sakura' : s === 'sakura' ? 'sayuri' : 'kaguya',
+                  )
                 }
               }}
             >
@@ -2533,26 +2618,50 @@ function GachaScreen({
   inFlow = false,
   onAdvance,
   addKaguyaBomb,
+  shinzuiStone,
+  setShinzuiStone,
+  kaguyaFreeUsed,
+  markKaguyaFreeUsed,
 }: {
   onBack: () => void
   inFlow?: boolean
   onAdvance?: () => void
   addKaguyaBomb?: () => void
+  shinzuiStone: number
+  setShinzuiStone: React.Dispatch<React.SetStateAction<number>>
+  kaguyaFreeUsed: boolean
+  markKaguyaFreeUsed: () => void
 }) {
   const [seconds, setSeconds] = useState(23 * 3600 + 47 * 60 + 18)
   const [pity, setPity] = useState(153)
   const [summoning, setSummoning] = useState(false)
   const [results, setResults] = useState<{ name: string; rarity: Rarity }[] | null>(null)
   const [confirmExit, setConfirmExit] = useState(false)
-  const shinzui = useTickingNumber(9847, 12.5)
+  const shinzui = shinzuiStone
 
   useEffect(() => {
     const t = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000)
     return () => clearInterval(t)
   }, [])
 
-  const summon = (count: 1 | 10) => {
+  // ガチャ コスト: 1 連 40 / 10 連 300。KAGUYA 10 連は初回のみ無料。
+  type BannerKey = 'kaguya' | 'sakura'
+  const calcCost = (banner: BannerKey, count: 1 | 10): number => {
+    if (banner === 'kaguya' && count === 10 && !kaguyaFreeUsed) return 0
+    return count === 1 ? 40 : 300
+  }
+
+  const summon = (banner: BannerKey, count: 1 | 10) => {
     if (summoning) return
+    const cost = calcCost(banner, count)
+    if (shinzuiStone < cost) {
+      // 神髄石が足りない: 何もしない（ボタン disabled で防いでいるが念のため）
+      return
+    }
+    // コスト消費 + KAGUYA 初回無料消化
+    if (cost > 0) setShinzuiStone((s) => s - cost)
+    if (banner === 'kaguya' && count === 10 && !kaguyaFreeUsed) markKaguyaFreeUsed()
+
     setSummoning(true)
     setTimeout(() => {
       const r = count === 1 ? [rollOne()] : rollTen()
@@ -2584,22 +2693,13 @@ function GachaScreen({
         <div className="gacha-currency">✨ {Math.floor(shinzui).toLocaleString()}</div>
       </header>
 
+      {/* ガチャ第 1 弾: 月華の姫 KAGUYA-X */}
       <div className="gacha-hero">
         <img
           src="/banners/kaguya-banner.png"
           alt="月華の姫 KAGUYA-X LR 召喚祭"
           className="gh-banner"
         />
-      </div>
-
-      <div className="pickup-row">
-        {PICKUP_CHARS.map((c) => (
-          <div key={c.name} className="pickup-card" style={{ background: RARITY_BG[c.rarity] }}>
-            {c.up && <div className="pickup-up">UP</div>}
-            <div className="pickup-rarity">{c.rarity}</div>
-            <div className="pickup-name">{c.name}</div>
-          </div>
-        ))}
       </div>
 
       <div className="pity">
@@ -2610,15 +2710,59 @@ function GachaScreen({
       </div>
 
       <div className="summon-row">
-        <button type="button" className="summon-button single" onClick={() => summon(1)} disabled={summoning}>
+        <button
+          type="button"
+          className="summon-button single"
+          onClick={() => summon('kaguya', 1)}
+          disabled={summoning || shinzuiStone < calcCost('kaguya', 1)}
+        >
           <div className="summon-label">1 連 召喚</div>
-          <div className="summon-cost">✨ 150</div>
+          <div className="summon-cost">✨ {calcCost('kaguya', 1)}</div>
         </button>
-        <button type="button" className="summon-button ten" onClick={() => summon(10)} disabled={summoning}>
+        <button
+          type="button"
+          className="summon-button ten"
+          onClick={() => summon('kaguya', 10)}
+          disabled={summoning || shinzuiStone < calcCost('kaguya', 10)}
+        >
           <div className="summon-flash" />
           <div className="summon-label">💎 10 連 召喚</div>
-          <div className="summon-cost">✨ 1,500（10% OFF！）</div>
-          <div className="summon-tag">SR 以上 1 体確定</div>
+          <div className="summon-cost">
+            {kaguyaFreeUsed ? `✨ 300` : '🎁 初回無料！'}
+          </div>
+          <div className="summon-tag">{kaguyaFreeUsed ? 'SR 以上 1 体確定' : '初回限定！'}</div>
+        </button>
+      </div>
+
+      {/* ガチャ第 2 弾: 機桜の姫 SAKURA-87（UR） */}
+      <div className="gacha-hero gacha-hero-2">
+        <img
+          src="/banners/sakura-banner.png"
+          alt="機桜の姫 SAKURA-87 UR 召喚祭"
+          className="gh-banner"
+        />
+      </div>
+
+      <div className="summon-row">
+        <button
+          type="button"
+          className="summon-button single"
+          onClick={() => summon('sakura', 1)}
+          disabled={summoning || shinzuiStone < calcCost('sakura', 1)}
+        >
+          <div className="summon-label">1 連 召喚</div>
+          <div className="summon-cost">✨ {calcCost('sakura', 1)}</div>
+        </button>
+        <button
+          type="button"
+          className="summon-button ten ur"
+          onClick={() => summon('sakura', 10)}
+          disabled={summoning || shinzuiStone < calcCost('sakura', 10)}
+        >
+          <div className="summon-flash" />
+          <div className="summon-label">⚡ 10 連 召喚</div>
+          <div className="summon-cost">✨ {calcCost('sakura', 10)}</div>
+          <div className="summon-tag">UR 確率 5% UP</div>
         </button>
       </div>
 
@@ -2930,6 +3074,18 @@ export default function App() {
   const addKaguyaBomb = () => setKaguyaBombs((s) => s + 1)
   const consumeKaguyaBomb = () => setKaguyaBombs((s) => Math.max(0, s - 1))
 
+  // 神髄石（黄色石）— App level に持ち上げて HomeScreen / GachaScreen で共有
+  const [shinzuiStone, setShinzuiStone] = useState(0)
+  // KAGUYA 初回 10 連無料の使用済みフラグ（localStorage 永続化）
+  const [kaguyaFreeUsed, setKaguyaFreeUsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('let-me-out-kaguya-free-used') === '1'
+  })
+  const markKaguyaFreeUsed = () => {
+    setKaguyaFreeUsed(true)
+    localStorage.setItem('let-me-out-kaguya-free-used', '1')
+  }
+
   // 起動時グローバル audio unlock（最初のユーザータップで全 BGM/SE を unlock）
   useEffect(() => {
     const sources = [
@@ -2944,10 +3100,16 @@ export default function App() {
       '/audio/se-explode-4.mp3',
       '/audio/se-chime.mp3',
       '/audio/se-glass-break.mp3',
+      '/audio/se-glass-crack.mp3',
       '/audio/voice-kaguya-iki.mp3',
       '/audio/voice-kaguya-ganba.mp3',
       '/audio/voice-kaguya-otukare.mp3',
       '/audio/voice-kaguya-boss-intro.mp3',
+      '/audio/se-sakura-gun1.mp3',
+      '/audio/se-sakura-bolt.mp3',
+      '/audio/se-sakura-gun2.mp3',
+      '/audio/se-kaguya-slash.mp3',
+      '/audio/se-sayuri-slap.mp3',
     ]
     const unlock = () => {
       sources.forEach((src) => {
@@ -2990,9 +3152,20 @@ export default function App() {
             kaguyaBombs={kaguyaBombs}
             consumeKaguyaBomb={consumeKaguyaBomb}
             visible={screen === 'home'}
+            shinzuiStone={shinzuiStone}
+            setShinzuiStone={setShinzuiStone}
           />
         )}
-        {screen === 'gacha' && <GachaScreen onBack={() => setScreen('home')} addKaguyaBomb={addKaguyaBomb} />}
+        {screen === 'gacha' && (
+          <GachaScreen
+            onBack={() => setScreen('home')}
+            addKaguyaBomb={addKaguyaBomb}
+            shinzuiStone={shinzuiStone}
+            setShinzuiStone={setShinzuiStone}
+            kaguyaFreeUsed={kaguyaFreeUsed}
+            markKaguyaFreeUsed={markKaguyaFreeUsed}
+          />
+        )}
         {screen === 'layer1' && <Layer1Screen onAdvance={() => setScreen('layer2')} onBlock={onBlock} />}
         {screen === 'layer2' && <Layer2Screen onAdvance={() => setScreen('layer3')} onBlock={onBlock} />}
         {screen === 'layer3' && (
@@ -3003,6 +3176,10 @@ export default function App() {
               onBlock()
               setScreen('layer4')
             }}
+            shinzuiStone={shinzuiStone}
+            setShinzuiStone={setShinzuiStone}
+            kaguyaFreeUsed={kaguyaFreeUsed}
+            markKaguyaFreeUsed={markKaguyaFreeUsed}
           />
         )}
         {screen === 'layer4' && <Layer4Screen onAdvance={() => setScreen('layer5')} onBlock={onBlock} addStones={addStones} />}
