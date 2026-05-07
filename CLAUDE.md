@@ -1,7 +1,7 @@
 # Wit-One Products — Moto-Logos / Slight
 
 > **Vehicle:** Wit-One
-> **思想 OS** は `~/.claude/CLAUDE.md` 参照（6ロール・CEO特性・引き算の美学・誰の価値観・作業ルール全般）。本ファイルは Moto-Logos / Slight 固有の実装・運用・ブランド情報のみ扱う。
+> **思想 OS** は `~/.claude/CLAUDE.md` 参照（7ロール・裕司の特性・引き算の美学・誰の価値観・作業ルール全般）。本ファイルは Moto-Logos / Slight 固有の実装・運用・ブランド情報のみ扱う。
 
 ---
 
@@ -172,7 +172,7 @@ cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
    - EAS Secrets と `.env` の差分 / app.json 必須項目 / Firestore rules を一括チェック
 2. **Sentry 管理画面**: https://moto-logos-team.sentry.io/projects/moto-logos/ で直近 Issue を確認
    - Slack `#moto-logos-dev-log` にもリアルタイム通知が飛ぶのでそこも即確認
-3. **CEO にデバッグシェア依頼**: 設定 → サポート → 「デバッグ情報を開発者に送信」を押してもらう
+3. **裕司にデバッグシェア依頼**: 設定 → サポート → 「デバッグ情報を開発者に送信」を押してもらう
    - Firestore `debug_reports` に書き込まれ、Slack Bot が整形通知（uid / build / update ID / 直近エラー3件）
 
 ### 深掘り仮説に入る判断軸
@@ -180,6 +180,7 @@ cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
 - 上記 3 点で **手がかりが見つからない場合のみ** 仮説検証に入る
 - 修正を 3 回重ねても再現するなら**前提を疑い直す**（API Key の存在確認、ビルド内容の実機目視など）
 - 症状のヒアリングは「何が起きないか」より「どこまでは起きるか」を優先（診断 Alert で段階切り分け）
+- **深掘りに入る時は `systematic-debugging` skill を発動**（Phase 1 = root cause investigation を完了する前に fix を提案しない、を体系化したフロー）
 
 </important>
 
