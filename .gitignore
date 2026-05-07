@@ -14,3 +14,6 @@ skills-lock.json
 engineering/motopark-butler/scripts/serviceAccount.json
 *-adminsdk-*.json
 .slack_images/
+
+# IDE 生成物 (Visual Studio / Rider — Unity 残骸対策)
+*.sln
