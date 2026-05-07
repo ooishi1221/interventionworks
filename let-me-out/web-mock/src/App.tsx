@@ -1404,8 +1404,25 @@ function HomeScreen({
   const [shopOpen, setShopOpen] = useState(false)
   // 設定パネル（DEBUG ジャンプも兼ねる）
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // 主公キャラ: KAGUYA-X / SAKURA-87 / サユリ 切替（フッター「武将」タップで循環）。countdown 中は敵 KAGUYA 固定
-  const [selectedHero, setSelectedHero] = useState<'kaguya' | 'sakura' | 'sayuri'>('kaguya')
+  // 主公キャラ: KAGUYA-X / SAKURA-87 / サユリ / 水着 KAGUYA 4 人ローテ（フッター「武将」タップ）。countdown 中は敵 KAGUYA 固定
+  // 将来: SAKURA = ガチャアンロック、kaguya-sw = ショップ交換でロック予定（今は全員選択可）
+  type HeroId = 'kaguya' | 'sakura' | 'sayuri' | 'kaguya-sw'
+  const [selectedHero, setSelectedHero] = useState<HeroId>('kaguya')
+  const [heroSwitching, setHeroSwitching] = useState(false)
+  // 武将タップ → 暗転 → 250ms 後にキャラ切替 → 600ms で暗転 fade out（合計 850ms 演出）
+  const cycleHero = useCallback(() => {
+    if (heroSwitching) return
+    setHeroSwitching(true)
+    setTimeout(() => {
+      setSelectedHero((s) =>
+        s === 'kaguya' ? 'sakura'
+        : s === 'sakura' ? 'sayuri'
+        : s === 'sayuri' ? 'kaguya-sw'
+        : 'kaguya',
+      )
+    }, 250)
+    setTimeout(() => setHeroSwitching(false), 850)
+  }, [heroSwitching])
 
   const jumpToStage = (n: number) => {
     setSettingsOpen(false)
@@ -1440,6 +1457,26 @@ function HomeScreen({
   const playSakuraGun2 = useSE('/audio/se-sakura-gun2.mp3', muted, 1.0) // スワイプ
   // サユリ 用 SE: 平手打ち（タップ・スワイプとも）
   const playSayuriSlap = useSE('/audio/se-sayuri-slap.mp3', muted, 0.95)
+  // 水着 KAGUYA (SP Ver) 用 SE: 強い打撃 2 種ランダム + ボイス 5 種ランダム（最大音量）
+  const playHitStrong1 = useSE('/audio/se-hit-strong-1.mp3', muted, 1.0)
+  const playHitStrong3 = useSE('/audio/se-hit-strong-3.mp3', muted, 1.0)
+  const playVoiceSwAtatte   = useSE('/audio/voice-kaguya-sw-atatte.mp3', muted, 1.0)
+  const playVoiceSwEi       = useSE('/audio/voice-kaguya-sw-ei.mp3', muted, 1.0)
+  const playVoiceSwMakasete = useSE('/audio/voice-kaguya-sw-makasete.mp3', muted, 1.0)
+  const playVoiceSwYa       = useSE('/audio/voice-kaguya-sw-ya.mp3', muted, 1.0)
+  const playVoiceSwArara    = useSE('/audio/voice-kaguya-sw-arara.mp3', muted, 1.0)
+  const playKaguyaSwAttack = useCallback(() => {
+    // 殴る音 2 種ランダム
+    if (Math.random() < 0.5) playHitStrong1()
+    else playHitStrong3()
+    // 攻撃ボイス 5 種ランダム
+    const r = Math.random()
+    if (r < 0.2) playVoiceSwAtatte()
+    else if (r < 0.4) playVoiceSwEi()
+    else if (r < 0.6) playVoiceSwMakasete()
+    else if (r < 0.8) playVoiceSwYa()
+    else playVoiceSwArara()
+  }, [playHitStrong1, playHitStrong3, playVoiceSwAtatte, playVoiceSwEi, playVoiceSwMakasete, playVoiceSwYa, playVoiceSwArara])
   // 主公キャラに応じて SE 切替。SAKURA はリロード音時に空振り（return false）
   const playHeroTapSE = useCallback((): boolean => {
     if (selectedHero === 'sakura') {
@@ -1455,18 +1492,23 @@ function HomeScreen({
       playSayuriSlap()
       return true
     }
+    if (selectedHero === 'kaguya-sw') {
+      playKaguyaSwAttack()
+      return true
+    }
     playPunchSE()
     return true
-  }, [selectedHero, playSakuraGun1, playSakuraBolt, playSayuriSlap, playPunchSE])
+  }, [selectedHero, playSakuraGun1, playSakuraBolt, playSayuriSlap, playKaguyaSwAttack, playPunchSE])
   const playHeroSlashSE = useCallback(() => {
     if (selectedHero === 'sakura') playSakuraGun2()
     else if (selectedHero === 'sayuri') playSayuriSlap()
+    else if (selectedHero === 'kaguya-sw') playKaguyaSwAttack()
     else playSwordSE()
-  }, [selectedHero, playSakuraGun2, playSayuriSlap, playSwordSE])
+  }, [selectedHero, playSakuraGun2, playSayuriSlap, playKaguyaSwAttack, playSwordSE])
   const playAlarmSE = useSE('/audio/se-alarm.mp3', muted, 0.7)
   const playClearSE = useSE('/audio/se-clear.mp3', muted, 0.7)
-  const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.22) // 爆発 A
-  const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.22) // 爆発 B
+  const playExplodeA = useSE('/audio/se-explode-3.mp3', muted, 0.10) // 爆発 A
+  const playExplodeB = useSE('/audio/se-explode-4.mp3', muted, 0.10) // 爆発 B
   const playGlassBreak = useSE('/audio/se-glass-break.mp3', muted, 0.85) // お邪魔連打破壊
   const playGlassCrack = useSE('/audio/se-glass-crack.mp3', muted, 0.7)  // お邪魔タップ毎
   // 善 KAGUYA タップボイス（3 種ランダム）
@@ -1479,6 +1521,36 @@ function HomeScreen({
     else if (r < 0.67) playVoiceGanba()
     else playVoiceOtsuka()
   }, [playVoiceIki, playVoiceGanba, playVoiceOtsuka])
+  // SAKURA-87 ボイス（内向きでちょっと不安げ）
+  const playVoiceSakuraYoroshiku = useSE('/audio/voice-sakura-yoroshiku.mp3', muted, 0.9)
+  const playVoiceSakuraKokoro    = useSE('/audio/voice-sakura-kokoro.mp3', muted, 0.9)
+  const playVoiceSakuraTsuyoso   = useSE('/audio/voice-sakura-tsuyoso.mp3', muted, 0.9)
+  // サユリ ボイス（お嬢様口調、ツンデレ）
+  const playVoiceSayuriYoroshiku = useSE('/audio/voice-sayuri-yoroshiku.mp3', muted, 0.9)
+  const playVoiceSayuriDekisou   = useSE('/audio/voice-sayuri-dekisou.mp3', muted, 0.9)
+  const playVoiceSayuriAmai      = useSE('/audio/voice-sayuri-amai.mp3', muted, 0.9)
+  // 主公キャラ別ボイス（バトル抜け時 + 善 KAGUYA Dialog タップ時に発火）
+  const playHeroVoice = useCallback(() => {
+    const r = Math.random()
+    if (selectedHero === 'sakura') {
+      if (r < 0.34) playVoiceSakuraYoroshiku()
+      else if (r < 0.67) playVoiceSakuraKokoro()
+      else playVoiceSakuraTsuyoso()
+    } else if (selectedHero === 'sayuri') {
+      if (r < 0.34) playVoiceSayuriYoroshiku()
+      else if (r < 0.67) playVoiceSayuriDekisou()
+      else playVoiceSayuriAmai()
+    } else {
+      if (r < 0.34) playVoiceIki()
+      else if (r < 0.67) playVoiceGanba()
+      else playVoiceOtsuka()
+    }
+  }, [
+    selectedHero,
+    playVoiceIki, playVoiceGanba, playVoiceOtsuka,
+    playVoiceSakuraYoroshiku, playVoiceSakuraKokoro, playVoiceSakuraTsuyoso,
+    playVoiceSayuriYoroshiku, playVoiceSayuriDekisou, playVoiceSayuriAmai,
+  ])
   // BOSS 出現時のキメ台詞「軽くひねってあげましょう」
   const playVoiceBossIntro = useSE('/audio/voice-kaguya-boss-intro.mp3', muted, 1.0)
   const playExplode = useCallback(() => {
@@ -1576,7 +1648,9 @@ function HomeScreen({
         playAlarmSE()
         setBattleTransition(true)
         setWarning(true)
-        setTimeout(() => setBattleTransition(false), 700)
+        // 粉砕の瞬間にガラス割れ SE を重ねて聴覚的にも統一
+        setTimeout(() => playGlassBreak(), 580)
+        setTimeout(() => setBattleTransition(false), 950)
         setTimeout(() => setWarning(false), 2400)
         // FINAL BOSS 入場時: ベッキー声「軽くひねってあげましょう」を遅延再生（暗転後）
         if (isFinalBoss(currentStage)) {
@@ -1589,8 +1663,8 @@ function HomeScreen({
       }
       if (gameMode === 'safe') {
         playClearSE()
-        // バトル抜け時に善 KAGUYA ボイス（行きましょう / 頑張りましょう / お疲れ様です ランダム）
-        setTimeout(() => playKaguyaVoice(), 700)
+        // バトル抜け時に主公キャラのボイス（KAGUYA / SAKURA / サユリ で 3 種ランダム）
+        setTimeout(() => playHeroVoice(), 700)
       }
     }
     prevGameModeRef.current = gameMode
@@ -1840,9 +1914,9 @@ const ITEMS: ItemDef[] = [
       penalizeKaguya()
       return
     }
-    // 善 KAGUYA メッセージウィンドウタップ → ボイスランダム再生（破壊処理は続行）
+    // 善 KAGUYA メッセージウィンドウタップ → 主公ボイスランダム再生（破壊処理は続行）
     if (key === 'kaguya-dialog' && gameMode !== 'countdown') {
-      playKaguyaVoice()
+      playHeroVoice()
     }
     // ステージで破壊不可なら無視
     if (!isDestroyable(key, currentStage)) return
@@ -2222,16 +2296,21 @@ const ITEMS: ItemDef[] = [
             : (
               selectedHero === 'kaguya' ? '/heroes/kaguya-x.mp4'
               : selectedHero === 'sakura' ? '/heroes/sakura-87.mp4'
-              : '/heroes/sayuri.mp4'
+              : selectedHero === 'sayuri' ? '/heroes/sayuri.mp4'
+              : '/heroes/kaguya-swimsuit.mp4'
             )
         }
         autoPlay
         loop
         muted
         playsInline
+        preload="auto"
         aria-hidden="true"
         data-icon-key="kaguya"
       />
+
+      {/* 主公キャラ切替の暗転オーバーレイ（武将タップ瞬間にフェードイン） */}
+      {heroSwitching && <div className="hero-switch-overlay" aria-hidden="true" />}
 
       {/* 暗転トランジション（countdown 開始時） */}
       {battleTransition && <div className="battle-transition" aria-hidden="true" />}
@@ -2540,7 +2619,7 @@ const ITEMS: ItemDef[] = [
         gameMode={gameMode}
         animState={iconState['kaguya-dialog']}
         round={round}
-        onTap={gameMode !== 'countdown' ? playKaguyaVoice : undefined}
+        onTap={gameMode !== 'countdown' ? playHeroVoice : undefined}
       />
       <GachaBanners
         onNavigate={onNavigate}
@@ -2591,10 +2670,8 @@ const ITEMS: ItemDef[] = [
                 } else if (label === '設定') {
                   setSettingsOpen(true)
                 } else if (label === '武将') {
-                  // KAGUYA → SAKURA → サユリ → KAGUYA 循環切替
-                  setSelectedHero((s) =>
-                    s === 'kaguya' ? 'sakura' : s === 'sakura' ? 'sayuri' : 'kaguya',
-                  )
+                  // 暗転 → キャラ切替 → fade out（cycleHero 内で制御）
+                  cycleHero()
                 }
               }}
             >
@@ -3110,6 +3187,19 @@ export default function App() {
       '/audio/se-sakura-gun2.mp3',
       '/audio/se-kaguya-slash.mp3',
       '/audio/se-sayuri-slap.mp3',
+      '/audio/voice-sakura-yoroshiku.mp3',
+      '/audio/voice-sakura-kokoro.mp3',
+      '/audio/voice-sakura-tsuyoso.mp3',
+      '/audio/voice-sayuri-yoroshiku.mp3',
+      '/audio/voice-sayuri-dekisou.mp3',
+      '/audio/voice-sayuri-amai.mp3',
+      '/audio/voice-kaguya-sw-atatte.mp3',
+      '/audio/voice-kaguya-sw-ei.mp3',
+      '/audio/voice-kaguya-sw-makasete.mp3',
+      '/audio/voice-kaguya-sw-ya.mp3',
+      '/audio/voice-kaguya-sw-arara.mp3',
+      '/audio/se-hit-strong-1.mp3',
+      '/audio/se-hit-strong-3.mp3',
     ]
     const unlock = () => {
       sources.forEach((src) => {
