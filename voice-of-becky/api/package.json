@@ -1,0 +1,31 @@
+{
+  "name": "voice-of-becky-api",
+  "version": "0.1.0",
+  "description": "Voice of Becky API server — Mac mini で動くベッキーへのゲートウェイ",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
+  },
+  "keywords": [
+    "voice-of-becky",
+    "anthropic",
+    "fastify"
+  ],
+  "author": "Wit-One Inc.",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.0",
+    "@elevenlabs/elevenlabs-js": "^2.45.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5"
+  },
+  "devDependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
