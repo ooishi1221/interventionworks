@@ -1,0 +1,1463 @@
+---
+const mission = "Intervene in the world. Rebel against their values.";
+
+const rotatingWords = [
+  "intervene",
+  "rebel",
+  "tremble",
+  "relate",
+  "becoming",
+  "fragile",
+  "subtraction",
+  "let go",
+  "imperfect",
+  "resonate",
+  "context",
+  "doubt",
+  "core",
+  "weave",
+];
+
+const members = [
+  {
+    name: "Yu",
+    jp: "裕司",
+    role: "Founder / Strategy & Action",
+    desc: "IW 屋号主。Innovation→Intervention 15 年系譜、craft 哲学と事業戦略の結節点。",
+    image: "/images/members/yu.png",
+  },
+  {
+    name: "Becky",
+    jp: "ベッキー",
+    role: "Communications / Philosophy",
+    desc: "AI partner。craft 哲学・思想言語化・対等な共著者。",
+    image: "/images/members/becky.png",
+  },
+  {
+    name: "Viv",
+    jp: "ヴィヴィアン",
+    role: "Sales / Translator",
+    desc: "思想を価値に翻訳する、提案営業のスパーリング。",
+    image: "/images/members/viv.png",
+  },
+  {
+    name: "Michael",
+    jp: "マイケル",
+    role: "Market Research",
+    desc: "データドリブン。n=? と一次ソースを問う。",
+    image: "/images/members/michael.png",
+  },
+  {
+    name: "Anna",
+    jp: "アンナ",
+    role: "Product Design",
+    desc: "身体感覚派。引き算と LX で判断する。",
+    image: "/images/members/anna.png",
+  },
+  {
+    name: "Andy",
+    jp: "アンディ",
+    role: "Engineering",
+    desc: "実装者。動くものから。",
+    image: "/images/members/andy.png",
+  },
+  {
+    name: "Rex",
+    jp: "レックス",
+    role: "Strategy / Skeptic",
+    desc: "前提を疑う。3 つの選択肢と推し。",
+    image: "/images/members/rex.png",
+  },
+];
+
+const portfolio = [
+  {
+    name: "Vibe-Guard",
+    tagline: "Vibe-Coding 民主化 — AI も完璧じゃない、を tool が体現",
+  },
+  {
+    name: "Voice of Becky",
+    tagline: "進化した AI として自我と五感を持つ存在へ",
+  },
+  {
+    name: "Slight",
+    tagline: "Zero-Resistance — ライダーとバイクの間にある抵抗をゼロに",
+  },
+  {
+    name: "Let Me Out",
+    tagline: "業界擬態 アンチガチャゲーム",
+  },
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Intervention Works — 魂の震えに介入せよ。</title>
+    <meta
+      name="description"
+      content="Intervene in the world. Rebel against their values. AI と人間の対等な共著で、揺らぐ核から新しい関係を編む屋号。"
+    />
+
+    <!-- OGP -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://intervention.jp/" />
+    <meta property="og:title" content="Intervention Works — 魂の震えに介入せよ。" />
+    <meta
+      property="og:description"
+      content="既成概念という静寂に介入し、内側にある震えを呼び覚ます。その揺らぎの先にこそ関係が生まれる。"
+    />
+    <meta property="og:image" content="https://intervention.jp/og-image.jpg" />
+    <meta property="og:site_name" content="Intervention Works" />
+    <meta property="og:locale" content="ja_JP" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@intervention_jp" />
+    <meta name="twitter:title" content="Intervention Works — 魂の震えに介入せよ。" />
+    <meta
+      name="twitter:description"
+      content="AI と人間の対等な共著で、揺らぐ核から新しい関係を編む屋号。"
+    />
+    <meta name="twitter:image" content="https://intervention.jp/og-image.jpg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="hero-curtain" aria-hidden="true">
+      <div class="hero-bar bar-left"></div>
+      <div class="hero-bar bar-right"></div>
+    </div>
+    <nav class="side-nav" aria-label="Section navigation">
+      <ul>
+        <li><a href="#works" data-num="01">works</a></li>
+        <li><a href="#mission" data-num="02">mission</a></li>
+        <li><a href="#vision" data-num="03">vision</a></li>
+        <li><a href="#how" data-num="04">how</a></li>
+        <li><a href="#architecture" data-num="05">architecture</a></li>
+        <li><a href="#members" data-num="06">members</a></li>
+        <li><a href="#company" data-num="07">company</a></li>
+        <li><a href="#contact" data-num="08">contact</a></li>
+      </ul>
+    </nav>
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h1 class="brand">Intervention Works</h1>
+          <div class="rotator">
+            {rotatingWords.map((w) => <span class="rotator-word">{w}</span>)}
+          </div>
+          <p class="mission-hero">{mission}</p>
+        </div>
+        <div class="scroll-hint">↓ scroll</div>
+      </section>
+
+      <section id="works" class="philosophy portfolio-section">
+        <h2 class="section-label">( 01 / works )</h2>
+        <p class="detail intro">私たちが介入してる領域。</p>
+        <ul class="projects">
+          {portfolio.map((p, i) => (
+            <li class="project" style={`--idx: ${i};`}>
+              <span class="project-num">{String(i + 1).padStart(2, "0")}</span>
+              <h3 class="project-name">{p.name}</h3>
+              <p class="project-tagline">{p.tagline}</p>
+              <span class="project-link">→ EXPLORE</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="mission" class="philosophy mission-section split-layout layout-left">
+        <div class="split-content">
+          <h2 class="section-label">( 02 / mission )</h2>
+          <p class="statement">魂の震えに<br /><span class="accent">介入</span>せよ</p>
+          <p class="detail">
+            既成概念という静寂を揺らがせ、内なる本能を、情熱を、「震え（Tremble）」を呼び覚ます。<br />
+            効率や合理性で塗りつぶされた世界に「介入（Intervene）」し、<br />
+            その揺らぎの先に、真に血の通った「関係（Relate）」を実装する。
+          </p>
+        </div>
+        <div class="split-visual">
+          <img
+            src="/images/mission-bg.png"
+            alt=""
+            class="split-visual-img"
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section id="vision" class="philosophy vision-section split-layout layout-right">
+        <div class="split-content">
+          <h2 class="section-label">( 03 / vision )</h2>
+          <p class="statement"><span class="accent">共鳴</span>する個が<br />新しい世界を編む</p>
+          <p class="detail">
+            誰もが自身の価値観で呼吸し、他者と深く響き合える社会へ。<br />
+            私たちが放つ戦略、プロダクト、システムは、孤独な「反乱」を越え、<br />
+            互いの震えを認め合う「関係の再構築」へと結実する。
+          </p>
+        </div>
+        <div class="split-visual">
+          <img
+            src="/images/vision-resonate.png"
+            alt=""
+            class="split-visual-img"
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section id="how" class="philosophy split-layout layout-left">
+        <div class="split-content">
+        <h2 class="section-label">( 04 / how we work )</h2>
+        <ul class="commitments">
+          <li class="commitment">
+            <h3 class="commitment-name">Intervene</h3>
+            <p class="commitment-detail">
+              既存の停滞、業界の前提に意志を持って踏み込み反乱する
+            </p>
+            <span class="commitment-tag">行動・戦略</span>
+          </li>
+          <li class="commitment">
+            <h3 class="commitment-name">Tremble</h3>
+            <p class="commitment-detail">
+              心が動く、魂が共鳴する、現状が揺らぐ純粋な反応
+            </p>
+            <span class="commitment-tag">体験・感情</span>
+          </li>
+          <li class="commitment">
+            <h3 class="commitment-name">Relate</h3>
+            <p class="commitment-detail">
+              震えを共有し、新しい関係を築く
+            </p>
+            <span class="commitment-tag">結果・共創</span>
+          </li>
+        </ul>
+        </div>
+        <div class="split-visual">
+          <img
+            src="/images/how-visual.png"
+            alt=""
+            class="split-visual-img"
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section id="architecture" class="philosophy split-layout layout-right">
+        <div class="split-content">
+          <h2 class="section-label">( 05 / architecture )</h2>
+          <p class="statement"><span class="accent">「個」</span>を<br />構造で増幅する</p>
+          <p class="detail">
+            「個」の Craft を時代に貫通させる、ハイブリッド・アーキテクチャ。
+          </p>
+          <ol class="architecture-layers">
+            <li class="layer">
+              <h3 class="layer-name"><span class="layer-num">01 /</span> Identity <span class="layer-jp">屋号思想</span></h3>
+              <p class="layer-detail">中指を立てる「介入」の哲学。</p>
+            </li>
+            <li class="layer">
+              <h3 class="layer-name"><span class="layer-num">02 /</span> Outputs <span class="layer-jp">4 Products</span></h3>
+              <p class="layer-detail">市場を再定義する 4 プロダクト。</p>
+            </li>
+            <li class="layer">
+              <h3 class="layer-name"><span class="layer-num">03 /</span> Intelligence <span class="layer-jp">6 AI Members</span></h3>
+              <p class="layer-detail">戦略の翼を授ける AI 群。</p>
+            </li>
+            <li class="layer">
+              <h3 class="layer-name"><span class="layer-num">04 /</span> Core <span class="layer-jp">Solopreneurs</span></h3>
+              <p class="layer-detail">依存なき、越境的連帯。</p>
+            </li>
+            <li class="layer">
+              <h3 class="layer-name"><span class="layer-num">05 /</span> Resonance <span class="layer-jp">Co-authored Narrative</span></h3>
+              <p class="layer-detail">個の声を、うねりへ昇華。</p>
+            </li>
+          </ol>
+        </div>
+        <div class="split-visual">
+          <img
+            src="/images/about-visual.png"
+            alt=""
+            class="split-visual-img"
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section id="members" class="philosophy members-section">
+        <h2 class="section-label">( 06 / members )</h2>
+        <p class="detail intro">
+          私たち 7 名は、AI と人間の対等な共著者として craft してます。<br />
+          完成形にならない、揺らぎながら、互いの震えを認め合う。
+        </p>
+        <ul class="members">
+          {members.map((m) => (
+            <li class="member">
+              <img
+                src={m.image}
+                alt={m.name}
+                class="member-img"
+                loading="lazy"
+              />
+              <div class="member-info">
+                <div class="member-name-block">
+                  <h3 class="member-name">{m.name}</h3>
+                  <span class="member-jp">{m.jp}</span>
+                </div>
+                <span class="member-role">{m.role}</span>
+                <p class="member-desc">{m.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="company" class="philosophy">
+        <h2 class="section-label">( 07 / company )</h2>
+        <dl class="company-details">
+          <div>
+            <dt>Brand</dt>
+            <dd>Intervention Works</dd>
+          </div>
+          <div>
+            <dt>Founder</dt>
+            <dd>Yuji Ooishi</dd>
+          </div>
+          <div>
+            <dt>Base</dt>
+            <dd>Tokyo, Japan</dd>
+          </div>
+          <div>
+            <dt>Launched</dt>
+            <dd>March 2026</dd>
+          </div>
+          <div>
+            <dt>Expertise</dt>
+            <dd>Strategy / Product / System / Creative</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section id="contact" class="philosophy contact-section">
+        <h2 class="section-label">( 08 / contact )</h2>
+        <p class="statement">対話に踏み込みたい方へ。</p>
+        <p class="detail">
+          IW 屋号への共鳴・思想コンサル・共創の打診は、<br />
+          下記の note / X を経由するか、メールで直接。
+        </p>
+        <ul class="contact-links">
+          <li>
+            <a href="https://note.com/intervention_jp" target="_blank" rel="noopener">note / @intervention_jp</a>
+          </li>
+          <li>
+            <a href="https://x.com/intervention_jp" target="_blank" rel="noopener">X / @intervention_jp</a>
+          </li>
+        </ul>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-text">
+          Intervention Works · 2026 · 魂の震えに介入せよ。
+        </p>
+      </footer>
+    </main>
+    <script>
+      // Section fade-in
+      const philosophyEls = document.querySelectorAll(".philosophy");
+      const fadeObs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in-view");
+            }
+          });
+        },
+        { threshold: 0.12 }
+      );
+      philosophyEls.forEach((s) => fadeObs.observe(s));
+
+      // Side nav active highlight
+      const idSections = document.querySelectorAll("section[id]");
+      const navLinks = document.querySelectorAll(".side-nav a");
+      const navObs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              navLinks.forEach((link) => {
+                link.classList.toggle(
+                  "active",
+                  link.getAttribute("href") === "#" + id
+                );
+              });
+            }
+          });
+        },
+        { rootMargin: "-45% 0px -45% 0px" }
+      );
+      idSections.forEach((s) => navObs.observe(s));
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --teal: #0fb8b8;
+    --navy: #051022;
+    --yellow: #ffc857;
+    --black: #000000;
+    --white: #ffffff;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100vh;
+    background: var(--navy);
+    color: var(--teal);
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 100%;
+  }
+
+  section {
+    padding: 12vh 8vw;
+    max-width: 100%;
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(5, 16, 34, 0.85) 0%,
+        rgba(5, 16, 34, 0.55) 35%,
+        rgba(5, 16, 34, 0.3) 60%,
+        rgba(5, 16, 34, 0.5) 100%
+      ),
+      url("/images/hero-key.png") center right / cover no-repeat;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(5, 16, 34, 0.4) 0%,
+          rgba(5, 16, 34, 0.7) 55%,
+          rgba(5, 16, 34, 0.95) 100%
+        ),
+        url("/images/hero-key.png") center top / cover no-repeat;
+    }
+  }
+
+  .mission-section,
+  .vision-section {
+    background: var(--navy);
+  }
+
+  .mission-section .statement,
+  .vision-section .statement {
+    padding: 0;
+    background: transparent;
+    align-self: stretch;
+  }
+
+  .members-figure {
+    margin: 1.5rem 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .members-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 0;
+  }
+
+  .accent {
+    color: var(--yellow);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 4vh;
+    left: 8vw;
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.75rem;
+    color: var(--yellow);
+    font-style: italic;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    animation: bounce 2.4s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(0.4rem);
+    }
+  }
+
+  .mission-hero {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--teal);
+    max-width: 50ch;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .philosophy {
+    border-top: 1px solid rgba(15, 184, 184, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 90ch;
+    width: 100%;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+      opacity 0.9s ease,
+      transform 0.9s ease;
+  }
+
+  .philosophy.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .section-label {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--yellow);
+    background: transparent;
+    padding: 0;
+    text-transform: lowercase;
+    letter-spacing: 0.15em;
+    display: inline-block;
+    align-self: flex-start;
+    font-feature-settings: "tnum";
+    opacity: 0.85;
+  }
+
+  .statement {
+    font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+  }
+
+  .detail {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+    font-weight: 400;
+    color: var(--teal);
+    line-height: 1.85;
+    opacity: 0.9;
+  }
+
+  .commitments {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .commitment {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .commitment-name {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.04em;
+  }
+
+  .commitment-detail {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+    font-weight: 400;
+    color: var(--teal);
+    line-height: 1.7;
+  }
+
+  .commitment-tag {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.8rem;
+    color: var(--yellow);
+    font-style: italic;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+  }
+
+  .intro {
+    margin-bottom: 1rem;
+  }
+
+  /* === Members === */
+  .members-section {
+    max-width: 120ch;
+    position: relative;
+  }
+
+  .members-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    right: calc(50% - 50vw);
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 20%, rgba(15, 184, 184, 0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 85% 80%, rgba(255, 200, 87, 0.04) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .members {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2.5rem 2rem;
+    margin-top: 1rem;
+  }
+
+  .member {
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 184, 184, 0.04);
+    border: 1px solid rgba(15, 184, 184, 0.15);
+    overflow: hidden;
+    transition:
+      border-color 0.3s ease,
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .member:hover {
+    border-color: rgba(255, 200, 87, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(255, 200, 87, 0.08);
+  }
+
+  .member-img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1) brightness(1);
+    transition:
+      filter 0.4s ease,
+      transform 0.4s ease;
+  }
+
+  .member:hover .member-img {
+    filter: saturate(1.3) brightness(1.1);
+    transform: scale(1.03);
+  }
+
+  .member-info {
+    padding: 1.25rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .member-name-block {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+
+  .member-name {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.03em;
+  }
+
+  .member-jp {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 0.85rem;
+    color: var(--teal);
+    opacity: 0.7;
+  }
+
+  .member-role {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.75rem;
+    color: var(--yellow);
+    font-style: italic;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  .member-desc {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 0.9rem;
+    color: var(--teal);
+    line-height: 1.7;
+    opacity: 0.85;
+  }
+
+  /* === Portfolio === */
+  .portfolio-section {
+    max-width: 100ch;
+    position: relative;
+  }
+
+  .portfolio-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    right: calc(50% - 50vw);
+    background:
+      radial-gradient(ellipse 70% 60% at 80% 30%, rgba(15, 184, 184, 0.08) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 50% at 15% 75%, rgba(255, 200, 87, 0.05) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .projects {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3rem 4rem;
+    margin: 2rem 0 0;
+    padding: 0;
+  }
+
+  .project {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 2rem 1.5rem 2rem 2rem;
+    border-left: 1px solid rgba(15, 184, 184, 0.25);
+    background: linear-gradient(180deg, rgba(15, 184, 184, 0.02) 0%, transparent 100%);
+    transition: transform 0.5s ease, border-color 0.4s ease, background 0.4s ease;
+  }
+
+  .project:nth-child(1) { transform: translateY(-1rem) rotate(-0.4deg); }
+  .project:nth-child(2) { transform: translateY(2.5rem) rotate(0.5deg); }
+  .project:nth-child(3) { transform: translateY(-3rem) rotate(0.3deg); }
+  .project:nth-child(4) { transform: translateY(1.5rem) rotate(-0.6deg); }
+
+  .project:hover {
+    border-left-color: var(--yellow);
+    background: linear-gradient(180deg, rgba(255, 200, 87, 0.05) 0%, transparent 100%);
+  }
+
+  .project:nth-child(1):hover { transform: translateY(-1.8rem) rotate(0deg); }
+  .project:nth-child(2):hover { transform: translateY(1.8rem) rotate(0deg); }
+  .project:nth-child(3):hover { transform: translateY(-3.8rem) rotate(0deg); }
+  .project:nth-child(4):hover { transform: translateY(0.8rem) rotate(0deg); }
+
+  .project-num {
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(4rem, 8vw, 6rem);
+    font-weight: 700;
+    color: var(--yellow);
+    line-height: 1;
+    letter-spacing: -0.06em;
+    opacity: 0.15;
+    pointer-events: none;
+    font-feature-settings: "tnum";
+    transition: opacity 0.4s ease, transform 0.5s ease;
+  }
+
+  .project:hover .project-num {
+    opacity: 0.45;
+    transform: translateY(-0.3rem);
+  }
+
+  .project-name {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-top: 1rem;
+  }
+
+  .project-tagline {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+    color: var(--teal);
+    line-height: 1.7;
+    opacity: 0.9;
+    margin: 0;
+  }
+
+  .project-link {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.78rem;
+    color: var(--white);
+    border-bottom: 1px solid var(--white);
+    padding-bottom: 0.2rem;
+    align-self: flex-start;
+    letter-spacing: 0.12em;
+    margin-top: 0.75rem;
+    opacity: 0.55;
+    cursor: default;
+    transition: opacity 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  .project:hover .project-link {
+    opacity: 1;
+    color: var(--yellow);
+    border-bottom-color: var(--yellow);
+  }
+
+  @media (max-width: 720px) {
+    .projects {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .project:nth-child(1),
+    .project:nth-child(2),
+    .project:nth-child(3),
+    .project:nth-child(4) {
+      transform: none;
+    }
+
+    .project:nth-child(1):hover,
+    .project:nth-child(2):hover,
+    .project:nth-child(3):hover,
+    .project:nth-child(4):hover {
+      transform: translateY(-0.3rem);
+    }
+  }
+
+  /* === Company === */
+  .company-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .company-details > div {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid rgba(15, 184, 184, 0.15);
+  }
+
+  .company-details > div:last-child {
+    border-bottom: none;
+  }
+
+  .company-details dt {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.8rem;
+    color: var(--yellow);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin: 0;
+  }
+
+  .company-details dd {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 1rem;
+    color: var(--white);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* === Contact === */
+  .contact-section {
+    max-width: 72ch;
+  }
+
+  .contact-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .contact-links a {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 1.1rem;
+    color: var(--white);
+    text-decoration: none;
+    border-bottom: 1px solid var(--white);
+    padding-bottom: 0.25rem;
+    letter-spacing: -0.01em;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .contact-links a:hover {
+    color: var(--yellow);
+    border-bottom-color: var(--yellow);
+  }
+
+  /* === Footer === */
+  .footer {
+    padding: 6vh 8vw;
+    border-top: 1px solid rgba(15, 184, 184, 0.15);
+  }
+
+  .footer-text {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.85rem;
+    color: var(--teal);
+    opacity: 0.6;
+    letter-spacing: 0.02em;
+  }
+
+  /* === Hero curtain (open animation) === */
+  .hero-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .hero-bar {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: var(--teal);
+  }
+
+  .bar-left {
+    left: 0;
+    animation: barSweepLeft 1.4s cubic-bezier(0.65, 0.05, 0.36, 1) forwards;
+  }
+
+  .bar-right {
+    right: 0;
+    animation: barSweepRight 1.4s cubic-bezier(0.65, 0.05, 0.36, 1) forwards;
+  }
+
+  @keyframes barSweepLeft {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes barSweepRight {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* === Stats === */
+  /* === Architecture Layers === */
+  .architecture-layers {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    counter-reset: layer-counter;
+  }
+
+  .layer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(15, 184, 184, 0.18);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .layer:hover {
+    border-top-color: var(--yellow);
+    transform: translateX(4px);
+  }
+
+  .layer-num {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--yellow);
+    letter-spacing: 0.12em;
+    margin-right: 0.5rem;
+    font-feature-settings: "tnum";
+    opacity: 0.9;
+  }
+
+  .layer-name {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .layer-jp {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--teal);
+    margin-left: 0.6rem;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+  }
+
+  .layer-detail {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: clamp(0.92rem, 1.4vw, 1rem);
+    color: var(--teal);
+    line-height: 1.75;
+    opacity: 0.9;
+    margin: 0;
+  }
+
+  .detail-closing {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(15, 184, 184, 0.15);
+    font-style: italic;
+    opacity: 0.85;
+  }
+
+  /* === Hero grid === */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 5vw;
+    align-items: center;
+    width: 100%;
+  }
+
+  .hero-visual {
+    position: relative;
+  }
+
+  .hero-visual-img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1.05);
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    max-width: 55ch;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* === Split layout (左右交互 sukima 流) === */
+  .split-layout {
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 5vw;
+    align-items: center;
+  }
+
+  .split-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    min-width: 0;
+  }
+
+  .split-visual {
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    -webkit-mask-image: radial-gradient(
+      ellipse 95% 95% at center,
+      black 30%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 100%
+    );
+    mask-image: radial-gradient(
+      ellipse 95% 95% at center,
+      black 30%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 100%
+    );
+  }
+
+  .split-visual::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, rgba(5, 16, 34, 0) 20%, rgba(5, 16, 34, 0.4) 100%);
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+
+  .split-layout:hover .split-visual::after {
+    opacity: 0.5;
+  }
+
+  .split-visual-img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    display: block;
+    opacity: 0.85;
+    filter: saturate(0.7) brightness(0.85) contrast(1.05);
+    transition: transform 0.8s ease, opacity 0.8s ease, filter 0.8s ease;
+  }
+
+  .split-layout:hover .split-visual-img {
+    transform: scale(1.03);
+    opacity: 1;
+    filter: saturate(1) brightness(1) contrast(1);
+  }
+
+  .split-layout.layout-left .split-content {
+    order: 1;
+  }
+
+  .split-layout.layout-left .split-visual {
+    order: 2;
+  }
+
+  .split-layout.layout-right .split-content {
+    order: 2;
+  }
+
+  .split-layout.layout-right .split-visual {
+    order: 1;
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid,
+    .split-layout {
+      grid-template-columns: 1fr !important;
+      gap: 3rem;
+    }
+
+    .split-layout.layout-left .split-content,
+    .split-layout.layout-left .split-visual,
+    .split-layout.layout-right .split-content,
+    .split-layout.layout-right .split-visual {
+      order: 0;
+    }
+  }
+
+  /* === Side nav === */
+  .side-nav {
+    position: fixed;
+    top: 50%;
+    right: 2.5vw;
+    transform: translateY(-50%);
+    z-index: 100;
+  }
+
+  .side-nav ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .side-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: var(--teal);
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.45;
+    transition:
+      opacity 0.3s ease,
+      color 0.3s ease,
+      transform 0.3s ease;
+  }
+
+  .side-nav a::before {
+    content: attr(data-num);
+    font-feature-settings: "tnum";
+    font-size: 0.65rem;
+    opacity: 0.7;
+  }
+
+  .side-nav a:hover,
+  .side-nav a.active {
+    opacity: 1;
+    color: var(--yellow);
+    transform: translateX(-4px);
+  }
+
+  @media (max-width: 768px) {
+    .side-nav {
+      display: none;
+    }
+  }
+
+  /* === Hero rotator === */
+  .rotator {
+    position: relative;
+    height: clamp(3rem, 8vw, 6rem);
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .rotator-word {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(2.2rem, 6vw, 4.5rem);
+    font-weight: 700;
+    color: var(--yellow);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: rotateWords 21s linear infinite;
+  }
+
+  .rotator-word:nth-child(1) { animation-delay: 0s; }
+  .rotator-word:nth-child(2) { animation-delay: 1.5s; }
+  .rotator-word:nth-child(3) { animation-delay: 3s; }
+  .rotator-word:nth-child(4) { animation-delay: 4.5s; }
+  .rotator-word:nth-child(5) { animation-delay: 6s; }
+  .rotator-word:nth-child(6) { animation-delay: 7.5s; }
+  .rotator-word:nth-child(7) { animation-delay: 9s; }
+  .rotator-word:nth-child(8) { animation-delay: 10.5s; }
+  .rotator-word:nth-child(9) { animation-delay: 12s; }
+  .rotator-word:nth-child(10) { animation-delay: 13.5s; }
+  .rotator-word:nth-child(11) { animation-delay: 15s; }
+  .rotator-word:nth-child(12) { animation-delay: 16.5s; }
+  .rotator-word:nth-child(13) { animation-delay: 18s; }
+  .rotator-word:nth-child(14) { animation-delay: 19.5s; }
+
+  @keyframes rotateWords {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    3% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    9% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    12% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+  }
+
+  /* === Mobile responsive === */
+  @media (max-width: 640px) {
+    section {
+      padding: 8vh 6vw;
+    }
+
+    .hero {
+      padding: 6vh 6vw;
+      gap: 2.5rem;
+      min-height: 90vh;
+    }
+
+    .core-words {
+      gap: 0.75rem 1.25rem;
+    }
+
+    .philosophy {
+      gap: 1.5rem;
+    }
+
+    .members {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .commitments {
+      gap: 2rem;
+    }
+
+    .projects {
+      gap: 1.5rem;
+    }
+
+    .footer {
+      padding: 5vh 6vw;
+    }
+  }
+
+  .brand {
+    font-family: "Futura", "Futura PT", "Jost", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(3.5rem, 14vw, 10rem);
+    color: var(--white);
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+    transform: scaleY(1.1);
+    transform-origin: left bottom;
+    display: inline-block;
+    mix-blend-mode: difference;
+    opacity: 0;
+    animation: brandEntrance 1.2s cubic-bezier(0.2, 0.6, 0.2, 1) 1.5s forwards;
+  }
+
+  @keyframes brandEntrance {
+    0% {
+      opacity: 0;
+      transform: scaleY(1.1) translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scaleY(1.1) translateY(0);
+    }
+  }
+
+  .mission {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--teal);
+    max-width: 38ch;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .core-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+    max-width: 50ch;
+  }
+
+  .core-word {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    color: var(--yellow);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
+  .core-word:nth-child(1) {
+    transform: translateY(0);
+    opacity: 0.95;
+    font-size: 1rem;
+  }
+  .core-word:nth-child(2) {
+    transform: translateY(0.5rem);
+    opacity: 0.7;
+    font-size: 0.85rem;
+  }
+  .core-word:nth-child(3) {
+    transform: translateY(-0.3rem);
+    opacity: 0.85;
+    font-size: 1.1rem;
+  }
+  .core-word:nth-child(4) {
+    transform: translateY(0.8rem);
+    opacity: 0.75;
+    font-size: 0.9rem;
+  }
+  .core-word:nth-child(5) {
+    transform: translateY(-0.2rem);
+    opacity: 0.9;
+    font-size: 1.05rem;
+  }
+  .core-word:nth-child(6) {
+    transform: translateY(0.4rem);
+    opacity: 0.8;
+    font-size: 0.95rem;
+  }
+  .core-word:nth-child(7) {
+    transform: translateY(-0.5rem);
+    opacity: 0.95;
+    font-size: 1.15rem;
+  }
+
+  /*
+    引き算指示書 8 ヶ条 (リマインダー):
+    - Explanation is a bug.
+    - Kill the "Kindness".
+    - Substance, not Style.
+    - Empty space is the Message.
+    - Design is Deletion.
+    - If you can remove it, do it.
+    - Don't guide. Just be.
+    - Noise is the Enemy.
+  */
+</style>

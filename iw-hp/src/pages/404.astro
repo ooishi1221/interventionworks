@@ -1,0 +1,92 @@
+---
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — Intervention Works</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main>
+      <p class="number">404</p>
+      <p class="message">ここには、まだ何もない。</p>
+      <a href="/" class="back">→ Intervention Works に戻る</a>
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --teal: #0fb8b8;
+    --navy: #051022;
+    --yellow: #ffc857;
+    --white: #ffffff;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    background: var(--navy);
+    color: var(--teal);
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8vh 8vw;
+    gap: 2.5rem;
+  }
+
+  .number {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 700;
+    color: var(--yellow);
+    letter-spacing: -0.06em;
+    line-height: 1;
+  }
+
+  .message {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.4;
+  }
+
+  .back {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 1rem;
+    color: var(--yellow);
+    text-decoration: none;
+    border-bottom: 1px solid var(--yellow);
+    padding-bottom: 0.25rem;
+    letter-spacing: -0.01em;
+    transition: color 0.2s ease;
+  }
+
+  .back:hover {
+    color: var(--white);
+    border-bottom-color: var(--white);
+  }
+</style>
