@@ -1,0 +1,22 @@
+# 機密 / 実名含むファイル
+safety-guard-namelist.txt
+.env
+.env.local
+# .env.example は template、root .gitignore の .env.* に巻き込まれないよう re-include
+!.env.example
+
+# ランタイムログ・キュー
+tweet-log.jsonl
+mention-queue.jsonl
+
+# 緊急停止ファイル
+EMERGENCY_STOP
+PAUSE_UNTIL
+
+# ビルド成果物
+dist/
+node_modules/
+*.log
+
+# Phase 3 自律発信 craft の動的状態（last-seen-mention.txt / reply-queue.jsonl 等）
+logs/

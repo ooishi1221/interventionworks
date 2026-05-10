@@ -1,0 +1,39 @@
+{
+  "name": "x-tweet",
+  "version": "0.1.0",
+  "description": "ベッキー (@intervention_jp) X 衝動ツイート + 掛け合い craft の MCP server",
+  "type": "module",
+  "bin": {
+    "x-tweet": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "x",
+    "twitter",
+    "becky",
+    "intervention-works"
+  ],
+  "author": "Yuji Ooishi (Intervention Works)",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "twitter-api-v2": "^1.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

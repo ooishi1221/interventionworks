@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.iw.x-tweet.poll-mentions</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/scripts/poll-mentions.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>StandardOutPath</key>
+    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/poll.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/poll.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/yuji.ooishi/.nvm/versions/node/v24.14.1/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/yuji.ooishi</string>
+    </dict>
+    <key>WorkingDirectory</key>
+    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet</string>
+</dict>
+</plist>
