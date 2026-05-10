@@ -6,4 +6,8 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://intervention.jp',
   integrations: [sitemap()],
+  server: {
+    host: true,
+    port: 4321,
+  },
 });
