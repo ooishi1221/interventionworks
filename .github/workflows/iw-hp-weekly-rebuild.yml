@@ -1,0 +1,35 @@
+name: IW HP — Weekly Thursday Rebuild (note RSS 反映)
+
+# 目的:
+# 毎週木曜 20:00 JST に note 第 N 弾を公開後、HP の Journal section に最新記事を反映する craft。
+# Astro は SSG (build 時 RSS fetch) のため、コード変更がなくても rebuild が必要。
+# 毎週木曜 21:00 JST (= 12:00 UTC) に Vercel Deploy Hook を叩いて自動 rebuild。
+
+on:
+  schedule:
+    # 毎週木曜 21:00 JST = 12:00 UTC (note 公開 1 時間後、RSS 反映待ち)
+    - cron: "0 12 * * 4"
+  # GitHub UI から手動 trigger 可（緊急 rebuild 用）
+  workflow_dispatch:
+
+jobs:
+  trigger-rebuild:
+    name: Trigger Vercel Deploy Hook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel Deploy Hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL_IW_HP }}
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL_IW_HP secret が未設定です"
+            exit 1
+          fi
+          response=$(curl -X POST -fsSL -w "\nHTTP_STATUS:%{http_code}" "$DEPLOY_HOOK_URL")
+          echo "$response"
+          status=$(echo "$response" | grep -oE "HTTP_STATUS:[0-9]+" | cut -d':' -f2)
+          if [ "$status" != "201" ] && [ "$status" != "200" ]; then
+            echo "::error::Deploy Hook が失敗しました (HTTP $status)"
+            exit 1
+          fi
+          echo "✅ Deploy Hook trigger 成功 (HTTP $status)"
