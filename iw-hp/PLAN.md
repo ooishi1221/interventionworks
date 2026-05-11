@@ -106,11 +106,14 @@ core / fragile / becoming / let go / imperfect / trembling / context
 
 ## 8. 実装フェーズ
 
-| Phase | 内容 | タイミング |
-|---|---|---|
-| **1: 基本構造** | Astro init / ディレクトリ / カラー・フォント設定 / トップページ + About 雛形 / メンバー section 基本 | 今夜〜数日 |
-| **2: コンテンツ詳細** | メンバー紹介 content / Portfolio 7 プロジェクト / Note RSS 連動 / スタイリング詳細 | 数日〜1 週間 |
-| **3: Deploy** | ムームーサーバー FTP deploy 検証 / DNS / domain 確認 / 動作確認 | 完成後 |
+| Phase | 内容 | タイミング | 状態 |
+|---|---|---|---|
+| **1: 基本構造** | Astro init / ディレクトリ / カラー・フォント設定 / トップページ + About 雛形 / メンバー section 基本 | 5/10 夜〜5/11 朝 | ✅ 完了 (commit 496d0ab) |
+| **2: コンテンツ詳細** | メンバー紹介 content / Portfolio 7 プロジェクト / Note RSS 連動 / スタイリング詳細 + craft 一気盛り (Members 横スク / Works 個別ページ / 画像 WebP / GSAP / Journal RSS / 番号 overlay / アンナ review 5件 / Hero sub-tagline / 句読点 craft) | 5/11 午後 | ✅ 完了 (commit 855edac) |
+| **3: Deploy** | Vercel 経由本番化 / ムームー DNS 切替 / SSL 自動取得 / 週次自動 rebuild craft | 5/11 14:30 頃 | ✅ 完了 (https://intervention.jp/ 公開) |
+
+→ closure 詳細: memory `project_iw_hp_astro_renewal_2026-05-11.md`  
+→ Deploy 知見: memory `reference_vercel_deploy_iw_hp_2026-05-11.md`
 
 ## 9. ロール分担
 
