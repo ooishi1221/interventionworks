@@ -6,15 +6,14 @@
     <string>com.iw.x-tweet.poll-mentions</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/scripts/poll-mentions.sh</string>
+        <string>/Users/yuji.ooishi/iw-x-tweet/scripts/poll-mentions.sh</string>
     </array>
     <key>StartInterval</key>
     <integer>1800</integer>
     <key>StandardOutPath</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/poll.log</string>
+    <string>/Users/yuji.ooishi/iw-x-tweet/logs/launchd-poll.log</string>
     <key>StandardErrorPath</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/poll.log</string>
+    <string>/Users/yuji.ooishi/iw-x-tweet/logs/launchd-poll.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -22,7 +21,5 @@
         <key>HOME</key>
         <string>/Users/yuji.ooishi</string>
     </dict>
-    <key>WorkingDirectory</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet</string>
 </dict>
 </plist>

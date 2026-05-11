@@ -50,6 +50,25 @@
   - **例外**: 公人・歴史人物への構造的言及は OK
   - **NG**: 「〇〇さんの考えは間違ってる」みたいな個別攻撃
 
+### 期間限定 hold（business 都合の一時封印 craft）
+
+特定の topic を「期間限定で完全 NG」にする craft。partnership / 認定 / 契約等で「公開タイミングが先方都合」になっている時用。
+
+**実装パターン:**
+- namelist に `# [HOLD:<案件コード>]` セクションで直接単語投入（部分一致で機械ブロック）
+- `scripts/trigger-becky-impulse.sh` / `scripts/respond-to-mention.sh` の prompt 末尾に「期間限定 hold」セクション注入（暗喩・引っ張りも craft 段階で回避）
+- 解除条件・解除時の操作場所を namelist コメントに明記
+
+**現行 hold 一覧:**
+
+本ファイルは public repo に commit されるため、具体的な案件名・固有名詞は記載しない。
+現行 hold 状態は実本番 namelist（`.gitignore` 済）と private memory にのみ存在する。
+
+**craft の本質:**
+- 単純に namelist だけでは「暗喩・引っ張り」（「もうすぐ言える」「内緒だけど大きい」等）を弾けない
+- prompt 注入でベッキーが craft 段階で意識する layer + namelist の fail-safe layer の **2 段構え**
+- 期間限定なので解除を忘れない craft が必要 → namelist コメントに「解除時の操作場所」を全部書く
+
 ---
 
 ## 全然 OK（明示的に許可）

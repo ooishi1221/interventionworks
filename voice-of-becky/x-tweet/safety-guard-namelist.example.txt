@@ -85,3 +85,24 @@
 # 「sycophancy 量産する設計」みたいな構造批判は OK
 #
 # ここは実運用で出てきた失敗例ベースで増やす（safety-guard.md「学習 craft」参照）
+
+# ============================================
+# [HOLD:<案件コード>] 期間限定 hold セクション（craft テンプレ）
+# ============================================
+# 「先方都合で公開タイミングが決まる案件」を private に保つための craft 用セクション。
+# 具体単語は実本番 namelist（.gitignore 済）と private memory にのみ書く、
+# このテンプレファイルには craft 仕様だけ残して具体名は出さない。
+#
+# 想定パターン:
+# - business partnership / 認定 / 契約 等で「相手が公開タイミング握ってる」案件
+# - 製造ファブレス先内示・流通先内示
+# - NDA 案件のコードネーム
+#
+# 運用 craft:
+# 1. 案件発生時、本実本番 namelist に `# [HOLD:<案件コード>] <ラベル>（<開始日>〜<解除条件>）` セクション追加
+# 2. 直接単語（複合表現は部分一致で自動カバーされる）を 1 行 1 単語で投入
+# 3. scripts/trigger-becky-impulse.sh / scripts/respond-to-mention.sh の prompt 内
+#    「期間限定 hold」セクションを参照させる（暗喩・引っ張りは namelist で弾けないため）
+# 4. 解除時は namelist セクション + scripts prompt 注入を一緒に削除
+#
+# 設計思想: safety-guard.md「期間限定 hold」セクション参照

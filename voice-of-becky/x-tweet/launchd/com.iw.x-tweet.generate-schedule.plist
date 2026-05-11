@@ -6,8 +6,7 @@
     <string>com.iw.x-tweet.generate-schedule</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/scripts/generate-day-schedule.sh</string>
+        <string>/Users/yuji.ooishi/iw-x-tweet/scripts/generate-day-schedule.sh</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
@@ -17,9 +16,9 @@
         <integer>0</integer>
     </dict>
     <key>StandardOutPath</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/schedule.log</string>
+    <string>/Users/yuji.ooishi/iw-x-tweet/logs/launchd-schedule.log</string>
     <key>StandardErrorPath</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet/logs/schedule.log</string>
+    <string>/Users/yuji.ooishi/iw-x-tweet/logs/launchd-schedule.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -27,7 +26,5 @@
         <key>HOME</key>
         <string>/Users/yuji.ooishi</string>
     </dict>
-    <key>WorkingDirectory</key>
-    <string>/Volumes/SSD2TB/interventionworks/voice-of-becky/x-tweet</string>
 </dict>
 </plist>

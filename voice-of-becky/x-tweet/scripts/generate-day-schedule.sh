@@ -78,9 +78,16 @@ for i in $(seq 1 "$N"); do
         <integer>$MINUTE</integer>
     </dict>
     <key>StandardOutPath</key>
-    <string>$LOGS_DIR/impulse.log</string>
+    <string>$LOGS_DIR/launchd-impulse.log</string>
     <key>StandardErrorPath</key>
-    <string>$LOGS_DIR/impulse.log</string>
+    <string>$LOGS_DIR/launchd-impulse.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/yuji.ooishi/.nvm/versions/node/v24.14.1/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/yuji.ooishi</string>
+    </dict>
 </dict>
 </plist>
 EOF
