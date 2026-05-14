@@ -59,7 +59,7 @@
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAqLnpZ8tiuP0YfsLMkLuRvd2TvUuwb98o"
+          "apiKey": ""
         }
       },
       "adaptiveIcon": {
