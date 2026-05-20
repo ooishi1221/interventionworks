@@ -62,11 +62,11 @@ const members = [
     image: "/images/members/andy.webp",
   },
   {
-    name: "Rex",
-    jp: "レックス",
-    role: "Strategy / Skeptic",
-    desc: "前提を疑う。3 つの選択肢と推し。",
-    image: "/images/members/rex.webp",
+    name: "Claire",
+    jp: "クレア",
+    role: "Strategy & Operations Steward",
+    desc: "守りのプロ × PMO × 戦略懐疑。前提も実行のディテールも疑い、判断の質を保証する。",
+    image: "/images/members/claire.webp",
   },
 ];
 
@@ -196,10 +196,7 @@ const portfolio = [
     />
   </head>
   <body>
-    <div class="hero-curtain" aria-hidden="true">
-      <div class="hero-bar bar-left"></div>
-      <div class="hero-bar bar-right"></div>
-    </div>
+    <div class="hero-curtain" aria-hidden="true"></div>
     <nav class="side-nav" aria-label="Section navigation">
       <ul>
         <li><a href="#works" data-num="01">works</a></li>
@@ -957,69 +954,6 @@ const portfolio = [
       transform 0.9s ease;
   }
 
-  /* 共通 section 番号 overlay (data-num 属性から自動展開) */
-  .philosophy::after {
-    content: attr(data-num);
-    position: absolute;
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: clamp(8rem, 22vw, 18rem);
-    font-weight: 700;
-    color: var(--yellow);
-    line-height: 0.85;
-    letter-spacing: -0.07em;
-    opacity: 0.08;
-    z-index: -1;
-    pointer-events: none;
-    font-feature-settings: "tnum";
-    /* default 位置: 既存 02 / 08 / 09 パターンを継承 */
-    top: -1.5rem;
-    right: 2vw;
-  }
-
-  /* 各 section で位置を分散（ランダムっぽさ craft） */
-  .portfolio-section::after {
-    top: auto;
-    bottom: -2rem;
-    left: -1vw;
-    right: auto;
-  }
-
-  .mission-section::after {
-    top: -1rem;
-    right: 4vw;
-  }
-
-  /* 04 vision: 左上 (03 右上 → 対角に振り分け) */
-  .vision-section::after {
-    top: -2rem;
-    left: -2vw;
-    right: auto;
-  }
-
-  /* 05 how: 右下 (04 左上 → 完全対角) */
-  .how-section::after {
-    top: auto;
-    bottom: -2rem;
-    right: 3vw;
-    left: auto;
-  }
-
-  /* 06 architecture: 左下 (05 右下 → 左下、horizontal 反転) */
-  .architecture-section::after {
-    top: auto;
-    bottom: -3rem;
-    left: -3vw;
-    right: auto;
-  }
-
-  /* 07 members: 左中央 (06 左下 → 中央高さ、08 右上に逃げやすく) */
-  .members-section::after {
-    top: 38%;
-    left: -1vw;
-    right: auto;
-    transform: translateY(-50%);
-  }
-
   .philosophy.in-view {
     opacity: 1;
     transform: translateY(0);
@@ -1208,7 +1142,6 @@ const portfolio = [
     height: 100%;
     object-fit: cover;
     display: block;
-    filter: saturate(0.85) brightness(0.92);
     transition: transform 0.6s ease, filter 0.6s ease;
   }
 
@@ -1618,10 +1551,10 @@ const portfolio = [
     color: inherit;
   }
 
-  .project-item:nth-child(1) .project { transform: translateY(-1rem) rotate(-0.4deg); }
-  .project-item:nth-child(2) .project { transform: translateY(2.5rem) rotate(0.5deg); }
-  .project-item:nth-child(3) .project { transform: translateY(-3rem) rotate(0.3deg); }
-  .project-item:nth-child(4) .project { transform: translateY(1.5rem) rotate(-0.6deg); }
+  .project-item:nth-child(1) .project { transform: translateY(-1rem); }
+  .project-item:nth-child(2) .project { transform: translateY(2.5rem); }
+  .project-item:nth-child(3) .project { transform: translateY(-3rem); }
+  .project-item:nth-child(4) .project { transform: translateY(1.5rem); }
 
   @media (hover: hover) {
     a.project:hover {
@@ -1629,10 +1562,10 @@ const portfolio = [
       background: linear-gradient(180deg, rgba(255, 200, 87, 0.05) 0%, transparent 100%);
     }
 
-    .project-item:nth-child(1) a.project:hover { transform: translateY(-1.8rem) rotate(0deg); }
-    .project-item:nth-child(2) a.project:hover { transform: translateY(1.8rem) rotate(0deg); }
-    .project-item:nth-child(3) a.project:hover { transform: translateY(-3.8rem) rotate(0deg); }
-    .project-item:nth-child(4) a.project:hover { transform: translateY(0.8rem) rotate(0deg); }
+    .project-item:nth-child(1) a.project:hover { transform: translateY(-1.8rem); }
+    .project-item:nth-child(2) a.project:hover { transform: translateY(1.8rem); }
+    .project-item:nth-child(3) a.project:hover { transform: translateY(-3.8rem); }
+    .project-item:nth-child(4) a.project:hover { transform: translateY(0.8rem); }
   }
 
   .project-locked {
