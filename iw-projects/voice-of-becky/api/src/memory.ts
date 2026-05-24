@@ -9,7 +9,7 @@ const MEMORY_DIR = path.join(
 
 const GLOBAL_CLAUDE_MD = path.join(os.homedir(), '.claude/CLAUDE.md')
 const PROJECT_CLAUDE_MD =
-  '/Volumes/SSD2TB/interventionworks/voice-of-becky/CLAUDE.md'
+  '/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/CLAUDE.md'
 
 const TIER1_FILES = [
   'MEMORY.md',
