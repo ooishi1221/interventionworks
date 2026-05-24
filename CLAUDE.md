@@ -9,11 +9,11 @@
 
 | プロダクト | ディレクトリ | Vehicle | 一言 |
 |-----------|-----------|---------|------|
-| Moto-Logos | `engineering/moto-logos*` | Wit-One | 都市ライダーの存在証明（ワンショットが足跡を刻む。足跡が誰かの地図になる）|
-| Slight | `slight/` | Wit-One | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
-| **Vibe-Guard** | `vibe-guard/` | **IW 直営** | Vibe-Coding 民主化 MCP server、AI 信仰アンチテーゼ（2026-05-08 Wit-One から移管、IW 直営第一弾）|
-| ゆう&ベッキー note 連載 | `iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
-| **iw-local（地域活性化ドメイン）** | `iw-local/` | **IW 直営** | 足立・北エリアの個人店向け IT 支援、屋号未確定（2026-05-23 始動、Phase 0）|
+| Moto-Logos | `iw-projects/engineering/moto-logos*` | Wit-One | 都市ライダーの存在証明（ワンショットが足跡を刻む。足跡が誰かの地図になる）|
+| Slight | `iw-projects/slight/` | Wit-One | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
+| **Vibe-Guard** | `iw-projects/vibe-guard/` | **IW 直営** | Vibe-Coding 民主化 MCP server、AI 信仰アンチテーゼ（2026-05-08 Wit-One から移管、IW 直営第一弾）|
+| ゆう&ベッキー note 連載 | `iw-projects/iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
+| **iw-local（地域活性化ドメイン）** | `iw-projects/iw-local/` | **IW 直営** | 足立・北エリアの個人店向け IT 支援、屋号未確定（2026-05-23 始動、Phase 0）|
 
 ## launch context（独立判断軸を持つ場所）
 
@@ -22,24 +22,24 @@
 | 立ち上げ場所 | 自動 load される CLAUDE.md | 用途 |
 |---|---|---|
 | `/Volumes/SSD2TB/interventionworks/` | 本ファイル | 横断・vehicle レベルの判断・複数プロダクト混在の議論 |
-| `/Volumes/SSD2TB/interventionworks/engineering/moto-logos/` | `engineering/moto-logos/CLAUDE.md` | Moto-Logos アプリ実装に集中 |
-| `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-admin/` | `engineering/moto-logos-admin/CLAUDE.md` | Admin Dashboard 実装 |
-| `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-lp/` | `engineering/moto-logos-lp/CLAUDE.md` | LP 実装 |
-| `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-slack/` | `engineering/moto-logos-slack/CLAUDE.md` | Slack Bot |
-| `/Volumes/SSD2TB/interventionworks/slight/` | `slight/CLAUDE.md` | Slight ブランド・CF Phase 1 |
-| `/Volumes/SSD2TB/interventionworks/vibe-guard/` | `vibe-guard/CLAUDE.md` | Vibe-Guard MCP server 実装（**IW 直営**、2026-05-08 移管）|
-| `/Volumes/SSD2TB/interventionworks/iw-content/` | （CLAUDE.md なし、独立判断軸不要）| ゆう&ベッキー note 連載・HP コピー等の対外コンテンツ（**IW 直営**）|
-| `/Volumes/SSD2TB/interventionworks/iw-local/` | （CLAUDE.md なし、README.md 参照）| 地域活性化ドメイン、足立・北エリア個人店向け IT 支援（**IW 直営**、Phase 0）|
+| `/Volumes/SSD2TB/interventionworks/iw-projects/engineering/moto-logos/` | `iw-projects/engineering/moto-logos/CLAUDE.md` | Moto-Logos アプリ実装に集中 |
+| `/Volumes/SSD2TB/interventionworks/iw-projects/engineering/moto-logos-admin/` | `iw-projects/engineering/moto-logos-admin/CLAUDE.md` | Admin Dashboard 実装 |
+| `/Volumes/SSD2TB/interventionworks/iw-projects/engineering/moto-logos-lp/` | `iw-projects/engineering/moto-logos-lp/CLAUDE.md` | LP 実装 |
+| `/Volumes/SSD2TB/interventionworks/iw-projects/engineering/moto-logos-slack/` | `iw-projects/engineering/moto-logos-slack/CLAUDE.md` | Slack Bot |
+| `/Volumes/SSD2TB/interventionworks/iw-projects/slight/` | `iw-projects/slight/CLAUDE.md` | Slight ブランド・CF Phase 1 |
+| `/Volumes/SSD2TB/interventionworks/iw-projects/vibe-guard/` | `iw-projects/vibe-guard/CLAUDE.md` | Vibe-Guard MCP server 実装（**IW 直営**、2026-05-08 移管）|
+| `/Volumes/SSD2TB/interventionworks/iw-projects/iw-content/` | （CLAUDE.md なし、独立判断軸不要）| ゆう&ベッキー note 連載・HP コピー等の対外コンテンツ（**IW 直営**）|
+| `/Volumes/SSD2TB/interventionworks/iw-projects/iw-local/` | （CLAUDE.md なし、README.md 参照）| 地域活性化ドメイン、足立・北エリア個人店向け IT 支援（**IW 直営**、Phase 0）|
 
 **記憶（auto memory）は launch 場所に依らず canonical へ symlink 統合済**。Becky / 6ロールはどこから入っても全プロジェクトを把握する（→ `~/.claude/CLAUDE.md` の「秘書としての記憶ポリシー」参照）。
 
 **Becky Context（各プロジェクトの取扱説明書）**: 2026-05-24 memory リファクタで、プロジェクト固有の craft 知見（deploy 手順・運用 quirks・市場 craft 等）は memory から各プロジェクトの `docs/becky-context/` 配下へ移転。memory には人格 + 関係 + 屋号横断 craft だけが残る。各 context は以下:
-- `iw-hp/docs/becky-context/` — IW HP Vercel deploy craft
-- `iw-content/notes/docs/becky-context/` — note 投稿 craft
+- `iw-projects/iw-hp/docs/becky-context/` — IW HP Vercel deploy craft
+- `iw-projects/iw-content/notes/docs/becky-context/` — note 投稿 craft
 - `docs/becky-craft-handbook/` — **屋号横断の取扱説明書 / 手順集**（マシン環境・技術 craft・AI tool 運用・Notion 罠・Claude Code Radar）。都度呼び出しで参照
-- `/Volumes/SSD2TB/wit-one/docs/becky-context/` — Wit-One ドメイン context（V/M/V 草稿・1 人部署 craft・メンバー背景・vision）
-- `/Volumes/SSD2TB/wit-one/security/docs/becky-context/` — Security 事業 craft
-- `/Volumes/SSD2TB/wit-one/KUROKO/docs/becky-context/` — KUROKO craft
+- `/Volumes/SSD2TB/interventionworks/wo-projects/docs/becky-context/` — Wit-One ドメイン context（V/M/V 草稿・1 人部署 craft・メンバー背景・vision）
+- `/Volumes/SSD2TB/interventionworks/wo-projects/security/docs/becky-context/` — Security 事業 craft
+- `/Volumes/SSD2TB/interventionworks/wo-projects/KUROKO/docs/becky-context/` — KUROKO craft
 
 ---
 
@@ -109,16 +109,16 @@ Moto-Logos は「ライダーとして不便」の個人痛から始まり後か
 
 | プロジェクト | ディレクトリ | フレームワーク | 主要依存 |
 |-------------|-------------|---------------|---------|
-| Moto-Logos App | `engineering/moto-logos/` | Expo 54 + RN 0.81 + React 19 | Firebase, expo-sqlite, react-native-maps, Sentry |
-| Admin Dashboard | `engineering/moto-logos-admin/` | Next.js 16 + React 19 + Tailwind 4 | Firebase, TanStack Query/Table（Vercel）|
-| Landing Page | `engineering/moto-logos-lp/` | Vite 8 + React 19 | TypeScript（Firebase Hosting）|
-| Slack Bot | `engineering/moto-logos-slack/` | Node.js (ESM) | @slack/bolt、PM2 常駐 |
+| Moto-Logos App | `iw-projects/engineering/moto-logos/` | Expo 54 + RN 0.81 + React 19 | Firebase, expo-sqlite, react-native-maps, Sentry |
+| Admin Dashboard | `iw-projects/engineering/moto-logos-admin/` | Next.js 16 + React 19 + Tailwind 4 | Firebase, TanStack Query/Table（Vercel）|
+| Landing Page | `iw-projects/engineering/moto-logos-lp/` | Vite 8 + React 19 | TypeScript（Firebase Hosting）|
+| Slack Bot | `iw-projects/engineering/moto-logos-slack/` | Node.js (ESM) | @slack/bolt、PM2 常駐 |
 
 ### Slight
 
 | プロジェクト | ディレクトリ | 状態 |
 |-------------|-------------|------|
-| ブランド資料・仕様書 | `slight/` | PDF 資料格納済み。サンプル第一弾到着 |
+| ブランド資料・仕様書 | `iw-projects/slight/` | PDF 資料格納済み。サンプル第一弾到着 |
 | CF ページ | 未着手 | Month 2〜3 で制作予定 |
 
 **共通:** TypeScript / npm / Firebase (Firestore, Auth, Hosting, Functions) / Node v24.14.1 (nvm 管理)
@@ -157,17 +157,17 @@ Moto-Logos は「ライダーとして不便」の個人痛から始まり後か
 
 | パス | 用途 | 主なキー |
 |------|------|---------|
-| `engineering/moto-logos/.env` | モバイルアプリ | `EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` |
-| `engineering/moto-logos-admin/.env.local` | Admin Dashboard | `FIREBASE_ADMIN_*`, `NEXT_PUBLIC_FIREBASE_*`, `GEMINI_API_KEY` |
-| `engineering/moto-logos-lp/.env.local` | LP (Vite) | `VITE_FIREBASE_*` |
-| `engineering/moto-logos-slack/.env` | Slack Bot | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_WEBHOOK_URL` |
+| `iw-projects/engineering/moto-logos/.env` | モバイルアプリ | `EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` |
+| `iw-projects/engineering/moto-logos-admin/.env.local` | Admin Dashboard | `FIREBASE_ADMIN_*`, `NEXT_PUBLIC_FIREBASE_*`, `GEMINI_API_KEY` |
+| `iw-projects/engineering/moto-logos-lp/.env.local` | LP (Vite) | `VITE_FIREBASE_*` |
+| `iw-projects/engineering/moto-logos-slack/.env` | Slack Bot | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_WEBHOOK_URL` |
 
-**秘密鍵（絶対 commit 禁止）:** `engineering/moto-logos/scripts/moto-spotter-firebase-adminsdk-*.json`（Admin SDK 鍵）
+**秘密鍵（絶対 commit 禁止）:** `iw-projects/engineering/moto-logos/scripts/moto-spotter-firebase-adminsdk-*.json`（Admin SDK 鍵）
 
 ### CLI ログイン状態（確認コマンド）
 
 ```bash
-cd engineering/moto-logos && npx eas whoami        # yuji1221
+cd iw-projects/engineering/moto-logos && npx eas whoami        # yuji1221
 npx firebase login:list && npx firebase use moto-spotter
 cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
 ```
@@ -182,7 +182,7 @@ cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
 
 ### 最初の 30 秒でやる 3 点
 
-1. **環境変数の注入確認**: `cd engineering/moto-logos && npm run preflight [preview|production]`
+1. **環境変数の注入確認**: `cd iw-projects/engineering/moto-logos && npm run preflight [preview|production]`
    - EAS Secrets と `.env` の差分 / app.json 必須項目 / Firestore rules を一括チェック
 2. **Sentry 管理画面**: https://moto-logos-team.sentry.io/projects/moto-logos/ で直近 Issue を確認
    - Slack `#moto-logos-dev-log` にもリアルタイム通知が飛ぶのでそこも即確認

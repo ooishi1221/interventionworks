@@ -11,7 +11,7 @@ Untitled
 .claude/
 .agents/
 skills-lock.json
-engineering/motopark-butler/scripts/serviceAccount.json
+iw-projects/engineering/motopark-butler/scripts/serviceAccount.json
 *-adminsdk-*.json
 .slack_images/
 
@@ -20,4 +20,8 @@ engineering/motopark-butler/scripts/serviceAccount.json
 
 # Vibe-Guard は独立 git repo（IW 直営第一弾）。IW モノレポからは tracking しない
 # 2026-05-20 Codex review [P1] 指摘を受けて選択肢 C で対応
-vibe-guard/
+iw-projects/vibe-guard/
+
+# wo-projects/ は Wit-One vehicle 独立 git repo。IW モノレポからは tracking しない
+# 2026-05-25 Top 階層 restructure (A 完全移行) で wit-one → wo-projects/ にリネーム
+wo-projects/
