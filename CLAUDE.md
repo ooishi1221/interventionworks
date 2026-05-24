@@ -1,31 +1,45 @@
-# Wit-One Products — Moto-Logos / Slight
+# IW Hub — Wit-One Products + IW 直営
 
-> **Vehicle:** Wit-One
-> **思想 OS** は `~/.claude/CLAUDE.md` 参照（7ロール・裕司の特性・引き算の美学・誰の価値観・作業ルール全般）。本ファイルは Moto-Logos / Slight 固有の実装・運用・ブランド情報のみ扱う。
+> **Vehicle:** Wit-One (Moto-Logos / Slight) + **Intervention Works 直営** (Vibe-Guard、2026-05-08 移管)
+> **思想 OS** は `~/.claude/CLAUDE.md` 参照（7ロール・裕司の特性・引き算の美学・誰の価値観・作業ルール全般）。本ファイルは各プロダクト固有の実装・運用・ブランド情報を扱う。
 
 ---
 
 ## このリポジトリで扱うプロダクト
 
-| プロダクト | ディレクトリ | 一言 |
-|-----------|-----------|------|
-| Moto-Logos | `engineering/moto-logos*` | 都市ライダーの存在証明（ワンショットが足跡を刻む。足跡が誰かの地図になる）|
-| Slight | `slight/` | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
+| プロダクト | ディレクトリ | Vehicle | 一言 |
+|-----------|-----------|---------|------|
+| Moto-Logos | `engineering/moto-logos*` | Wit-One | 都市ライダーの存在証明（ワンショットが足跡を刻む。足跡が誰かの地図になる）|
+| Slight | `slight/` | Wit-One | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
+| **Vibe-Guard** | `vibe-guard/` | **IW 直営** | Vibe-Coding 民主化 MCP server、AI 信仰アンチテーゼ（2026-05-08 Wit-One から移管、IW 直営第一弾）|
+| ゆう&ベッキー note 連載 | `iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
+| **iw-local（地域活性化ドメイン）** | `iw-local/` | **IW 直営** | 足立・北エリアの個人店向け IT 支援、屋号未確定（2026-05-23 始動、Phase 0）|
 
 ## launch context（独立判断軸を持つ場所）
 
-このリポジトリは **2 プロダクトの Hub**。メインで進める時は該当ディレクトリで Claude を立ち上げる。本 IW TOP の CLAUDE.md は両者を横断的に見る時の判断軸。
+このリポジトリは **複数プロダクトの Hub**（Wit-One Products + IW 直営）。メインで進める時は該当ディレクトリで Claude を立ち上げる。本 IW TOP の CLAUDE.md は横断的に見る時の判断軸。
 
 | 立ち上げ場所 | 自動 load される CLAUDE.md | 用途 |
 |---|---|---|
-| `/Volumes/SSD2TB/interventionworks/` | 本ファイル | 横断・vehicle レベルの判断・両プロダクト混在の議論 |
+| `/Volumes/SSD2TB/interventionworks/` | 本ファイル | 横断・vehicle レベルの判断・複数プロダクト混在の議論 |
 | `/Volumes/SSD2TB/interventionworks/engineering/moto-logos/` | `engineering/moto-logos/CLAUDE.md` | Moto-Logos アプリ実装に集中 |
 | `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-admin/` | `engineering/moto-logos-admin/CLAUDE.md` | Admin Dashboard 実装 |
 | `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-lp/` | `engineering/moto-logos-lp/CLAUDE.md` | LP 実装 |
 | `/Volumes/SSD2TB/interventionworks/engineering/moto-logos-slack/` | `engineering/moto-logos-slack/CLAUDE.md` | Slack Bot |
 | `/Volumes/SSD2TB/interventionworks/slight/` | `slight/CLAUDE.md` | Slight ブランド・CF Phase 1 |
+| `/Volumes/SSD2TB/interventionworks/vibe-guard/` | `vibe-guard/CLAUDE.md` | Vibe-Guard MCP server 実装（**IW 直営**、2026-05-08 移管）|
+| `/Volumes/SSD2TB/interventionworks/iw-content/` | （CLAUDE.md なし、独立判断軸不要）| ゆう&ベッキー note 連載・HP コピー等の対外コンテンツ（**IW 直営**）|
+| `/Volumes/SSD2TB/interventionworks/iw-local/` | （CLAUDE.md なし、README.md 参照）| 地域活性化ドメイン、足立・北エリア個人店向け IT 支援（**IW 直営**、Phase 0）|
 
 **記憶（auto memory）は launch 場所に依らず canonical へ symlink 統合済**。Becky / 6ロールはどこから入っても全プロジェクトを把握する（→ `~/.claude/CLAUDE.md` の「秘書としての記憶ポリシー」参照）。
+
+**Becky Context（各プロジェクトの取扱説明書）**: 2026-05-24 memory リファクタで、プロジェクト固有の craft 知見（deploy 手順・運用 quirks・市場 craft 等）は memory から各プロジェクトの `docs/becky-context/` 配下へ移転。memory には人格 + 関係 + 屋号横断 craft だけが残る。各 context は以下:
+- `iw-hp/docs/becky-context/` — IW HP Vercel deploy craft
+- `iw-content/notes/docs/becky-context/` — note 投稿 craft
+- `docs/becky-craft-handbook/` — **屋号横断の取扱説明書 / 手順集**（マシン環境・技術 craft・AI tool 運用・Notion 罠・Claude Code Radar）。都度呼び出しで参照
+- `/Volumes/SSD2TB/wit-one/docs/becky-context/` — Wit-One ドメイン context（V/M/V 草稿・1 人部署 craft・メンバー背景・vision）
+- `/Volumes/SSD2TB/wit-one/security/docs/becky-context/` — Security 事業 craft
+- `/Volumes/SSD2TB/wit-one/KUROKO/docs/becky-context/` — KUROKO craft
 
 ---
 
