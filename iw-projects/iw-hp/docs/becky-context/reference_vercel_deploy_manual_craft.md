@@ -8,7 +8,7 @@ type: reference
 
 ## 症状
 
-`/Volumes/SSD2TB/wit-one/security/blackpanda-lp/` で `git push` しても、 Vercel ダッシュボード上で deploy が走らない。 本番ドメイン（blackpandair1.wit-one.co.jp）に変更が反映されない。
+`/Volumes/SSD2TB/interventionworks/wo-projects/security/blackpanda-lp/` で `git push` しても、 Vercel ダッシュボード上で deploy が走らない。 本番ドメイン（blackpandair1.wit-one.co.jp）に変更が反映されない。
 
 ## 原因（推定）
 
@@ -19,7 +19,7 @@ type: reference
 ## 復旧 craft（毎回 manual deploy）
 
 ```bash
-cd /Volumes/SSD2TB/wit-one/security/blackpanda-lp
+cd /Volumes/SSD2TB/interventionworks/wo-projects/security/blackpanda-lp
 git add <files>
 git commit -m "..."
 git push                          # GitHub には push（履歴は残す）

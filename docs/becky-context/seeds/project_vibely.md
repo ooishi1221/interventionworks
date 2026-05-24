@@ -8,7 +8,7 @@ originSessionId: 29c33086-0c72-4008-b43f-8f6f0eef9e97
 # Vibely（バイブリー）
 
 **Vehicle**: Intervention Works 直営（Vibe-Guard と双子）  
-**Path**: `/Volumes/SSD2TB/wit-one/KUROKO/vibely/`（暫定、IW 移管候補）  
+**Path**: `/Volumes/SSD2TB/interventionworks/wo-projects/KUROKO/vibely/`（暫定、IW 移管候補）  
 **Repo**: `ooishi1221/kuroko` 配下、最新 commit `bc81f7b`（2026-05-14 0:54、 電車 PoC 即フィードバック反映）  
 **公開 URL**: https://vibely-jp.vercel.app / https://vibely-cca.vercel.app  
 **Status**: **Phase 1 永久保存版完成**、 17 Task / 169 ユニット規模（Domain 0 Foundation 104 + Domain 1 Agentic 65）、 BGM + デイリー目標 + PWA + craft 合言葉隠し全部入り（2026-05-13 深夜、 craft 史上最高密度の夜 closure）
@@ -365,7 +365,7 @@ KUROKO/vibely/
 
 ```bash
 # コンテンツ編集後
-cd /Volumes/SSD2TB/wit-one/KUROKO/vibely/app
+cd /Volumes/SSD2TB/interventionworks/wo-projects/KUROKO/vibely/app
 npm run sync-content  # content/domain-1/*.json → src/content/ に mirror
 # dev server で確認なら npm run dev、production deploy なら ↓
 

@@ -124,5 +124,5 @@ Slight 単体の成功 / 失敗を超えて、**ウィットワンの D2C 伴走
 ## 関連
 
 - 姉妹プロダクト: Moto-Logos（同 vehicle、別プロダクト、`engineering/moto-logos/`）
-- 姉妹 vehicle 事業: KUROKO（Wit-One AI Ops、`/Volumes/SSD2TB/wit-one/KUROKO/`）
+- 姉妹 vehicle 事業: KUROKO（Wit-One AI Ops、`/Volumes/SSD2TB/interventionworks/wo-projects/KUROKO/`）
 - D2C ピッチ素材としての位置: `~/.claude/projects/-Volumes-SSD2TB-interventionworks/memory/` の Slight 関連 entry を参照
