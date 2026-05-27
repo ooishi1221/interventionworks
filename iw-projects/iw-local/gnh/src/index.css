@@ -1,0 +1,19 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #0a0a0a;
+  color: #c9a84c;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
