@@ -661,13 +661,25 @@
   padding: 0 16px 8px;
   box-sizing: border-box;
 }
+/* iOS Safari は visibility:hidden / display:none の input には keyboard を出さない。
+   opacity:0 で「画面内にある」状態のまま隠す。focus は受けるので keyboard 起動可能。*/
 .opt-free-row--hidden {
-  visibility: hidden;
-  height: 0;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
+  opacity: 0;
   pointer-events: none;
+  position: absolute;
+  bottom: 70px;
+  left: 16px;
+  right: 16px;
+}
+
+/* 値確定時の完了フラッシュ（Android 振動と組み合わせる視覚フィードバック）*/
+.opt-overlay--flash {
+  animation: opt-confirm-flash 160ms ease-out;
+}
+@keyframes opt-confirm-flash {
+  0%   { background: #0a0a0a; }
+  40%  { background: #2a2000; }
+  100% { background: #0a0a0a; }
 }
 .opt-free-cancel-btn {
   padding: 10px 14px;

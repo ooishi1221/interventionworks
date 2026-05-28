@@ -362,30 +362,38 @@ function ValueFlickPicker({
   const [flickHint, setFlickHint] = useState<FlickDir | null>(null)
   const [showInput, setShowInput] = useState(false)
   const [draft, setDraft] = useState('')
+  const [flashOn, setFlashOn] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // options[0..3] を up/down/left/right に割当（4 個前提、足りない方向は guides から除外）
   const DIRS = ['up', 'down', 'left', 'right'] as const
   const opts = panel.options.slice(0, 4)
 
+  // 中央プロンプトの native click。iOS で同期 focus → キーボード起動するため。
   const openFreeInput = () => {
-    // iOS Safari は user gesture 内で同期 focus しないとキーボードが上がらない
     inputRef.current?.focus()
     setShowInput(true)
   }
 
+  // 値確定: 振動 (Android) + 視覚フラッシュ (iOS 含む) で完了感を出してから entries 保存
+  const triggerConfirm = (value: string) => {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(20)
+    }
+    setFlashOn(true)
+    setTimeout(() => onConfirm(value), 160)
+  }
+
   const handleAdd = () => {
     const v = draft.trim()
-    if (v) onConfirm(v)
+    if (v) triggerConfirm(v)
   }
 
   const bindPicker = useGesture(
     {
       onDrag: ({ movement: [mx, my], last, tap }) => {
-        if (tap) {
-          openFreeInput()
-          return
-        }
+        // tap は中央プロンプトの onClick に任せる（iOS キーボード起動のため native click context が必要）
+        if (tap) return
         const dist = Math.hypot(mx, my)
         if (!last && dist > 20) {
           const dir = resolveFlick(mx, my, dist)
@@ -394,13 +402,13 @@ function ValueFlickPicker({
         if (last) {
           setFlickHint(null)
           const dir = resolveFlick(mx, my, dist)
-          if (dir === 'tap') { openFreeInput(); return }
+          if (dir === 'tap') return
           const idx = DIRS.indexOf(dir as typeof DIRS[number])
-          if (idx !== -1 && opts[idx]) onConfirm(opts[idx])
+          if (idx !== -1 && opts[idx]) triggerConfirm(opts[idx])
         }
       },
     },
-    { drag: { filterTaps: true, threshold: 8, enabled: !showInput } }
+    { drag: { filterTaps: true, threshold: 8, enabled: !showInput && !flashOn } }
   )
 
   const guides: DirGuide[] = DIRS
@@ -413,7 +421,11 @@ function ValueFlickPicker({
   const hintLabel = hintIdx !== -1 ? opts[hintIdx] : undefined
 
   return (
-    <div className="opt-overlay" {...bindPicker()} style={{ touchAction: 'none' }}>
+    <div
+      className={`opt-overlay ${flashOn ? 'opt-overlay--flash' : ''}`}
+      {...bindPicker()}
+      style={{ touchAction: 'none' }}
+    >
       <div className="opt-header">
         <span className="opt-emoji">{panel.emoji}</span>
         <span className="opt-title">{panel.title}</span>
