@@ -421,7 +421,7 @@ function ValueFlickPicker({
       </div>
 
       <div className="zoom-icon-area zoom-icon-area--big">
-        <FlickGuides guides={guides} flickHint={flickHint} tapLabel="自由入力" />
+        <FlickGuides guides={guides} flickHint={flickHint} />
 
         <div className="zoom-icon-center">
           {!showInput && (
