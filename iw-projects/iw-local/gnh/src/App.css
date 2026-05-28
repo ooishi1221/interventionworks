@@ -934,7 +934,11 @@
 .footer-tab--active .footer-tab-emoji { filter: drop-shadow(0 0 4px #c9a84c88); }
 
 /* ======= 客リスト: 性別バッジ ======= */
-.customer-card-gender { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.customer-card-gender { font-size: 16px; line-height: 1; flex-shrink: 0; display: inline-flex; align-items: center; }
+
+/* Lucide インライン SVG の baseline 揃え（テキスト横に置くアイコン） */
+.header-gender-badge { display: inline-flex; align-items: center; }
+.customer-new-btn span { display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
 
 /* ======= SettingsTab — 男女切替 ======= */
 .settings-tab {

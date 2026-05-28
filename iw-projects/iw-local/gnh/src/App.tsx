@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type ReactElement } from 'react'
 import { useGesture } from '@use-gesture/react'
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, PersonStanding, FileText, Users, Settings, Mars, Venus, Trash2, Plus } from 'lucide-react'
 import './App.css'
 
 // ======= 感度定数 =======
@@ -311,15 +312,15 @@ function FlickGuides({
       </div>
     ) : null
 
-  const renderBadge = (dir: 'up' | 'down' | 'left' | 'right', pos: string, arrowChar: string) => {
+  const renderBadge = (dir: 'up' | 'down' | 'left' | 'right', pos: string, arrow: ReactElement) => {
     const g = byDir[dir]
     if (!g) return null
     const isActive = flickHint === dir
     const head = (
       <div className="flick-guide-head">
         {(dir === 'up' || dir === 'left')
-          ? <><span className="flick-guide-arrow">{arrowChar}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-label">{g.label}</span></>
-          : <><span className="flick-guide-label">{g.label}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-arrow">{arrowChar}</span></>}
+          ? <><span className="flick-guide-arrow">{arrow}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-label">{g.label}</span></>
+          : <><span className="flick-guide-label">{g.label}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-arrow">{arrow}</span></>}
       </div>
     )
     return (
@@ -332,10 +333,10 @@ function FlickGuides({
 
   return (
     <>
-      {renderBadge('up',    'up',    '↑')}
-      {renderBadge('down',  'down',  '↓')}
-      {renderBadge('left',  'left',  '←')}
-      {renderBadge('right', 'right', '→')}
+      {renderBadge('up',    'up',    <ChevronUp size={18} strokeWidth={2.5} />)}
+      {renderBadge('down',  'down',  <ChevronDown size={18} strokeWidth={2.5} />)}
+      {renderBadge('left',  'left',  <ChevronLeft size={18} strokeWidth={2.5} />)}
+      {renderBadge('right', 'right', <ChevronRight size={18} strokeWidth={2.5} />)}
       {tapLabel && (
         <div className={`flick-guide flick-guide--center ${flickHint !== null ? 'dim' : ''}`}>
           <div className="flick-guide-head">
@@ -410,7 +411,7 @@ function OptionList({
           </div>
         )}
       </div>
-      <button className="back-btn-wide" onClick={onClose}>← 戻る</button>
+      <button className="back-btn-wide" onClick={onClose}><ArrowLeft size={15} strokeWidth={2.5} /> 戻る</button>
     </div>
   )
 }
@@ -488,7 +489,7 @@ function PartZoom({
         </div>
       </div>
 
-      <button className="back-btn-wide" onClick={(e) => { e.stopPropagation(); onBack() }}>← 戻る</button>
+      <button className="back-btn-wide" onClick={(e) => { e.stopPropagation(); onBack() }}><ArrowLeft size={15} strokeWidth={2.5} /> 戻る</button>
     </div>
   )
 }
@@ -669,14 +670,14 @@ function SettingsTab({
             className={`gender-btn ${gender === 'male' ? 'gender-btn--active' : ''}`}
             onClick={() => onChangeGender('male')}
           >
-            <span className="gender-btn-emoji">🧔</span>
+            <span className="gender-btn-emoji"><Mars size={28} strokeWidth={2} /></span>
             <span className="gender-btn-label">男性</span>
           </button>
           <button
             className={`gender-btn ${gender === 'female' ? 'gender-btn--active' : ''}`}
             onClick={() => onChangeGender('female')}
           >
-            <span className="gender-btn-emoji">👩</span>
+            <span className="gender-btn-emoji"><Venus size={28} strokeWidth={2} /></span>
             <span className="gender-btn-label">女性</span>
           </button>
         </div>
@@ -707,7 +708,7 @@ function CustomerList({
   return (
     <div className="customer-list">
       <button className="customer-new-btn" onClick={onNew}>
-        <span>＋ 新規のお客様</span>
+        <span><Plus size={18} strokeWidth={2} /> 新規のお客様</span>
       </button>
 
       {sorted.map((c) => {
@@ -718,7 +719,9 @@ function CustomerList({
           (c.info.nickname ? 1 : 0) +
           c.info.topics.length + c.info.drinks.length + c.info.tobacco.length +
           c.info.serviceStyle.length + c.info.ngTags.length + (c.info.memo ? 1 : 0)
-        const genderLabel = c.gender === 'female' ? '👩' : '🧔'
+        const genderLabel = c.gender === 'female'
+          ? <Venus size={15} strokeWidth={2} />
+          : <Mars size={15} strokeWidth={2} />
 
         return (
           <div
@@ -742,7 +745,7 @@ function CustomerList({
               onClick={e => { e.stopPropagation(); onDelete(c.id) }}
               aria-label="削除"
             >
-              🗑
+              <Trash2 size={18} strokeWidth={2} />
             </button>
           </div>
         )
@@ -898,7 +901,9 @@ export default function App() {
     info.serviceStyle.length + info.ngTags.length + (info.memo ? 1 : 0)
 
   const currentName = current?.info.nickname || `お客様`
-  const genderLabel = gender === 'female' ? '👩' : '🧔'
+  const genderLabel = gender === 'female'
+    ? <Venus size={16} strokeWidth={2} />
+    : <Mars size={16} strokeWidth={2} />
 
   return (
     <div className="app">
@@ -1007,17 +1012,17 @@ export default function App() {
       {/* フッターナビ */}
       <div className="footer-nav">
         {([
-          { m: 'appearance', emoji: '🧍', label: '外観' },
-          { m: 'info',       emoji: '📝', label: '情報' },
-          { m: 'edit',       emoji: '👥', label: '客リスト' },
-          { m: 'settings',   emoji: '⚙️', label: '設定' },
+          { m: 'appearance', icon: <PersonStanding size={20} strokeWidth={2} />, label: '外観' },
+          { m: 'info',       icon: <FileText size={20} strokeWidth={2} />, label: '情報' },
+          { m: 'edit',       icon: <Users size={20} strokeWidth={2} />, label: '客リスト' },
+          { m: 'settings',   icon: <Settings size={20} strokeWidth={2} />, label: '設定' },
         ] as const).map(t => (
           <button
             key={t.m}
             className={`footer-tab ${mode === t.m ? 'footer-tab--active' : ''}`}
             onClick={() => { setMode(t.m); backToTop() }}
           >
-            <span className="footer-tab-emoji">{t.emoji}</span>
+            <span className="footer-tab-emoji">{t.icon}</span>
             <span className="footer-tab-label">{t.label}</span>
           </button>
         ))}
