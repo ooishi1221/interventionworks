@@ -352,7 +352,7 @@ function FlickGuides({
 
 // ======= OptionList =======
 
-function OptionList({
+function ValueFlickPicker({
   panel,
   initialSelected,
   onConfirm,
@@ -363,55 +363,106 @@ function OptionList({
   onConfirm: (value: string) => void
   onClose: () => void
 }) {
+  const [flickHint, setFlickHint] = useState<FlickDir | null>(null)
   const [showInput, setShowInput] = useState(false)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // options[0..3] を up/down/left/right に割当（4 個前提、足りない方向は guides から除外）
+  const DIRS = ['up', 'down', 'left', 'right'] as const
+  const opts = panel.options.slice(0, 4)
+
+  const openFreeInput = () => {
+    setShowInput(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
 
   const handleAdd = () => {
     const v = draft.trim()
     if (v) onConfirm(v)
   }
 
+  const bindPicker = useGesture(
+    {
+      onDrag: ({ movement: [mx, my], last, tap }) => {
+        if (tap) {
+          openFreeInput()
+          return
+        }
+        const dist = Math.hypot(mx, my)
+        if (!last && dist > 20) {
+          const dir = resolveFlick(mx, my, dist)
+          if (dir !== 'tap') setFlickHint(dir)
+        }
+        if (last) {
+          setFlickHint(null)
+          const dir = resolveFlick(mx, my, dist)
+          if (dir === 'tap') { openFreeInput(); return }
+          const idx = DIRS.indexOf(dir as typeof DIRS[number])
+          if (idx !== -1 && opts[idx]) onConfirm(opts[idx])
+        }
+      },
+    },
+    { drag: { filterTaps: true, threshold: 8, enabled: !showInput } }
+  )
+
+  const guides: DirGuide[] = DIRS
+    .map((dir, i): DirGuide | null =>
+      opts[i] ? { dir, emoji: '', label: opts[i] } : null
+    )
+    .filter((g): g is DirGuide => g !== null)
+
+  const hintIdx = flickHint ? DIRS.indexOf(flickHint as typeof DIRS[number]) : -1
+  const hintLabel = hintIdx !== -1 ? opts[hintIdx] : undefined
+
   return (
-    <div className="opt-overlay">
+    <div className="opt-overlay" {...bindPicker()} style={{ touchAction: 'none' }}>
       <div className="opt-header">
         <span className="opt-emoji">{panel.emoji}</span>
         <span className="opt-title">{panel.title}</span>
       </div>
-      <div className="opt-list">
-        {panel.options.map((opt) => (
-          <button
-            key={opt}
-            className={`opt-item ${opt === initialSelected ? 'opt-item--selected' : ''}`}
-            onClick={() => onConfirm(opt)}
-          >
-            {opt}
-          </button>
-        ))}
 
-        {!showInput && (
-          <button
-            className="opt-item opt-item--add"
-            onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50) }}
-          >
-            ＋自由入力
-          </button>
-        )}
-        {showInput && (
-          <div className="opt-free-row">
-            <input
-              ref={inputRef}
-              className="opt-free-input"
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-              placeholder="自由に入力"
-            />
-            <button className="opt-free-add-btn" onClick={handleAdd}>決定</button>
-          </div>
-        )}
+      <div className="zoom-icon-area zoom-icon-area--big">
+        <FlickGuides guides={guides} flickHint={flickHint} tapLabel="自由入力" />
+
+        <div className="zoom-icon-center">
+          {!showInput && (
+            <div
+              className="zoom-center-badge value-center-badge"
+              onClick={openFreeInput}
+            >
+              <span className="value-center-current">{initialSelected || '—'}</span>
+              <span className="tap-badge">TAP=自由入力</span>
+            </div>
+          )}
+          {showInput && (
+            <div className="opt-free-row" onPointerDown={e => e.stopPropagation()}>
+              <input
+                ref={inputRef}
+                className="opt-free-input"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+                placeholder="自由に入力"
+              />
+              <button className="opt-free-add-btn" onClick={handleAdd}>決定</button>
+              <button
+                className="opt-free-cancel-btn"
+                onClick={() => { setShowInput(false); setDraft('') }}
+                aria-label="自由入力をキャンセル"
+              >×</button>
+            </div>
+          )}
+          {hintLabel && !showInput && (
+            <div className="flick-preview">{hintLabel}</div>
+          )}
+        </div>
       </div>
-      <button className="back-btn-wide" onClick={onClose}><ArrowLeft size={15} strokeWidth={2.5} /> 戻る</button>
+
+      <button
+        className="back-btn-wide"
+        onClick={(e) => { e.stopPropagation(); onClose() }}
+      ><ArrowLeft size={15} strokeWidth={2.5} /> 戻る</button>
     </div>
   )
 }
@@ -1039,7 +1090,7 @@ export default function App() {
       )}
 
       {mode === 'appearance' && openPanel && (
-        <OptionList
+        <ValueFlickPicker
           panel={openPanel}
           initialSelected={getInitialSelected(openPanel.partKey, openPanel.catKey)}
           onConfirm={handleConfirm}

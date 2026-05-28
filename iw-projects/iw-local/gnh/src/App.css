@@ -637,6 +637,32 @@
   cursor: pointer;
 }
 
+/* ======= 第3段 ValueFlickPicker: フリック4択 + 中央タップ自由入力 ======= */
+.opt-overlay .flick-guide-emoji:empty { display: none; }
+.opt-overlay .flick-guide-label { font-size: 16px; max-width: 110px; word-break: break-all; }
+.value-center-badge {
+  text-align: center;
+  max-width: 240px;
+}
+.value-center-current {
+  font-size: 17px;
+  font-weight: 700;
+  color: #f0d080;
+  word-break: break-all;
+  line-height: 1.3;
+}
+.opt-free-cancel-btn {
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid #4a3820;
+  border-radius: 8px;
+  color: #7a6030;
+  font-size: 18px;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* ======= InfoTab ======= */
 .info-tab {
   flex: 1;
