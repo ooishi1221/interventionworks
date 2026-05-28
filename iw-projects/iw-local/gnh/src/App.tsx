@@ -354,12 +354,10 @@ function FlickGuides({
 
 function ValueFlickPicker({
   panel,
-  initialSelected,
   onConfirm,
   onClose,
 }: {
   panel: OpenPanel
-  initialSelected: string
   onConfirm: (value: string) => void
   onClose: () => void
 }) {
@@ -427,30 +425,8 @@ function ValueFlickPicker({
 
         <div className="zoom-icon-center">
           {!showInput && (
-            <div
-              className="zoom-center-badge value-center-badge"
-              onClick={openFreeInput}
-            >
-              <span className="value-center-current">{initialSelected || '—'}</span>
-              <span className="tap-badge">TAP=自由入力</span>
-            </div>
-          )}
-          {showInput && (
-            <div className="opt-free-row" onPointerDown={e => e.stopPropagation()}>
-              <input
-                ref={inputRef}
-                className="opt-free-input"
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-                placeholder="自由に入力"
-              />
-              <button className="opt-free-add-btn" onClick={handleAdd}>決定</button>
-              <button
-                className="opt-free-cancel-btn"
-                onClick={() => { setShowInput(false); setDraft('') }}
-                aria-label="自由入力をキャンセル"
-              >×</button>
+            <div className="value-center-prompt" onClick={openFreeInput}>
+              タップ 自由入力
             </div>
           )}
           {hintLabel && !showInput && (
@@ -458,6 +434,25 @@ function ValueFlickPicker({
           )}
         </div>
       </div>
+
+      {showInput && (
+        <div className="opt-free-row opt-free-row--bottom" onPointerDown={e => e.stopPropagation()}>
+          <input
+            ref={inputRef}
+            className="opt-free-input"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+            placeholder="自由に入力"
+          />
+          <button className="opt-free-add-btn" onClick={handleAdd}>決定</button>
+          <button
+            className="opt-free-cancel-btn"
+            onClick={() => { setShowInput(false); setDraft('') }}
+            aria-label="自由入力をキャンセル"
+          >×</button>
+        </div>
+      )}
 
       <button
         className="back-btn-wide"
@@ -915,10 +910,6 @@ export default function App() {
     setOpenPanel(null)
   }, [openPanel, entries, OPTS, updateCurrent])
 
-  const getInitialSelected = useCallback((partKey: PartKey, catKey: CategoryKey) =>
-    entries.find(e => e.partKey === partKey && e.catKey === catKey)?.value ?? '',
-    [entries])
-
   const backToTop = useCallback(() => { setOpenPanel(null); setZoomedPart(null) }, [])
 
   const CAT_KEYS: CategoryKey[] = ['up', 'down', 'left', 'right', 'tap']
@@ -1092,7 +1083,6 @@ export default function App() {
       {mode === 'appearance' && openPanel && (
         <ValueFlickPicker
           panel={openPanel}
-          initialSelected={getInitialSelected(openPanel.partKey, openPanel.catKey)}
           onConfirm={handleConfirm}
           onClose={() => setOpenPanel(null)}
         />
