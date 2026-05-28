@@ -654,12 +654,20 @@
 }
 .value-center-prompt:active { color: #c9a84c; }
 
-/* 自由入力欄: 戻るボタン直上に出す */
+/* 自由入力欄: 戻るボタン直上に出す。input は常時マウントして iOS キーボード即起動 */
 .opt-free-row--bottom {
   flex-shrink: 0;
   align-self: center;
   padding: 0 16px 8px;
   box-sizing: border-box;
+}
+.opt-free-row--hidden {
+  visibility: hidden;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 .opt-free-cancel-btn {
   padding: 10px 14px;

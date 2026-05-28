@@ -369,8 +369,9 @@ function ValueFlickPicker({
   const opts = panel.options.slice(0, 4)
 
   const openFreeInput = () => {
+    // iOS Safari は user gesture 内で同期 focus しないとキーボードが上がらない
+    inputRef.current?.focus()
     setShowInput(true)
-    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
   const handleAdd = () => {
@@ -433,24 +434,28 @@ function ValueFlickPicker({
         </div>
       </div>
 
-      {showInput && (
-        <div className="opt-free-row opt-free-row--bottom" onPointerDown={e => e.stopPropagation()}>
-          <input
-            ref={inputRef}
-            className="opt-free-input"
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-            placeholder="自由に入力"
-          />
-          <button className="opt-free-add-btn" onClick={handleAdd}>決定</button>
-          <button
-            className="opt-free-cancel-btn"
-            onClick={() => { setShowInput(false); setDraft('') }}
-            aria-label="自由入力をキャンセル"
-          >×</button>
-        </div>
-      )}
+      {/* input は常時マウント（iOS キーボード即起動のため）、表示は class で切替 */}
+      <div
+        className={`opt-free-row opt-free-row--bottom ${showInput ? '' : 'opt-free-row--hidden'}`}
+        onPointerDown={e => e.stopPropagation()}
+      >
+        <input
+          ref={inputRef}
+          className="opt-free-input"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+          placeholder="自由に入力"
+          tabIndex={showInput ? 0 : -1}
+        />
+        <button className="opt-free-add-btn" onClick={handleAdd} tabIndex={showInput ? 0 : -1}>決定</button>
+        <button
+          className="opt-free-cancel-btn"
+          onClick={() => { setShowInput(false); setDraft('') }}
+          aria-label="自由入力をキャンセル"
+          tabIndex={showInput ? 0 : -1}
+        >×</button>
+      </div>
 
       <button
         className="back-btn-wide"
