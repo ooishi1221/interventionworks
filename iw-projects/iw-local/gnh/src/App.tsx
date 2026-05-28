@@ -316,7 +316,7 @@ function FlickGuides({
     const isActive = flickHint === dir
     const head = (
       <div className="flick-guide-head">
-        {(dir === 'up' || dir === 'left')
+        {dir !== 'down'
           ? <><span className="flick-guide-arrow">{arrow}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-label">{g.label}</span></>
           : <><span className="flick-guide-label">{g.label}</span><span className="flick-guide-emoji">{g.emoji}</span><span className="flick-guide-arrow">{arrow}</span></>}
       </div>
