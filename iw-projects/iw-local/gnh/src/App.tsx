@@ -482,11 +482,13 @@ function ValueFlickPicker({
 function PartZoom({
   partKey,
   opts,
+  entries,
   onOpenPanel,
   onBack,
 }: {
   partKey: PartKey
   opts: typeof PART_OPTIONS_MALE
+  entries: Entry[]
   onOpenPanel: (catKey: CategoryKey) => void
   onBack: () => void
 }) {
@@ -528,6 +530,16 @@ function PartZoom({
 
   return (
     <div className="zoom-overlay" {...bindZoom()} style={{ touchAction: 'none' }}>
+      {entries.length > 0 && (
+        <div className="zoom-entries-list" onPointerDown={e => e.stopPropagation()}>
+          {entries.map(e => (
+            <div key={e.catKey} className="zoom-entry-item">
+              <span className="zoom-entry-cat">{e.catLabel}</span>
+              <span className="zoom-entry-val">{e.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="zoom-header">
         <h2>{cfg.label}</h2>
       </div>
@@ -1090,6 +1102,7 @@ export default function App() {
         <PartZoom
           partKey={zoomedPart}
           opts={OPTS}
+          entries={entries.filter(e => e.partKey === zoomedPart)}
           onOpenPanel={(catKey) => handleOpenPanel(zoomedPart, catKey)}
           onBack={() => setZoomedPart(null)}
         />
