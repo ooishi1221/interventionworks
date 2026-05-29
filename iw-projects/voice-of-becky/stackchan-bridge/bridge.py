@@ -2,6 +2,7 @@
 """
 Voice of Becky — stackchan-bridge / bridge.py
 Phase A: VAD + Whisper + wake word + iTerm2 inject
+Phase B: stackchan Serial 受信スレッド追加
 
 Usage:
     .venv/bin/python3 bridge.py [--debug]
@@ -12,6 +13,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -162,6 +164,110 @@ end tell
         print(f"[inject] osascript エラー: {result.stderr.strip()}", flush=True)
 
 # ---------------------------------------------------------------------------
+# Claude Code 前面化（osascript）
+# ---------------------------------------------------------------------------
+def bring_iterm2_to_front(debug: bool) -> None:
+    script = '''
+tell application "iTerm2"
+    activate
+end tell
+'''
+    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    if result.returncode != 0 and debug:
+        print(f"[wake] iTerm2 前面化エラー: {result.stderr.strip()}", flush=True)
+
+# ---------------------------------------------------------------------------
+# stackchan Serial 受信スレッド (Phase B)
+# ---------------------------------------------------------------------------
+TTS_PID_FILE    = Path("/tmp/becky_tts_pid")
+MEMORY_TRIGGER  = Path("/tmp/becky_memory_trigger")
+MODE_FILE       = Path("/tmp/becky_mode")
+
+
+def _handle_serial_command(cmd: str, debug: bool) -> None:
+    """
+    ESP32 から受信したコマンドを処理する。
+    """
+    cmd = cmd.strip()
+
+    if cmd.startswith("MODE:"):
+        # MODE:0 / MODE:1 / MODE:2 → /tmp/becky_mode に書き込み
+        mode_val = cmd.split(":", 1)[1]
+        try:
+            MODE_FILE.write_text(mode_val)
+            if debug:
+                print(f"[serial] mode -> {mode_val}", flush=True)
+        except Exception as e:
+            print(f"[serial] MODE write error: {e}", flush=True)
+
+    elif cmd == "MUTE":
+        # 実行中の TTS プロセスを kill
+        if debug:
+            print("[serial] MUTE received — TTS kill", flush=True)
+        if TTS_PID_FILE.exists():
+            try:
+                pid = int(TTS_PID_FILE.read_text().strip())
+                os.kill(pid, 15)  # SIGTERM
+                TTS_PID_FILE.unlink(missing_ok=True)
+                if debug:
+                    print(f"[serial] killed TTS pid={pid}", flush=True)
+            except (ValueError, ProcessLookupError, PermissionError) as e:
+                if debug:
+                    print(f"[serial] MUTE kill error: {e}", flush=True)
+        else:
+            if debug:
+                print("[serial] MUTE: pid file not found", flush=True)
+
+    elif cmd == "MEMORY":
+        # /tmp/becky_memory_trigger を touch（後フェーズで insight-queue 連携）
+        if debug:
+            print("[serial] MEMORY received — touch trigger", flush=True)
+        MEMORY_TRIGGER.touch()
+
+    elif cmd == "WAKE":
+        # Claude Code（iTerm2）を前面に出す
+        if debug:
+            print("[serial] WAKE received — bring iTerm2 to front", flush=True)
+        bring_iterm2_to_front(debug)
+
+    elif cmd == "BOOT":
+        if debug:
+            print("[serial] stackchan booted", flush=True)
+
+    else:
+        if debug and cmd:
+            print(f"[serial] unknown cmd: {cmd!r}", flush=True)
+
+
+def serial_listener_thread(port: str, baudrate: int, debug: bool) -> None:
+    """
+    デーモンスレッドとして動作。pyserial で Serial を監視して _handle_serial_command に渡す。
+    pyserial が未インストールの場合はワーニングだけ出して静かに終了。
+    """
+    try:
+        import serial  # pyserial
+    except ImportError:
+        print("[serial] pyserial が未インストールのため Serial 監視をスキップします。", flush=True)
+        print("[serial] インストール: .venv/bin/pip install pyserial", flush=True)
+        return
+
+    while True:
+        try:
+            if debug:
+                print(f"[serial] 接続試行: {port} @ {baudrate}", flush=True)
+            with serial.Serial(port, baudrate, timeout=1) as ser:
+                if debug:
+                    print(f"[serial] 接続成功: {port}", flush=True)
+                while True:
+                    line = ser.readline().decode("utf-8", errors="ignore").strip()
+                    if line:
+                        _handle_serial_command(line, debug)
+        except Exception as e:
+            if debug:
+                print(f"[serial] 接続エラー ({e})。5 秒後に再試行...", flush=True)
+            time.sleep(5)
+
+# ---------------------------------------------------------------------------
 # メインループ
 # ---------------------------------------------------------------------------
 def main() -> None:
@@ -183,9 +289,28 @@ def main() -> None:
     whisper_compute: str = cfg["whisper"]["compute_type"]
     iterm_wait: float = cfg["iterm2"]["wait_before_inject"]
 
-    print("=== Voice of Becky — Bridge Phase A ===", flush=True)
+    # Serial 設定
+    serial_cfg = cfg.get("serial", {})
+    serial_enabled: bool = serial_cfg.get("enabled", False)
+    serial_port: str = serial_cfg.get("port", "/dev/cu.usbmodem3101")
+    serial_baudrate: int = serial_cfg.get("baudrate", 115200)
+
+    print("=== Voice of Becky — Bridge Phase A+B ===", flush=True)
     print(f"Wake words: {wake_words}", flush=True)
     print(f"Whisper model: {whisper_model_size} / {whisper_language} / {whisper_device}", flush=True)
+
+    # stackchan Serial 監視スレッド起動（Phase B）
+    if serial_enabled:
+        t = threading.Thread(
+            target=serial_listener_thread,
+            args=(serial_port, serial_baudrate, debug),
+            daemon=True,
+            name="serial-listener",
+        )
+        t.start()
+        print(f"[serial] 監視スレッド開始: {serial_port}", flush=True)
+    else:
+        print("[serial] 無効（config.yaml serial.enabled: false）", flush=True)
 
     # Whisper モデルロード（初回は HuggingFace からダウンロード）
     print("Whisper モデルをロード中...", flush=True)

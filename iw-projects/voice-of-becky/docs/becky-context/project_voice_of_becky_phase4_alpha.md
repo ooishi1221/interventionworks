@@ -1,6 +1,6 @@
 # Voice of Becky — Phase 4-α 着手 (2026-05-29)
 
-> **状態**: **Phase A 完了 (2026-05-29)** — 声の通り道開通。机から春日部つむぎが喋った。next: Phase B (ESP32 ファーム + ボタン)
+> **状態**: **Phase A 完了 + stackchan-mcp 統合完了 (2026-05-29)** — kisaragi-mochi/stackchan-mcp ファームを焼いて gateway を MCP サーバーとして登録。`/clear` 後に `say` ツールで机のスタックちゃんに喋らせるのが next。Phase B（ESP32 ボタン）はリモコン入手後。
 > **元の予定**: 6/5 → **前倒し** (機材が予定より早く到着)
 > **隣人プロジェクト memory**: `working/reference_voice_of_becky_neighbor_project.md`
 

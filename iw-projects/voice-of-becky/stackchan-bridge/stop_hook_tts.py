@@ -16,6 +16,10 @@ Claude Code Stop hook の payload 仕様:
       {"role": "assistant", "content": "..."}
     ]
   }
+
+Phase B 追加:
+  - afplay / say の Popen 直後に pid を /tmp/becky_tts_pid へ書き込む
+  - stackchan から MUTE コマンドが届いた際に bridge.py が SIGTERM で kill できる
 """
 import json
 import os
@@ -32,6 +36,7 @@ from pathlib import Path
 import yaml
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
+TTS_PID_FILE = Path("/tmp/becky_tts_pid")
 
 
 def load_config() -> dict:
@@ -96,17 +101,29 @@ def clean_for_tts(text: str, max_chars: int) -> str:
 VOICEVOX_URL = "http://localhost:50021"
 
 
-def speak(text: str, voice: str, rate: int, speaker_id: int = 8) -> None:
+def speak(text: str, voice: str, rate: int, speaker_id: int = 8, voicevox_params: dict | None = None) -> None:
     """
     VOICEVOX API で読み上げ。失敗時は say コマンドにフォールバック。
     """
     try:
-        _speak_voicevox(text, speaker_id)
+        _speak_voicevox(text, speaker_id, voicevox_params or {})
     except Exception:
         _speak_say(text, voice, rate)
 
 
-def _speak_voicevox(text: str, speaker_id: int) -> None:
+def _write_pid(pid: int) -> None:
+    """TTS プロセスの pid を /tmp/becky_tts_pid に書き込む（MUTE コマンド対応）。"""
+    try:
+        TTS_PID_FILE.write_text(str(pid))
+    except Exception:
+        pass
+
+
+def _clear_pid() -> None:
+    TTS_PID_FILE.unlink(missing_ok=True)
+
+
+def _speak_voicevox(text: str, speaker_id: int, params_override: dict) -> None:
     # 1. audio_query 取得
     params = urllib.parse.urlencode({"text": text, "speaker": speaker_id})
     req = urllib.request.Request(
@@ -115,7 +132,11 @@ def _speak_voicevox(text: str, speaker_id: int) -> None:
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=10) as res:
-        query = res.read()
+        query_dict = json.loads(res.read())
+
+    # パラメータを上書き
+    query_dict.update(params_override)
+    query = json.dumps(query_dict).encode()
 
     # 2. synthesis（WAV 生成）
     params2 = urllib.parse.urlencode({"speaker": speaker_id})
@@ -138,9 +159,11 @@ def _speak_voicevox(text: str, speaker_id: int) -> None:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    _write_pid(proc.pid)  # Phase B: MUTE コマンド対応
 
     def _handle_term(signum, frame):
         proc.terminate()
+        _clear_pid()
         Path(tmp_path).unlink(missing_ok=True)
         sys.exit(0)
 
@@ -151,6 +174,7 @@ def _speak_voicevox(text: str, speaker_id: int) -> None:
     except KeyboardInterrupt:
         proc.terminate()
     finally:
+        _clear_pid()
         Path(tmp_path).unlink(missing_ok=True)
 
 
@@ -160,9 +184,11 @@ def _speak_say(text: str, voice: str, rate: int) -> None:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    _write_pid(proc.pid)  # Phase B: MUTE コマンド対応
 
     def _handle_term(signum, frame):
         proc.terminate()
+        _clear_pid()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, _handle_term)
@@ -171,6 +197,8 @@ def _speak_say(text: str, voice: str, rate: int) -> None:
         proc.wait()
     except KeyboardInterrupt:
         proc.terminate()
+    finally:
+        _clear_pid()
 
 
 FLAG_FILE = Path("/tmp/becky_tts_enabled")
@@ -187,6 +215,14 @@ def main() -> None:
     rate = tts_cfg.get("rate", 185)
     max_chars = tts_cfg.get("max_chars", 300)
     speaker_id = tts_cfg.get("voicevox_speaker_id", 8)
+    voicevox_params = {
+        "speedScale": tts_cfg.get("voicevox_speed", 1.0),
+        "pitchScale": tts_cfg.get("voicevox_pitch", 0.0),
+        "intonationScale": tts_cfg.get("voicevox_intonation", 1.0),
+        "volumeScale": tts_cfg.get("voicevox_volume", 1.0),
+        "prePhonemeLength": tts_cfg.get("voicevox_pre_phoneme", 0.1),
+        "postPhonemeLength": tts_cfg.get("voicevox_post_phoneme", 0.1),
+    }
 
     # stdin から JSON payload を読み込む
     try:
@@ -207,7 +243,7 @@ def main() -> None:
     if not clean:
         sys.exit(0)
 
-    speak(clean, voice, rate, speaker_id)
+    speak(clean, voice, rate, speaker_id, voicevox_params)
 
 
 if __name__ == "__main__":
