@@ -148,6 +148,32 @@ _BURST_INTERVAL_S = 0.25  # バースト間 250ms 休止
 
 ---
 
+## 本物アバター流し完了記録 (2026-05-29 夕)
+
+**成果:** 裕司が用意したベッキーキャラクター素材（水色髪 / 白ドレス / 7 表情スプライトシート）を 14 スロットの RGB565 バイナリに変換し、スタックちゃん LCD に表示完了。
+
+**手順:**
+1. `~/Desktop/べき.png` / `べき２.png` を `make_becky_avatar.py --src` で読み込み
+2. アルファチャンネルで 7 パネルを自動検出（4 上段 + 3 下段）
+3. letterbox（アスペクト比保持）で 160×120 にリサイズ
+4. 14 スロットにマッピング → raw RGB565 LE 連結 → `becky_avatar_set.bin`（537,600 bytes）
+5. `load_avatar_set` → `ok: true` / SHA256 一致 / PSRAM ロード
+
+**現在の設定:**
+- 素材: `~/Desktop/べき２.png`
+- 背景色: `(240, 170, 195)` 濃いめピンク
+- スクリプト: `stackchan-bridge/make_becky_avatar.py`（`--src` で差し替え可）
+- バイナリ: `~/.stackchan/avatar/becky_avatar_set.bin`
+
+**再生成は 1 コマンド:**
+```bash
+.venv/bin/python3 make_becky_avatar.py --src ~/Desktop/新素材.png
+```
+
+**残課題:** 左目の微細なズレ（ソース素材の AI 生成による）→ 再生成プロンプト手元あり
+
+---
+
 ## 関連
 
 - 隣人プロジェクト (松尾氏 LipSync Avatar + リネ devlog): `working/reference_voice_of_becky_neighbor_project.md`
@@ -170,4 +196,4 @@ _BURST_INTERVAL_S = 0.25  # バースト間 250ms 休止
 
 **根治:** `stackchan-bridge/run.sh` に `export AVATAR_SET_PORT=8766` を直書き。どの設定スコープ経由でも確実にプロセスに入る。
 
-**next:** 本物の RGB565 アバター画像を流す / Phase B（ESP32 ボタン）はリモコン入手後。
+**next:** ~~本物の RGB565 アバター画像を流す~~ → **✅ 2026-05-29 夕 完了（下記参照）** / Phase B（ESP32 ボタン）はリモコン入手後。
