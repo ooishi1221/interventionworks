@@ -92,6 +92,13 @@ const TOBACCO_CHIPS_F = ['吸わない', '電子タバコ', '紙タバコ'] as c
 const SERVICE_CHIPS_F = ['ベタ褒め', '共感優先', '知的に話す', '聞き役', 'いじる', '距離感大事'] as const
 const NG_CHIPS_F      = ['容姿に触れない', '年齢聞かない', '競合NG', '仕事深掘りNG', 'プライベート立入禁止'] as const
 
+// ======= 情報チップ — BtoB営業版 (gender共通) =======
+const TOPICS_CHIPS_BTOB  = ['AI活用', '技術課題', '採用・組織', '予算感', '新タイトル', '競合動向', '業界話', 'DX推進'] as const
+const AUTHORITY_CHIPS    = ['決裁者', '推薦者', '実務担当', '情報収集中'] as const
+const COMPANY_SIZE_CHIPS = ['大手', '中堅', 'インディー', 'スタートアップ'] as const
+const DEAL_TEMP_CHIPS    = ['今すぐ検討', '3ヶ月以内', '中長期', '情報収集のみ'] as const
+const NG_CHIPS_BTOB      = ['前職批判', '競合を下げる', '役職を間違える', '価格を急ぐ', '過剰な売り込み'] as const
+
 // ======= 型 =======
 
 type PartKey = keyof typeof PART_OPTIONS_MALE
@@ -99,6 +106,7 @@ type CategoryKey = 'up' | 'down' | 'left' | 'right' | 'tap'
 type FlickDir = 'up' | 'down' | 'left' | 'right' | 'tap'
 type AppMode = 'appearance' | 'info' | 'edit' | 'settings'
 type Gender = 'male' | 'female'
+type IndustryPreset = 'hospitality' | 'btob_sales'
 
 type AnyPartCfg = typeof PART_OPTIONS_MALE[PartKey]
 type CatCfg = { emoji: string; label: string; options: readonly string[] }
@@ -125,12 +133,24 @@ interface ChipSet {
   tobacco: readonly string[]
   service: readonly string[]
   ng:      readonly string[]
+  labels: { topics: string; drinks: string; tobacco: string; service: string }
 }
 
-function getChipSet(gender: Gender): ChipSet {
+function getChipSet(gender: Gender, preset: IndustryPreset = 'hospitality'): ChipSet {
+  if (preset === 'btob_sales') {
+    return {
+      topics:  TOPICS_CHIPS_BTOB,
+      drinks:  AUTHORITY_CHIPS,
+      tobacco: COMPANY_SIZE_CHIPS,
+      service: DEAL_TEMP_CHIPS,
+      ng:      NG_CHIPS_BTOB,
+      labels:  { topics: '商談トピック', drinks: '決裁権限', tobacco: '会社規模', service: '商談温度' },
+    }
+  }
+  const hospitality_labels = { topics: '会話した話題', drinks: '好み — ドリンク', tobacco: '好み — タバコ', service: '好み — 接客スタイル' }
   return gender === 'female'
-    ? { topics: TOPICS_CHIPS_F, drinks: DRINK_CHIPS_F, tobacco: TOBACCO_CHIPS_F, service: SERVICE_CHIPS_F, ng: NG_CHIPS_F }
-    : { topics: TOPICS_CHIPS_M, drinks: DRINK_CHIPS_M, tobacco: TOBACCO_CHIPS_M, service: SERVICE_CHIPS_M, ng: NG_CHIPS_M }
+    ? { topics: TOPICS_CHIPS_F, drinks: DRINK_CHIPS_F, tobacco: TOBACCO_CHIPS_F, service: SERVICE_CHIPS_F, ng: NG_CHIPS_F, labels: hospitality_labels }
+    : { topics: TOPICS_CHIPS_M, drinks: DRINK_CHIPS_M, tobacco: TOBACCO_CHIPS_M, service: SERVICE_CHIPS_M, ng: NG_CHIPS_M, labels: hospitality_labels }
 }
 
 interface Entry {
@@ -139,6 +159,12 @@ interface Entry {
   partLabel: string
   catLabel: string
   value: string
+}
+
+interface Visit {
+  id: string
+  date: number
+  note: string
 }
 
 interface OpenPanel {
@@ -162,8 +188,10 @@ interface InfoData {
 interface Customer {
   id: string
   gender: Gender
+  preset: IndustryPreset
   entries: Entry[]
   info: InfoData
+  visits: Visit[]
   createdAt: number
   updatedAt: number
 }
@@ -182,7 +210,12 @@ const LS_KEY = 'gnh.customers.v1'
 
 function makeCustomer(gender: Gender = 'male'): Customer {
   const now = Date.now()
-  return { id: crypto.randomUUID(), gender, entries: [], info: { ...INITIAL_INFO }, createdAt: now, updatedAt: now }
+  return { id: crypto.randomUUID(), gender, preset: 'hospitality', entries: [], info: { ...INITIAL_INFO }, visits: [], createdAt: now, updatedAt: now }
+}
+
+function formatDate(ts: number): string {
+  const d = new Date(ts)
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
 }
 
 function loadCustomers(): { customers: Customer[]; currentId: string } {
@@ -191,7 +224,7 @@ function loadCustomers(): { customers: Customer[]; currentId: string } {
     if (raw) {
       const parsed = JSON.parse(raw) as { customers: Customer[]; currentId: string }
       if (parsed.customers && parsed.customers.length > 0) {
-        const customers = parsed.customers.map(c => ({ ...c, gender: (c.gender ?? 'male') as Gender }))
+        const customers = parsed.customers.map(c => ({ ...c, gender: (c.gender ?? 'male') as Gender, preset: ((c as { preset?: string }).preset ?? 'hospitality') as IndustryPreset, visits: ((c as { visits?: Visit[] }).visits ?? []) as Visit[] }))
         const valid = customers.some(c => c.id === parsed.currentId)
         return { customers, currentId: valid ? parsed.currentId : customers[0].id }
       }
@@ -647,14 +680,16 @@ function ChipGroup({
 function InfoTab({
   info,
   gender,
+  preset,
   onChange,
 }: {
   info: InfoData
   gender: Gender
+  preset: IndustryPreset
   onChange: (next: InfoData) => void
 }) {
   const nicknameChips = ['社長', '専務', '先生', '会長', '部長', 'さん'] as const
-  const cs = getChipSet(gender)
+  const cs = getChipSet(gender, preset)
 
   const toggle = (field: keyof Pick<InfoData, 'topics'|'drinks'|'tobacco'|'serviceStyle'|'ngTags'>, v: string) => {
     const arr = info[field] as string[]
@@ -689,19 +724,19 @@ function InfoTab({
         </div>
       </div>
 
-      <ChipGroup label="会話した話題" chips={cs.topics} selected={info.topics}
+      <ChipGroup label={cs.labels.topics} chips={cs.topics} selected={info.topics}
         onToggle={v => toggle('topics', v)}
         onAddFree={v => onChange({ ...info, topics: [...info.topics, v] })} />
 
-      <ChipGroup label="好み — ドリンク" chips={cs.drinks} selected={info.drinks}
+      <ChipGroup label={cs.labels.drinks} chips={cs.drinks} selected={info.drinks}
         onToggle={v => toggle('drinks', v)}
         onAddFree={v => onChange({ ...info, drinks: [...info.drinks, v] })} />
 
-      <ChipGroup label="好み — タバコ" chips={cs.tobacco} selected={info.tobacco}
+      <ChipGroup label={cs.labels.tobacco} chips={cs.tobacco} selected={info.tobacco}
         onToggle={v => toggle('tobacco', v)}
         onAddFree={() => {}} />
 
-      <ChipGroup label="好み — 接客スタイル" chips={cs.service} selected={info.serviceStyle}
+      <ChipGroup label={cs.labels.service} chips={cs.service} selected={info.serviceStyle}
         onToggle={v => toggle('serviceStyle', v)}
         onAddFree={v => onChange({ ...info, serviceStyle: [...info.serviceStyle, v] })} />
 
@@ -729,13 +764,37 @@ function InfoTab({
 
 function SettingsTab({
   gender,
+  preset,
   onChangeGender,
+  onChangePreset,
 }: {
   gender: Gender
+  preset: IndustryPreset
   onChangeGender: (g: Gender) => void
+  onChangePreset: (p: IndustryPreset) => void
 }) {
   return (
     <div className="settings-tab">
+      <div className="settings-section">
+        <div className="settings-section-label">業種プリセット</div>
+        <div className="preset-toggle">
+          <button
+            className={`preset-btn ${preset === 'hospitality' ? 'preset-btn--active' : ''}`}
+            onClick={() => onChangePreset('hospitality')}
+          >
+            <span className="preset-btn-icon">🍷</span>
+            <span className="preset-btn-label">接客業</span>
+          </button>
+          <button
+            className={`preset-btn ${preset === 'btob_sales' ? 'preset-btn--active' : ''}`}
+            onClick={() => onChangePreset('btob_sales')}
+          >
+            <span className="preset-btn-icon">💼</span>
+            <span className="preset-btn-label">BtoB営業</span>
+          </button>
+        </div>
+        <p className="settings-note">情報タブの選択肢が変わります。<br />入力済みのチップはそのまま保持されます。</p>
+      </div>
       <div className="settings-section">
         <div className="settings-section-label">このお客様の性別</div>
         <div className="gender-toggle">
@@ -761,6 +820,58 @@ function SettingsTab({
   )
 }
 
+// ======= CustomerSwitcher (bottom sheet) =======
+
+function CustomerSwitcher({
+  customers,
+  currentId,
+  onSelect,
+  onNew,
+  onClose,
+}: {
+  customers: Customer[]
+  currentId: string
+  onSelect: (id: string) => void
+  onNew: () => void
+  onClose: () => void
+}) {
+  const sorted = [...customers].sort((a, b) => b.updatedAt - a.updatedAt)
+
+  return (
+    <>
+      <div className="switcher-backdrop" onClick={onClose} />
+      <div className="switcher-sheet">
+        <div className="switcher-handle" />
+        <div className="switcher-list">
+          {sorted.map(c => {
+            const isCurrent = c.id === currentId
+            const name = c.info.nickname || 'お客様'
+            const gl = c.gender === 'female'
+              ? <Venus size={14} strokeWidth={2} />
+              : <Mars size={14} strokeWidth={2} />
+            return (
+              <button
+                key={c.id}
+                className={`switcher-item ${isCurrent ? 'switcher-item--active' : ''}`}
+                onClick={() => { onSelect(c.id); onClose() }}
+              >
+                <span className="switcher-item-gender">{gl}</span>
+                <span className="switcher-item-name">{name}</span>
+                {isCurrent && <span className="switcher-item-now">NOW</span>}
+                <span className="switcher-item-time">{formatTimeAgo(c.updatedAt)}</span>
+              </button>
+            )
+          })}
+        </div>
+        <button className="switcher-new-btn" onClick={() => { onNew(); onClose() }}>
+          <Plus size={16} strokeWidth={2} />
+          新規のお客様を追加
+        </button>
+      </div>
+    </>
+  )
+}
+
 // ======= CustomerList =======
 
 function CustomerList({
@@ -776,15 +887,30 @@ function CustomerList({
   onNew: () => void
   onDelete: (id: string) => void
 }) {
+  const [query, setQuery] = useState('')
   const sorted = [...customers].sort((a, b) => b.updatedAt - a.updatedAt)
+  const filtered = query.trim()
+    ? sorted.filter(c => c.info.nickname.includes(query.trim()))
+    : sorted
 
   return (
     <div className="customer-list">
+      <div className="customer-search-row">
+        <input
+          className="customer-search-input"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="名前で絞り込む"
+        />
+        {query && (
+          <button className="customer-search-clear" onClick={() => setQuery('')}>✕</button>
+        )}
+      </div>
       <button className="customer-new-btn" onClick={onNew}>
         <span><Plus size={18} strokeWidth={2} /> 新規のお客様</span>
       </button>
 
-      {sorted.map((c) => {
+      {filtered.map((c) => {
         const isCurrent = c.id === currentId
         const displayName = c.info.nickname || `お客様 ${customers.length - customers.indexOf(c)}`
         const entriesCount = c.entries.length
@@ -810,6 +936,7 @@ function CustomerList({
               </div>
               <div className="customer-card-meta">
                 外観 {entriesCount} 項目 / 情報 {infoCount} 件
+                {c.visits.length > 0 && ` / ${c.visits.length}回`}
                 <span className="customer-card-time">{formatTimeAgo(c.updatedAt)}</span>
               </div>
             </div>
@@ -824,8 +951,10 @@ function CustomerList({
         )
       })}
 
-      {customers.length === 0 && (
-        <p className="customer-list-empty">まだお客様がいません</p>
+      {filtered.length === 0 && (
+        <p className="customer-list-empty">
+          {query ? `「${query}」は見つかりません` : 'まだお客様がいません'}
+        </p>
       )}
 
       <div className="info-bottom-spacer" />
@@ -840,6 +969,7 @@ export default function App() {
   const [zoomedPart, setZoomedPart] = useState<PartKey | null>(null)
   const [openPanel,  setOpenPanel]  = useState<OpenPanel | null>(null)
   const [flickHint,  setFlickHint]  = useState<FlickDir | null>(null)
+  const [showSwitcher, setShowSwitcher] = useState(false)
 
   const [initial] = useState(loadCustomers)
   const [customers,  setCustomers]  = useState<Customer[]>(initial.customers)
@@ -853,6 +983,8 @@ export default function App() {
   const entries = current?.entries ?? []
   const info    = current?.info    ?? { ...INITIAL_INFO }
   const gender  = current?.gender  ?? 'male'
+  const preset  = current?.preset  ?? 'hospitality'
+  const visits  = current?.visits  ?? []
 
   const OPTS = getPartOptions(gender)
 
@@ -861,6 +993,12 @@ export default function App() {
       c.id === currentId ? { ...c, ...patch, updatedAt: Date.now() } : c
     ))
   }, [currentId])
+
+  const handleAddVisit = useCallback(() => {
+    const v: Visit = { id: crypto.randomUUID(), date: Date.now(), note: '' }
+    updateCurrent({ visits: [...(current?.visits ?? []), v] })
+    if (navigator.vibrate) navigator.vibrate(20)
+  }, [current, updateCurrent])
 
   const handleNewCustomer = useCallback(() => {
     const c = makeCustomer('male')
@@ -979,10 +1117,14 @@ export default function App() {
       <div className="header">
         <h1>GnH</h1>
         {mode !== 'edit' && (
-          <div className="header-customer-name">
+          <button className="header-customer-name header-customer-switch" onClick={() => setShowSwitcher(true)}>
             <span className="header-gender-badge">{genderLabel}</span>
-            {currentName}
-          </div>
+            <span className="header-customer-label">{currentName}</span>
+            {visits.length > 0 && (
+              <span className="header-visit-badge">{visits.length}回目</span>
+            )}
+            {customers.length > 1 && <ChevronDown size={14} strokeWidth={2} className="header-switch-chevron" />}
+          </button>
         )}
       </div>
 
@@ -1029,6 +1171,18 @@ export default function App() {
               <div className="flick-preview">{topFlickLabel[flickHint]}</div>
             )}
           </div>
+          <div className="visit-bar">
+            <button className="visit-record-btn" onClick={handleAddVisit}>
+              <Plus size={15} strokeWidth={2} />
+              {preset === 'btob_sales' ? '商談を記録' : '来店を記録'}
+            </button>
+            {visits.length > 0 && (
+              <span className="visit-bar-count">
+                {preset === 'btob_sales' ? `${visits.length}回目の商談` : `来店 ${visits.length}回目`}
+                <span className="visit-bar-last"> / 前回: {formatDate(visits[visits.length - 1].date)}</span>
+              </span>
+            )}
+          </div>
         </>
       )}
 
@@ -1038,6 +1192,7 @@ export default function App() {
           <InfoTab
             info={info}
             gender={gender}
+            preset={preset}
             onChange={next => updateCurrent({ info: next })}
           />
           <div className="result-log">
@@ -1055,6 +1210,19 @@ export default function App() {
                 {info.memo && <div className="result-item"><span className="part-label">メモ</span><span>{info.memo}</span></div>}
               </div>
             )}
+            {visits.length > 0 && (
+              <div className="visit-history">
+                <div className="visit-history-label">
+                  {preset === 'btob_sales' ? '商談履歴' : '来店履歴'} — {visits.length}回
+                </div>
+                {[...visits].reverse().map((v, i) => (
+                  <div key={v.id} className="visit-history-item">
+                    <span className="visit-history-num">{visits.length - i}回目</span>
+                    <span className="visit-history-date">{formatDate(v.date)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1070,11 +1238,13 @@ export default function App() {
         />
       )}
 
-      {/* 設定 = 男女切替 */}
+      {/* 設定 = 業種プリセット + 男女切替 */}
       {mode === 'settings' && (
         <SettingsTab
           gender={gender}
+          preset={preset}
           onChangeGender={g => updateCurrent({ gender: g })}
+          onChangePreset={p => updateCurrent({ preset: p })}
         />
       )}
 
@@ -1113,6 +1283,16 @@ export default function App() {
           panel={openPanel}
           onConfirm={handleConfirm}
           onClose={() => setOpenPanel(null)}
+        />
+      )}
+
+      {showSwitcher && (
+        <CustomerSwitcher
+          customers={customers}
+          currentId={currentId}
+          onSelect={handleSelectCustomer}
+          onNew={handleNewCustomer}
+          onClose={() => setShowSwitcher(false)}
         />
       )}
     </div>

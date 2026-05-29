@@ -874,6 +874,38 @@ svg.lucide { color: #c9a84c; }
 }
 
 /* ======= CustomerList ======= */
+.customer-search-row {
+  position: relative;
+  padding: 12px 16px 0;
+}
+.customer-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #111100;
+  border: 1px solid #2a2000;
+  border-radius: 10px;
+  color: #c9a84c;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 10px 36px 10px 14px;
+  outline: none;
+}
+.customer-search-input:focus { border-color: #c9a84c; }
+.customer-search-input::placeholder { color: #3a2e10; }
+.customer-search-clear {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%) translateY(6px);
+  background: none;
+  border: none;
+  color: #4a3820;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
 .customer-list {
   flex: 1;
   overflow-y: auto;
@@ -1092,4 +1124,232 @@ svg.lucide { color: #c9a84c; }
   letter-spacing: 0.06em;
   line-height: 1.7;
   margin: 0;
+}
+
+/* ======= プリセット切替ボタン ======= */
+.preset-toggle {
+  display: flex;
+  gap: 12px;
+}
+.preset-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  background: #111100;
+  border: 1px solid #2a2000;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s;
+}
+.preset-btn:active { background: #1a1400; }
+.preset-btn--active {
+  border-color: #c9a84c;
+  background: #1a1400;
+}
+.preset-btn-icon { font-size: 28px; line-height: 1; }
+.preset-btn-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a3820;
+  letter-spacing: 0.1em;
+}
+.preset-btn--active .preset-btn-label { color: #c9a84c; }
+
+/* ======= 来店記録バー ======= */
+.visit-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #0d0b00;
+  border-top: 1px solid #2a2000;
+  flex-shrink: 0;
+}
+.visit-record-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 8px;
+  color: #c9a84c;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.visit-record-btn:active { background: rgba(201, 168, 76, 0.22); }
+.visit-bar-count {
+  font-size: 12px;
+  color: #7a6030;
+  letter-spacing: 0.04em;
+}
+.visit-bar-last { color: #4a3820; }
+
+/* ======= ヘッダー来店バッジ ======= */
+.header-visit-badge {
+  background: rgba(201, 168, 76, 0.2);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 4px;
+  color: #c9a84c;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* ======= 情報タブ — 来店履歴 ======= */
+.visit-history {
+  margin-top: 12px;
+  border-top: 1px solid #2a2000;
+  padding-top: 10px;
+}
+.visit-history-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #7a6030;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.visit-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1a1400;
+}
+.visit-history-num {
+  font-size: 10px;
+  color: #c9a84c;
+  font-weight: 700;
+  min-width: 36px;
+}
+.visit-history-date {
+  font-size: 13px;
+  color: #7a6030;
+}
+
+/* ======= ヘッダー客名ボタン ======= */
+.header-customer-switch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font-size: inherit;
+}
+.header-customer-label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-switch-chevron {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ======= CustomerSwitcher ======= */
+.switcher-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 600;
+}
+.switcher-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1208;
+  border-top: 1px solid #3a2e10;
+  border-radius: 16px 16px 0 0;
+  z-index: 601;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+}
+.switcher-handle {
+  width: 36px;
+  height: 4px;
+  background: #3a2e10;
+  border-radius: 2px;
+  margin: 10px auto 8px;
+  flex-shrink: 0;
+}
+.switcher-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+.switcher-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c9a84c;
+  font-size: 15px;
+  text-align: left;
+  border-bottom: 1px solid rgba(58, 46, 16, 0.4);
+}
+.switcher-item:last-child {
+  border-bottom: none;
+}
+.switcher-item--active {
+  background: rgba(201, 168, 76, 0.1);
+  font-weight: 700;
+}
+.switcher-item-gender {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.switcher-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.switcher-item-now {
+  background: #c9a84c;
+  color: #0e0a02;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.switcher-item-time {
+  font-size: 11px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.switcher-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 40px);
+  margin: 10px 20px 16px;
+  padding: 14px;
+  background: rgba(201, 168, 76, 0.12);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 10px;
+  color: #c9a84c;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
