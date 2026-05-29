@@ -1,0 +1,46 @@
+# Voice of Becky — stackchan-bridge config
+
+# Wake words: これらの文字列を含む発話だけ Claude Code に inject する
+wake_words:
+  - "ベッキー"
+  - "ベキたん"
+  - "ビッキー"
+  - "べっきー"
+  - "べきたん"
+
+# マイク設定
+audio:
+  sample_rate: 16000
+  channels: 1
+  # sounddevice デバイスインデックス。null = デフォルトデバイス（DJI Mic Mini）
+  device_index: null
+
+# VAD 設定（webrtcvad）
+vad:
+  # 0=最も敏感 / 3=最も厳格（ノイズ耐性高）
+  aggressiveness: 2
+  # 無音判定: VAD false が何フレーム続いたら発話終了とみなすか
+  silence_frames: 25
+
+# Whisper 設定
+whisper:
+  model_size: "small"
+  language: "ja"
+  # CPU のみ（M4 は MPS だが ctranslate2 は cpu で安定）
+  device: "cpu"
+  compute_type: "int8"
+
+# iTerm2 inject 設定
+iterm2:
+  # inject 前にプロンプトを待つ秒数（Claude Code が入力待ちになるまで）
+  wait_before_inject: 0.3
+
+# TTS 設定
+tts:
+  # VOICEVOX speaker ID（8 = 春日部つむぎ）。VOICEVOX が落ちてる時は say にフォールバック
+  voicevox_speaker_id: 8
+  voice: "Kyoko"
+  # say コマンドの発話速度（デフォルト 175 words/min）
+  rate: 185
+  # 最大読み上げ文字数（長すぎる応答はここで切る）
+  max_chars: 300
