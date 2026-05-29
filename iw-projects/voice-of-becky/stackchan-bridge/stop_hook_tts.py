@@ -101,14 +101,33 @@ def clean_for_tts(text: str, max_chars: int) -> str:
 VOICEVOX_URL = "http://localhost:50021"
 
 
+STACKCHAN_SAY_URL = "http://localhost:8766/say"
+
+
+def _speak_stackchan(text: str, speaker_id: int) -> None:
+    """stackchan-mcp gateway の /say エンドポイント経由でスタックちゃんに喋らせる。"""
+    data = json.dumps({"text": text, "speaker_id": speaker_id, "voice": "voicevox"}).encode()
+    req = urllib.request.Request(
+        STACKCHAN_SAY_URL,
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as res:
+        res.read()
+
+
 def speak(text: str, voice: str, rate: int, speaker_id: int = 8, voicevox_params: dict | None = None) -> None:
     """
-    VOICEVOX API で読み上げ。失敗時は say コマンドにフォールバック。
+    スタックちゃん経由で読み上げ。失敗時は VOICEVOX → say コマンドの順でフォールバック。
     """
     try:
-        _speak_voicevox(text, speaker_id, voicevox_params or {})
+        _speak_stackchan(text, speaker_id)
     except Exception:
-        _speak_say(text, voice, rate)
+        try:
+            _speak_voicevox(text, speaker_id, voicevox_params or {})
+        except Exception:
+            _speak_say(text, voice, rate)
 
 
 def _write_pid(pid: int) -> None:

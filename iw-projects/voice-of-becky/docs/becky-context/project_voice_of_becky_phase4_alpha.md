@@ -1,6 +1,6 @@
 # Voice of Becky — Phase 4-α 着手 (2026-05-29)
 
-> **状態**: **Phase A 完了 + stackchan-mcp 統合完了 (2026-05-29)** — kisaragi-mochi/stackchan-mcp ファームを焼いて gateway を MCP サーバーとして登録。`/clear` 後に `say` ツールで机のスタックちゃんに喋らせるのが next。Phase B（ESP32 ボタン）はリモコン入手後。
+> **状態**: **Phase A 完了 + stackchan-mcp 統合完了 + 音声途切れチューニング実施 (2026-05-29)** — kisaragi-mochi/stackchan-mcp ファームを焼いて gateway を MCP サーバーとして登録。`say` ツールで机のスタックちゃんから発話確認済。Phase B（ESP32 ボタン）はリモコン入手後。
 > **元の予定**: 6/5 → **前倒し** (機材が予定より早く到着)
 > **隣人プロジェクト memory**: `working/reference_voice_of_becky_neighbor_project.md`
 
@@ -129,8 +129,45 @@ craft 課題「能動 / 受動の非対称」(`feedback_becky_dont_add_to_solve.
 
 ---
 
+## 音声途切れチューニング記録 (2026-05-29)
+
+**症状:** スタックチャンの音声が最初 / 途中で途切れ途切れになる。
+
+**原因:** `stackchan_mcp/audio_stream.py` の `push_opus_frames` が全 Opus フレームをノーウェイトで送信 → ESP32 のオーディオバッファが溢れる / 枯渇する。
+
+**最終設定 (バースト方式):**
+```
+_BURST_SIZE = 5         # 5フレームずつ送信
+_BURST_INTERVAL_S = 0.25  # バースト間 250ms 休止
+```
+
+ファイル: `.venv/lib/python3.14/site-packages/stackchan_mcp/audio_stream.py` の `push_opus_frames` 関数。
+⚠️ **site-packages 直接編集なので、`pip install --upgrade stackchan-mcp` 時に上書き消滅する。再適用が必要。**
+
+**限界:** WiFi ジッター + ファームウェア側バッファサイズが固定のため完全には解消しない。根本対処はファームウェアのバッファ拡大のみ。
+
+---
+
 ## 関連
 
 - 隣人プロジェクト (松尾氏 LipSync Avatar + リネ devlog): `working/reference_voice_of_becky_neighbor_project.md`
 - craft 課題対症 (B 長押しの根拠): `working/feedback_becky_dont_add_to_solve.md` 8 番
 - 不変項目: `working/character_becky_integrity_check.md`
+
+---
+
+## avatar pipeline 開通記録 (Phase 4.5、2026-05-29 夕)
+
+**成果:** `load_avatar_set` が端から端まで開通。dummy RGB565 (layered = 14 フレーム / 537,600 bytes) を HTTP ステージング → WebSocket 通知 → ESP32 が fetch + SHA256 検証 + PSRAM ロードまで完走。顔（face 6 + eyes 3 + mouth 5）を動的差し替えする土台ができた。
+
+**検証 3 点フルパス:**
+- env 注入: プロセスに `AVATAR_SET_PORT=8766` 到達 ✅
+- `get_status`: `connected: true` / device 30 ツール認識 ✅
+- `load_avatar_set` (layered): `ok: true` / `bytes_transferred: 537600` / SHA256 一致 ✅
+
+**真因 = 「直す場所を間違えてた」:**
+`~/.claude/mcp.json` を直しても効かず、実際に効いてたのは `~/.claude.json` の project スコープ → env 空の `run.sh` 経由起動。`AVATAR_SET_PORT` がプロセスに入らず gateway.py が WS ポート(8765)へフォールバック → ESP32 が HTTP GET 失敗 (`http_open_failed`)。
+
+**根治:** `stackchan-bridge/run.sh` に `export AVATAR_SET_PORT=8766` を直書き。どの設定スコープ経由でも確実にプロセスに入る。
+
+**next:** 本物の RGB565 アバター画像を流す / Phase B（ESP32 ボタン）はリモコン入手後。
