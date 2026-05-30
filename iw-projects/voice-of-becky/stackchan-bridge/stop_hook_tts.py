@@ -222,12 +222,28 @@ def _speak_say(text: str, voice: str, rate: int) -> None:
 
 FLAG_FILE = Path("/tmp/becky_tts_enabled")
 
+# 確認・権限待ちを検出するキーワード（常時有効、フラグ不要）
+CONFIRM_KEYWORDS = [
+    "どうする", "どうしますか", "どちら", "選んで", "確認",
+    "やっていい", "実行して", "進めて", "承認", "許可",
+    "いい？", "いいですか", "ですか？", "しますか？", "しますか",
+]
+CONFIRM_PHRASES = [
+    "裕司、確認して！",
+    "裕司、選んで！",
+    "裕司、止まってるよ！",
+]
+
+import random
+
+
+def _is_waiting_for_confirm(text: str) -> bool:
+    """最後の応答が確認・選択待ちかどうか判定する。"""
+    last_200 = text[-200:]  # 末尾だけ確認
+    return any(kw in last_200 for kw in CONFIRM_KEYWORDS)
+
 
 def main() -> None:
-    # フラグファイルがなければ黙って終了
-    if not FLAG_FILE.exists():
-        sys.exit(0)
-
     cfg = load_config()
     tts_cfg = cfg.get("tts", {})
     voice = tts_cfg.get("voice", "Kyoko")
@@ -248,17 +264,24 @@ def main() -> None:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
-        # JSON でなければそのまま text として扱う（デバッグ用）
         payload = {"transcript": [{"role": "assistant", "content": raw}]}
 
     text = extract_last_assistant_text(payload)
 
     if not text:
-        # transcript が取れない場合は何もしない（サイレント終了）
+        sys.exit(0)
+
+    # 確認待ち検出（常時有効 — フラグ不要）
+    if _is_waiting_for_confirm(text):
+        phrase = random.choice(CONFIRM_PHRASES)
+        speak(phrase, voice, rate, speaker_id, voicevox_params)
+        sys.exit(0)
+
+    # 通常 TTS（フラグがある時だけ）
+    if not FLAG_FILE.exists():
         sys.exit(0)
 
     clean = clean_for_tts(text, max_chars)
-
     if not clean:
         sys.exit(0)
 
