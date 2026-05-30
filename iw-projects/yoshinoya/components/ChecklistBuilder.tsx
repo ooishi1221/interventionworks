@@ -563,65 +563,50 @@ function Builder({
         <input value={data.title} onChange={e => updateHeader("title", e.target.value)}
           className="flex-1 text-lg font-bold text-gray-900 dark:text-gray-50 bg-transparent border-none outline-none min-w-0"
           placeholder="タイトルを入力" />
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <DarkToggle dark={dark} onToggle={onToggleDark} />
+          {/* スマホでは非表示 */}
           <button
-            onClick={() => {
-              if (confirm("全項目をクリアします。よろしいですか？")) {
-                onChange({ ...data, items: [newItem(data.columns), newItem(data.columns), newItem(data.columns)] });
-              }
-            }}
-            className="text-gray-600 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            title="全クリア"
-          >
+            onClick={() => { if (confirm("全項目をクリアします。よろしいですか？")) { onChange({ ...data, items: [newItem(data.columns), newItem(data.columns), newItem(data.columns)] }); } }}
+            className="hidden sm:block text-gray-600 dark:text-gray-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            title="全クリア">
             <Trash2 className="w-4 h-4" />
           </button>
           <button onClick={() => onSaveAsTemplate(data)}
             title="このリストの構造を雛形として保存（入力内容はリセット）"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              tmplSaved
-                ? "bg-yo-light text-yo dark:bg-orange-900/40 dark:text-orange-300"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tmplSaved ? "bg-yo-light text-yo dark:bg-orange-900/40 dark:text-orange-300" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}>
             {tmplSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-            {tmplSaved ? "雛形に保存した" : "雛形として保存"}
+            <span className="hidden md:inline">{tmplSaved ? "雛形に保存した" : "雛形として保存"}</span>
           </button>
           <button onClick={() => onSave(data)}
             title="このブラウザに一時保存（別PCでは引き継げません）"
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              isSaved
-                ? "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                : "text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              isSaved ? "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800" : "text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}>
-            {isSaved ? "保存済み（ブラウザ）" : "ブラウザに保存"}
+            <span className="hidden md:inline">{isSaved ? "保存済み（ブラウザ）" : "ブラウザに保存"}</span>
+            <span className="md:hidden">{isSaved ? "保存済" : "保存"}</span>
           </button>
           <div className="relative">
             <button onClick={() => setShowExcelModal(v => !v)}
-              className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm ${
-                showExcelModal
-                  ? "bg-emerald-700 text-white"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+              className={`px-3 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5 shadow-sm ${
+                showExcelModal ? "bg-emerald-700 text-white" : "bg-emerald-600 text-white hover:bg-emerald-700"
               }`}>
               <Download className="w-4 h-4" />
-              Excel 出力
+              <span className="hidden sm:inline">Excel 出力</span>
             </button>
             {showExcelModal && (
-              <FormatModal
-                mode="excel"
-                onSelect={fmt => { setShowExcelModal(false); setPreviewFormat(fmt); }}
-                onClose={() => setShowExcelModal(false)}
-              />
+              <FormatModal mode="excel" onSelect={fmt => { setShowExcelModal(false); setPreviewFormat(fmt); }} onClose={() => setShowExcelModal(false)} />
             )}
           </div>
           <div className="relative">
             <button onClick={() => setShowPrintModal(v => !v)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                showPrintModal
-                  ? "bg-yo text-white"
-                  : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                showPrintModal ? "bg-yo text-white" : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               }`}>
               <Printer className="w-4 h-4" />
-              印刷 / PDF
+              <span className="hidden sm:inline">印刷 / PDF</span>
             </button>
             {showPrintModal && (
               <FormatModal mode="print" onSelect={handlePrint} onClose={() => setShowPrintModal(false)} />

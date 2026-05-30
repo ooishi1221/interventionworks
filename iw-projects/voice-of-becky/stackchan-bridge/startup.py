@@ -75,6 +75,23 @@ def load_avatar() -> bool:
         return False
 
 
+def set_brightness(level: int) -> None:
+    """輝度を設定する。"""
+    data = json.dumps({"tool": "self.screen.set_brightness", "args": {"brightness": level}}).encode()
+    req = urllib.request.Request(
+        f"{BASE_URL}/device_tool",
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5):
+            pass
+        print(f"  ✅ 輝度 → {level}", flush=True)
+    except Exception as exc:
+        print(f"  ⚠️  輝度設定失敗: {exc}", flush=True)
+
+
 def start_touch_watcher() -> None:
     """touch_watcher をバックグラウンドで起動。"""
     # 既存プロセスを kill
@@ -100,6 +117,7 @@ def main() -> None:
         sys.exit(1)
 
     load_avatar()
+    set_brightness(100)
     start_touch_watcher()
 
     print("=== startup 完了 ===", flush=True)

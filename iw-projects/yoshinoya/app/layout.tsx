@@ -27,7 +27,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* ダークモード早期適用（flash防止） */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          try {
+            var s = localStorage.getItem('yoshinoya_dark');
+            var sys = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (s !== null ? s === 'true' : sys) document.documentElement.classList.add('dark');
+          } catch(e) {}
+        `}} />
+        {children}
+      </body>
     </html>
   );
 }
