@@ -37,8 +37,8 @@ iterm2:
 
 # TTS 設定
 tts:
-  # VOICEVOX speaker ID（8 = 春日部つむぎ）。VOICEVOX が落ちてる時は say にフォールバック
-  voicevox_speaker_id: 8
+  # VOICEVOX speaker ID（10 = 雨晴はう）。VOICEVOX が落ちてる時は say にフォールバック
+  voicevox_speaker_id: 10
   # 話速（1.0 = 標準、1.3 = 速め、0.8 = ゆっくり）
   voicevox_speed: 1.1
   # 音高（0.0 = 標準、+0.1 = 高め、-0.1 = 低め、範囲: -0.15〜0.15）
