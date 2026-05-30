@@ -1,6 +1,6 @@
 # Voice of Becky — Phase 4-α 着手 (2026-05-29)
 
-> **状態**: **Phase A 完了 + stackchan-mcp 統合完了 + 音声途切れチューニング実施 (2026-05-29)** — kisaragi-mochi/stackchan-mcp ファームを焼いて gateway を MCP サーバーとして登録。`say` ツールで机のスタックちゃんから発話確認済。Phase B（ESP32 ボタン）はリモコン入手後。
+> **状態**: **アバター第2世代完成 (2026-05-30)** — 顔クロップ素材（め.png 6種 + 口.png 5種）から layered .bin 生成。白目保護 flood fill・グリッド線除去・2ファイル入力対応の `make_becky_avatar.py` 確立。実機「今までで一番いいぞ！」確認済。Phase B（ESP32 ボタン）はリモコン入手後。
 > **元の予定**: 6/5 → **前倒し** (機材が予定より早く到着)
 > **隣人プロジェクト memory**: `working/reference_voice_of_becky_neighbor_project.md`
 
