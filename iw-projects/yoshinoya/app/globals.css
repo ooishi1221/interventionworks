@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-yo: #EE7800;
+  --color-yo-dark: #CC6600;
+  --color-yo-light: #FFF0E0;
+}
+
+@media print {
+  * {
+    visibility: hidden !important;
+  }
+  #yoshinoya-print,
+  #yoshinoya-print * {
+    visibility: visible !important;
+  }
+  #yoshinoya-print {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
