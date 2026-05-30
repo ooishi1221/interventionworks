@@ -24,6 +24,9 @@ from pathlib import Path
 BASE_URL = "http://localhost:8766"
 POLL_INTERVAL = 0.2  # 200ms
 REACTION_COOLDOWN = 3.0  # 同じ反応を連続させない秒数
+DIMMER_TIMEOUT = 300.0  # 5分後に輝度を下げる
+BRIGHTNESS_DIM = 20
+BRIGHTNESS_FULL = 100
 
 STROKE_PHRASES = [
     "えへへ、気持ちいい。",
@@ -54,6 +57,21 @@ def get_touch_state() -> dict | None:
         return None
 
 
+def set_brightness(level: int) -> None:
+    data = json.dumps({"tool": "self.screen.set_brightness", "args": {"brightness": level}}).encode()
+    req = urllib.request.Request(
+        f"{BASE_URL}/device_tool",
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5):
+            pass
+    except Exception:
+        pass
+
+
 def say(text: str, speaker_id: int = 8) -> None:
     """非同期で喋らせる（ポーリングをブロックしない）。"""
     def _send():
@@ -75,7 +93,9 @@ def say(text: str, speaker_id: int = 8) -> None:
 def main() -> None:
     print("touch_watcher: started", flush=True)
     last_reaction_time = 0.0
+    last_activity_time = time.time()
     prev_age_ms = 9999999
+    is_dimmed = False
 
     while True:
         state = get_touch_state()
@@ -92,6 +112,12 @@ def main() -> None:
         cooldown_ok = (now - last_reaction_time) > REACTION_COOLDOWN
 
         if is_new and cooldown_ok:
+            if is_dimmed:
+                threading.Thread(target=lambda: set_brightness(BRIGHTNESS_FULL), daemon=True).start()
+                is_dimmed = False
+                print("brightness restored", flush=True)
+            last_activity_time = now
+
             if event == "stroke":
                 phrase = random.choice(STROKE_PHRASES)
                 print(f"stroke → '{phrase}'", flush=True)
@@ -102,6 +128,12 @@ def main() -> None:
                 print(f"tap → '{phrase}'", flush=True)
                 say(phrase)
                 last_reaction_time = now
+
+        # 5分間インタラクションなし → 輝度を下げる
+        if not is_dimmed and (now - last_activity_time) > DIMMER_TIMEOUT:
+            threading.Thread(target=lambda: set_brightness(BRIGHTNESS_DIM), daemon=True).start()
+            is_dimmed = True
+            print("brightness dimmed", flush=True)
 
         prev_age_ms = age_ms
         time.sleep(POLL_INTERVAL)
