@@ -20,6 +20,14 @@ function getTimestamp() {
   });
 }
 
+async function callSession(action: "start" | "end"): Promise<void> {
+  try {
+    await fetch(`/api/session?action=${action}`, { method: "POST" });
+  } catch (err) {
+    console.error(`Session ${action} error:`, err);
+  }
+}
+
 export default function MeetingPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
@@ -125,6 +133,9 @@ export default function MeetingPage() {
   }, []);
 
   const startRecording = useCallback(async () => {
+    // セッション開始: current.txt をクリアして開始行を書く
+    await callSession("start");
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -168,7 +179,7 @@ export default function MeetingPage() {
     }
   }, [isRecording, sendChunk, runSummary]);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     setIsRecording(false);
 
     if (chunkTimerRef.current) {
@@ -191,6 +202,9 @@ export default function MeetingPage() {
 
     // 停止時に最終要約
     runSummary();
+
+    // セッション終了: 終了行を追記してアーカイブに保存
+    await callSession("end");
   }, [runSummary]);
 
   // cleanup on unmount
@@ -201,6 +215,9 @@ export default function MeetingPage() {
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  // chunksRef は現在未使用（将来の拡張用）
+  void chunksRef;
 
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-zinc-100">

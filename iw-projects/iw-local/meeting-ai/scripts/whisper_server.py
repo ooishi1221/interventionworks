@@ -13,7 +13,7 @@ from aiohttp import web
 from faster_whisper import WhisperModel
 
 PORT = 8767
-MODEL_SIZE = "small"
+MODEL_SIZE = "medium"
 LANGUAGE = "ja"
 
 print(f"[whisper_server] Loading model: {MODEL_SIZE} ...")

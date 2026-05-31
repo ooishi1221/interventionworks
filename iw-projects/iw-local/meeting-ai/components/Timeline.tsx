@@ -81,7 +81,7 @@ export default function Timeline({
                     variant="outline"
                     className="text-xs text-zinc-400 border-zinc-700"
                   >
-                    Gemini
+                    Whisper
                   </Badge>
                 </div>
                 <p className="text-sm text-zinc-200 leading-relaxed">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appendTranscript } from "@/lib/meeting-file";
 
 const WHISPER_SERVER_URL = "http://localhost:8767/transcribe";
 
@@ -26,7 +27,14 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json({ text: data.text ?? "" });
+    const text: string = data.text ?? "";
+
+    // ファイルへの追記（失敗しても録音は止めない）
+    if (text.trim().length > 0) {
+      await appendTranscript(text.trim());
+    }
+
+    return NextResponse.json({ text });
   } catch (error) {
     console.error("Transcribe error:", error);
     return NextResponse.json(
