@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface TimelineEntry {
   id: string;
   timestamp: string;
   text: string;
-  type: "transcript" | "summary";
+  type: "transcript" | "summary" | "bookmark";
 }
 
 interface TimelineProps {
@@ -24,75 +23,81 @@ export default function Timeline({
   isRecording,
   retrying,
 }: TimelineProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const transcriptEntries = entries.filter((e) => e.type === "transcript");
+  const recent = transcriptEntries.slice(-3);
+  const recentScrollRef = useRef<HTMLDivElement>(null);
 
+  // 最新エントリが増えたらスクロール
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (recentScrollRef.current) {
+      recentScrollRef.current.scrollTop = recentScrollRef.current.scrollHeight;
+    }
   }, [entries]);
 
   return (
     <div className="flex flex-col h-full">
-      {/* 同期要約エリア */}
-      <div className="border-b border-zinc-800 p-4 min-h-[120px]">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-            同期要約
-          </span>
+
+      {/* ── 最新発話エリア（PCのみ）── */}
+      <div className="hidden md:block shrink-0 border-b border-zinc-800/60">
+        <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+          <span className="text-xs text-zinc-500 font-medium">最新</span>
           {isRecording && (
-            <Badge variant="default" className="bg-red-600 text-white text-xs animate-pulse">
-              ● REC
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[11px] text-red-400 font-medium">REC</span>
+            </div>
           )}
-          {retrying && (
-            <Badge variant="outline" className="text-yellow-400 border-yellow-400 text-xs">
-              ⚠️ 接続再試行中...
-            </Badge>
+          {retrying && !isRecording && (
+            <span className="text-[11px] text-yellow-500 animate-pulse">再試行中...</span>
           )}
         </div>
-        {summary ? (
-          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-            {summary}
-          </p>
-        ) : (
-          <p className="text-sm text-zinc-600 italic">
-            録音開始から1分後に自動生成されます
-          </p>
-        )}
-      </div>
-
-      {/* タイムライン */}
-      <ScrollArea className="flex-1 p-4">
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-zinc-600">
-            <p className="text-sm">録音ボタンを押して会議を開始してください</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {entries.map((entry) => (
+        <div
+          ref={recentScrollRef}
+          className="px-4 pb-3 max-h-[7rem] overflow-y-auto space-y-1.5 scrollbar-none"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {recent.length === 0 ? (
+            <p className="text-sm text-zinc-700 pb-1">
+              {isRecording ? "音声を処理中..." : "録音を開始してください"}
+            </p>
+          ) : (
+            recent.map((entry, i) => (
               <div
                 key={entry.id}
-                className="border border-zinc-800 rounded-xl p-3 bg-zinc-900"
+                className={`flex gap-2.5 text-sm transition-opacity ${
+                  i === recent.length - 1 ? "opacity-100" : "opacity-40"
+                }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-zinc-500 font-mono">
-                    {entry.timestamp}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="text-xs text-zinc-400 border-zinc-700"
-                  >
-                    Whisper
-                  </Badge>
-                </div>
-                <p className="text-sm text-zinc-200 leading-relaxed">
-                  {entry.text}
-                </p>
+                <span className="text-zinc-700 font-mono tabular-nums text-[11px] pt-[3px] shrink-0 leading-5">
+                  {entry.timestamp}
+                </span>
+                <span className="text-zinc-100 leading-relaxed">{entry.text}</span>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ── 要約エリア ── */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="px-4 pt-3 pb-1 shrink-0">
+          <span className="text-xs text-zinc-500 font-medium">要約</span>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="px-4 pb-4">
+            {summary ? (
+              <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                {summary}
+              </p>
+            ) : (
+              <p className="text-sm text-zinc-700">
+                録音開始から1分後に自動生成されます
+              </p>
+            )}
           </div>
-        )}
-        <div ref={bottomRef} />
-      </ScrollArea>
+        </ScrollArea>
+      </div>
+
     </div>
   );
 }

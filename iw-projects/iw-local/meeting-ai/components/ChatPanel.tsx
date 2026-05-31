@@ -1,189 +1,133 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { useRef, useEffect } from "react";
+import { TimelineEntry } from "@/components/Timeline";
 
 interface ChatPanelProps {
   transcript: string;
+  entries?: TimelineEntry[];
+  onRemoveEntry?: (id: string) => void;
+  onClearAll?: () => void;
+  onRemoveNoise?: () => void;
+  isRecording?: boolean;
+  onBookmark?: () => void;
+  onCopyAll?: () => void;
+  copyDone?: boolean;
 }
 
-export default function ChatPanel({ transcript }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [shaking, setShaking] = useState(false);
+export default function ChatPanel({
+  entries = [],
+  onRemoveEntry,
+  onClearAll,
+  onRemoveNoise,
+  isRecording,
+  onBookmark,
+  onCopyAll,
+  copyDone,
+}: ChatPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const userScrolledUp = useRef(false);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSubmit = async () => {
-    if (!input.trim()) {
-      setShaking(true);
-      setTimeout(() => setShaking(false), 500);
-      return;
-    }
-    if (isLoading) return;
-
-    const userMessage: Message = {
-      id: `user_${Date.now()}`,
-      role: "user",
-      content: input.trim(),
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      userScrolledUp.current = el.scrollHeight - el.scrollTop - el.clientHeight > 80;
     };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    const assistantId = `assistant_${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: assistantId, role: "assistant", content: "" },
-    ]);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: userMessage.content,
-          transcript,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Chat request failed");
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) throw new Error("No reader");
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: m.content + chunk }
-              : m
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, content: "エラーが発生しました。もう一度お試しください。" }
-            : m
-        )
-      );
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!userScrolledUp.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  };
+  }, [entries]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const transcriptEntries = entries.filter((e) => e.type === "transcript");
 
   return (
     <div className="flex flex-col h-full">
-      {/* ヘッダー */}
-      <div className="border-b border-zinc-800 px-4 py-3">
+      {/* パネルヘッダー */}
+      <div className="border-b border-zinc-800/60 px-4 py-2.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-            文脈付き Q&A
-          </span>
-          <Badge variant="outline" className="text-xs text-zinc-400 border-zinc-700">
-            Claude Sonnet
-          </Badge>
+          <span className="text-xs text-zinc-500 font-medium">全文起こし</span>
+          {transcriptEntries.length > 0 && (
+            <span className="text-xs tabular-nums text-zinc-700">
+              {transcriptEntries.length}
+            </span>
+          )}
         </div>
-        <p className="text-xs text-zinc-600 mt-1">
-          会議ログ + プロジェクトメモリーを踏まえて回答します
-        </p>
+        <div className="flex items-center gap-3">
+          {/* ブックマーク: 録音中のみ表示 */}
+          {isRecording && onBookmark && (
+            <button
+              onClick={onBookmark}
+              className="text-xs text-zinc-500 hover:text-yellow-400 transition-colors min-h-[32px] px-1"
+              aria-label="ブックマーク"
+            >
+              ★
+            </button>
+          )}
+          {/* コピーボタン用スペース (アンディ追加予定) */}
+          {onCopyAll && (
+            <button
+              onClick={onCopyAll}
+              className="text-xs text-zinc-600 hover:text-zinc-300 transition-colors min-h-[32px]"
+            >
+              {copyDone ? "コピー済 ✓" : "コピー"}
+            </button>
+          )}
+          {onRemoveNoise && (
+            <button
+              onClick={onRemoveNoise}
+              className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors min-h-[32px]"
+            >
+              ノイズ削除
+            </button>
+          )}
+          {onClearAll && (
+            <button
+              onClick={onClearAll}
+              className="text-xs text-zinc-600 hover:text-red-400 transition-colors min-h-[32px]"
+            >
+              全削除
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* メッセージ一覧 */}
-      <ScrollArea className="flex-1 p-4">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-zinc-600">
-            <p className="text-sm">質問を入力してください</p>
-            <p className="text-xs mt-1">例: 「今の議論のポイントは？」</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-zinc-800 text-zinc-200 border border-zinc-700"
-                  }`}
-                >
-                  {msg.content || (
-                    <span className="animate-pulse text-zinc-500">考え中...</span>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="px-4 py-3">
+          {transcriptEntries.length === 0 ? (
+            <div className="flex items-center justify-center h-28">
+              <p className="text-sm text-zinc-700">
+                {isRecording ? "音声を処理中..." : "録音を開始すると文字が流れます"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {transcriptEntries.map((entry) => (
+                <div key={entry.id} className="flex gap-3 text-sm group">
+                  <span className="text-zinc-700 shrink-0 text-[11px] pt-[3px] font-mono tabular-nums leading-5">
+                    {entry.timestamp}
+                  </span>
+                  <span className="text-zinc-200 leading-relaxed flex-1">{entry.text}</span>
+                  {onRemoveEntry && (
+                    <button
+                      onClick={() => onRemoveEntry(entry.id)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-opacity shrink-0 text-xs px-1 min-h-[24px]"
+                      aria-label="削除"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </ScrollArea>
-
-      {/* 入力エリア */}
-      <div className="border-t border-zinc-800 p-4">
-        <div
-          className={`relative ${shaking ? "animate-[shake_0.5s_ease-in-out]" : ""}`}
-        >
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="質問を入力... (Enter送信 / Shift+Enter改行)"
-            className="resize-none bg-zinc-900 border-zinc-700 text-zinc-200 placeholder:text-zinc-600 rounded-2xl pr-12 min-h-[80px] focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            disabled={isLoading}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="absolute right-3 bottom-3 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 flex items-center justify-center transition-colors"
-            aria-label="送信"
-          >
-            <svg
-              className="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </button>
+              ))}
+            </div>
+          )}
+          <div ref={bottomRef} />
         </div>
       </div>
     </div>

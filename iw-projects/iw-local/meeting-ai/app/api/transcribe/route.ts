@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appendTranscript } from "@/lib/meeting-file";
 
-const WHISPER_SERVER_URL = "http://localhost:8767/transcribe";
+const WHISPER_SERVER_URL = "http://127.0.0.1:8767/transcribe";
 
 export async function POST(req: NextRequest) {
   try {
