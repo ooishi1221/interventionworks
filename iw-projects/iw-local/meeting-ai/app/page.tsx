@@ -5,7 +5,6 @@ import Timeline, { TimelineEntry } from "@/components/Timeline";
 import ChatPanel from "@/components/ChatPanel";
 
 const CHUNK_INTERVAL_MS = 8000;
-const SUMMARY_INTERVAL_MS = 60000;
 const RMS_THRESHOLD = 0.0005;
 
 function generateId(prefix: string) {
@@ -31,11 +30,11 @@ async function callSession(action: "start" | "end"): Promise<void> {
 export default function MeetingPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  const [summary, setSummary] = useState("");
+  const [summary] = useState("");
   const [retrying, setRetrying] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [copyDone, setCopyDone] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"transcript" | "summary">("transcript");
+  const [mobileTab] = useState<"transcript">("transcript");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -113,24 +112,6 @@ export default function MeetingPage() {
     [isAudioSilent]
   );
 
-  const runSummary = useCallback(async () => {
-    const buf = transcriptBufferRef.current;
-    if (!buf.trim()) return;
-
-    try {
-      const res = await fetch("/api/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: buf }),
-      });
-      if (!res.ok) return;
-      const { summary: newSummary } = await res.json();
-      if (newSummary) setSummary(newSummary);
-    } catch (err) {
-      console.error("Summary error:", err);
-    }
-  }, []);
-
   const startRecording = useCallback(async () => {
     await callSession("start");
 
@@ -167,12 +148,11 @@ export default function MeetingPage() {
       startChunk();
       setIsRecording(true);
 
-      summaryTimerRef.current = setInterval(runSummary, SUMMARY_INTERVAL_MS);
     } catch (err) {
       console.error("Start recording error:", err);
       alert("マイクへのアクセスが拒否されました。ブラウザの設定を確認してください。");
     }
-  }, [isRecording, sendChunk, runSummary]);
+  }, [isRecording, sendChunk]);
 
   const stopRecording = useCallback(async () => {
     setIsRecording(false);
@@ -195,19 +175,18 @@ export default function MeetingPage() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
 
-    runSummary();
     await callSession("end");
-    // セッション保存
+    // セッション保存（要約なし）
     try {
       await fetch("/api/session?action=save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary }),
+        body: JSON.stringify({ summary: "" }),
       });
     } catch (err) {
       console.error("Session save error:", err);
     }
-  }, [runSummary, summary]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -290,31 +269,11 @@ export default function MeetingPage() {
         </div>
       </header>
 
-      {/* モバイル タブバー */}
-      <div className="md:hidden shrink-0 flex border-b border-zinc-800/60">
-        <button
-          onClick={() => setMobileTab("transcript")}
-          className={`flex-1 py-2 text-xs font-medium transition-colors ${
-            mobileTab === "transcript" ? "text-zinc-100 border-b-2 border-blue-500" : "text-zinc-500"
-          }`}
-        >
-          全文起こし
-        </button>
-        <button
-          onClick={() => setMobileTab("summary")}
-          className={`flex-1 py-2 text-xs font-medium transition-colors ${
-            mobileTab === "summary" ? "text-zinc-100 border-b-2 border-blue-500" : "text-zinc-500"
-          }`}
-        >
-          要約
-        </button>
-      </div>
-
       {/* メインコンテンツ */}
       <main className="flex flex-1 overflow-hidden flex-col md:flex-row">
 
-        {/* 全文起こし: PCは常時表示、モバイルはtranscriptタブ時のみ */}
-        <div className={`${mobileTab === "transcript" ? "flex" : "hidden"} md:flex flex-1 md:w-1/2 md:border-r border-zinc-800/60 overflow-hidden flex-col`}>
+        {/* 全文起こし */}
+        <div className="flex flex-1 md:w-1/2 md:border-r border-zinc-800/60 overflow-hidden flex-col">
           <ChatPanel
             transcript={transcript}
             entries={entries}
@@ -328,11 +287,11 @@ export default function MeetingPage() {
           />
         </div>
 
-        {/* 要約: PCは常時表示、モバイルはsummaryタブ時のみ */}
-        <div className={`${mobileTab === "summary" ? "flex" : "hidden"} md:flex flex-1 md:w-1/2 overflow-hidden flex-col`}>
+        {/* PC のみ: 最新ログ表示（要約なし） */}
+        <div className="hidden md:flex flex-1 md:w-1/2 overflow-hidden flex-col">
           <Timeline
             entries={entries}
-            summary={summary}
+            summary=""
             isRecording={isRecording}
             retrying={retrying}
           />

@@ -39,6 +39,9 @@ print(f"[whisper_server] Loading model: {MODEL_SIZE} ...")
 model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8")
 print(f"[whisper_server] Model loaded. Listening on port {PORT}")
 
+# 同時処理を1件に制限（キュー）
+_semaphore = asyncio.Semaphore(1)
+
 
 async def handle_transcribe(request: web.Request) -> web.Response:
     try:
@@ -57,7 +60,9 @@ async def handle_transcribe(request: web.Request) -> web.Response:
 
         # 一時ファイルに書き出して faster-whisper に渡す
         suffix = ".webm"
-        if "mp4" in mime_type:
+        if "m4a" in mime_type:
+            suffix = ".m4a"
+        elif "mp4" in mime_type:
             suffix = ".mp4"
         elif "wav" in mime_type:
             suffix = ".wav"
@@ -109,4 +114,4 @@ app = web.Application()
 app.router.add_post("/transcribe", handle_transcribe)
 
 if __name__ == "__main__":
-    web.run_app(app, host="127.0.0.1", port=PORT)
+    web.run_app(app, host="0.0.0.0", port=PORT)
