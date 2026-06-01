@@ -324,6 +324,50 @@ iPhone を会議室に置いてしゃべれば Mac の私がリアルタイム�
 - [ ] GnH カルテへの自動書き込み連携
 - [ ] バックグラウンド録音（iOS 制限あり、PWA 化で部分解決）
 
+## 2026-06-01 — MAI（meeting-ai）VPS 本番稼働・実用レベル到達
+
+meeting-ai が「**MAI（まいちゃん）**」と命名され、本番稼働まで完走。
+
+### 確定した構成
+
+| 項目 | 内容 |
+|---|---|
+| **本番 URL** | `https://mai.intervention.jp`（KAGOYA VPS + Caddy + systemd） |
+| **モデル** | Whisper small（VPS）/ large-v3（Mac mini、チューニング用） |
+| **接続方法** | iPhoneアプリ設定画面でURLを変えるだけ |
+| **EAS Build** | ce4e9235（今日ビルド完了、enableBackgroundRecording: true 反映済み）|
+
+### Whisper パラメータ確定値（今日の試行錯誤で決まった）
+
+```python
+vad_filter=False          # FalseにしないとVADが会話を無音判定してスキップ
+no_speech_threshold=0.3   # 0.8だと半分飛んだ、0.3で全セクション取れる
+initial_prompt="えー、あのー、そうですね、はい。"  # 話し言葉モード
+```
+
+### iPhone アプリ UI 刷新（今日の実装）
+
+- タブバー5タブ（Ionicons）: ホーム / 履歴 / 🎙録音 / 📝お願い / ⚙設定
+- **お願いタブ**: プリセット5個（要約して/質問ちょうだい/技術的に考えて/アクションアイテム/議事録）+ 自由メモ → `current.txt` の `[お願い]` セクションに保存
+- **履歴タブ**: セッション一覧・詳細・削除（停止時に自動保存・自動更新）
+- ヘッダーに「残りN件」処理待ち表示
+
+### 実用レベルの確認
+
+5分の会議サンプルで正解テキストとセクション比較 → **全セクション一致、飛ばしゼロ**。
+
+### VPS のAPI エンドポイント（今日追加）
+
+`/start-session` / `/save-session` / `/request` / `/sessions` (GET/DELETE)
+
+### next（MAI）
+
+- [ ] バックグラウンド録音テスト（新EASビルドで改善の可能性あり）
+- [ ] VPS の Whisper パラメータを Mac mini と揃える（vad_filter=False, no_speech_threshold=0.3）
+- [ ] WOメンバーへの共有（URLを渡すだけで使える）
+- [ ] 話者分離（pyannote.audio）
+- [ ] GnH カルテへの自動書き込み連携
+
 ## 次のステップ（GnH）
 
 - [ ] main マージ（feat/gnh-flick-stage3 → main）

@@ -47,8 +47,30 @@ export async function appendTranscript(text: string): Promise<void> {
 /** セッション開始: current.txt をクリアして開始行を書く */
 export async function startSession(): Promise<void> {
   await ensureDirs();
-  const header = `=== セッション開始 [${jstTimestamp()}] ===\n`;
-  await writeFile(CURRENT_FILE, header, "utf-8");
+  const content = `[お願い]\n\n[文字起こし]\n=== セッション開始 [${jstTimestamp()}] ===\n`;
+  await writeFile(CURRENT_FILE, content, "utf-8");
+}
+
+/** お願いセクションを更新（文字起こしは保持） */
+export async function updateRequest(items: string[], memo: string): Promise<void> {
+  try {
+    await ensureDirs();
+    let transcriptSection = "";
+    if (existsSync(CURRENT_FILE)) {
+      const raw = await readFile(CURRENT_FILE, "utf-8");
+      const idx = raw.indexOf("[文字起こし]");
+      transcriptSection = idx >= 0 ? raw.slice(idx) : `[文字起こし]\n${raw}`;
+    } else {
+      transcriptSection = "[文字起こし]\n";
+    }
+    const requestLines = items.map((i) => `- ${i}`).join("\n");
+    const memoLine = memo.trim() ? `- メモ: ${memo.trim()}` : "";
+    const requestBlock = [requestLines, memoLine].filter(Boolean).join("\n");
+    const content = `[お願い]\n${requestBlock}\n\n${transcriptSection}`;
+    await writeFile(CURRENT_FILE, content, "utf-8");
+  } catch (err) {
+    console.error("[meeting-file] updateRequest error:", err);
+  }
 }
 
 /** ブックマークを追記 */

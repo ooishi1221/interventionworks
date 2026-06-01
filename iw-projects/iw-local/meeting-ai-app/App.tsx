@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -11,15 +12,17 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 import {
   useAudioRecorder,
   setAudioModeAsync,
+  setIsAudioActiveAsync,
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
   RecordingPresets,
 } from "expo-audio";
-import type { RecordingOptions } from "expo-audio";
+import type { AudioRecorder, RecordingOptions } from "expo-audio";
 import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
@@ -29,7 +32,7 @@ import { StatusBar } from "expo-status-bar";
 // ──────────────────────────────────────────
 const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
-const CHUNK_DURATION_MS = 20000;
+const CHUNK_DURATION_MS = 30000;
 const RECORDING_OPTIONS: RecordingOptions = RecordingPresets.HIGH_QUALITY;
 const NOISE_PATTERNS = [
   "ご視聴ありがとう",
@@ -60,27 +63,41 @@ interface TranscriptEntry {
   text: string;
 }
 
-type Screen = "main" | "settings";
+interface SessionItem {
+  filename: string;
+  preview: string;
+}
+
+type Tab = "home" | "history" | "request" | "settings";
 
 // ──────────────────────────────────────────
 // App
 // ──────────────────────────────────────────
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("main");
+  const [tab, setTab] = useState<Tab>("home");
   const [whisperUrl, setWhisperUrl] = useState(DEFAULT_WHISPER_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_WHISPER_URL);
+  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+  const [requestMemo, setRequestMemo] = useState("");
+  const [requestSaving, setRequestSaving] = useState(false);
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<{ filename: string; content: string } | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [sending, setSending] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // useAudioRecorder はフックなのでトップレベルで呼ぶ
-  const recorder = useAudioRecorder(RECORDING_OPTIONS);
+  const recorderA = useAudioRecorder(RECORDING_OPTIONS);
+  const recorderB = useAudioRecorder(RECORDING_OPTIONS);
 
   const chunkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRecordingRef = useRef(false);
   const isSendingRef = useRef(false);
   const pendingChunksRef = useRef<string[]>([]);
+  const activeRecorderIndexRef = useRef(0);
+  const handoffInProgressRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // ── URL 読み込み ──
@@ -100,7 +117,7 @@ export default function App() {
     }
   }, [entries]);
 
-  // ── チャンク送信（キュー方式: 1件ずつ順番に処理） ──
+  // ── チャンク送信（キュー方式） ──
   const processQueue = useCallback(async (): Promise<void> => {
     if (isSendingRef.current) return;
     const uri = pendingChunksRef.current.shift();
@@ -121,11 +138,14 @@ export default function App() {
       const { text } = (await res.json()) as { text?: string };
       setError(null);
       if (text && text.trim().length > 0 && !isNoise(text.trim())) {
-        setEntries((prev) => [...prev, {
-          id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-          timestamp: getTimestamp(),
-          text: text.trim(),
-        }]);
+        setEntries((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            timestamp: getTimestamp(),
+            text: text.trim(),
+          },
+        ]);
       }
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (err) {
@@ -134,49 +154,137 @@ export default function App() {
     } finally {
       isSendingRef.current = false;
       setSending(false);
+      setPendingCount(pendingChunksRef.current.length);
       if (pendingChunksRef.current.length > 0) processQueue();
     }
   }, [whisperUrl]);
 
-  const sendChunk = useCallback((uri: string) => {
-    pendingChunksRef.current.push(uri);
-    processQueue();
-  }, [processQueue]);
+  const sendChunk = useCallback(
+    (uri: string) => {
+      pendingChunksRef.current.push(uri);
+      setPendingCount(pendingChunksRef.current.length);
+      processQueue();
+    },
+    [processQueue]
+  );
+
+  const configureRecordingAudioSession = useCallback(async () => {
+    await setAudioModeAsync({
+      allowsRecording: true,
+      allowsBackgroundRecording: true,
+      shouldPlayInBackground: true,
+      playsInSilentMode: true,
+      interruptionMode: "doNotMix",
+    });
+    await setIsAudioActiveAsync(true);
+  }, []);
+
+  const getRecorder = useCallback(
+    (index: number) => (index === 0 ? recorderA : recorderB),
+    [recorderA, recorderB]
+  );
+
+  const copyChunkToDocumentDirectory = useCallback(async (uri: string) => {
+    try {
+      const destUri = `${FileSystem.documentDirectory}chunk_${Date.now()}.m4a`;
+      await FileSystem.copyAsync({ from: uri, to: destUri });
+      return destUri;
+    } catch {
+      return uri;
+    }
+  }, []);
+
+  const startRecorder = useCallback(
+    async (targetRecorder: AudioRecorder) => {
+      await targetRecorder.prepareToRecordAsync(RECORDING_OPTIONS);
+      targetRecorder.record();
+    },
+    []
+  );
+
+  const scheduleChunkHandoff = useCallback(
+    (currentIndex: number) => {
+      if (!isRecordingRef.current) return;
+
+      chunkTimerRef.current = setTimeout(async () => {
+        chunkTimerRef.current = null;
+        if (!isRecordingRef.current || handoffInProgressRef.current) return;
+
+        const currentRecorder = getRecorder(currentIndex);
+        const nextIndex = currentIndex === 0 ? 1 : 0;
+        const nextRecorder = getRecorder(nextIndex);
+        handoffInProgressRef.current = true;
+
+        try {
+          try {
+            await startRecorder(nextRecorder);
+          } catch (startError) {
+            console.warn("next chunk start error:", startError);
+            if (isRecordingRef.current) {
+              await configureRecordingAudioSession();
+              scheduleChunkHandoff(currentIndex);
+            }
+            return;
+          }
+
+          activeRecorderIndexRef.current = nextIndex;
+
+          try {
+            await currentRecorder.stop();
+            const uri = currentRecorder.uri;
+            if (uri) {
+              sendChunk(await copyChunkToDocumentDirectory(uri));
+            }
+          } catch (stopError) {
+            console.warn("previous chunk stop error:", stopError);
+          }
+
+          scheduleChunkHandoff(nextIndex);
+        } catch (e) {
+          console.warn("chunk handoff error:", e);
+          if (isRecordingRef.current) {
+            try {
+              await configureRecordingAudioSession();
+            } catch (sessionError) {
+              console.warn("audio session reactivate error:", sessionError);
+            }
+            scheduleChunkHandoff(currentIndex);
+          }
+        } finally {
+          handoffInProgressRef.current = false;
+        }
+      }, CHUNK_DURATION_MS);
+    },
+    [
+      configureRecordingAudioSession,
+      copyChunkToDocumentDirectory,
+      getRecorder,
+      sendChunk,
+      startRecorder,
+    ]
+  );
 
   // ── 1チャンク録音 → 送信 → ループ ──
-  const recordChunk = useCallback(async (): Promise<void> => {
+  const recordChunk = useCallback(async (retryCount = 0): Promise<void> => {
     if (!isRecordingRef.current) return;
 
     try {
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-
-      chunkTimerRef.current = setTimeout(async () => {
-        if (!isRecordingRef.current) return;
-        try {
-          await recorder.stop();
-          const uri = recorder.uri;
-          if (uri) {
-            // ファイルを安全な場所にコピーしてからキューに入れる
-            const destUri = `${FileSystem.cacheDirectory}chunk_${Date.now()}.m4a`;
-            await FileSystem.copyAsync({ from: uri, to: destUri });
-            sendChunk(destUri);
-          }
-        } catch (e) {
-          console.warn("chunk stop error:", e);
-        }
-        // 次チャンク
-        recordChunk();
-      }, CHUNK_DURATION_MS);
+      const recorderIndex = activeRecorderIndexRef.current;
+      await startRecorder(getRecorder(recorderIndex));
+      scheduleChunkHandoff(recorderIndex);
     } catch (e) {
       console.error("recordChunk error:", e);
-      if (isRecordingRef.current) {
-        setError("録音エラーが発生しました");
+      if (isRecordingRef.current && retryCount < 3) {
+        // オーディオセッション切断からの復帰を待ってリトライ
+        await new Promise((r) => setTimeout(r, 5000));
+        recordChunk(retryCount + 1);
+      } else if (isRecordingRef.current) {
+        setError("録音エラーが発生しました（バックグラウンドに長時間置くと止まる場合があります）");
         setIsRecording(false);
         isRecordingRef.current = false;
       }
     }
-  }, [recorder, sendChunk]);
+  }, [getRecorder, scheduleChunkHandoff, startRecorder]);
 
   // ── 録音開始 ──
   const startRecording = useCallback(async () => {
@@ -187,20 +295,20 @@ export default function App() {
         ? existingPermission
         : await requestRecordingPermissionsAsync();
       if (!granted) {
-        Alert.alert("マイク許可が必要です", "設定からマイクへのアクセスを許可してください。");
+        Alert.alert(
+          "マイク許可が必要です",
+          "設定からマイクへのアクセスを許可してください。"
+        );
         return;
       }
 
-      await setAudioModeAsync({
-        allowsRecording: true,
-        allowsBackgroundRecording: true,
-        shouldPlayInBackground: true,
-        playsInSilentMode: true,
-        interruptionMode: "doNotMix",
-      });
+      await configureRecordingAudioSession();
 
+      activeRecorderIndexRef.current = 0;
       isRecordingRef.current = true;
       setIsRecording(true);
+      // current.txt をクリアして新セッション開始
+      fetch(`${whisperUrl}/start-session`, { method: "POST" }).catch(() => {});
       await recordChunk();
     } catch (e) {
       console.error("startRecording error:", e);
@@ -208,7 +316,7 @@ export default function App() {
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [recordChunk]);
+  }, [configureRecordingAudioSession, recordChunk, whisperUrl]);
 
   // ── 録音停止 ──
   const stopRecording = useCallback(async () => {
@@ -221,10 +329,12 @@ export default function App() {
     }
 
     try {
-      if (recorder.isRecording) {
-        await recorder.stop();
-        const uri = recorder.uri;
-        if (uri) sendChunk(uri);
+      for (const targetRecorder of [recorderA, recorderB]) {
+        if (targetRecorder.isRecording) {
+          await targetRecorder.stop();
+          const uri = targetRecorder.uri;
+          if (uri) sendChunk(await copyChunkToDocumentDirectory(uri));
+        }
       }
     } catch (e) {
       console.warn("stopRecording error:", e);
@@ -237,98 +347,134 @@ export default function App() {
       playsInSilentMode: true,
       interruptionMode: "mixWithOthers",
     });
-  }, [recorder, sendChunk]);
+    await setIsAudioActiveAsync(false);
+
+    // セッションを自動保存して履歴を更新
+    fetch(`${whisperUrl}/save-session`, { method: "POST" })
+      .then(() => fetchSessions())
+      .catch(() => {});
+  }, [copyChunkToDocumentDirectory, recorderA, recorderB, sendChunk, whisperUrl]);
 
   // ── クリーンアップ ──
   useEffect(() => {
     return () => {
       isRecordingRef.current = false;
       if (chunkTimerRef.current) clearTimeout(chunkTimerRef.current);
-      if (recorder.isRecording) {
-        recorder.stop().catch(() => {});
+      for (const targetRecorder of [recorderA, recorderB]) {
+        if (targetRecorder.isRecording) {
+          targetRecorder.stop().catch(() => {});
+        }
       }
     };
-  }, [recorder]);
+  }, [recorderA, recorderB]);
 
-  // ── ノイズ除去 ──
-  const removeNoise = useCallback(() => {
-    setEntries((prev) => prev.filter((e) => !isNoise(e.text)));
+  // ── 履歴タブ切り替え時に自動読み込み ──
+  useEffect(() => {
+    if (tab === "history") fetchSessions();
+  }, [tab]);
+
+  // ── フォアグラウンド復帰時に録音を自動再開 ──
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && isRecordingRef.current) {
+        // チャンクタイマーが動いていない = バックグラウンドで止まっていた
+        if (!chunkTimerRef.current) {
+          configureRecordingAudioSession()
+            .then(() => {
+              if (!isRecordingRef.current) return;
+              const activeIndex = activeRecorderIndexRef.current;
+              if (getRecorder(activeIndex).isRecording) {
+                scheduleChunkHandoff(activeIndex);
+              } else {
+                recordChunk(0);
+              }
+            })
+            .catch(() => recordChunk(0));
+        }
+      }
+    });
+    return () => sub.remove();
+  }, [configureRecordingAudioSession, getRecorder, recordChunk, scheduleChunkHandoff]);
+
+  // ── セッション一覧取得 ──
+  const fetchSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await fetch(`${whisperUrl}/sessions`);
+      const data = await res.json() as { sessions: SessionItem[] };
+      setSessions(data.sessions ?? []);
+    } catch {
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, [whisperUrl]);
+
+  const openSession = useCallback(async (filename: string) => {
+    try {
+      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}`);
+      const data = await res.json() as { content: string };
+      setSelectedSession({ filename, content: data.content });
+    } catch {
+      Alert.alert("エラー", "セッションを開けませんでした");
+    }
+  }, [whisperUrl]);
+
+  const deleteSession = useCallback((filename: string) => {
+    Alert.alert("削除", `${filename} を削除しますか？`, [
+      { text: "キャンセル", style: "cancel" },
+      {
+        text: "削除", style: "destructive", onPress: async () => {
+          await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}`, { method: "DELETE" });
+          setSessions((prev) => prev.filter((s) => s.filename !== filename));
+          if (selectedSession?.filename === filename) setSelectedSession(null);
+        },
+      },
+    ]);
+  }, [whisperUrl, selectedSession]);
+
+  // ── お願い保存 ──
+  const REQUEST_PRESETS = [
+    "要約して",
+    "質問ちょうだい",
+    "技術的に可能か考えて",
+    "アクションアイテムを出して",
+    "議事録形式にして",
+  ];
+
+  const toggleRequest = useCallback((item: string) => {
+    setSelectedRequests((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+    );
   }, []);
+
+  const saveRequest = useCallback(async () => {
+    setRequestSaving(true);
+    try {
+      await fetch(`${whisperUrl}/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: selectedRequests, memo: requestMemo }),
+      });
+    } catch (err) {
+      console.error("saveRequest error:", err);
+    } finally {
+      setRequestSaving(false);
+    }
+  }, [whisperUrl, selectedRequests, requestMemo]);
 
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
     const url = urlInput.trim().replace(/\/$/, "");
     await AsyncStorage.setItem(STORAGE_KEY_URL, url);
     setWhisperUrl(url);
-    setScreen("main");
   }, [urlInput]);
 
   // ──────────────────────────────────────────
-  // 設定画面
+  // Tab Contents
   // ──────────────────────────────────────────
-  if (screen === "settings") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="light" />
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <View style={styles.settingsWrap}>
-            <Text style={styles.settingsTitle}>接続設定</Text>
-
-            <Text style={styles.label}>Whisper サーバー URL</Text>
-            <TextInput
-              style={styles.input}
-              value={urlInput}
-              onChangeText={setUrlInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              placeholder="http://100.86.242.55:8767"
-              placeholderTextColor="#52525b"
-            />
-            <Text style={styles.hint}>
-              Mac mini の Tailscale IP を入力（末尾スラッシュ不要）
-            </Text>
-
-            <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
-              <Text style={styles.saveBtnText}>保存して戻る</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => setScreen("main")}
-            >
-              <Text style={styles.cancelBtnText}>キャンセル</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    );
-  }
-
-  // ──────────────────────────────────────────
-  // メイン画面
-  // ──────────────────────────────────────────
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
-
-      {/* ヘッダー */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>meeting-ai</Text>
-        <View style={styles.headerRight}>
-          {sending && (
-            <ActivityIndicator size="small" color="#60a5fa" style={{ marginRight: 8 }} />
-          )}
-          <TouchableOpacity onPress={() => setScreen("settings")} style={styles.settingsIcon}>
-            <Text style={styles.settingsIconText}>⚙</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* エラー */}
+  const renderHome = () => (
+    <>
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -337,8 +483,6 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* 文字起こしリスト */}
       <ScrollView
         ref={scrollRef}
         style={styles.scrollArea}
@@ -359,54 +503,256 @@ export default function App() {
           ))
         )}
       </ScrollView>
+    </>
+  );
 
-      {/* フッター */}
-      <View style={styles.footer}>
-        {/* ノイズ除去 */}
+  const renderRequest = () => (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.requestWrap}>
+        <Text style={styles.requestTitle}>ベッキーへのお願い</Text>
+        <Text style={styles.requestSub}>会議テキストをどう見てほしいか選んでね</Text>
+
+        {REQUEST_PRESETS.map((item) => {
+          const selected = selectedRequests.includes(item);
+          return (
+            <TouchableOpacity
+              key={item}
+              style={[styles.requestItem, selected && styles.requestItemSelected]}
+              onPress={() => toggleRequest(item)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.requestItemCheck, selected && styles.requestItemCheckSelected]}>
+                {selected ? "✓" : "○"}
+              </Text>
+              <Text style={[styles.requestItemText, selected && styles.requestItemTextSelected]}>
+                {item}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <Text style={[styles.label, { marginTop: 24 }]}>一言メモ（自由記入）</Text>
+        <TextInput
+          style={styles.memoInput}
+          value={requestMemo}
+          onChangeText={setRequestMemo}
+          placeholder="例: 次回見積もりの話が出てたので確認して"
+          placeholderTextColor="#52525b"
+          multiline
+          numberOfLines={3}
+        />
+
         <TouchableOpacity
-          style={styles.footerBtn}
-          onPress={removeNoise}
-          disabled={entries.length === 0}
+          style={[styles.saveBtn, { marginTop: 24 }]}
+          onPress={saveRequest}
+          disabled={requestSaving}
         >
-          <Text style={[styles.footerBtnText, entries.length === 0 && { opacity: 0.3 }]}>
-            🧹 ノイズ除去
+          <Text style={styles.saveBtnText}>
+            {requestSaving ? "保存中..." : "保存する"}
           </Text>
         </TouchableOpacity>
+        <Text style={styles.hint}>「ベッキー会議のテキスト見て」で一気に伝わります</Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 
-        {/* 録音ボタン */}
-        <TouchableOpacity
-          style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
-          onPress={isRecording ? stopRecording : startRecording}
-          activeOpacity={0.8}
-        >
-          {isRecording ? (
-            <>
-              <View style={styles.stopIcon} />
-              <Text style={styles.recordBtnText}>停止</Text>
-            </>
-          ) : (
-            <>
-              <View style={styles.recDot} />
-              <Text style={styles.recordBtnText}>録音開始</Text>
-            </>
+  const renderHistory = () => {
+    // セッション詳細表示
+    if (selectedSession) {
+      return (
+        <>
+          <View style={styles.historyDetailHeader}>
+            <TouchableOpacity onPress={() => setSelectedSession(null)} style={styles.backBtn}>
+              <Text style={styles.backBtnText}>← 戻る</Text>
+            </TouchableOpacity>
+            <Text style={styles.historyDetailTitle} numberOfLines={1}>
+              {selectedSession.filename.replace(".txt", "").replace("_", " ")}
+            </Text>
+            <View style={{ minWidth: 60 }} />
+          </View>
+          <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.sessionContent}>{selectedSession.content}</Text>
+          </ScrollView>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <View style={styles.historyHeader}>
+          <Text style={styles.historyHeaderTitle}>保存済みセッション</Text>
+          <TouchableOpacity onPress={fetchSessions} style={styles.refreshBtn}>
+            <Text style={styles.refreshBtnText}>更新</Text>
+          </TouchableOpacity>
+        </View>
+        {sessionsLoading ? (
+          <View style={styles.placeholderWrap}>
+            <ActivityIndicator size="large" color="#60a5fa" />
+          </View>
+        ) : sessions.length === 0 ? (
+          <View style={styles.placeholderWrap}>
+            <Text style={styles.placeholderText}>セッションなし</Text>
+            <Text style={styles.placeholderSub}>録音後に保存するとここに表示されます</Text>
+            <TouchableOpacity onPress={fetchSessions} style={[styles.saveBtn, { marginTop: 24, paddingHorizontal: 32 }]}>
+              <Text style={styles.saveBtnText}>読み込む</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+            {sessions.map((s) => (
+              <View key={s.filename} style={styles.sessionItem}>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => openSession(s.filename)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.sessionFilename}>
+                    {s.filename.replace(".txt", "").replace("_", " ")}
+                  </Text>
+                  {s.preview ? (
+                    <Text style={styles.sessionPreview} numberOfLines={1}>{s.preview}</Text>
+                  ) : null}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => deleteSession(s.filename)} style={styles.sessionDeleteBtn}>
+                  <Ionicons name="trash-outline" size={18} color="#52525b" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </>
+    );
+  };
+
+  const renderSettings = () => (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.settingsWrap}>
+        <Text style={styles.label}>Whisper サーバー URL</Text>
+        <TextInput
+          style={styles.input}
+          value={urlInput}
+          onChangeText={setUrlInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          placeholder="http://100.86.242.55:8767"
+          placeholderTextColor="#52525b"
+        />
+        <Text style={styles.hint}>
+          Mac mini の Tailscale IP を入力（末尾スラッシュ不要）
+        </Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
+          <Text style={styles.saveBtnText}>保存</Text>
+        </TouchableOpacity>
+        <Text style={styles.currentUrl}>
+          現在の接続先: {whisperUrl}
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+
+  // ──────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* ヘッダー */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>MAI</Text>
+        <View style={styles.headerRight}>
+          {(sending || pendingCount > 0) && (
+            <View style={styles.processingBadge}>
+              <ActivityIndicator size="small" color="#60a5fa" style={{ marginRight: 6 }} />
+              <Text style={styles.processingText}>
+                {pendingCount > 0 ? `残り${pendingCount}件` : "処理中"}
+              </Text>
+            </View>
           )}
+          {tab === "home" && entries.length > 0 && (
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert("クリア", "文字起こしをすべて削除しますか？", [
+                  { text: "キャンセル", style: "cancel" },
+                  { text: "削除", style: "destructive", onPress: () => setEntries([]) },
+                ])
+              }
+            >
+              <Ionicons name="trash-outline" size={20} color="#52525b" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* コンテンツ */}
+      <View style={{ flex: 1 }}>
+        {tab === "home" && renderHome()}
+        {tab === "history" && renderHistory()}
+        {tab === "request" && renderRequest()}
+        {tab === "settings" && renderSettings()}
+      </View>
+
+      {/* タブバー */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => setTab("home")}>
+          <Ionicons
+            name={tab === "home" ? "home" : "home-outline"}
+            size={22}
+            color={tab === "home" ? "#60a5fa" : "#52525b"}
+          />
+          <Text style={[styles.tabLabel, tab === "home" && styles.tabLabelActive]}>ホーム</Text>
         </TouchableOpacity>
 
-        {/* クリア */}
-        <TouchableOpacity
-          style={styles.footerBtn}
-          onPress={() => {
-            if (entries.length === 0) return;
-            Alert.alert("クリア", "文字起こしをすべて削除しますか？", [
-              { text: "キャンセル", style: "cancel" },
-              { text: "削除", style: "destructive", onPress: () => setEntries([]) },
-            ]);
-          }}
-          disabled={entries.length === 0}
-        >
-          <Text style={[styles.footerBtnText, entries.length === 0 && { opacity: 0.3 }]}>
-            🗑 クリア
+        <TouchableOpacity style={styles.tabItem} onPress={() => setTab("history")}>
+          <Ionicons
+            name={tab === "history" ? "time" : "time-outline"}
+            size={22}
+            color={tab === "history" ? "#60a5fa" : "#52525b"}
+          />
+          <Text style={[styles.tabLabel, tab === "history" && styles.tabLabelActive]}>履歴</Text>
+        </TouchableOpacity>
+
+        {/* 中央録音ボタン */}
+        <View style={styles.tabRecordWrap}>
+          <TouchableOpacity
+            style={[styles.tabRecordBtn, isRecording && styles.tabRecordBtnActive]}
+            onPress={isRecording ? stopRecording : startRecording}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={isRecording ? "stop" : "mic"}
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
+          <Text style={[styles.tabLabel, isRecording && { color: "#f87171" }]}>
+            {isRecording ? "停止" : "録音"}
           </Text>
+        </View>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => setTab("request")}>
+          <Ionicons
+            name={tab === "request" ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+            size={22}
+            color={tab === "request" ? "#60a5fa" : "#52525b"}
+          />
+          <Text style={[styles.tabLabel, tab === "request" && styles.tabLabelActive]}>お願い</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => setTab("settings")}>
+          <Ionicons
+            name={tab === "settings" ? "settings" : "settings-outline"}
+            size={22}
+            color={tab === "settings" ? "#60a5fa" : "#52525b"}
+          />
+          <Text style={[styles.tabLabel, tab === "settings" && styles.tabLabelActive]}>設定</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -430,22 +776,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#27272a",
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  processingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1e3a5f",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  processingText: {
+    color: "#60a5fa",
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+  },
   headerTitle: {
     color: "#f4f4f5",
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: -0.3,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  settingsIcon: {
-    padding: 4,
-  },
-  settingsIconText: {
-    color: "#71717a",
-    fontSize: 20,
   },
   errorBanner: {
     flexDirection: "row",
@@ -496,66 +849,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  clearBtn: {
+    alignSelf: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#27272a",
-    backgroundColor: "#09090b",
+    paddingVertical: 10,
+    marginBottom: 8,
   },
-  footerBtn: {
-    minWidth: 80,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  footerBtnText: {
-    color: "#a1a1aa",
+  clearBtnText: {
+    color: "#71717a",
     fontSize: 13,
   },
-  recordBtn: {
-    flexDirection: "row",
+  // プレースホルダー
+  placeholderWrap: {
+    flex: 1,
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 50,
-    minWidth: 140,
     justifyContent: "center",
   },
-  recordBtnActive: {
-    backgroundColor: "#dc2626",
-  },
-  recordBtnText: {
-    color: "#fff",
-    fontSize: 15,
+  placeholderText: {
+    color: "#52525b",
+    fontSize: 18,
     fontWeight: "600",
+    marginBottom: 8,
   },
-  recDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#fff",
+  placeholderSub: {
+    color: "#3f3f46",
+    fontSize: 13,
   },
-  stopIcon: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: "#fff",
-  },
-  // 設定画面
+  // 設定
   settingsWrap: {
-    flex: 1,
     padding: 24,
-  },
-  settingsTitle: {
-    color: "#f4f4f5",
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 32,
   },
   label: {
     color: "#a1a1aa",
@@ -578,27 +900,230 @@ const styles = StyleSheet.create({
     color: "#52525b",
     fontSize: 12,
     marginTop: 8,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   saveBtn: {
     backgroundColor: "#2563eb",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   saveBtnText: {
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
   },
-  cancelBtn: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
+  currentUrl: {
+    color: "#52525b",
+    fontSize: 12,
+    textAlign: "center",
   },
-  cancelBtnText: {
-    color: "#71717a",
+  // 履歴タブ
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#27272a",
+  },
+  historyHeaderTitle: {
+    color: "#f4f4f5",
     fontSize: 15,
+    fontWeight: "600",
+  },
+  refreshBtn: {
+    padding: 4,
+  },
+  refreshBtnText: {
+    color: "#60a5fa",
+    fontSize: 14,
+  },
+  sessionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "#18181b",
+    marginBottom: 10,
+  },
+  sessionFilename: {
+    color: "#e4e4e7",
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  sessionPreview: {
+    color: "#71717a",
+    fontSize: 12,
+  },
+  sessionDeleteBtn: {
+    padding: 8,
+    marginLeft: 4,
+  },
+  historyDetailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#27272a",
+  },
+  historyDetailTitle: {
+    color: "#f4f4f5",
+    fontSize: 13,
+    flex: 1,
+    textAlign: "center",
+    marginHorizontal: 8,
+  },
+  backBtn: {
+    padding: 4,
+    minWidth: 60,
+  },
+  backBtnText: {
+    color: "#60a5fa",
+    fontSize: 14,
+  },
+  deleteBtnText: {
+    color: "#f87171",
+    fontSize: 14,
+    minWidth: 60,
+    textAlign: "right",
+  },
+  sessionContent: {
+    color: "#a1a1aa",
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+  // お願いタブ
+  requestWrap: {
+    padding: 24,
+  },
+  requestTitle: {
+    color: "#f4f4f5",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  requestSub: {
+    color: "#71717a",
+    fontSize: 13,
+    marginBottom: 24,
+  },
+  requestItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#3f3f46",
+    marginBottom: 10,
+    backgroundColor: "#18181b",
+  },
+  requestItemSelected: {
+    borderColor: "#3b82f6",
+    backgroundColor: "#1e3a5f",
+  },
+  requestItemCheck: {
+    fontSize: 16,
+    color: "#52525b",
+    width: 20,
+    textAlign: "center",
+  },
+  requestItemCheckSelected: {
+    color: "#60a5fa",
+  },
+  requestItemText: {
+    color: "#a1a1aa",
+    fontSize: 15,
+  },
+  requestItemTextSelected: {
+    color: "#e4e4e7",
+  },
+  memoInput: {
+    backgroundColor: "#18181b",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#3f3f46",
+    borderRadius: 8,
+    color: "#f4f4f5",
+    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  // タブバー
+  tabBar: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#27272a",
+    backgroundColor: "#09090b",
+    paddingBottom: 8,
+    paddingTop: 4,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  tabIcon: {
+    fontSize: 20,
+    color: "#52525b",
+    marginBottom: 2,
+  },
+  tabIconActive: {
+    color: "#60a5fa",
+  },
+  tabLabel: {
+    fontSize: 10,
+    color: "#52525b",
+  },
+  tabLabelActive: {
+    color: "#60a5fa",
+  },
+  // 中央録音ボタン
+  tabRecordWrap: {
+    flex: 1,
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  tabRecordBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+    marginTop: -20,
+    shadowColor: "#2563eb",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  tabRecordBtnActive: {
+    backgroundColor: "#dc2626",
+    shadowColor: "#dc2626",
+  },
+  recDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#fff",
+  },
+  stopIcon: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: "#fff",
   },
 });
