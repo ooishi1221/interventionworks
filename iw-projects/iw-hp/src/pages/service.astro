@@ -1,0 +1,894 @@
+---
+const title = "IT サポート — Intervention Works";
+const description = "足立区・北区の個人店オーナー向け IT サポート。予約の自動化から Instagram の仕組みづくり、ホームページ制作まで。まず LINE かメールでご相談ください。";
+
+const pains = [
+  {
+    // Phone — Lucide
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16v.92z"/></svg>`,
+    text: "予約の電話が多くて、お客さんの対応に集中できない",
+  },
+  {
+    // Instagram — Lucide
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
+    text: "SNS を更新しないといけないのはわかってるけど、時間が取れない",
+  },
+  {
+    // Globe — Lucide
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
+    text: "ホームページを作りたいけど、何から始めればいいかわからない",
+  },
+];
+
+const services = [
+  {
+    num: "01",
+    // MessageCircle — LINE 予約
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    name: "LINE 予約の自動化",
+    desc: "電話に出られない時間でも、LINE で予約を受け付けられる仕組みをつくります。営業時間外でも自動で対応。",
+    img: "/images/service/service-01.jpg",
+    imgAlt: "スマートフォンの手元",
+  },
+  {
+    num: "02",
+    // Reply — Instagram DM
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
+    name: "Instagram DM 自動返信",
+    desc: "「営業時間は何時ですか？」といったよくある質問に、Instagram の DM が自動で答えてくれる仕組みです。",
+    img: "/images/service/service-02.jpg",
+    imgAlt: "Instagram を開いたスマートフォン",
+  },
+  {
+    num: "03",
+    // CreditCard — 予約・支払い
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
+    name: "予約・お支払いページ",
+    desc: "お店専用の予約ページをつくります。来店前に決済も完了できるので、当日の会計がスムーズになります。",
+    img: "/images/service/service-03.jpg",
+    imgAlt: "カード決済の手元",
+  },
+  {
+    num: "04",
+    // Monitor — ホームページ
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>`,
+    name: "ホームページ制作",
+    desc: "お店の雰囲気や想いが伝わるホームページをつくります。スマホで見やすいデザインで、Googleからも来てもらいやすくなります。",
+    img: "/images/service/service-04.jpg",
+    imgAlt: "ノートPCで作業する手元",
+  },
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="Intervention Works" />
+    <meta property="og:locale" content="ja_JP" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@intervention_jp" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+
+    <!-- ナビ -->
+    <nav class="top-nav" aria-label="サイトナビゲーション">
+      <a href="/" class="nav-logo" aria-label="Intervention Works トップへ">
+        <svg class="logo-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-hidden="true">
+          <path d="M50.4 78.5a75.1 75.1 0 0 0-28.5 6.9l24.2-65.7c.7-2 1.9-3.2 3.4-3.2h29c1.5 0 2.7 1.2 3.4 3.2l24.2 65.7s-11.6-7-28.5-7L67 45.5c-.4-1.7-1.6-2.8-2.9-2.8-1.3 0-2.5 1.1-2.9 2.7L50.4 78.5Zm-1.1 28.2Zm-4.2-20.2c-2 6.6-.6 15.8 4.2 20.2a17.5 17.5 0 0 1 .2-.7 5.5 5.5 0 0 1 5.7-4.5c2.8.1 4.3 1.5 4.7 4.7.2 1.1.2 2.3.2 3.5v.4c0 2.7.7 5.2 2.2 7.4a13 13 0 0 0 5.7 4.9v-.3l-.2-.3c-1.8-5.6-.5-9.5 4.4-12.8l1.5-1a73 73 0 0 0 3.2-2.2 16 16 0 0 0 6.8-11.4c.3-2 .1-4-.6-6l-.8.6-1.6 1a37 37 0 0 1-22.4 2.7c-5-.7-9.7-2-13.2-6.2Z" />
+        </svg>
+        <span class="nav-brand">Intervention Works</span>
+      </a>
+    </nav>
+
+    <main>
+
+      <!-- ヒーロー -->
+      <section class="hero">
+        <div class="hero-accent" aria-hidden="true"></div>
+        <div class="hero-2col">
+          <div class="hero-text">
+            <p class="hero-tag">足立区・北区の個人店オーナーへ</p>
+            <h1 class="hero-heading">
+              本来やりたかったことを、<br />
+              取り戻しませんか。
+            </h1>
+            <p class="hero-sub">
+              予約の電話対応、SNS の更新、ホームページ——<br />
+              「やらなきゃ」が積み重なって、肝心のお客さんへの時間が削られていませんか。<br />
+              仕組みで解決できることは、仕組みに任せましょう。
+            </p>
+            <a href="#contact" class="hero-cta">まず相談してみる</a>
+          </div>
+          <div class="hero-img-wrap" aria-hidden="true">
+            <img
+              src="/images/service/hero.jpg"
+              alt=""
+              class="hero-img"
+              loading="eager"
+              width="420"
+              height="560"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- こんなお悩みありませんか？ -->
+      <section class="pains reveal-section">
+        <div class="section-inner">
+          <h2 class="section-heading">
+            <span class="section-label">こんなお悩みありませんか？</span>
+          </h2>
+          <ul class="pain-list">
+            {pains.map((p) => (
+              <li class="pain-item">
+                <span class="pain-icon" set:html={p.icon} />
+                <p class="pain-text">{p.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- できること -->
+      <section class="services reveal-section">
+        <div class="section-inner">
+          <h2 class="section-heading">
+            <span class="section-label">できること</span>
+          </h2>
+          <ul class="service-list">
+            {services.map((s) => (
+              <li class="service-item">
+                <div class="service-leading">
+                  <span class="service-num" aria-hidden="true">{s.num}</span>
+                  <span class="service-icon" set:html={s.icon} />
+                </div>
+                <div class="service-body">
+                  <h3 class="service-name">{s.name}</h3>
+                  <p class="service-desc">{s.desc}</p>
+                </div>
+                <div class="service-img-wrap" aria-hidden="true">
+                  <img
+                    src={s.img}
+                    alt={s.imgAlt}
+                    class="service-img"
+                    loading="lazy"
+                    width="160"
+                    height="160"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- IW について一言 -->
+      <section class="about reveal-section">
+        <div class="section-inner about-inner">
+          <div class="about-img-wrap">
+            <img
+              src="/images/service/about.jpg"
+              alt="個人事業主として地域の店舗を支援する様子"
+              class="about-img"
+              loading="lazy"
+              width="240"
+              height="240"
+            />
+          </div>
+          <div class="about-text">
+            <h2 class="section-heading">
+              <span class="section-label">Intervention Works について</span>
+            </h2>
+            <p class="about-desc">
+              東京都北区を拠点に活動する個人事業主です。足立区・北区の個人店が「やりたいこと」に集中できるよう、IT の仕組みづくりをお手伝いしています。
+            </p>
+            <p class="about-desc">
+              難しい話は抜きにして、まず「こんなことで困ってる」を聞かせてください。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section id="contact" class="cta reveal-section">
+        <div class="section-inner cta-inner">
+          <h2 class="cta-heading">まずは気軽にご相談を</h2>
+          <p class="cta-sub">
+            費用や内容について、気になることは何でも聞いてください。<br />
+            相談だけでもかまいません。
+          </p>
+          <div class="cta-buttons">
+            <a
+              href="https://lin.ee/PwGYxqQ"
+              class="btn btn-line"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+              </svg>
+              LINE で相談する
+            </a>
+            <a
+              href="mailto:info@intervention.jp"
+              class="btn btn-mail"
+            >
+              <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              メールで相談する
+            </a>
+          </div>
+          <p class="cta-note">info@intervention.jp</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <a href="/" class="footer-logo" aria-label="Intervention Works トップへ">
+          <svg class="footer-logo-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-hidden="true">
+            <path d="M50.4 78.5a75.1 75.1 0 0 0-28.5 6.9l24.2-65.7c.7-2 1.9-3.2 3.4-3.2h29c1.5 0 2.7 1.2 3.4 3.2l24.2 65.7s-11.6-7-28.5-7L67 45.5c-.4-1.7-1.6-2.8-2.9-2.8-1.3 0-2.5 1.1-2.9 2.7L50.4 78.5Zm-1.1 28.2Zm-4.2-20.2c-2 6.6-.6 15.8 4.2 20.2a17.5 17.5 0 0 1 .2-.7 5.5 5.5 0 0 1 5.7-4.5c2.8.1 4.3 1.5 4.7 4.7.2 1.1.2 2.3.2 3.5v.4c0 2.7.7 5.2 2.2 7.4a13 13 0 0 0 5.7 4.9v-.3l-.2-.3c-1.8-5.6-.5-9.5 4.4-12.8l1.5-1a73 73 0 0 0 3.2-2.2 16 16 0 0 0 6.8-11.4c.3-2 .1-4-.6-6l-.8.6-1.6 1a37 37 0 0 1-22.4 2.7c-5-.7-9.7-2-13.2-6.2Z" />
+          </svg>
+          <span>Intervention Works</span>
+        </a>
+        <p class="footer-copy">&copy; 2026 Intervention Works</p>
+      </div>
+    </footer>
+
+    <script>
+      // Scroll reveal — CSS intersection observer のみ、JS は最小
+      const revealSections = document.querySelectorAll(".reveal-section");
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("revealed");
+              obs.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      revealSections.forEach((el) => obs.observe(el));
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #F8F7F5;
+    color: #1A1A1A;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid #0fb8b8;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+</style>
+
+<style>
+  /* === Nav === */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(248, 247, 245, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 1rem 6vw;
+  }
+
+  .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: #1A1A1A;
+    transition: opacity 0.2s ease;
+  }
+
+  .nav-logo:hover {
+    opacity: 0.65;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    fill: #1A1A1A;
+    flex-shrink: 0;
+  }
+
+  .nav-brand {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  /* === Hero === */
+  .hero {
+    position: relative;
+    padding: 12vh 6vw 10vh;
+    background: #F8F7F5;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+  }
+
+  /* teal のグラデーション帯 — 左端に縦線として立つ */
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #0fb8b8 0%, rgba(15, 184, 184, 0) 100%);
+  }
+
+  /* 右下に大きな幾何学アクセント — 透過した円弧 */
+  .hero-accent {
+    position: absolute;
+    right: -60px;
+    bottom: -60px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 184, 184, 0.12);
+    pointer-events: none;
+  }
+
+  .hero-accent::before {
+    content: "";
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    right: 30px;
+    bottom: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 184, 184, 0.08);
+  }
+
+  /* 2カラム: 左テキスト + 右画像 */
+  .hero-2col {
+    position: relative;
+    z-index: 1;
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 5vw;
+  }
+
+  .hero-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .hero-img-wrap {
+    flex-shrink: 0;
+    width: clamp(200px, 28vw, 380px);
+    align-self: stretch;
+  }
+
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    /* 素材の本来性 — filter なし */
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #0fb8b8;
+    background: rgba(15, 184, 184, 0.1);
+    padding: 0.35rem 0.85rem;
+    border-radius: 2px;
+    margin-bottom: 1.75rem;
+  }
+
+  .hero-heading {
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.02em;
+    color: #1A1A1A;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-sub {
+    font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+    line-height: 1.9;
+    color: #555;
+    margin-bottom: 2.5rem;
+    max-width: 56ch;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    background: #0fb8b8;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 3px;
+    transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .hero-cta:hover {
+    background: #0da5a5;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(15, 184, 184, 0.3);
+  }
+
+  /* === Section 共通 === */
+  .section-inner {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .section-heading {
+    margin-bottom: 2rem;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #0fb8b8;
+  }
+
+  /* Reveal animation */
+  .reveal-section {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+
+  .reveal-section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-section {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* === お悩み === */
+  .pains {
+    padding: 10vh 6vw;
+    background: #fff;
+  }
+
+  .pain-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .pain-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: #F8F7F5;
+    border-left: 3px solid #0fb8b8;
+    border-radius: 0 3px 3px 0;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .pain-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .pain-icon {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    color: #0fb8b8;
+    line-height: 0;
+  }
+
+  .pain-icon svg {
+    display: block;
+  }
+
+  .pain-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #333;
+  }
+
+  /* === サービス === */
+  .services {
+    padding: 10vh 6vw;
+    background: #F8F7F5;
+  }
+
+  .service-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .service-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    transition: background 0.25s ease;
+  }
+
+  .service-item:first-child {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .service-leading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    min-width: 40px;
+    padding-top: 0.15rem;
+    align-self: flex-start;
+  }
+
+  .service-num {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    letter-spacing: 0.12em;
+  }
+
+  .service-icon {
+    color: rgba(15, 184, 184, 0.65);
+    line-height: 0;
+  }
+
+  .service-icon svg {
+    display: block;
+  }
+
+  .service-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .service-name {
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+  }
+
+  .service-desc {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: #555;
+    max-width: 52ch;
+  }
+
+  /* サービス右端の画像 */
+  .service-img-wrap {
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    overflow: hidden;
+    border-radius: 3px;
+    opacity: 0.88;
+  }
+
+  .service-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+
+  .service-item:hover .service-img {
+    transform: scale(1.04);
+  }
+
+  /* === About === */
+  .about {
+    padding: 10vh 6vw;
+    background: #fff;
+  }
+
+  .about-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 3rem;
+  }
+
+  /* About 左の画像 */
+  .about-img-wrap {
+    flex-shrink: 0;
+    width: clamp(140px, 20vw, 220px);
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 3px;
+  }
+
+  .about-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .about-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    flex: 1;
+  }
+
+  .about-desc {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: #444;
+    max-width: 56ch;
+  }
+
+  /* === CTA === */
+  .cta {
+    padding: 12vh 6vw;
+    background: #1A1A1A;
+  }
+
+  .cta-inner {
+    text-align: center;
+  }
+
+  .cta-heading {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .cta-sub {
+    font-size: clamp(0.92rem, 1.5vw, 1rem);
+    line-height: 1.9;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 2.5rem;
+  }
+
+  .cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.95rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-line {
+    background: #06C755;
+    color: #fff;
+  }
+
+  .btn-line:hover {
+    background: #05b54c;
+  }
+
+  .btn-mail {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .btn-mail:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.65);
+  }
+
+  .btn-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
+    stroke: currentColor;
+  }
+
+  .btn-line .btn-icon {
+    stroke: none;
+  }
+
+  .btn-mail .btn-icon {
+    fill: none;
+  }
+
+  .cta-note {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.05em;
+  }
+
+  /* === Footer === */
+  .footer {
+    padding: 3rem 6vw;
+    background: #F8F7F5;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .footer-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: color 0.2s ease;
+  }
+
+  .footer-logo:hover {
+    color: #1A1A1A;
+  }
+
+  .footer-logo-mark {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
+  .footer-copy {
+    font-size: 0.78rem;
+    color: #AAA;
+    letter-spacing: 0.03em;
+  }
+
+  /* === Responsive === */
+  @media (max-width: 840px) {
+    /* ヒーロー画像を非表示 — テキストの重心を守る */
+    .hero-img-wrap {
+      display: none;
+    }
+
+    .hero-2col {
+      max-width: 680px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero {
+      padding: 10vh 6vw 8vh;
+    }
+
+    .hero-accent {
+      width: 200px;
+      height: 200px;
+      right: -40px;
+      bottom: -40px;
+    }
+
+    .pains,
+    .services,
+    .about {
+      padding: 8vh 6vw;
+    }
+
+    /* サービス画像を非表示 — モバイルは密度過剰を防ぐ */
+    .service-img-wrap {
+      display: none;
+    }
+
+    /* About 画像を非表示 */
+    .about-img-wrap {
+      display: none;
+    }
+
+    .cta {
+      padding: 10vh 6vw;
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .btn {
+      width: 100%;
+      max-width: 280px;
+      justify-content: center;
+    }
+
+    .footer-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

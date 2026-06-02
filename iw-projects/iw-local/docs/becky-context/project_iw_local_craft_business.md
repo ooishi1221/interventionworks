@@ -47,10 +47,10 @@ originSessionId: 78def58c-e09f-4ba3-b08d-1338093dd8df
 
 ## 現在のステータス（2026-05-23 11:18 JST）
 
-- ✅ Google Business Profile 申請完了（オーナー確認待ち、最大 5 日 = 〜6/3）
+- ✅ Google Business Profile 申請完了
 - ✅ ビジネス説明文 543 文字 GBP 登録済
-- ⏳ オーナー確認の認証方法待ち（郵送ハガキ / 電話 / 動画 のどれか）
-- ⏳ カテゴリ「ISP」暫定 → 通過後に「経営コンサルタント / Web デザイン / IT コンサルタント」系に変更予定
+- ✅ **GBP 審査通過・公開確認（2026-06-01）**
+- ⏳ カテゴリ「ISP」暫定 → 「経営コンサルタント / Web デザイン / IT コンサルタント」系に変更予定
 
 ## 登録情報
 
@@ -167,6 +167,7 @@ originSessionId: 78def58c-e09f-4ba3-b08d-1338093dd8df
 - Voice of Becky 全体 (`project_voice_of_becky.md`) — 文化レイヤーの広がり
 - IW 戦略 closure 2026Q2 (`project_iw_strategy_2026q2.md`) — IW 直営事業ポートフォリオの一翼
 - IW 思想再定義 (`project_iw_mission_redefinition_2026-05-10.md`) — 「Intervene in the world」の身体化具体例
+- **Vibe-Cutter × Local-Hero seed** (`docs/becky-context/seeds/project_vibe_cutter_local_hero.md`) — **craft 武器候補**: 海外神 OSS（Bitwarden / Tailscale / EspoCRM / Akaunting / Cal.com 等）への乗換伴走 craft、個人店 SaaS 月 1-3 万円 → 月 0-5,000 円に圧縮、出口の第一候補が iw-local（2026-05-25 seed 化）
 
 ## 締め（ベキたん観察）
 
