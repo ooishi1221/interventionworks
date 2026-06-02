@@ -526,21 +526,28 @@ function PartZoom({
       const cat = getCatCfg(cfg, dir)
       if (!cat) return null
       const filled = entries.some(e => e.catKey === dir)
-      return { dir, emoji: cat.emoji, label: cat.label, filled }
+      if (filled) return null  // 入力済みはガイドから非表示
+      return { dir, emoji: cat.emoji, label: cat.label }
     })
     .filter((g): g is DirGuide => g !== null)
 
   const tapCat = getCatCfg(cfg, 'tap')
+  const tapFilled = entries.some(e => e.catKey === 'tap')
 
   return (
     <div className="zoom-overlay" {...bindZoom()} style={{ touchAction: 'none' }}>
       {entries.length > 0 && (
         <div className="zoom-entries-list" onPointerDown={e => e.stopPropagation()}>
           {entries.map(e => (
-            <div key={e.catKey} className="zoom-entry-item">
+            <button
+              key={e.catKey}
+              className="zoom-entry-item zoom-entry-item--editable"
+              onClick={() => onOpenPanel(e.catKey as CategoryKey)}
+            >
               <span className="zoom-entry-cat">{e.catLabel}</span>
               <span className="zoom-entry-val">{e.value}</span>
-            </div>
+              <span className="zoom-entry-edit">↩</span>
+            </button>
           ))}
         </div>
       )}
@@ -549,10 +556,10 @@ function PartZoom({
       </div>
 
       <div className="zoom-icon-area zoom-icon-area--big">
-        <FlickGuides guides={guides} flickHint={flickHint} tapLabel={tapCat?.label} />
+        <FlickGuides guides={guides} flickHint={flickHint} tapLabel={tapFilled ? undefined : tapCat?.label} />
 
         <div className="zoom-icon-center">
-          {tapCat && (
+          {tapCat && !tapFilled && (
             <div className="zoom-center-badge" onClick={() => onOpenPanel('tap')}>
               <span className="zoom-center-emoji">{tapCat.emoji}</span>
               <span className="tap-badge">TAP</span>
