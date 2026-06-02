@@ -409,13 +409,16 @@
   cursor: pointer;
   letter-spacing: 0.5px;
 }
-.zoom-back-btn-center {
-  background: none;
-  color: #6a5020;
-  border: none;
-  font-size: 13px;
+.zoom-redo-btn {
+  background: transparent;
+  color: #c9a84c;
+  border: 1.5px solid #c9a84c;
+  border-radius: 20px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 4px 8px;
+  letter-spacing: 0.5px;
 }
 .zoom-entry-cat {
   font-size: 10px;

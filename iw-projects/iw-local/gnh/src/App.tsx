@@ -575,8 +575,8 @@ function PartZoom({
                   次の項目 →
                 </button>
               )}
-              <button className="zoom-back-btn-center" onClick={onBack}>
-                ← 戻る
+              <button className="zoom-redo-btn" onClick={() => setShowAll(true)}>
+                再入力
               </button>
             </div>
           ) : (
