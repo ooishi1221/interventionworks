@@ -1056,7 +1056,11 @@ export default function App() {
   const CAT_ORDER: CategoryKey[] = ['up', 'left', 'right', 'down', 'tap']
   const valuesOf = (pk: PartKey): GuideValue[] =>
     [...entries.filter(e => e.partKey === pk)]
-      .sort((a, b) => CAT_ORDER.indexOf(a.catKey as CategoryKey) - CAT_ORDER.indexOf(b.catKey as CategoryKey))
+      .sort((a, b) => {
+        const ai = a.catKey ? CAT_ORDER.indexOf(a.catKey as CategoryKey) : 999
+        const bi = b.catKey ? CAT_ORDER.indexOf(b.catKey as CategoryKey) : 999
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+      })
       .map(e => ({ cat: e.catLabel, val: e.value }))
 
   const topGuides: DirGuide[] = [
