@@ -500,6 +500,11 @@ function PartZoom({
   const [flickHint, setFlickHint] = useState<FlickDir | null>(null)
   const [showAll, setShowAll] = useState(false)
 
+  const CAT_DIRS = ['up', 'down', 'left', 'right'] as const
+  const allCatCount = CAT_DIRS.filter(dir => getCatCfg(cfg, dir)).length + ('tap' in cfg ? 1 : 0)
+  const allFilled = entries.length >= allCatCount && allCatCount > 0
+  const gestureDisabled = allFilled && !showAll
+
   const bindZoom = useGesture(
     {
       onDrag: ({ movement: [mx, my], last, tap }) => {
@@ -521,12 +526,8 @@ function PartZoom({
         }
       },
     },
-    { drag: { filterTaps: true, threshold: 8 } }
+    { drag: { filterTaps: true, threshold: 8, enabled: !gestureDisabled } }
   )
-
-  const CAT_DIRS = ['up', 'down', 'left', 'right'] as const
-  const allCatCount = CAT_DIRS.filter(dir => getCatCfg(cfg, dir)).length + ('tap' in cfg ? 1 : 0)
-  const allFilled = entries.length >= allCatCount && allCatCount > 0
 
   const guides: DirGuide[] = CAT_DIRS
     .map((dir): DirGuide | null => {
