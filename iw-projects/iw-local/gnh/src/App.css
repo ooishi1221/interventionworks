@@ -136,6 +136,14 @@
   z-index: 2;
   transition: opacity 0.12s;
 }
+/* 未入力: 明るい白で目立つ */
+.flick-guide--empty .flick-guide-label { color: rgba(255,255,255,0.85); }
+.flick-guide--empty .flick-guide-arrow { color: rgba(255,255,255,0.6); }
+.flick-guide--empty .flick-guide-emoji { opacity: 0.7; }
+/* 入力済み: 落ち着いたゴールド */
+.flick-guide--filled .flick-guide-label { color: #c9a84c; }
+.flick-guide--filled .flick-guide-arrow { color: #6a5020; }
+.flick-guide--filled .flick-guide-emoji { opacity: 0.5; }
 
 .flick-guide--up {
   top: 10px;

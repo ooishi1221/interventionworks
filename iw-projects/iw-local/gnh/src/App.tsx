@@ -285,6 +285,7 @@ interface DirGuide {
   emoji: string
   label: string
   values?: GuideValue[]
+  filled?: boolean
 }
 
 function FlickGuides({
@@ -323,7 +324,7 @@ function FlickGuides({
       </div>
     )
     return (
-      <div className={`flick-guide flick-guide--${pos} ${isActive ? 'active' : ''}`}>
+      <div className={`flick-guide flick-guide--${pos} ${isActive ? 'active' : ''} ${g.filled ? 'flick-guide--filled' : 'flick-guide--empty'}`}>
         {head}
         {renderValues(g.values)}
       </div>
@@ -523,7 +524,9 @@ function PartZoom({
   const guides: DirGuide[] = (['up', 'down', 'left', 'right'] as const)
     .map((dir): DirGuide | null => {
       const cat = getCatCfg(cfg, dir)
-      return cat ? { dir, emoji: cat.emoji, label: cat.label } : null
+      if (!cat) return null
+      const filled = entries.some(e => e.catKey === dir)
+      return { dir, emoji: cat.emoji, label: cat.label, filled }
     })
     .filter((g): g is DirGuide => g !== null)
 
