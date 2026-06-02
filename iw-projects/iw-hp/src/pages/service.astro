@@ -4,62 +4,56 @@ const description = "足立区・北区の個人店オーナー向け IT サポ�
 
 const pains = [
   {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16v.92z"/></svg>`,
-    text: "予約の電話が多くて、お客さんへの対応に集中できない",
+    img: "/images/service/illust-owner.png",
+    text: "「予約電話が鳴るたびに、目の前のお客さんから手が離れる」",
   },
   {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
-    text: "SNS を更新しないといけないとわかってるけど、時間が取れない",
+    img: "/images/service/illust-sns.png",
+    text: "「投稿しなきゃと思いながら、今日も閉店時間になってしまった」",
   },
   {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
-    text: "ホームページを作りたいけど、何から始めればいいかわからない",
+    img: "/images/service/illust-hp.png",
+    text: "「HPは3年前に作ったきり。誰かに見られてるのかすら分からない」",
   },
   {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
-    text: "予約サイトやポータルの手数料が高くて、利益が残らない",
+    img: "/images/service/illust-fee.png",
+    text: "「ポータルに払うたびに、何か違うと感じている」",
   },
 ];
 
 const services = [
   {
     num: "01",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-    name: "LINE 予約の自動化",
-    desc: "電話に出られない時間でも、LINE で予約を受け付けられる仕組みをつくります。営業時間外でも自動で対応。",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12m0 0V2m0 10H2m10 0h10"/></svg>`,
+    name: "繰り返しの作業を、仕組みに渡す",
+    desc: "予約・DM・更新——手が離れていい仕事は、全部自動にします。目の前のお客さんに、もっと集中できるようになります。",
   },
   {
     num: "02",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
-    name: "Instagram DM 自動返信",
-    desc: "「営業時間は何時ですか？」といったよくある質問に、Instagram の DM が自動で答えてくれる仕組みです。",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
+    name: "「何をすべきか」を、一緒に考える",
+    desc: "時間が空いても、向かう方向が間違えれば意味がない。仕組みを作りながら、どう使うかも一緒に設計します。",
   },
   {
     num: "03",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
-    name: "予約・お支払いページ",
-    desc: "お店専用の予約ページをつくります。来店前に決済も完了できるので、当日の会計がスムーズになります。",
-  },
-  {
-    num: "04",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>`,
-    name: "ホームページ制作",
-    desc: "お店の雰囲気や想いが伝わるホームページをつくります。スマホで見やすいデザインで、Google からも来てもらいやすくなります。",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+    name: "毎月、アップデートし続ける",
+    desc: "作って終わりにしません。時代もお客さんも毎月変わるから、ずっと一緒に走ります。",
   },
 ];
 
 const faqs = [
   {
     q: "費用はどのくらいかかりますか？",
-    a: "サービス内容によって異なります。まずは無料でご相談いただき、内容を確認してからお見積もりします。相談だけで費用が発生することはありません。",
+    a: "内容によって異なります。まずは無料でご相談いただき、何が必要かを確認してからお見積もりします。相談だけで費用が発生することはありません。",
   },
   {
-    q: "IT の知識がなくても大丈夫ですか？",
-    a: "はい、問題ありません。難しい用語は使わず、何をどうするかを分かりやすく説明します。完成後の操作方法もご説明します。",
+    q: "ITの知識がなくても大丈夫ですか？",
+    a: "はい、問題ありません。難しい用語は使いません。「こうなりたい」だけ教えてもらえれば、あとはこちらで設計します。",
   },
   {
-    q: "どのくらいの期間で完成しますか？",
-    a: "内容によって異なりますが、LINE 予約の自動化であれば 1〜2 週間、ホームページであれば 2〜4 週間が目安です。",
+    q: "作ってもらったら、あとは自分で管理しないといけませんか？",
+    a: "月額での継続サポートも承っています。「作って終わり」ではなく、毎月一緒に見直す伴走型のプランもご相談ください。",
   },
 ];
 ---
@@ -107,27 +101,45 @@ const faqs = [
       <!-- ヒーロー -->
       <section class="hero">
         <div class="hero-inner">
-          <p class="hero-tag">足立区・北区の個人店オーナーへ</p>
-          <h1 class="hero-heading">
-            「電話対応・SNS・HP——<br />
-            その「やらなきゃ」から、<br />
-            解放します。」
-          </h1>
-          <p class="hero-sub">
-            仕組みで解決できることは、仕組みに任せましょう。
-          </p>
-          <div class="hero-badges" aria-label="対応サービス一覧">
-            <span class="hero-badge">LINE予約対応</span>
-            <span class="hero-badge">SNS自動化</span>
-            <span class="hero-badge">HP制作</span>
-            <span class="hero-badge">決済導入</span>
+          <div class="hero-text">
+            <h1 class="hero-heading">
+              時間を作る。<br />
+              売れる設計にする。<br />
+              変化に合わせる。
+            </h1>
+            <p class="hero-sub">
+              「いい仕事をしているのに、雑務で1日が終わる」<br />
+              「SNSもHPも、やらなきゃと思いながら何年も経った」<br /><br />
+              仕組みを作れば時間は空く。<br />
+              でも時間が空くだけでは、売上は動かない。<br />
+              だから一緒に考える。そして毎月、更新し続ける。
+            </p>
+            <div class="hero-badges" aria-label="対応サービス一覧">
+              <div class="hero-badges-inner">
+                <span class="hero-badge">仕組み化</span>
+                <span class="hero-badge">売れる設計</span>
+                <span class="hero-badge">伴走型</span>
+                <span class="hero-badge">月額対応</span>
+              </div>
+              <span class="hero-tag-inline">足立区・北区の個人店オーナーへ</span>
+            </div>
+            <a href="https://lin.ee/PwGYxqQ" class="hero-cta" target="_blank" rel="noopener noreferrer">
+              <svg class="hero-cta-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+              </svg>
+              まず、手放したい作業を相談する
+            </a>
           </div>
-          <a href="https://lin.ee/PwGYxqQ" class="hero-cta" target="_blank" rel="noopener noreferrer">
-            <svg class="hero-cta-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-            </svg>
-            まず LINE で相談する
-          </a>
+          <div class="hero-illust" aria-hidden="true">
+            <img
+              src="/images/service/illust-owner.png"
+              alt=""
+              class="hero-illust-img"
+              width="400"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
         </div>
       </section>
 
@@ -135,14 +147,19 @@ const faqs = [
       <section class="pains reveal-section">
         <div class="section-inner">
           <h2 class="section-heading">
-            <span class="section-label">こんなお悩みはありませんか？</span>
+            <span class="section-label">こんな本音、ありませんか？</span>
           </h2>
           <ul class="pain-grid">
             {pains.map((p) => (
               <li class="pain-item">
-                <div class="pain-icon-wrap" aria-hidden="true">
-                  <span class="pain-icon" set:html={p.icon} />
-                </div>
+                <img
+                  src={p.img}
+                  alt=""
+                  class="pain-illust"
+                  loading="lazy"
+                  decoding="async"
+                  aria-hidden="true"
+                />
                 <p class="pain-text">{p.text}</p>
               </li>
             ))}
@@ -153,8 +170,7 @@ const faqs = [
       <!-- ソリューションブリッジ -->
       <section class="bridge" aria-label="解決できます">
         <div class="bridge-inner">
-          <p class="bridge-heading">そのお悩み、全部<br />仕組みで解決できます。</p>
-          <p class="bridge-sub">IT の知識は不要です。やることだけ決めれば、あとはお任せください。</p>
+          <p class="bridge-heading">それは全部、仕組みと設計と、<br />続けてくれる人がいれば変わります。</p>
         </div>
       </section>
 
@@ -169,8 +185,8 @@ const faqs = [
               <div class="works-card-icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
               </div>
-              <h3 class="works-title">吉野家グループ向け<br />業務チェックリストツール</h3>
-              <p class="works-desc">チェックリストを Web 上で作成し Excel/PDF に出力。事務担当者の毎月の業務を仕組み化。</p>
+              <h3 class="works-title">業務効率化<br />チェックリストツール</h3>
+              <p class="works-desc">事務担当者の毎月の業務を仕組み化したツール。Web 上でチェックリストを作成し Excel/PDF に出力。</p>
               <a href="https://yoshinoya-two.vercel.app" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
             </div>
             <div class="works-card">
@@ -181,6 +197,14 @@ const faqs = [
               <p class="works-desc">来店客の情報をスマホで管理し、次回のアクション提案まで行う Web アプリ。</p>
               <a href="https://gnh-pink.vercel.app" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
             </div>
+            <div class="works-card">
+              <div class="works-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <h3 class="works-title">サービス稼働監視<br />ダッシュボード</h3>
+              <p class="works-desc">複数の Web サービスをリアルタイムで監視するダッシュボード。異常検知・通知まで自動化したインフラ管理ツール。</p>
+              <a href="https://status.intervention.jp/" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
+            </div>
           </div>
         </div>
       </section>
@@ -189,22 +213,35 @@ const faqs = [
       <section class="services reveal-section">
         <div class="section-inner">
           <h2 class="section-heading">
-            <span class="section-label">できること</span>
+            <span class="section-label">選ばれる3つの理由</span>
           </h2>
-          <ul class="service-list">
-            {services.map((s, i) => (
-              <li class={`service-item ${i % 2 === 1 ? "service-item--reverse" : ""}`}>
-                <div class="service-icon-wrap">
-                  <span class="service-icon" set:html={s.icon} />
+          <div class="reason-list">
+            {services.map((s) => (
+              <div class="reason-item">
+                <span class="reason-num" aria-hidden="true">{s.num}</span>
+                <div class="reason-body">
+                  <h3 class="reason-title">{s.name}</h3>
+                  <p class="reason-desc">{s.desc}</p>
                 </div>
-                <div class="service-body">
-                  <span class="service-num" aria-hidden="true">{s.num}</span>
-                  <h3 class="service-name">{s.name}</h3>
-                  <p class="service-desc">{s.desc}</p>
-                </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- インラインCTAバナー -->
+      <section class="inline-cta reveal-section">
+        <div class="section-inner">
+          <div class="inline-cta-inner">
+            <p class="inline-cta-heading">まず15分だけ話してみませんか？</p>
+            <p class="inline-cta-sub">費用・契約・売り込みは一切なし。お店の状況を聞かせてもらうだけでかまいません。</p>
+            <a href="https://lin.ee/PwGYxqQ" class="inline-cta-btn" target="_blank" rel="noopener noreferrer">
+              <svg class="inline-cta-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+              </svg>
+              LINEで無料相談する →
+            </a>
+          </div>
         </div>
       </section>
 
@@ -214,36 +251,32 @@ const faqs = [
           <h2 class="section-heading">
             <span class="section-label">こんな流れで進みます</span>
           </h2>
-          <ol class="flow-list">
-            <li class="flow-item">
-              <span class="flow-num" aria-hidden="true">01</span>
-              <div class="flow-body">
-                <h3 class="flow-title">まず話を聞かせてください</h3>
-                <p class="flow-desc">LINE かメールで状況を教えてください。費用や内容より先に、困ってることを聞きます。</p>
-              </div>
-            </li>
-            <li class="flow-item">
-              <span class="flow-num" aria-hidden="true">02</span>
-              <div class="flow-body">
-                <h3 class="flow-title">現状を一緒に整理します</h3>
-                <p class="flow-desc">お店の状況をヒアリングして、何が本当に必要かを一緒に考えます。</p>
-              </div>
-            </li>
-            <li class="flow-item">
-              <span class="flow-num" aria-hidden="true">03</span>
-              <div class="flow-body">
-                <h3 class="flow-title">やること・費用をお伝えします</h3>
-                <p class="flow-desc">何をどう進めるか、いくらかかるかを明確にお伝えします。納得してからスタート。</p>
-              </div>
-            </li>
-            <li class="flow-item">
-              <span class="flow-num" aria-hidden="true">04</span>
-              <div class="flow-body">
-                <h3 class="flow-title">着手・完成・フォロー</h3>
-                <p class="flow-desc">完成後も使い方がわからない時はいつでも聞いてください。</p>
-              </div>
-            </li>
-          </ol>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-num">01</div>
+              <h3 class="timeline-title">手放したい作業を聞かせてください</h3>
+              <p class="timeline-desc">LINEかメールで、今一番困ってることを教えてください。システムの話より先に、現状を聞くことから始めます。</p>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-num">02</div>
+              <h3 class="timeline-title">現状と理想を一緒に整理する</h3>
+              <p class="timeline-desc">何が自動にできて、何を一緒に考えるべきか、整理します。</p>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-num">03</div>
+              <h3 class="timeline-title">やること・費用をお伝えする</h3>
+              <p class="timeline-desc">何をどう進めるか、いくらかかるかを明確にお伝えします。納得してからスタート。</p>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-num">04</div>
+              <h3 class="timeline-title">作って、動かして、更新し続ける</h3>
+              <p class="timeline-desc">完成がゴールではありません。毎月一緒に見直しながら、育てていきます。</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -285,9 +318,9 @@ const faqs = [
       <!-- CTA -->
       <section id="contact" class="cta reveal-section">
         <div class="section-inner cta-inner">
-          <h2 class="cta-heading">まず15分だけ、話してみませんか</h2>
+          <h2 class="cta-heading">まず、手放したい作業を1つ教えてください。<br />そこから始めます。</h2>
           <p class="cta-sub">
-            費用・契約・売り込みは一切なし。お店の状況を聞かせてもらうだけでかまいません。
+            費用・契約・売り込みは一切なし。<br />「今一番困っていること」だけ聞かせてもらえれば十分です。
           </p>
           <div class="cta-buttons">
             <a
@@ -440,18 +473,39 @@ const faqs = [
 
   /* === Hero === */
   .hero {
-    padding: 100px 5vw;
-    background: #fff;
-    text-align: center;
+    padding: 120px 5vw 100px;
+    background: linear-gradient(135deg, #0fb8b8 0%, #0a8fa0 60%, #076d7d 100%);
   }
 
   .hero-inner {
     max-width: 1100px;
     width: 95%;
     margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 48px;
+    align-items: center;
+  }
+
+  .hero-text {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-illust {
+    display: flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .hero-illust-img {
+    max-width: 340px;
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.2));
   }
 
   .hero-tag {
@@ -459,35 +513,53 @@ const faqs = [
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.12em;
-    color: #0fb8b8;
-    background: rgba(15, 184, 184, 0.1);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     padding: 0.35rem 0.85rem;
     border-radius: 100px;
     margin-bottom: 1.75rem;
   }
 
   .hero-heading {
-    font-size: clamp(2rem, 6vw, 2.8rem);
-    font-weight: 700;
-    line-height: 1.4;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 900;
+    line-height: 1.2;
     letter-spacing: -0.02em;
-    color: #1A1A1A;
+    color: #fff;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
     margin-bottom: 1.25rem;
   }
 
   .hero-sub {
-    font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+    font-size: 1.15rem;
     line-height: 1.9;
-    color: #555;
+    color: rgba(255, 255, 255, 0.9);
     margin-bottom: 2rem;
   }
 
   .hero-badges {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     gap: 0.75rem;
     margin-bottom: 2.5rem;
+  }
+
+  .hero-badges-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .hero-tag-inline {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .hero-badge {
@@ -496,9 +568,9 @@ const faqs = [
     gap: 0.4rem;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #0fb8b8;
-    background: rgba(15, 184, 184, 0.08);
-    border: 1px solid rgba(15, 184, 184, 0.25);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 0.45rem 1rem;
     border-radius: 100px;
     letter-spacing: 0.02em;
@@ -514,29 +586,30 @@ const faqs = [
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    padding: 18px 40px;
+    padding: 20px 48px;
     min-width: 280px;
-    background: #06C755;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
+    background: #fff;
+    color: #0fb8b8;
+    font-size: 1.15rem;
+    font-weight: 900;
     text-decoration: none;
     border-radius: 100px;
-    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     letter-spacing: 0.02em;
   }
 
   .hero-cta:hover {
-    opacity: 0.85;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(6, 199, 85, 0.3);
+    background: #f0fdfc;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.4);
   }
 
   .hero-cta-icon {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    fill: #fff;
+    fill: #0fb8b8;
   }
 
   /* === Section 共通 === */
@@ -553,10 +626,10 @@ const faqs = [
 
   .section-label {
     display: inline-block;
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
     color: #1A1A1A;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
   /* Reveal animation */
@@ -581,14 +654,14 @@ const faqs = [
 
   /* === お悩みグリッド === */
   .pains {
-    padding: 80px 5vw;
+    padding: 100px 5vw;
     background: #f5f5f5;
   }
 
   .pain-grid {
     list-style: none;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
   }
 
@@ -600,46 +673,37 @@ const faqs = [
     gap: 1rem;
     padding: 32px 24px;
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    transition: all 0.3s ease;
   }
 
   .pain-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
   }
 
-  .pain-icon-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: rgba(15, 184, 184, 0.1);
-    flex-shrink: 0;
-    color: #0fb8b8;
-    line-height: 0;
-  }
-
-  .pain-icon svg {
+  .pain-illust {
     display: block;
-    width: 28px;
-    height: 28px;
+    width: auto;
+    max-width: 100%;
+    max-height: 140px;
+    height: auto;
+    object-fit: contain;
+    flex-shrink: 0;
   }
 
   .pain-text {
-    font-size: 0.95rem;
-    line-height: 1.75;
-    color: #333;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #666;
     font-weight: 700;
   }
 
   /* === ソリューションブリッジ === */
   .bridge {
     background: #0fb8b8;
-    padding: 80px 5vw;
+    padding: 100px 5vw;
     text-align: center;
   }
 
@@ -666,30 +730,31 @@ const faqs = [
 
   /* === 実際に作ったもの === */
   .works {
-    padding: 80px 5vw;
+    padding: 100px 5vw;
     background: #fff;
   }
 
   .works-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
   }
 
   .works-card {
     padding: 2rem;
-    background: #f5f5f5;
-    border-radius: 12px;
+    background: #fff;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     border-left: 4px solid #0fb8b8;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    transition: all 0.3s ease;
   }
 
   .works-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
   }
 
   .works-card-icon {
@@ -699,17 +764,17 @@ const faqs = [
   }
 
   .works-title {
-    font-size: clamp(0.93rem, 1.8vw, 1.05rem);
-    font-weight: 700;
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    font-weight: 800;
     color: #1A1A1A;
     letter-spacing: -0.01em;
     line-height: 1.5;
   }
 
   .works-desc {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     line-height: 1.75;
-    color: #555;
+    color: #666;
     flex: 1;
   }
 
@@ -728,136 +793,190 @@ const faqs = [
     opacity: 0.7;
   }
 
-  /* === サービス（左右交互グリッド） === */
+  /* === 選ばれる3つの理由（番号リスト） === */
   .services {
-    padding: 80px 5vw;
+    padding: 100px 5vw;
     background: #f5f5f5;
   }
 
-  .service-list {
-    list-style: none;
+  .reason-list {
     display: flex;
     flex-direction: column;
-    gap: 60px;
+    gap: 0;
   }
 
-  .service-item {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    align-items: center;
-  }
-
-  .service-item--reverse .service-icon-wrap {
-    order: 2;
-  }
-
-  .service-item--reverse .service-body {
-    order: 1;
-  }
-
-  .service-icon-wrap {
+  .reason-item {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(15, 184, 184, 0.1);
-    margin: 0 auto;
+    align-items: flex-start;
+    gap: 2.5rem;
+    padding: 2.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .reason-item:first-child {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .reason-num {
+    font-size: 3.5rem;
+    font-weight: 900;
     color: #0fb8b8;
-    line-height: 0;
+    opacity: 0.25;
+    line-height: 1;
     flex-shrink: 0;
+    min-width: 80px;
   }
 
-  .service-icon svg {
-    display: block;
-    width: 64px;
-    height: 64px;
-  }
-
-  .service-body {
+  .reason-body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    padding-top: 0.5rem;
   }
 
-  .service-num {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #0fb8b8;
-    letter-spacing: 0.15em;
-  }
-
-  .service-name {
-    font-size: clamp(1.1rem, 2.5vw, 1.35rem);
-    font-weight: 700;
+  .reason-title {
+    font-size: 1.3rem;
+    font-weight: 800;
     color: #1A1A1A;
     letter-spacing: -0.01em;
     line-height: 1.4;
   }
 
-  .service-desc {
+  .reason-desc {
     font-size: 0.95rem;
-    line-height: 1.85;
-    color: #555;
+    color: #666;
+    line-height: 1.8;
   }
 
-  /* === 流れ === */
-  .flow {
-    padding: 80px 5vw;
+  /* === インラインCTAバナー === */
+  .inline-cta {
+    padding: 60px 5vw;
     background: #fff;
   }
 
-  .flow-list {
-    list-style: none;
+  .inline-cta-inner {
+    background: #e6f9f9;
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .inline-cta-heading {
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    font-weight: 900;
+    color: #076d7d;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .inline-cta-sub {
+    font-size: 0.95rem;
+    color: #4a4a4a;
+    line-height: 1.75;
+    max-width: 480px;
+  }
+
+  .inline-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 18px 44px;
+    background: #06C755;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 100px;
+    box-shadow: 0 6px 24px rgba(6, 199, 85, 0.35);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    letter-spacing: 0.02em;
+    margin-top: 0.5rem;
+  }
+
+  .inline-cta-btn:hover {
+    background: #05b34c;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(6, 199, 85, 0.45);
+  }
+
+  .inline-cta-btn-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: #fff;
+  }
+
+  /* === 流れ（横タイムライン） === */
+  .flow {
+    padding: 100px 5vw;
+    background: #fff;
+  }
+
+  .timeline {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
+    position: relative;
   }
 
-  .flow-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1.5rem 1.5rem 1.5rem 0;
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #0fb8b8;
+    opacity: 0.3;
   }
 
-  .flow-item:last-child {
-    border-right: none;
-    padding-right: 0;
+  .timeline-item {
+    padding: 0 1.25rem;
+    text-align: center;
+    position: relative;
   }
 
-  .flow-item:not(:first-child) {
-    padding-left: 1.5rem;
+  .timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0fb8b8;
+    margin: 0 auto 1rem;
+    position: relative;
+    z-index: 1;
   }
 
-  .flow-num {
-    font-size: 1.6rem;
+  .timeline-num {
+    font-size: 0.75rem;
     font-weight: 700;
     color: #0fb8b8;
-    letter-spacing: -0.02em;
-    line-height: 1;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
   }
 
-  .flow-title {
-    font-size: clamp(0.88rem, 1.5vw, 0.97rem);
-    font-weight: 700;
+  .timeline-title {
+    font-size: 0.95rem;
+    font-weight: 800;
     color: #1A1A1A;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
     letter-spacing: -0.01em;
-    line-height: 1.45;
   }
 
-  .flow-desc {
-    font-size: 0.86rem;
-    line-height: 1.75;
-    color: #555;
+  .timeline-desc {
+    font-size: 0.82rem;
+    color: #888;
+    line-height: 1.7;
   }
 
   /* === FAQ === */
   .faq {
-    padding: 80px 5vw;
+    padding: 100px 5vw;
     background: #f5f5f5;
   }
 
@@ -866,9 +985,9 @@ const faqs = [
     flex-direction: column;
     gap: 0;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
   }
 
   .faq-item {
@@ -956,7 +1075,7 @@ const faqs = [
 
   /* === CTA === */
   .cta {
-    padding: 100px 5vw;
+    padding: 120px 5vw;
     background: #1A1A1A;
   }
 
@@ -965,10 +1084,11 @@ const faqs = [
   }
 
   .cta-heading {
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    font-weight: 700;
+    font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+    font-weight: 900;
     color: #fff;
     letter-spacing: -0.02em;
+    line-height: 1.5;
     margin-bottom: 1rem;
   }
 
@@ -992,28 +1112,29 @@ const faqs = [
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    padding: 18px 40px;
+    padding: 20px 48px;
     min-width: 280px;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
     text-decoration: none;
     border-radius: 100px;
     letter-spacing: 0.02em;
-    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 
   .btn:hover {
-    opacity: 0.85;
-    transform: translateY(-2px);
+    transform: translateY(-4px);
   }
 
   .btn-line {
     background: #06C755;
     color: #fff;
+    box-shadow: 0 6px 24px rgba(6, 199, 85, 0.35);
   }
 
   .btn-line:hover {
-    box-shadow: 0 8px 24px rgba(6, 199, 85, 0.3);
+    background: #05b34c;
+    box-shadow: 0 12px 32px rgba(6, 199, 85, 0.45);
   }
 
   .btn-mail {
@@ -1104,6 +1225,24 @@ const faqs = [
       padding: 72px 5vw;
     }
 
+    .hero-inner {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .hero-text {
+      align-items: center;
+      text-align: center;
+    }
+
+    .hero-badges {
+      justify-content: center;
+    }
+
+    .hero-illust {
+      display: none;
+    }
+
     .hero-heading {
       font-size: clamp(1.75rem, 5vw, 2.2rem);
     }
@@ -1121,9 +1260,9 @@ const faqs = [
       padding: 60px 5vw;
     }
 
-    /* お悩み: 1カラム */
+    /* お悩み: 768px以下は2カラム */
     .pain-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
 
     /* 実績: 1カラム */
@@ -1131,39 +1270,41 @@ const faqs = [
       grid-template-columns: 1fr;
     }
 
-    /* サービス: 1カラム */
-    .service-item,
-    .service-item--reverse .service-icon-wrap,
-    .service-item--reverse .service-body {
-      grid-template-columns: 1fr;
-      order: unset;
+    /* 理由リスト: モバイル */
+    .reason-item {
+      gap: 1.5rem;
     }
 
-    .service-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      align-items: center;
-      text-align: center;
+    .reason-num {
+      font-size: 2.5rem;
+      min-width: 56px;
     }
 
-    /* 流れ: 縦並び */
-    .flow-list {
+    /* タイムライン: 縦並び */
+    .timeline {
       grid-template-columns: 1fr;
     }
 
-    .flow-item {
-      border-right: none;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-      padding: 1.25rem 0;
+    .timeline::before {
+      top: 0;
+      bottom: 0;
+      left: 20px;
+      right: auto;
+      width: 2px;
+      height: auto;
     }
 
-    .flow-item:last-child {
-      border-bottom: none;
+    .timeline-item {
+      text-align: left;
+      padding: 0 0 2rem 3rem;
+      position: relative;
     }
 
-    .flow-item:not(:first-child) {
-      padding-left: 0;
+    .timeline-dot {
+      position: absolute;
+      left: 13px;
+      top: 0;
+      margin: 0;
     }
 
     .cta-buttons {
@@ -1183,6 +1324,11 @@ const faqs = [
   }
 
   @media (max-width: 480px) {
+    /* お悩み: 480px以下は1カラム */
+    .pain-grid {
+      grid-template-columns: 1fr;
+    }
+
     .hero-heading {
       font-size: clamp(1.6rem, 6vw, 1.9rem);
     }
