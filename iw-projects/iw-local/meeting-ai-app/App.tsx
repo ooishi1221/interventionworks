@@ -32,6 +32,8 @@ import { StatusBar } from "expo-status-bar";
 // ──────────────────────────────────────────
 const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
+const STORAGE_KEY_USER = "@meeting_ai_username";
+const DEFAULT_USERNAME = "default";
 const CHUNK_DURATION_MS = 30000;
 const RECORDING_OPTIONS: RecordingOptions = RecordingPresets.HIGH_QUALITY;
 const NOISE_PATTERNS = [
@@ -77,6 +79,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [whisperUrl, setWhisperUrl] = useState(DEFAULT_WHISPER_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_WHISPER_URL);
+  const [username, setUsername] = useState(DEFAULT_USERNAME);
+  const [usernameInput, setUsernameInput] = useState(DEFAULT_USERNAME);
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [requestMemo, setRequestMemo] = useState("");
   const [requestSaving, setRequestSaving] = useState(false);
@@ -100,13 +104,11 @@ export default function App() {
   const handoffInProgressRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // ── URL 読み込み ──
+  // ── URL / ユーザー名 読み込み ──
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY_URL).then((val) => {
-      if (val) {
-        setWhisperUrl(val);
-        setUrlInput(val);
-      }
+    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER]).then(([[, url], [, user]]) => {
+      if (url) { setWhisperUrl(url); setUrlInput(url); }
+      if (user) { setUsername(user); setUsernameInput(user); }
     });
   }, []);
 
@@ -132,7 +134,7 @@ export default function App() {
       const res = await fetch(`${whisperUrl}/transcribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64: base64, mimeType: "audio/m4a" }),
+        body: JSON.stringify({ audioBase64: base64, mimeType: "audio/m4a", user: username }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { text } = (await res.json()) as { text?: string };
@@ -308,7 +310,7 @@ export default function App() {
       isRecordingRef.current = true;
       setIsRecording(true);
       // current.txt をクリアして新セッション開始
-      fetch(`${whisperUrl}/start-session`, { method: "POST" }).catch(() => {});
+      fetch(`${whisperUrl}/start-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) }).catch(() => {});
       await recordChunk();
     } catch (e) {
       console.error("startRecording error:", e);
@@ -350,7 +352,7 @@ export default function App() {
     await setIsAudioActiveAsync(false);
 
     // セッションを自動保存して履歴を更新
-    fetch(`${whisperUrl}/save-session`, { method: "POST" })
+    fetch(`${whisperUrl}/save-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) })
       .then(() => fetchSessions())
       .catch(() => {});
   }, [copyChunkToDocumentDirectory, recorderA, recorderB, sendChunk, whisperUrl]);
@@ -400,7 +402,7 @@ export default function App() {
   const fetchSessions = useCallback(async () => {
     setSessionsLoading(true);
     try {
-      const res = await fetch(`${whisperUrl}/sessions`);
+      const res = await fetch(`${whisperUrl}/sessions?user=${encodeURIComponent(username)}`);
       const data = await res.json() as { sessions: SessionItem[] };
       setSessions(data.sessions ?? []);
     } catch {
@@ -412,7 +414,7 @@ export default function App() {
 
   const openSession = useCallback(async (filename: string) => {
     try {
-      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}`);
+      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`);
       const data = await res.json() as { content: string };
       setSelectedSession({ filename, content: data.content });
     } catch {
@@ -425,7 +427,7 @@ export default function App() {
       { text: "キャンセル", style: "cancel" },
       {
         text: "削除", style: "destructive", onPress: async () => {
-          await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}`, { method: "DELETE" });
+          await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`, { method: "DELETE" });
           setSessions((prev) => prev.filter((s) => s.filename !== filename));
           if (selectedSession?.filename === filename) setSelectedSession(null);
         },
@@ -454,7 +456,7 @@ export default function App() {
       await fetch(`${whisperUrl}/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: selectedRequests, memo: requestMemo }),
+        body: JSON.stringify({ items: selectedRequests, memo: requestMemo, user: username }),
       });
     } catch (err) {
       console.error("saveRequest error:", err);
@@ -466,9 +468,12 @@ export default function App() {
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
     const url = urlInput.trim().replace(/\/$/, "");
-    await AsyncStorage.setItem(STORAGE_KEY_URL, url);
+    const user = usernameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "") || DEFAULT_USERNAME;
+    await AsyncStorage.multiSet([[STORAGE_KEY_URL, url], [STORAGE_KEY_USER, user]]);
     setWhisperUrl(url);
-  }, [urlInput]);
+    setUsername(user);
+    setUsernameInput(user);
+  }, [urlInput, usernameInput]);
 
   // ──────────────────────────────────────────
   // Tab Contents
@@ -633,6 +638,20 @@ export default function App() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.settingsWrap}>
+        <Text style={styles.label}>ユーザー名</Text>
+        <TextInput
+          style={styles.input}
+          value={usernameInput}
+          onChangeText={setUsernameInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="例: yuji, tanaka"
+          placeholderTextColor="#52525b"
+        />
+        <Text style={styles.hint}>
+          英数字・ハイフン・アンダースコアのみ。友達と共有する場合は別の名前に。
+        </Text>
+
         <Text style={styles.label}>Whisper サーバー URL</Text>
         <TextInput
           style={styles.input}
@@ -650,8 +669,10 @@ export default function App() {
         <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
           <Text style={styles.saveBtnText}>保存</Text>
         </TouchableOpacity>
-        <Text style={styles.currentUrl}>
-          現在の接続先: {whisperUrl}
+        <Text style={styles.currentUrl}>ユーザー: {username}</Text>
+        <Text style={styles.currentUrl}>接続先: {whisperUrl}</Text>
+        <Text style={[styles.hint, { marginTop: 16 }]}>
+          Claude Codeで読む場合: {whisperUrl}/current/{username}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
