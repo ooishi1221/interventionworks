@@ -570,11 +570,9 @@ function PartZoom({
           {allFilled && !showAll ? (
             <div className="zoom-all-done">
               <div className="zoom-all-done-label">入力完了</div>
-              {onNext && (
-                <button className="zoom-next-btn" onClick={onNext}>
-                  次の項目 →
-                </button>
-              )}
+              <button className="zoom-next-btn" onClick={onNext ?? onBack}>
+                {onNext ? '次の項目 →' : 'TOPへ'}
+              </button>
               <button className="zoom-redo-btn" onClick={() => setShowAll(true)}>
                 再入力
               </button>
