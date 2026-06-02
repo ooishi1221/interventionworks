@@ -1053,8 +1053,11 @@ export default function App() {
     return acc
   }, {} as Record<PartKey, number>)
 
+  const CAT_ORDER: CategoryKey[] = ['up', 'left', 'right', 'down', 'tap']
   const valuesOf = (pk: PartKey): GuideValue[] =>
-    entries.filter(e => e.partKey === pk).map(e => ({ cat: e.catLabel, val: e.value }))
+    [...entries.filter(e => e.partKey === pk)]
+      .sort((a, b) => CAT_ORDER.indexOf(a.catKey as CategoryKey) - CAT_ORDER.indexOf(b.catKey as CategoryKey))
+      .map(e => ({ cat: e.catLabel, val: e.value }))
 
   const topGuides: DirGuide[] = [
     { dir: 'up',    emoji: '👤', label: '頭部',          values: valuesOf('head') },
