@@ -4,58 +4,62 @@ const description = "足立区・北区の個人店オーナー向け IT サポ�
 
 const pains = [
   {
-    // Phone — Lucide
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16v.92z"/></svg>`,
-    text: "予約の電話が多くて、お客さんの対応に集中できない",
+    text: "予約の電話が多くて、お客さんへの対応に集中できない",
   },
   {
-    // Instagram — Lucide
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
-    text: "SNS を更新しないといけないのはわかってるけど、時間が取れない",
+    text: "SNS を更新しないといけないとわかってるけど、時間が取れない",
   },
   {
-    // Globe — Lucide
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
     text: "ホームページを作りたいけど、何から始めればいいかわからない",
+  },
+  {
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+    text: "予約サイトやポータルの手数料が高くて、利益が残らない",
   },
 ];
 
 const services = [
   {
     num: "01",
-    // MessageCircle — LINE 予約
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
     name: "LINE 予約の自動化",
     desc: "電話に出られない時間でも、LINE で予約を受け付けられる仕組みをつくります。営業時間外でも自動で対応。",
-    img: "/images/service/service-01.jpg",
-    imgAlt: "スマートフォンの手元",
   },
   {
     num: "02",
-    // Reply — Instagram DM
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>`,
     name: "Instagram DM 自動返信",
     desc: "「営業時間は何時ですか？」といったよくある質問に、Instagram の DM が自動で答えてくれる仕組みです。",
-    img: "/images/service/service-02.jpg",
-    imgAlt: "Instagram を開いたスマートフォン",
   },
   {
     num: "03",
-    // CreditCard — 予約・支払い
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
     name: "予約・お支払いページ",
     desc: "お店専用の予約ページをつくります。来店前に決済も完了できるので、当日の会計がスムーズになります。",
-    img: "/images/service/service-03.jpg",
-    imgAlt: "カード決済の手元",
   },
   {
     num: "04",
-    // Monitor — ホームページ
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>`,
     name: "ホームページ制作",
-    desc: "お店の雰囲気や想いが伝わるホームページをつくります。スマホで見やすいデザインで、Googleからも来てもらいやすくなります。",
-    img: "/images/service/service-04.jpg",
-    imgAlt: "ノートPCで作業する手元",
+    desc: "お店の雰囲気や想いが伝わるホームページをつくります。スマホで見やすいデザインで、Google からも来てもらいやすくなります。",
+  },
+];
+
+const faqs = [
+  {
+    q: "費用はどのくらいかかりますか？",
+    a: "サービス内容によって異なります。まずは無料でご相談いただき、内容を確認してからお見積もりします。相談だけで費用が発生することはありません。",
+  },
+  {
+    q: "IT の知識がなくても大丈夫ですか？",
+    a: "はい、問題ありません。難しい用語は使わず、何をどうするかを分かりやすく説明します。完成後の操作方法もご説明します。",
+  },
+  {
+    q: "どのくらいの期間で完成しますか？",
+    a: "内容によって異なりますが、LINE 予約の自動化であれば 1〜2 週間、ホームページであれば 2〜4 週間が目安です。",
   },
 ];
 ---
@@ -102,48 +106,82 @@ const services = [
 
       <!-- ヒーロー -->
       <section class="hero">
-        <div class="hero-accent" aria-hidden="true"></div>
-        <div class="hero-2col">
-          <div class="hero-text">
-            <p class="hero-tag">足立区・北区の個人店オーナーへ</p>
-            <h1 class="hero-heading">
-              本来やりたかったことを、<br />
-              取り戻しませんか。
-            </h1>
-            <p class="hero-sub">
-              予約の電話対応、SNS の更新、ホームページ——<br />
-              「やらなきゃ」が積み重なって、肝心のお客さんへの時間が削られていませんか。<br />
-              仕組みで解決できることは、仕組みに任せましょう。
-            </p>
-            <a href="#contact" class="hero-cta">まず相談してみる</a>
+        <div class="hero-inner">
+          <p class="hero-tag">足立区・北区の個人店オーナーへ</p>
+          <h1 class="hero-heading">
+            「電話対応・SNS・HP——<br />
+            その「やらなきゃ」から、<br />
+            解放します。」
+          </h1>
+          <p class="hero-sub">
+            仕組みで解決できることは、仕組みに任せましょう。
+          </p>
+          <div class="hero-badges" aria-label="対応サービス一覧">
+            <span class="hero-badge">LINE予約対応</span>
+            <span class="hero-badge">SNS自動化</span>
+            <span class="hero-badge">HP制作</span>
+            <span class="hero-badge">決済導入</span>
           </div>
-          <div class="hero-img-wrap" aria-hidden="true">
-            <img
-              src="/images/service/hero.jpg"
-              alt=""
-              class="hero-img"
-              loading="eager"
-              width="420"
-              height="560"
-            />
-          </div>
+          <a href="https://lin.ee/PwGYxqQ" class="hero-cta" target="_blank" rel="noopener noreferrer">
+            <svg class="hero-cta-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+            </svg>
+            まず LINE で相談する
+          </a>
         </div>
       </section>
 
-      <!-- こんなお悩みありませんか？ -->
+      <!-- こんなお悩みはありませんか？ -->
       <section class="pains reveal-section">
         <div class="section-inner">
           <h2 class="section-heading">
-            <span class="section-label">こんなお悩みありませんか？</span>
+            <span class="section-label">こんなお悩みはありませんか？</span>
           </h2>
-          <ul class="pain-list">
+          <ul class="pain-grid">
             {pains.map((p) => (
               <li class="pain-item">
-                <span class="pain-icon" set:html={p.icon} />
+                <div class="pain-icon-wrap" aria-hidden="true">
+                  <span class="pain-icon" set:html={p.icon} />
+                </div>
                 <p class="pain-text">{p.text}</p>
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      <!-- ソリューションブリッジ -->
+      <section class="bridge" aria-label="解決できます">
+        <div class="bridge-inner">
+          <p class="bridge-heading">そのお悩み、全部<br />仕組みで解決できます。</p>
+          <p class="bridge-sub">IT の知識は不要です。やることだけ決めれば、あとはお任せください。</p>
+        </div>
+      </section>
+
+      <!-- 実際に作ったもの -->
+      <section class="works reveal-section">
+        <div class="section-inner">
+          <h2 class="section-heading">
+            <span class="section-label">実際に作ったもの</span>
+          </h2>
+          <div class="works-list">
+            <div class="works-card">
+              <div class="works-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </div>
+              <h3 class="works-title">吉野家グループ向け<br />業務チェックリストツール</h3>
+              <p class="works-desc">チェックリストを Web 上で作成し Excel/PDF に出力。事務担当者の毎月の業務を仕組み化。</p>
+              <a href="https://yoshinoya-two.vercel.app" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
+            </div>
+            <div class="works-card">
+              <div class="works-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h3 class="works-title">個人店向け<br />顧客管理アプリ（GnH）</h3>
+              <p class="works-desc">来店客の情報をスマホで管理し、次回のアクション提案まで行う Web アプリ。</p>
+              <a href="https://gnh-pink.vercel.app" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -154,25 +192,15 @@ const services = [
             <span class="section-label">できること</span>
           </h2>
           <ul class="service-list">
-            {services.map((s) => (
-              <li class="service-item">
-                <div class="service-leading">
-                  <span class="service-num" aria-hidden="true">{s.num}</span>
+            {services.map((s, i) => (
+              <li class={`service-item ${i % 2 === 1 ? "service-item--reverse" : ""}`}>
+                <div class="service-icon-wrap">
                   <span class="service-icon" set:html={s.icon} />
                 </div>
                 <div class="service-body">
+                  <span class="service-num" aria-hidden="true">{s.num}</span>
                   <h3 class="service-name">{s.name}</h3>
                   <p class="service-desc">{s.desc}</p>
-                </div>
-                <div class="service-img-wrap" aria-hidden="true">
-                  <img
-                    src={s.img}
-                    alt={s.imgAlt}
-                    class="service-img"
-                    loading="lazy"
-                    width="160"
-                    height="160"
-                  />
                 </div>
               </li>
             ))}
@@ -180,40 +208,86 @@ const services = [
         </div>
       </section>
 
-      <!-- IW について一言 -->
-      <section class="about reveal-section">
-        <div class="section-inner about-inner">
-          <div class="about-img-wrap">
-            <img
-              src="/images/service/about.jpg"
-              alt="個人事業主として地域の店舗を支援する様子"
-              class="about-img"
-              loading="lazy"
-              width="240"
-              height="240"
-            />
-          </div>
-          <div class="about-text">
-            <h2 class="section-heading">
-              <span class="section-label">Intervention Works について</span>
-            </h2>
-            <p class="about-desc">
-              東京都北区を拠点に活動する個人事業主です。足立区・北区の個人店が「やりたいこと」に集中できるよう、IT の仕組みづくりをお手伝いしています。
-            </p>
-            <p class="about-desc">
-              難しい話は抜きにして、まず「こんなことで困ってる」を聞かせてください。
-            </p>
-          </div>
+      <!-- こんな流れで進みます -->
+      <section class="flow reveal-section">
+        <div class="section-inner">
+          <h2 class="section-heading">
+            <span class="section-label">こんな流れで進みます</span>
+          </h2>
+          <ol class="flow-list">
+            <li class="flow-item">
+              <span class="flow-num" aria-hidden="true">01</span>
+              <div class="flow-body">
+                <h3 class="flow-title">まず話を聞かせてください</h3>
+                <p class="flow-desc">LINE かメールで状況を教えてください。費用や内容より先に、困ってることを聞きます。</p>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num" aria-hidden="true">02</span>
+              <div class="flow-body">
+                <h3 class="flow-title">現状を一緒に整理します</h3>
+                <p class="flow-desc">お店の状況をヒアリングして、何が本当に必要かを一緒に考えます。</p>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num" aria-hidden="true">03</span>
+              <div class="flow-body">
+                <h3 class="flow-title">やること・費用をお伝えします</h3>
+                <p class="flow-desc">何をどう進めるか、いくらかかるかを明確にお伝えします。納得してからスタート。</p>
+              </div>
+            </li>
+            <li class="flow-item">
+              <span class="flow-num" aria-hidden="true">04</span>
+              <div class="flow-body">
+                <h3 class="flow-title">着手・完成・フォロー</h3>
+                <p class="flow-desc">完成後も使い方がわからない時はいつでも聞いてください。</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="faq reveal-section">
+        <div class="section-inner">
+          <h2 class="section-heading">
+            <span class="section-label">よくある質問</span>
+          </h2>
+          <dl class="faq-list">
+            {faqs.map((item, i) => (
+              <div class="faq-item" data-faq-index={i}>
+                <dt class="faq-q">
+                  <button
+                    class="faq-btn"
+                    aria-expanded="false"
+                    aria-controls={`faq-answer-${i}`}
+                    type="button"
+                  >
+                    <span class="faq-q-label">Q.</span>
+                    <span class="faq-q-text">{item.q}</span>
+                    <span class="faq-chevron" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
+                  </button>
+                </dt>
+                <dd class="faq-a" id={`faq-answer-${i}`} hidden>
+                  <div class="faq-a-inner">
+                    <span class="faq-a-label">A.</span>
+                    <p class="faq-a-text">{item.a}</p>
+                  </div>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       <!-- CTA -->
       <section id="contact" class="cta reveal-section">
         <div class="section-inner cta-inner">
-          <h2 class="cta-heading">まずは気軽にご相談を</h2>
+          <h2 class="cta-heading">まず15分だけ、話してみませんか</h2>
           <p class="cta-sub">
-            費用や内容について、気になることは何でも聞いてください。<br />
-            相談だけでもかまいません。
+            費用・契約・売り込みは一切なし。お店の状況を聞かせてもらうだけでかまいません。
           </p>
           <div class="cta-buttons">
             <a
@@ -258,7 +332,7 @@ const services = [
     </footer>
 
     <script>
-      // Scroll reveal — CSS intersection observer のみ、JS は最小
+      // Scroll reveal
       const revealSections = document.querySelectorAll(".reveal-section");
       const obs = new IntersectionObserver(
         (entries) => {
@@ -272,6 +346,26 @@ const services = [
         { threshold: 0.1 }
       );
       revealSections.forEach((el) => obs.observe(el));
+
+      // FAQ accordion
+      document.querySelectorAll(".faq-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const expanded = btn.getAttribute("aria-expanded") === "true";
+          const answerId = btn.getAttribute("aria-controls");
+          const answer = document.getElementById(answerId!);
+          const item = btn.closest(".faq-item");
+
+          btn.setAttribute("aria-expanded", String(!expanded));
+          if (answer) {
+            if (expanded) {
+              answer.hidden = true;
+            } else {
+              answer.hidden = false;
+            }
+          }
+          item?.classList.toggle("faq-open", !expanded);
+        });
+      });
     </script>
   </body>
 </html>
@@ -288,9 +382,10 @@ const services = [
   }
 
   body {
-    background: #F8F7F5;
+    background: #fff;
     color: #1A1A1A;
     font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    line-height: 1.56em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -310,11 +405,11 @@ const services = [
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(248, 247, 245, 0.92);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    padding: 1rem 6vw;
+    padding: 1rem 5vw;
   }
 
   .nav-logo {
@@ -345,76 +440,18 @@ const services = [
 
   /* === Hero === */
   .hero {
-    position: relative;
-    padding: 12vh 6vw 10vh;
-    background: #F8F7F5;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-    overflow: hidden;
+    padding: 100px 5vw;
+    background: #fff;
+    text-align: center;
   }
 
-  /* teal のグラデーション帯 — 左端に縦線として立つ */
-  .hero::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 3px;
-    height: 100%;
-    background: linear-gradient(180deg, #0fb8b8 0%, rgba(15, 184, 184, 0) 100%);
-  }
-
-  /* 右下に大きな幾何学アクセント — 透過した円弧 */
-  .hero-accent {
-    position: absolute;
-    right: -60px;
-    bottom: -60px;
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    border: 1px solid rgba(15, 184, 184, 0.12);
-    pointer-events: none;
-  }
-
-  .hero-accent::before {
-    content: "";
-    position: absolute;
-    top: 30px;
-    left: 30px;
-    right: 30px;
-    bottom: 30px;
-    border-radius: 50%;
-    border: 1px solid rgba(15, 184, 184, 0.08);
-  }
-
-  /* 2カラム: 左テキスト + 右画像 */
-  .hero-2col {
-    position: relative;
-    z-index: 1;
-    max-width: 1040px;
+  .hero-inner {
+    max-width: 1100px;
+    width: 95%;
     margin: 0 auto;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 5vw;
-  }
-
-  .hero-text {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .hero-img-wrap {
-    flex-shrink: 0;
-    width: clamp(200px, 28vw, 380px);
-    align-self: stretch;
-  }
-
-  .hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 4px;
-    display: block;
-    /* 素材の本来性 — filter なし */
   }
 
   .hero-tag {
@@ -425,73 +462,108 @@ const services = [
     color: #0fb8b8;
     background: rgba(15, 184, 184, 0.1);
     padding: 0.35rem 0.85rem;
-    border-radius: 2px;
+    border-radius: 100px;
     margin-bottom: 1.75rem;
   }
 
   .hero-heading {
-    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    font-size: clamp(2rem, 6vw, 2.8rem);
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 1.4;
     letter-spacing: -0.02em;
     color: #1A1A1A;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 
   .hero-sub {
     font-size: clamp(0.95rem, 1.6vw, 1.05rem);
     line-height: 1.9;
     color: #555;
+    margin-bottom: 2rem;
+  }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
     margin-bottom: 2.5rem;
-    max-width: 56ch;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    background: rgba(15, 184, 184, 0.08);
+    border: 1px solid rgba(15, 184, 184, 0.25);
+    padding: 0.45rem 1rem;
+    border-radius: 100px;
+    letter-spacing: 0.02em;
+  }
+
+  .hero-badge::before {
+    content: "✓";
+    font-size: 0.8rem;
   }
 
   .hero-cta {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.9rem 2rem;
-    background: #0fb8b8;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 18px 40px;
+    min-width: 280px;
+    background: #06C755;
     color: #fff;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     font-weight: 700;
     text-decoration: none;
-    border-radius: 3px;
-    transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 100px;
+    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
     letter-spacing: 0.02em;
   }
 
   .hero-cta:hover {
-    background: #0da5a5;
+    opacity: 0.85;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(15, 184, 184, 0.3);
+    box-shadow: 0 8px 24px rgba(6, 199, 85, 0.3);
+  }
+
+  .hero-cta-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: #fff;
   }
 
   /* === Section 共通 === */
   .section-inner {
-    max-width: 680px;
+    max-width: 1100px;
+    width: 95%;
     margin: 0 auto;
   }
 
   .section-heading {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    text-align: center;
   }
 
   .section-label {
     display: inline-block;
-    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
     font-weight: 700;
     color: #1A1A1A;
     letter-spacing: -0.01em;
-    padding-bottom: 0.6rem;
-    border-bottom: 2px solid #0fb8b8;
   }
 
   /* Reveal animation */
   .reveal-section {
     opacity: 0;
-    transform: translateY(32px);
-    transition: opacity 0.75s ease, transform 0.75s ease;
+    transform: translateY(28px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
   }
 
   .reveal-section.revealed {
@@ -507,194 +579,384 @@ const services = [
     }
   }
 
-  /* === お悩み === */
+  /* === お悩みグリッド === */
   .pains {
-    padding: 10vh 6vw;
-    background: #fff;
+    padding: 80px 5vw;
+    background: #f5f5f5;
   }
 
-  .pain-list {
+  .pain-grid {
     list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 
   .pain-item {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    background: #F8F7F5;
-    border-left: 3px solid #0fb8b8;
-    border-radius: 0 3px 3px 0;
+    padding: 32px 24px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
 
   .pain-item:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 
-  .pain-icon {
+  .pain-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(15, 184, 184, 0.1);
     flex-shrink: 0;
-    margin-top: 0.1rem;
     color: #0fb8b8;
     line-height: 0;
   }
 
   .pain-icon svg {
     display: block;
+    width: 28px;
+    height: 28px;
   }
 
   .pain-text {
-    font-size: 1rem;
-    line-height: 1.7;
+    font-size: 0.95rem;
+    line-height: 1.75;
     color: #333;
+    font-weight: 700;
   }
 
-  /* === サービス === */
+  /* === ソリューションブリッジ === */
+  .bridge {
+    background: #0fb8b8;
+    padding: 80px 5vw;
+    text-align: center;
+  }
+
+  .bridge-inner {
+    max-width: 1100px;
+    width: 95%;
+    margin: 0 auto;
+  }
+
+  .bridge-heading {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+
+  .bridge-sub {
+    font-size: clamp(0.92rem, 1.5vw, 1rem);
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* === 実際に作ったもの === */
+  .works {
+    padding: 80px 5vw;
+    background: #fff;
+  }
+
+  .works-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .works-card {
+    padding: 2rem;
+    background: #f5f5f5;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    border-left: 4px solid #0fb8b8;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .works-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  }
+
+  .works-card-icon {
+    color: #0fb8b8;
+    line-height: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .works-title {
+    font-size: clamp(0.93rem, 1.8vw, 1.05rem);
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+    line-height: 1.5;
+  }
+
+  .works-desc {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: #555;
+    flex: 1;
+  }
+
+  .works-link {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s ease;
+    margin-top: 0.25rem;
+  }
+
+  .works-link:hover {
+    opacity: 0.7;
+  }
+
+  /* === サービス（左右交互グリッド） === */
   .services {
-    padding: 10vh 6vw;
-    background: #F8F7F5;
+    padding: 80px 5vw;
+    background: #f5f5f5;
   }
 
   .service-list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 60px;
   }
 
   .service-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .service-item--reverse .service-icon-wrap {
+    order: 2;
+  }
+
+  .service-item--reverse .service-body {
+    order: 1;
+  }
+
+  .service-icon-wrap {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    padding: 2rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    transition: background 0.25s ease;
-  }
-
-  .service-item:first-child {
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  .service-leading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-    min-width: 40px;
-    padding-top: 0.15rem;
-    align-self: flex-start;
-  }
-
-  .service-num {
-    font-size: 0.72rem;
-    font-weight: 700;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(15, 184, 184, 0.1);
+    margin: 0 auto;
     color: #0fb8b8;
-    letter-spacing: 0.12em;
-  }
-
-  .service-icon {
-    color: rgba(15, 184, 184, 0.65);
     line-height: 0;
+    flex-shrink: 0;
   }
 
   .service-icon svg {
     display: block;
+    width: 64px;
+    height: 64px;
   }
 
   .service-body {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 0;
+    gap: 0.75rem;
+  }
+
+  .service-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    letter-spacing: 0.15em;
   }
 
   .service-name {
-    font-size: clamp(1rem, 2vw, 1.15rem);
+    font-size: clamp(1.1rem, 2.5vw, 1.35rem);
     font-weight: 700;
     color: #1A1A1A;
     letter-spacing: -0.01em;
+    line-height: 1.4;
   }
 
   .service-desc {
     font-size: 0.95rem;
-    line-height: 1.8;
+    line-height: 1.85;
     color: #555;
-    max-width: 52ch;
   }
 
-  /* サービス右端の画像 */
-  .service-img-wrap {
-    flex-shrink: 0;
-    width: 120px;
-    height: 120px;
-    overflow: hidden;
-    border-radius: 3px;
-    opacity: 0.88;
-  }
-
-  .service-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.4s ease;
-  }
-
-  .service-item:hover .service-img {
-    transform: scale(1.04);
-  }
-
-  /* === About === */
-  .about {
-    padding: 10vh 6vw;
+  /* === 流れ === */
+  .flow {
+    padding: 80px 5vw;
     background: #fff;
   }
 
-  .about-inner {
-    display: flex;
-    align-items: flex-start;
-    gap: 3rem;
+  .flow-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
   }
 
-  /* About 左の画像 */
-  .about-img-wrap {
-    flex-shrink: 0;
-    width: clamp(140px, 20vw, 220px);
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    border-radius: 3px;
-  }
-
-  .about-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .about-text {
+  .flow-item {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    flex: 1;
+    gap: 0.75rem;
+    padding: 1.5rem 1.5rem 1.5rem 0;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
   }
 
-  .about-desc {
-    font-size: 1rem;
+  .flow-item:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .flow-item:not(:first-child) {
+    padding-left: 1.5rem;
+  }
+
+  .flow-num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .flow-title {
+    font-size: clamp(0.88rem, 1.5vw, 0.97rem);
+    font-weight: 700;
+    color: #1A1A1A;
+    letter-spacing: -0.01em;
+    line-height: 1.45;
+  }
+
+  .flow-desc {
+    font-size: 0.86rem;
+    line-height: 1.75;
+    color: #555;
+  }
+
+  /* === FAQ === */
+  .faq {
+    padding: 80px 5vw;
+    background: #f5f5f5;
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .faq-item {
+    border-bottom: 1px solid #eee;
+  }
+
+  .faq-item:last-child {
+    border-bottom: none;
+  }
+
+  .faq-btn {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: #1A1A1A;
+    font-family: inherit;
+  }
+
+  .faq-q-label {
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0fb8b8;
+    letter-spacing: 0.05em;
+    padding-top: 0.05rem;
+    min-width: 24px;
+  }
+
+  .faq-q-text {
+    flex: 1;
+    font-size: clamp(0.93rem, 1.6vw, 1rem);
+    font-weight: 700;
+    line-height: 1.56;
+    color: #1A1A1A;
+  }
+
+  .faq-chevron {
+    flex-shrink: 0;
+    color: #0fb8b8;
+    line-height: 0;
+    margin-top: 0.15rem;
+    transition: transform 0.3s ease;
+  }
+
+  .faq-open .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-a {
+    overflow: hidden;
+  }
+
+  .faq-a[hidden] {
+    display: none;
+  }
+
+  .faq-a-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0 2rem 1.5rem;
+  }
+
+  .faq-a-label {
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #AAA;
+    letter-spacing: 0.05em;
+    padding-top: 0.05rem;
+    min-width: 24px;
+  }
+
+  .faq-a-text {
+    font-size: 0.93rem;
     line-height: 1.85;
     color: #444;
-    max-width: 56ch;
   }
 
   /* === CTA === */
   .cta {
-    padding: 12vh 6vw;
+    padding: 100px 5vw;
     background: #1A1A1A;
   }
 
@@ -728,19 +990,21 @@ const services = [
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.6rem;
-    padding: 0.95rem 1.75rem;
-    font-size: 0.95rem;
+    padding: 18px 40px;
+    min-width: 280px;
+    font-size: 1.1rem;
     font-weight: 700;
     text-decoration: none;
-    border-radius: 3px;
+    border-radius: 100px;
     letter-spacing: 0.02em;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
   }
 
   .btn:hover {
+    opacity: 0.85;
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   }
 
   .btn-line {
@@ -749,34 +1013,36 @@ const services = [
   }
 
   .btn-line:hover {
-    background: #05b54c;
+    box-shadow: 0 8px 24px rgba(6, 199, 85, 0.3);
   }
 
   .btn-mail {
     background: transparent;
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.35);
   }
 
   .btn-mail:hover {
-    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
   .btn-icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     fill: currentColor;
     stroke: currentColor;
   }
 
   .btn-line .btn-icon {
+    fill: #fff;
     stroke: none;
   }
 
   .btn-mail .btn-icon {
     fill: none;
+    stroke: currentColor;
   }
 
   .cta-note {
@@ -787,13 +1053,14 @@ const services = [
 
   /* === Footer === */
   .footer {
-    padding: 3rem 6vw;
-    background: #F8F7F5;
+    padding: 3rem 5vw;
+    background: #fff;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   .footer-inner {
-    max-width: 680px;
+    max-width: 1100px;
+    width: 95%;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -832,47 +1099,71 @@ const services = [
   }
 
   /* === Responsive === */
-  @media (max-width: 840px) {
-    /* ヒーロー画像を非表示 — テキストの重心を守る */
-    .hero-img-wrap {
-      display: none;
-    }
-
-    .hero-2col {
-      max-width: 680px;
-    }
-  }
-
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     .hero {
-      padding: 10vh 6vw 8vh;
+      padding: 72px 5vw;
     }
 
-    .hero-accent {
-      width: 200px;
-      height: 200px;
-      right: -40px;
-      bottom: -40px;
+    .hero-heading {
+      font-size: clamp(1.75rem, 5vw, 2.2rem);
     }
 
     .pains,
+    .works,
     .services,
-    .about {
-      padding: 8vh 6vw;
-    }
-
-    /* サービス画像を非表示 — モバイルは密度過剰を防ぐ */
-    .service-img-wrap {
-      display: none;
-    }
-
-    /* About 画像を非表示 */
-    .about-img-wrap {
-      display: none;
-    }
-
+    .flow,
+    .faq,
     .cta {
-      padding: 10vh 6vw;
+      padding: 60px 5vw;
+    }
+
+    .bridge {
+      padding: 60px 5vw;
+    }
+
+    /* お悩み: 1カラム */
+    .pain-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* 実績: 1カラム */
+    .works-list {
+      grid-template-columns: 1fr;
+    }
+
+    /* サービス: 1カラム */
+    .service-item,
+    .service-item--reverse .service-icon-wrap,
+    .service-item--reverse .service-body {
+      grid-template-columns: 1fr;
+      order: unset;
+    }
+
+    .service-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* 流れ: 縦並び */
+    .flow-list {
+      grid-template-columns: 1fr;
+    }
+
+    .flow-item {
+      border-right: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 1.25rem 0;
+    }
+
+    .flow-item:last-child {
+      border-bottom: none;
+    }
+
+    .flow-item:not(:first-child) {
+      padding-left: 0;
     }
 
     .cta-buttons {
@@ -882,13 +1173,42 @@ const services = [
 
     .btn {
       width: 100%;
-      max-width: 280px;
-      justify-content: center;
+      max-width: 320px;
     }
 
     .footer-inner {
       flex-direction: column;
       align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-heading {
+      font-size: clamp(1.6rem, 6vw, 1.9rem);
+    }
+
+    .hero-badges {
+      gap: 0.5rem;
+    }
+
+    .hero-badge {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.75rem;
+    }
+
+    .hero-cta {
+      padding: 16px 32px;
+      min-width: 0;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .faq-btn {
+      padding: 1.25rem 1.25rem;
+    }
+
+    .faq-a-inner {
+      padding: 0 1.25rem 1.25rem;
     }
   }
 </style>
