@@ -260,48 +260,28 @@ function litWidth(r: number): number {
   return r >= 1 ? 2.6 : r > 0 ? 1.9 : 1.1
 }
 
-function BodySVG({ ratios, gender }: { ratios: Record<PartKey, number>; gender: Gender }): ReactElement {
-  const head  = ratios.head
-  const neck  = ratios.neck
-  const torso = ratios.torso
-  const wrist = ratios.wrist
-  const shoes = ratios.shoes
+// ======= ProgressBar =======
 
-  if (gender === 'female') {
-    return (
-      <svg viewBox="0 0 200 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <ellipse cx="100" cy="42" rx="28" ry="34" fill={litFill(head)} stroke={litStroke(head)} strokeWidth={litWidth(head)} />
-        <rect x="92" y="74" width="16" height="18" rx="4" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-        <ellipse cx="140" cy="94" rx="12" ry="9" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-        <ellipse cx="60" cy="94" rx="12" ry="9" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-        <path d="M64 94 Q58 120 56 150 Q54 170 60 190 L140 190 Q146 170 144 150 Q142 120 136 94 Z" fill={litFill(torso)} stroke={litStroke(torso)} strokeWidth={litWidth(torso)} />
-        <path d="M64 98 Q50 122 44 172 Q40 182 44 188 Q52 194 58 186 Q60 154 74 122 Z" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-        <path d="M136 98 Q150 122 156 172 Q160 182 156 188 Q148 194 142 186 Q140 154 126 122 Z" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-        <ellipse cx="44" cy="190" rx="10" ry="7" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-        <ellipse cx="156" cy="190" rx="10" ry="7" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-        <path d="M60 190 Q54 210 52 240 Q50 270 56 310 Q60 340 68 352 Q80 360 88 350 Q94 338 96 298 Q98 258 100 210 Q102 258 104 298 Q106 338 112 350 Q120 360 132 352 Q140 340 144 310 Q150 270 148 240 Q146 210 140 190 Z" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-        <ellipse cx="72" cy="356" rx="14" ry="7" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-        <ellipse cx="128" cy="356" rx="14" ry="7" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-      </svg>
-    )
-  }
-
+function ProgressBar({ ratios, opts }: { ratios: Record<PartKey, number>; opts: PartOptionsTable }) {
+  const parts = Object.keys(opts) as PartKey[]
+  const CAT_CHECK = ['up', 'down', 'left', 'right', 'tap'] as const
   return (
-    <svg viewBox="0 0 200 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <ellipse cx="100" cy="44" rx="32" ry="38" fill={litFill(head)} stroke={litStroke(head)} strokeWidth={litWidth(head)} />
-      <rect x="88" y="80" width="24" height="18" rx="4" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-      <ellipse cx="148" cy="98" rx="14" ry="10" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-      <ellipse cx="52" cy="98" rx="14" ry="10" fill={litFill(neck)} stroke={litStroke(neck)} strokeWidth={litWidth(neck)} />
-      <path d="M62 98 Q54 128 50 196 L150 196 Q146 128 138 98 Z" fill={litFill(torso)} stroke={litStroke(torso)} strokeWidth={litWidth(torso)} />
-      <path d="M62 102 Q46 126 38 178 Q34 188 38 194 Q46 200 52 192 Q54 158 70 126 Z" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-      <path d="M138 102 Q154 126 162 178 Q166 188 162 194 Q154 200 148 192 Q146 158 130 126 Z" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-      <ellipse cx="40" cy="196" rx="12" ry="8" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-      <ellipse cx="160" cy="196" rx="12" ry="8" fill={litFill(wrist)} stroke={litStroke(wrist)} strokeWidth={litWidth(wrist)} />
-      <path d="M74 196 Q68 258 64 318 Q62 338 70 350 Q82 358 90 348 Q96 336 98 298 Q100 258 100 196 Z" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-      <path d="M126 196 Q132 258 136 318 Q138 338 130 350 Q118 358 110 348 Q104 336 102 298 Q100 258 100 196 Z" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-      <ellipse cx="76" cy="358" rx="16" ry="8" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-      <ellipse cx="124" cy="358" rx="16" ry="8" fill={litFill(shoes)} stroke={litStroke(shoes)} strokeWidth={litWidth(shoes)} />
-    </svg>
+    <div className="progress-bar">
+      {parts.map(pk => {
+        const total = CAT_CHECK.filter(k => k in opts[pk]).length
+        const filled = Math.round(ratios[pk] * total)
+        return (
+          <div key={pk} className="progress-item">
+            <div className="progress-dots">
+              {Array.from({ length: total }).map((_, i) => (
+                <div key={i} className={`progress-dot ${i < filled ? 'progress-dot--filled' : ''}`} />
+              ))}
+            </div>
+            <div className="progress-label">{opts[pk].label}</div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1128,6 +1108,11 @@ export default function App() {
         )}
       </div>
 
+      {/* 進捗バー */}
+      {mode === 'appearance' && (
+        <ProgressBar ratios={ratios} opts={OPTS} />
+      )}
+
       {/* 外観モード */}
       {mode === 'appearance' && (
         <>
@@ -1135,8 +1120,16 @@ export default function App() {
             {info.nickname && <div className="ov-nickname">{info.nickname}</div>}
 
             <FlickGuides guides={topGuides} flickHint={flickHint} tapLabel="上半身" tapValues={valuesOf('torso')} />
-            <div className="body-svg-wrapper">
-              <BodySVG ratios={ratios} gender={gender} />
+
+            {/* 中央フリックガイド */}
+            <div className="flick-center-guide">
+              <ChevronUp size={18} className="cross-arrow cross-arrow--top" />
+              <div className="cross-middle-row">
+                <ChevronLeft size={18} className="cross-arrow cross-arrow--side" />
+                <div className="cross-center-label">上半身<br /><span className="cross-center-sub">タップ</span></div>
+                <ChevronRight size={18} className="cross-arrow cross-arrow--side" />
+              </div>
+              <ChevronDown size={18} className="cross-arrow cross-arrow--bottom" />
             </div>
 
             {(() => {
