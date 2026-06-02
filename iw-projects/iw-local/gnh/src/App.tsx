@@ -248,18 +248,6 @@ function resolveFlick(dx: number, dy: number, dist: number): FlickDir {
   return dy > 0 ? 'down' : 'up'
 }
 
-// ======= Body SVG =======
-
-function litFill(r: number): string {
-  return `rgba(201,168,76,${(0.06 + r * 0.5).toFixed(3)})`
-}
-function litStroke(r: number): string {
-  return r >= 1 ? '#f0d080' : r > 0 ? '#c9a84c' : '#3a2e10'
-}
-function litWidth(r: number): number {
-  return r >= 1 ? 2.6 : r > 0 ? 1.9 : 1.1
-}
-
 // ======= ProgressBar =======
 
 function ProgressBar({ ratios, opts }: { ratios: Record<PartKey, number>; opts: PartOptionsTable }) {
