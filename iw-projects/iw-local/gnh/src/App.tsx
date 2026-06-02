@@ -487,15 +487,18 @@ function PartZoom({
   entries,
   onOpenPanel,
   onBack,
+  onNext,
 }: {
   partKey: PartKey
   opts: typeof PART_OPTIONS_MALE
   entries: Entry[]
   onOpenPanel: (catKey: CategoryKey) => void
   onBack: () => void
+  onNext?: () => void
 }) {
   const cfg = opts[partKey]
   const [flickHint, setFlickHint] = useState<FlickDir | null>(null)
+  const [showAll, setShowAll] = useState(false)
 
   const bindZoom = useGesture(
     {
@@ -521,12 +524,16 @@ function PartZoom({
     { drag: { filterTaps: true, threshold: 8 } }
   )
 
-  const guides: DirGuide[] = (['up', 'down', 'left', 'right'] as const)
+  const CAT_DIRS = ['up', 'down', 'left', 'right'] as const
+  const allCatCount = CAT_DIRS.filter(dir => getCatCfg(cfg, dir)).length + ('tap' in cfg ? 1 : 0)
+  const allFilled = entries.length >= allCatCount && allCatCount > 0
+
+  const guides: DirGuide[] = CAT_DIRS
     .map((dir): DirGuide | null => {
       const cat = getCatCfg(cfg, dir)
       if (!cat) return null
       const filled = entries.some(e => e.catKey === dir)
-      if (filled) return null  // 入力済みはガイドから非表示
+      if (filled && !showAll) return null
       return { dir, emoji: cat.emoji, label: cat.label }
     })
     .filter((g): g is DirGuide => g !== null)
@@ -539,16 +546,17 @@ function PartZoom({
       {entries.length > 0 && (
         <div className="zoom-entries-list" onPointerDown={e => e.stopPropagation()}>
           {entries.map(e => (
-            <button
-              key={e.catKey}
-              className="zoom-entry-item zoom-entry-item--editable"
-              onClick={() => onOpenPanel(e.catKey as CategoryKey)}
-            >
+            <div key={e.catKey} className="zoom-entry-item">
               <span className="zoom-entry-cat">{e.catLabel}</span>
               <span className="zoom-entry-val">{e.value}</span>
-              <span className="zoom-entry-edit">↩</span>
-            </button>
+            </div>
           ))}
+          <button
+            className="zoom-show-all-btn"
+            onClick={() => setShowAll(v => !v)}
+          >
+            {showAll ? '完了' : '全表示'}
+          </button>
         </div>
       )}
       <div className="zoom-header">
@@ -559,11 +567,25 @@ function PartZoom({
         <FlickGuides guides={guides} flickHint={flickHint} tapLabel={tapFilled ? undefined : tapCat?.label} />
 
         <div className="zoom-icon-center">
-          {tapCat && !tapFilled && (
-            <div className="zoom-center-badge" onClick={() => onOpenPanel('tap')}>
-              <span className="zoom-center-emoji">{tapCat.emoji}</span>
-              <span className="tap-badge">TAP</span>
+          {allFilled && !showAll ? (
+            <div className="zoom-all-done">
+              <div className="zoom-all-done-label">入力完了</div>
+              {onNext && (
+                <button className="zoom-next-btn" onClick={onNext}>
+                  次の項目 →
+                </button>
+              )}
+              <button className="zoom-back-btn-center" onClick={onBack}>
+                ← 戻る
+              </button>
             </div>
+          ) : (
+            tapCat && !tapFilled && (
+              <div className="zoom-center-badge" onClick={() => onOpenPanel('tap')}>
+                <span className="zoom-center-emoji">{tapCat.emoji}</span>
+                <span className="tap-badge">TAP</span>
+              </div>
+            )
           )}
           {flickHint && flickHint !== 'tap' && (
             <div className="flick-preview">
@@ -1273,6 +1295,12 @@ export default function App() {
           entries={entries.filter(e => e.partKey === zoomedPart)}
           onOpenPanel={(catKey) => handleOpenPanel(zoomedPart, catKey)}
           onBack={() => setZoomedPart(null)}
+          onNext={(() => {
+            const PART_KEYS: PartKey[] = ['head', 'wrist', 'neck', 'torso', 'shoes']
+            const idx = PART_KEYS.indexOf(zoomedPart)
+            const nextKey = PART_KEYS[idx + 1]
+            return nextKey ? () => { setZoomedPart(nextKey); setOpenPanel(null) } : undefined
+          })()}
         />
       )}
 
