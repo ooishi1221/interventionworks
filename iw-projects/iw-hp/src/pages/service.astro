@@ -180,7 +180,8 @@ const faqs = [
           <h2 class="section-heading">
             <span class="section-label">実際に作ったもの</span>
           </h2>
-          <div class="works-list">
+          <div class="works-carousel-wrap">
+            <div class="works-track" id="worksTrack">
             <div class="works-card">
               <div class="works-card-icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -205,7 +206,16 @@ const faqs = [
               <p class="works-desc">複数の Web サービスをリアルタイムで監視するダッシュボード。異常検知・通知まで自動化したインフラ管理ツール。</p>
               <a href="https://status.intervention.jp/" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
             </div>
+            <div class="works-card">
+              <div class="works-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></svg>
+              </div>
+              <h3 class="works-title">飲食店向け<br />ホームページ（デモ）</h3>
+              <p class="works-desc">北区赤羽の架空コーヒーショップ「余白珈琲」のデモサイト。スライドショー・無限カルーセル・スクロールアニメーション実装。</p>
+              <a href="https://intervention.jp/demo/cafe" class="works-link" target="_blank" rel="noopener noreferrer">見てみる →</a>
+            </div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -399,6 +409,31 @@ const faqs = [
           item?.classList.toggle("faq-open", !expanded);
         });
       });
+
+      // Works carousel — 無限ループ
+      const worksTrack = document.getElementById('worksTrack');
+      if (worksTrack) {
+        const worksCards = Array.from(worksTrack.children);
+        worksCards.forEach(card => worksTrack.appendChild(card.cloneNode(true)));
+
+        const worksCardWidth = 300 + 24; // flex: 0 0 300px + gap 1.5rem(24px)
+        const worksTotal = worksCards.length;
+        let worksPos = 0;
+        let worksPaused = false;
+
+        worksTrack.addEventListener('mouseenter', () => worksPaused = true);
+        worksTrack.addEventListener('mouseleave', () => worksPaused = false);
+
+        function worksScroll() {
+          if (!worksPaused) {
+            worksPos += 0.4;
+            if (worksPos >= worksCardWidth * worksTotal) worksPos = 0;
+            worksTrack.style.transform = `translateX(-${worksPos}px)`;
+          }
+          requestAnimationFrame(worksScroll);
+        }
+        worksScroll();
+      }
     </script>
   </body>
 </html>
@@ -734,13 +769,19 @@ const faqs = [
     background: #fff;
   }
 
-  .works-list {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+  .works-carousel-wrap {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .works-track {
+    display: flex;
     gap: 1.5rem;
+    width: max-content;
   }
 
   .works-card {
+    flex: 0 0 300px;
     padding: 2rem;
     background: #fff;
     border-radius: 20px;
@@ -749,7 +790,7 @@ const faqs = [
     gap: 0.75rem;
     border-left: 4px solid #0fb8b8;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .works-card:hover {
@@ -1265,10 +1306,7 @@ const faqs = [
       grid-template-columns: repeat(2, 1fr);
     }
 
-    /* 実績: 1カラム */
-    .works-list {
-      grid-template-columns: 1fr;
-    }
+    /* 実績: カルーセルはレスポンシブ対応不要（そのまま流れる） */
 
     /* 理由リスト: モバイル */
     .reason-item {

@@ -1,0 +1,1055 @@
+---
+// 余白珈琲 / YOHAKU COFFEE — Demo page
+// Intervention Works 制作デモサイト
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>余白珈琲 | YOHAKU COFFEE — 北区赤羽の小さなコーヒーショップ</title>
+    <meta name="description" content="今日だけ、急がなくていい。東京都北区赤羽の小さなコーヒーショップ。" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Patrick+Hand&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ─── Reset & Base ─── */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg:       #f8f4ef;
+        --bg-warm:  #f2ebe0;
+        --green:    #3a5a3a;
+        --green-lt: #5a7a5a;
+        --green-pale: rgba(90,122,90,0.15);
+        --brown:    #7a5c3a;
+        --brown-lt: #a07a55;
+        --text:     #2e2620;
+        --text-lt:  #6b5a4e;
+        --white:    #fdfaf7;
+        --border:   #ddd4c4;
+        --r:        12px;
+        --r-sm:     6px;
+      }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-weight: 300;
+        line-height: 1.8;
+        font-size: 15px;
+        overflow-x: hidden;
+      }
+      img { display: block; max-width: 100%; }
+      a { color: inherit; text-decoration: none; }
+
+      /* ─── Typography ─── */
+      .font-klee  { font-family: 'Klee One', cursive; }
+      .font-pat   { font-family: 'Patrick Hand', cursive; }
+
+      /* ─── Nav ─── */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 200;
+        background: rgba(248, 244, 239, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border-bottom: 1px solid transparent;
+        padding: 0 clamp(1.5rem, 5vw, 4rem);
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease;
+      }
+      .nav.scrolled {
+        background: rgba(248, 244, 239, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom-color: var(--border);
+      }
+      .nav-logo {
+        font-family: 'Klee One', cursive;
+        font-size: 1.15rem;
+        color: var(--green);
+        letter-spacing: 0.05em;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        line-height: 1.2;
+      }
+      .nav-logo span.en {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.7rem;
+        color: var(--brown-lt);
+        letter-spacing: 0.15em;
+      }
+      .nav-links {
+        display: flex;
+        gap: clamp(1rem, 3vw, 2.5rem);
+        list-style: none;
+      }
+      .nav-links a {
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        font-weight: 400;
+        font-size: 0.82rem;
+        color: var(--text-lt);
+        letter-spacing: 0.1em;
+        transition: color 0.2s;
+        position: relative;
+      }
+      .nav-links a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px; left: 0; right: 0;
+        height: 1px;
+        background: var(--green);
+        transform: scaleX(0);
+        transition: transform 0.25s;
+      }
+      .nav-links a:hover { color: var(--green); }
+      .nav-links a:hover::after { transform: scaleX(1); }
+
+      /* ─── Hero Slideshow ─── */
+      .hero {
+        position: relative;
+        height: min(92vh, 760px);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hero-slides {
+        position: absolute;
+        inset: 0;
+        width: 100%; height: 100%;
+      }
+      .hero-slide {
+        position: absolute;
+        inset: 0;
+        width: 100%; height: 100%;
+        opacity: 0;
+        transition: opacity 1.5s ease-in-out;
+      }
+      .hero-slide.active { opacity: 1; }
+      .hero-slide img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        object-position: center 40%;
+        filter: brightness(0.58) saturate(0.9);
+      }
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(20, 12, 4, 0.08) 0%,
+          rgba(20, 12, 4, 0.38) 55%,
+          rgba(10, 6, 2, 0.72) 100%
+        );
+        z-index: 1;
+      }
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        color: var(--white);
+        padding: 2rem clamp(1.5rem, 5vw, 4rem);
+      }
+      /* hero text — character stagger fade-in */
+      .hero-catch {
+        font-family: 'Klee One', cursive;
+        font-size: clamp(2rem, 6vw, 3.8rem);
+        font-weight: 400;
+        line-height: 1.4;
+        letter-spacing: 0.06em;
+        text-shadow: 0 2px 24px rgba(0,0,0,0.45);
+        margin-bottom: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0;
+      }
+      .hero-catch .char {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: charFadeIn 0.6s ease-out forwards;
+      }
+      @keyframes charFadeIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .hero-sub {
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        font-weight: 300;
+        font-size: clamp(0.85rem, 2vw, 1rem);
+        letter-spacing: 0.25em;
+        opacity: 0;
+        margin-bottom: 2rem;
+        animation: heroSubIn 1s ease-out 1.4s forwards;
+        transform: translateY(16px);
+      }
+      @keyframes heroSubIn {
+        to { opacity: 0.85; transform: translateY(0); }
+      }
+      .hero-badge {
+        display: inline-block;
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.75rem;
+        letter-spacing: 0.18em;
+        color: rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.28);
+        padding: 0.35rem 1.1rem;
+        border-radius: 100px;
+        text-transform: uppercase;
+        opacity: 0;
+        animation: heroSubIn 1s ease-out 1.8s forwards;
+        transform: translateY(16px);
+      }
+      /* Slide indicators */
+      .hero-indicators {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3;
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+      }
+      .hero-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.4);
+        border: none;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.3s;
+        padding: 0;
+      }
+      .hero-dot.active {
+        background: rgba(255,255,255,0.95);
+        transform: scale(1.25);
+      }
+
+      /* ─── Section wrapper ─── */
+      .section {
+        padding: clamp(4rem, 10vw, 7rem) clamp(1.5rem, 5vw, 4rem);
+      }
+      .section-alt { background: var(--bg-warm); }
+      .section-white { background: var(--white); }
+      .inner { max-width: 960px; margin: 0 auto; }
+      .inner-lg { max-width: 1080px; margin: 0 auto; }
+
+      /* ─── Section label ─── */
+      .label {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.72rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--brown-lt);
+        margin-bottom: 0.75rem;
+      }
+      .section-title {
+        font-family: 'Klee One', cursive;
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
+        font-weight: 400;
+        color: var(--green);
+        line-height: 1.5;
+        letter-spacing: 0.04em;
+        margin-bottom: 1.8rem;
+      }
+
+      /* ─── Scroll Reveal base ─── */
+      .reveal {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1),
+                    transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      .reveal.from-left {
+        transform: translateX(-50px);
+      }
+      .reveal.from-right {
+        transform: translateX(50px);
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translate(0, 0);
+      }
+
+      /* ─── Concept ─── */
+      .concept-section {
+        padding: clamp(5rem, 12vw, 8rem) 5vw;
+        background: var(--white);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .concept-inner {
+        max-width: 640px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+      .concept-en {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.9rem;
+        color: var(--green);
+        letter-spacing: 0.2em;
+        margin-bottom: 2rem;
+      }
+      .concept-heading {
+        font-family: 'Klee One', cursive;
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 600;
+        line-height: 1.6;
+        color: #2a2a2a;
+        margin-bottom: 2rem;
+      }
+      .concept-line {
+        width: 60px;
+        height: 1px;
+        background: var(--green);
+        margin: 0 auto 2.5rem;
+      }
+      .concept-body {
+        font-size: 1.05rem;
+        line-height: 2.2;
+        color: #555;
+        margin-bottom: 3rem;
+      }
+      .concept-tagline {
+        font-family: 'Klee One', cursive;
+        font-size: 1.2rem;
+        color: var(--green);
+        font-style: italic;
+      }
+
+      /* ─── Kodawari (left-right alternating) ─── */
+      .kodawari-section {
+        padding: 0;
+      }
+      .kodawari-item {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 520px;
+        overflow: hidden;
+      }
+      .kodawari-img {
+        overflow: hidden;
+        position: relative;
+      }
+      .kodawari-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: block;
+      }
+      .kodawari-item:hover .kodawari-img img {
+        transform: scale(1.04);
+      }
+      .kodawari-text {
+        padding: 80px 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: var(--bg);
+      }
+      .kodawari-item:nth-child(even) .kodawari-text {
+        background: var(--white);
+      }
+      .kodawari-num {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 3.5rem;
+        font-weight: 400;
+        color: var(--green-pale);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+        /* override green-pale for actual green tint */
+        color: rgba(58, 90, 58, 0.18);
+      }
+      .kodawari-title {
+        font-family: 'Klee One', cursive;
+        font-size: clamp(1.35rem, 3vw, 1.9rem);
+        font-weight: 400;
+        color: var(--green);
+        margin-bottom: 1.2rem;
+        letter-spacing: 0.04em;
+      }
+      .kodawari-desc {
+        font-size: 0.93rem;
+        color: var(--text-lt);
+        line-height: 2.1;
+        max-width: 380px;
+      }
+      .kodawari-divider {
+        width: 36px;
+        height: 1px;
+        background: var(--brown-lt);
+        opacity: 0.45;
+        margin: 1.2rem 0;
+      }
+
+      /* ─── Menu Slider ─── */
+      .menu-slider-wrap {
+        position: relative;
+        overflow: hidden;
+        padding-bottom: 0.5rem;
+      }
+      .menu-track {
+        display: flex;
+        gap: 1.5rem;
+        will-change: transform;
+      }
+      .menu-card {
+        flex: 0 0 260px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .menu-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(58, 90, 58, 0.15);
+      }
+      .menu-card-img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+        display: block;
+      }
+      .menu-card:hover .menu-card-img {
+        transform: scale(1.05);
+      }
+      .menu-body {
+        padding: 1.2rem 1.4rem 1.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .menu-name {
+        font-family: 'Klee One', cursive;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: 0.03em;
+      }
+      .menu-price {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 1.05rem;
+        color: var(--brown);
+        letter-spacing: 0.05em;
+      }
+      .menu-desc {
+        font-size: 0.8rem;
+        color: var(--text-lt);
+        line-height: 1.8;
+        margin-top: 0.1rem;
+      }
+
+
+      /* ─── Deco Leaf ─── */
+      .deco-leaf {
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        opacity: 0.5;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ─── Access ─── */
+      .access-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(2rem, 5vw, 4rem);
+        align-items: start;
+      }
+      .access-info { display: flex; flex-direction: column; gap: 1.8rem; }
+      .info-label {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.7rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--brown-lt);
+        margin-bottom: 0.4rem;
+      }
+      .info-value {
+        font-family: 'Zen Kaku Gothic New', sans-serif;
+        font-size: 0.92rem;
+        color: var(--text);
+        line-height: 1.9;
+      }
+      .hours-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: baseline;
+      }
+      .hours-day {
+        font-size: 0.78rem;
+        color: var(--text-lt);
+        min-width: 80px;
+      }
+      .hours-time { font-size: 0.92rem; }
+      .closed-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        background: var(--bg-warm);
+        border: 1px solid var(--border);
+        color: var(--text-lt);
+        padding: 0.1rem 0.6rem;
+        border-radius: 100px;
+        margin-left: 0.4rem;
+        letter-spacing: 0.05em;
+      }
+      .map-wrap {
+        border-radius: var(--r);
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(58, 38, 18, 0.1);
+      }
+      .map-wrap iframe {
+        width: 100%; height: 100%;
+        border: 0;
+        filter: saturate(0.8) contrast(0.95);
+      }
+
+      /* ─── Instagram strip ─── */
+      .insta-strip {
+        background: var(--green);
+        padding: 1.4rem clamp(1.5rem, 5vw, 4rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        color: rgba(255,255,255,0.85);
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.88rem;
+        letter-spacing: 0.1em;
+      }
+      .insta-strip svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+      .insta-strip a { color: var(--white); font-weight: bold; transition: opacity 0.2s; }
+      .insta-strip a:hover { opacity: 0.75; }
+
+      /* ─── Footer ─── */
+      .footer {
+        background: var(--text);
+        color: rgba(255,255,255,0.5);
+        text-align: center;
+        padding: 3rem clamp(1.5rem, 5vw, 4rem);
+      }
+      .footer-logo {
+        font-family: 'Klee One', cursive;
+        font-size: 1.3rem;
+        color: rgba(255,255,255,0.85);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.06em;
+      }
+      .footer-en {
+        font-family: 'Patrick Hand', cursive;
+        font-size: 0.72rem;
+        letter-spacing: 0.2em;
+        color: rgba(255,255,255,0.35);
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+      }
+      .footer-copy { font-size: 0.75rem; line-height: 1.8; }
+      .footer-demo {
+        margin-top: 1rem;
+        font-size: 0.68rem;
+        color: rgba(255,255,255,0.25);
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding-top: 1rem;
+      }
+      .footer-demo a {
+        color: rgba(255,255,255,0.35);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      /* ─── Divider ─── */
+      .divider {
+        width: 40px; height: 1px;
+        background: var(--brown-lt);
+        margin: 0 0 1.8rem;
+        opacity: 0.5;
+      }
+
+      /* ─── Responsive ─── */
+      @media (max-width: 768px) {
+        .kodawari-item {
+          grid-template-columns: 1fr;
+          min-height: auto;
+        }
+        .kodawari-img { order: 1; aspect-ratio: 4/3; height: auto; }
+        .kodawari-text { order: 2; padding: 2.5rem 1.8rem; }
+        .kodawari-desc { max-width: 100%; }
+      }
+      @media (max-width: 720px) {
+        .access-grid { grid-template-columns: 1fr; }
+        .nav-links { display: none; }
+        .menu-card { flex: 0 0 220px; }
+        .menu-card-img { height: 150px; }
+      }
+      @media (max-width: 480px) {
+        .hero { height: 85vh; }
+        .hero-catch { font-size: 1.7rem; }
+        .concept-section { padding: 4rem 1.5rem; }
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- ─── Nav ─── -->
+    <nav class="nav" id="main-nav">
+      <a href="#top" class="nav-logo">
+        余白珈琲
+        <span class="en">YOHAKU COFFEE</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#top">TOP</a></li>
+        <li><a href="#features">こだわり</a></li>
+        <li><a href="#menu">メニュー</a></li>
+        <li><a href="#access">アクセス</a></li>
+      </ul>
+    </nav>
+
+    <!-- ─── Hero Slideshow ─── -->
+    <section class="hero" id="top">
+      <div class="hero-slides" id="hero-slides">
+        <div class="hero-slide active">
+          <img
+            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1600&q=85&fit=crop"
+            alt="コーヒーショップの風景"
+            loading="eager"
+            fetchpriority="high"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+        <div class="hero-slide">
+          <img
+            src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1600&q=85&fit=crop"
+            alt="コーヒーを淹れる手元"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+        <div class="hero-slide">
+          <img
+            src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1600&q=85&fit=crop"
+            alt="カフェの内観"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+      </div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-catch font-klee" id="hero-catch">今日だけ、急がなくていい。</p>
+        <p class="hero-sub">北区赤羽の小さなコーヒーショップ</p>
+        <span class="hero-badge font-pat">Yohaku Coffee — Akabane, Tokyo</span>
+      </div>
+      <div class="hero-indicators" id="hero-indicators">
+        <button class="hero-dot active" data-index="0" aria-label="スライド1"></button>
+        <button class="hero-dot" data-index="1" aria-label="スライド2"></button>
+        <button class="hero-dot" data-index="2" aria-label="スライド3"></button>
+      </div>
+    </section>
+
+    <!-- ─── Deco leaf after hero ─── -->
+    <div style="position:relative; height:0; overflow:visible;">
+      <div class="deco-leaf" aria-hidden="true" style="right:-60px; top:-140px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 10 C140 10 180 50 180 100 C180 150 140 190 100 190 C60 190 20 150 20 100 C20 50 60 10 100 10Z"
+                fill="none" stroke="#3a5a3a" stroke-width="1.5" opacity="0.18"/>
+          <path d="M100 30 L100 170 M60 60 C80 80 80 120 100 140 M140 60 C120 80 120 120 100 140"
+                fill="none" stroke="#3a5a3a" stroke-width="1" opacity="0.12"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ─── Concept ─── -->
+    <section class="concept-section" id="concept">
+      <div class="concept-inner reveal">
+        <p class="concept-en">— concept —</p>
+        <h2 class="concept-heading font-klee">
+          余白のある時間を、<br />あなたに。
+        </h2>
+        <div class="concept-line"></div>
+        <p class="concept-body">
+          忙しい毎日の中に、少しだけ「何もしない時間」を。<br />
+          私たちは、北区の小さな路地裏で、<br />
+          ゆっくり飲める一杯をお待ちしています。<br /><br />
+          豆の産地にこだわり、丁寧に淹れる。<br />
+          それだけです。
+        </p>
+        <p class="concept-tagline font-klee">「今日だけ、急がなくていい。」</p>
+      </div>
+      <!-- deco leaf right-bottom -->
+      <div class="deco-leaf" aria-hidden="true" style="right:-80px; bottom:-80px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 10 C140 10 180 50 180 100 C180 150 140 190 100 190 C60 190 20 150 20 100 C20 50 60 10 100 10Z"
+                fill="none" stroke="#3a5a3a" stroke-width="1.5" opacity="0.18"/>
+          <path d="M100 30 L100 170 M60 60 C80 80 80 120 100 140 M140 60 C120 80 120 120 100 140"
+                fill="none" stroke="#3a5a3a" stroke-width="1" opacity="0.12"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ─── Kodawari (left-right alternating full-bleed) ─── -->
+    <section class="kodawari-section" id="features">
+
+      <!-- こだわり① 左:画像 / 右:テキスト -->
+      <div class="kodawari-item">
+        <div class="kodawari-img reveal from-left">
+          <img
+            src="https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&q=85&fit=crop"
+            alt="コーヒー豆"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+        <div class="kodawari-text reveal from-right" style="background:#f8f4ef;">
+          <p class="kodawari-num font-pat">01</p>
+          <h3 class="kodawari-title font-klee">豆のこだわり</h3>
+          <div class="kodawari-divider"></div>
+          <p class="kodawari-desc">
+            エチオピア・コロンビア・ブラジルから、季節ごとに直接買い付けた豆だけを使います。産地の農家と顔の見える関係で。
+          </p>
+        </div>
+      </div>
+
+      <!-- こだわり② テキスト左 / 画像右 -->
+      <div class="kodawari-item">
+        <div class="kodawari-text reveal from-left" style="background:#fff;">
+          <p class="kodawari-num font-pat">02</p>
+          <h3 class="kodawari-title font-klee">丁寧な抽出</h3>
+          <div class="kodawari-divider"></div>
+          <p class="kodawari-desc">
+            ハンドドリップ、エスプレッソ、フレンチプレス。豆に合わせて抽出方法を変えています。時間をかけることが、うちの唯一の武器です。
+          </p>
+        </div>
+        <div class="kodawari-img reveal from-right">
+          <img
+            src="https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=800&q=85&fit=crop"
+            alt="エスプレッソマシン"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+      </div>
+
+      <!-- こだわり③ 左:画像 / 右:テキスト -->
+      <div class="kodawari-item">
+        <div class="kodawari-img reveal from-left">
+          <img
+            src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=85&fit=crop"
+            alt="カフェの居心地"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+        <div class="kodawari-text reveal from-right" style="background:#f8f4ef;">
+          <p class="kodawari-num font-pat">03</p>
+          <h3 class="kodawari-title font-klee">居心地</h3>
+          <div class="kodawari-divider"></div>
+          <p class="kodawari-desc">
+            14席の小さなお店。Wi-Fiなし。BGMは静か。本を読んだり、ぼんやりしたりする場所です。急がなくていい時間を、ここに。
+          </p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ─── Menu ─── -->
+    <section class="section section-white" id="menu">
+      <div class="inner">
+        <p class="label font-pat reveal">Menu</p>
+        <h2 class="section-title font-klee reveal" style="transition-delay:0.1s;">定番メニュー</h2>
+        <div class="divider reveal" style="transition-delay:0.15s;"></div>
+        <div class="menu-slider-wrap reveal" style="transition-delay:0.2s;">
+          <div class="menu-track" id="menuTrack">
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=600&q=80&fit=crop"
+                alt="余白ブレンド"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">余白ブレンド</p>
+                <p class="menu-price font-pat">¥550</p>
+                <p class="menu-desc">毎日飲んでも飽きない、やさしい一杯</p>
+              </div>
+            </div>
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1511537190424-bbbab87ac5eb?w=600&q=80&fit=crop"
+                alt="エチオピア シングルオリジン"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">エチオピア シングルオリジン</p>
+                <p class="menu-price font-pat">¥680</p>
+                <p class="menu-desc">花のような香り、軽やかな酸味</p>
+              </div>
+            </div>
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&q=80&fit=crop"
+                alt="カフェラテ"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">カフェラテ</p>
+                <p class="menu-price font-pat">¥600</p>
+                <p class="menu-desc">自家製ミルクフォームで仕上げた定番</p>
+              </div>
+            </div>
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&q=80&fit=crop"
+                alt="水出しコーヒー"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">水出しコーヒー</p>
+                <p class="menu-price font-pat">¥580</p>
+                <p class="menu-desc">8時間かけてゆっくり抽出した夏の定番</p>
+              </div>
+            </div>
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&q=80&fit=crop"
+                alt="アイスコーヒー"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">アイスコーヒー</p>
+                <p class="menu-price font-pat">¥520</p>
+                <p class="menu-desc">すっきり飲めるブラック。夏のお供に。</p>
+              </div>
+            </div>
+            <div class="menu-card">
+              <img
+                class="menu-card-img"
+                src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80&fit=crop"
+                alt="チーズケーキ"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+              <div class="menu-body">
+                <p class="menu-name font-klee">チーズケーキ</p>
+                <p class="menu-price font-pat">¥480</p>
+                <p class="menu-desc">週替わりのケーキ。コーヒーと合わせてどうぞ。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Access ─── -->
+    <section class="section section-alt" id="access" style="position:relative; overflow:hidden;">
+      <!-- deco leaf left-top -->
+      <div class="deco-leaf" aria-hidden="true" style="left:-80px; top:-80px;">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100 10 C140 10 180 50 180 100 C180 150 140 190 100 190 C60 190 20 150 20 100 C20 50 60 10 100 10Z"
+                fill="none" stroke="#3a5a3a" stroke-width="1.5" opacity="0.15"/>
+          <path d="M100 30 L100 170 M60 60 C80 80 80 120 100 140 M140 60 C120 80 120 120 100 140"
+                fill="none" stroke="#3a5a3a" stroke-width="1" opacity="0.1"/>
+        </svg>
+      </div>
+      <div class="inner" style="position:relative; z-index:1;">
+        <p class="label font-pat reveal">Access</p>
+        <h2 class="section-title font-klee reveal" style="transition-delay:0.1s;">アクセス</h2>
+        <div class="divider reveal" style="transition-delay:0.15s;"></div>
+        <div class="access-grid">
+          <div class="access-info reveal from-left" style="transition-delay:0.2s;">
+            <div class="info-block">
+              <p class="info-label font-pat">Address</p>
+              <p class="info-value">東京都北区赤羽1丁目〇〇-〇〇</p>
+            </div>
+            <div class="info-block">
+              <p class="info-label font-pat">Hours</p>
+              <div class="info-value">
+                <div class="hours-row">
+                  <span class="hours-day">平日</span>
+                  <span class="hours-time">8:00 〜 18:00</span>
+                </div>
+                <div class="hours-row">
+                  <span class="hours-day">土・日</span>
+                  <span class="hours-time">9:00 〜 17:00</span>
+                </div>
+                <div class="hours-row" style="margin-top:0.4rem;">
+                  <span class="hours-day">火曜</span>
+                  <span class="hours-time"><span class="closed-badge">定休日</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="info-block">
+              <p class="info-label font-pat">Station</p>
+              <p class="info-value">JR赤羽駅 東口から徒歩5分</p>
+            </div>
+            <div class="info-block">
+              <p class="info-label font-pat">Instagram</p>
+              <p class="info-value">
+                <a href="https://www.instagram.com/yohaku_coffee/" target="_blank" rel="noopener" style="color: var(--green); font-family:'Patrick Hand',cursive; letter-spacing:0.08em;">
+                  @yohaku_coffee
+                </a>
+              </p>
+            </div>
+          </div>
+          <div class="map-wrap reveal from-right" style="transition-delay:0.3s;">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3238.1!2d139.7215!3d35.7787!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzXCsDQ2JzQzLjMiTiAxMznCsDQzJzE3LjQiRQ!5e0!3m2!1sja!2sjp!4v1"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="余白珈琲の地図"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Instagram strip ─── -->
+    <div class="insta-strip">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+      </svg>
+      <span>日々の一杯を記録しています &nbsp;—&nbsp;</span>
+      <a href="https://www.instagram.com/yohaku_coffee/" target="_blank" rel="noopener">@yohaku_coffee</a>
+    </div>
+
+    <!-- ─── Footer ─── -->
+    <footer class="footer">
+      <p class="footer-logo font-klee">余白珈琲</p>
+      <p class="footer-en font-pat">YOHAKU COFFEE</p>
+      <p class="footer-copy">© 2026 YOHAKU COFFEE. All rights reserved.</p>
+      <p class="footer-demo">
+        このサイトは <a href="https://intervention.jp" target="_blank" rel="noopener">Intervention Works</a> が制作したデモサイトです
+      </p>
+    </footer>
+
+    <!-- ─── JS ─── -->
+    <script>
+      // ── Nav scroll effect ──
+      const nav = document.getElementById('main-nav');
+      window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 40);
+      }, { passive: true });
+
+      // ── Hero Slideshow ──
+      const slides = document.querySelectorAll('.hero-slide');
+      const dots = document.querySelectorAll('.hero-dot');
+      let current = 0;
+      let timer;
+
+      function goTo(index) {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = index;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+      }
+
+      function next() {
+        goTo((current + 1) % slides.length);
+      }
+
+      function startTimer() {
+        timer = setInterval(next, 5000);
+      }
+
+      dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          clearInterval(timer);
+          goTo(parseInt(dot.dataset.index));
+          startTimer();
+        });
+      });
+
+      startTimer();
+
+      // ── Hero catch — character stagger ──
+      const catchEl = document.getElementById('hero-catch');
+      const text = catchEl.textContent;
+      catchEl.innerHTML = '';
+      [...text].forEach((ch, i) => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = ch === ' ' ? ' ' : ch;
+        span.style.animationDelay = (0.08 * i) + 's';
+        catchEl.appendChild(span);
+      });
+
+      // ── Menu Carousel (infinite auto-scroll) ──
+      const track = document.getElementById('menuTrack');
+      if (track) {
+        const cards = Array.from(track.children);
+        // クローンを末尾に追加してシームレスループを実現
+        cards.forEach(card => {
+          track.appendChild(card.cloneNode(true));
+        });
+
+        const cardWidth = 260 + 24; // flex-basis + gap
+        const totalCards = cards.length; // 元の6枚
+        let position = 0;
+        let rafId;
+
+        function autoScroll() {
+          position += 0.5;
+          if (position >= cardWidth * totalCards) {
+            position = 0;
+          }
+          track.style.transform = 'translateX(-' + position + 'px)';
+          rafId = requestAnimationFrame(autoScroll);
+        }
+
+        autoScroll();
+
+        // ホバー中は一時停止
+        track.addEventListener('mouseenter', () => cancelAnimationFrame(rafId));
+        track.addEventListener('mouseleave', () => { rafId = requestAnimationFrame(autoScroll); });
+      }
+
+      // ── Scroll Reveal (IntersectionObserver) ──
+      const revealEls = document.querySelectorAll('.reveal');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+      revealEls.forEach(el => observer.observe(el));
+    </script>
+
+  </body>
+</html>
