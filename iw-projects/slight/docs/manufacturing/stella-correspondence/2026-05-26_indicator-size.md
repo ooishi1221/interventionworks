@@ -106,7 +106,50 @@
 
 ---
 
+---
+
+## Stella → 裕司（2026-06-04 進捗写真送付）
+
+添付写真 2 枚:
+- `../samples/2026-06-04_sample3_new_version_worn.jpg` — 着用状態 + 電力計接続（7-8W 計測中）、手首インジケーター青白く点灯
+- `../samples/2026-06-04_sample3_new_version_flat.jpg` — 平置き、手首インジケーター青白く点灯確認
+
+**Stella のメッセージ（2026-06-08 別途受信分も含む）:**
+
+> Hi Yuji,
+> How are you?
+> There is good news that the new version can reach the highest temperature in the 30s.
+> You can clearly feel the heat from the gloves within 30 seconds. The current power output of a single glove is 7-8W, and the temperature has reached the high-end level of regular gloves.
+> The latest test reports are expected to be available today or tomorrow.
+> Looking forward to your latest response.
+> Best Regards,
+> Stella
+
+追記（同メッセージ or 別途）:
+> At four seconds, you can already feel a noticeable temperature. It reached its maximum temperature at 30 seconds, and currently, the light turns on as soon as the power is switched on.
+
+**要点:**
+- **4秒で温感あり / 30秒で最高温度到達** ← 5/28 の判定基準を完全クリア
+- 出力: 1グローブ 7-8W（1st: 5W → 2nd: 10W → new version: 7-8W に落ち着いた？）
+- 温度レベル: 一般的なグローブの高温レベル相当
+- インジケーターライト: 電源 ON と同時に点灯
+- テストレポート: 2026-06-08〜09 に届く予定
+
+---
+
+## 次の判断（2026-06-08）
+
+5/28 判定基準「30秒以内に明確な温感 → インジケーター削除 GO」を満たした。
+
+**裕司の方向性:** 「体感できるなら不要では？Stella の意見も聞いてみる」
+
+→ 返信送信済（2026-06-08）:
+> Hi Stella, Our thinking is: if the heat is clearly perceptible that quickly, the indicator light may not be necessary at all. What do you think? From your experience, do customers generally still want an indicator even when the heat is felt immediately? Looking forward to the test report and your thoughts.
+
+---
+
 ## 返答待ちのチェックポイント（実機テスト後、別途 Stella に依頼）
 
 - [ ] 着用サイズ表（手囲・手長 cm レンジ）— 別途依頼
 - [ ] 電熱端子の規格（汎用品互換性確認）— 別途依頼
+- [ ] Stella のインジケーター有無についての見解（2026-06-08 質問中）
