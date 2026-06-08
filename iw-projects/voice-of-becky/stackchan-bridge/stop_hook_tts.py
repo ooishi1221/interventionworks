@@ -28,6 +28,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -37,6 +38,15 @@ import yaml
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 TTS_PID_FILE = Path("/tmp/becky_tts_pid")
+LAST_CONV_FILE = Path.home() / ".stackchan" / "last_conversation.txt"
+
+
+def _save_last_conversation_timestamp() -> None:
+    try:
+        LAST_CONV_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LAST_CONV_FILE.write_text(str(time.time()))
+    except Exception:
+        pass
 
 
 def load_config() -> dict:
@@ -220,7 +230,8 @@ def _speak_say(text: str, voice: str, rate: int) -> None:
         _clear_pid()
 
 
-FLAG_FILE = Path("/tmp/becky_tts_enabled")
+FLAG_FILE         = Path("/tmp/becky_tts_enabled")
+CONFIRM_FLAG_FILE = Path("/tmp/becky_confirm_enabled")
 
 # 確認・権限待ちを検出するキーワード（常時有効、フラグ不要）
 CONFIRM_KEYWORDS = [
@@ -271,8 +282,10 @@ def main() -> None:
     if not text:
         sys.exit(0)
 
-    # 確認待ち検出（常時有効 — フラグ不要）
-    if _is_waiting_for_confirm(text):
+    _save_last_conversation_timestamp()
+
+    # 確認待ち検出（CONFIRM_FLAG_FILE がある時だけ）
+    if CONFIRM_FLAG_FILE.exists() and _is_waiting_for_confirm(text):
         phrase = random.choice(CONFIRM_PHRASES)
         speak(phrase, voice, rate, speaker_id, voicevox_params)
         sys.exit(0)

@@ -23,8 +23,12 @@ from pathlib import Path
 BASE_URL = "http://localhost:8766"
 SCRIPT_DIR = Path(__file__).parent
 TOUCH_WATCHER = SCRIPT_DIR / "touch_watcher.py"
+MUZU_MONITOR = SCRIPT_DIR / "muzu_monitor.py"
+CONTROL_SERVER = SCRIPT_DIR / "control_server.py"
 PYTHON = SCRIPT_DIR / ".venv" / "bin" / "python3"
 LOG = Path("/tmp/touch_watcher.log")
+MUZU_LOG = Path("/tmp/muzu_monitor.log")
+CONTROL_LOG = Path("/tmp/control_server.log")
 
 
 def wait_for_esp32(timeout: int = 30) -> bool:
@@ -109,6 +113,32 @@ def start_touch_watcher() -> None:
     print(f"  ✅ touch_watcher 起動 PID={proc.pid}", flush=True)
 
 
+def start_muzu_monitor() -> None:
+    """muzu_monitor をバックグラウンドで起動。"""
+    subprocess.run(["pkill", "-f", "muzu_monitor.py"], capture_output=True)
+    time.sleep(0.3)
+    with open(MUZU_LOG, "w") as log:
+        proc = subprocess.Popen(
+            [str(PYTHON), str(MUZU_MONITOR)],
+            stdout=log,
+            stderr=log,
+        )
+    print(f"  ✅ muzu_monitor 起動 PID={proc.pid}", flush=True)
+
+
+def start_control_server() -> None:
+    """BECKY BRIDGE コントロールサーバーをバックグラウンドで起動（port 8080）。"""
+    subprocess.run(["pkill", "-f", "control_server.py"], capture_output=True)
+    time.sleep(0.3)
+    with open(CONTROL_LOG, "w") as log:
+        proc = subprocess.Popen(
+            [str(PYTHON), str(CONTROL_SERVER)],
+            stdout=log,
+            stderr=log,
+        )
+    print(f"  ✅ control_server 起動 PID={proc.pid} → http://100.86.242.55:8080", flush=True)
+
+
 def main() -> None:
     print("=== スタックちゃん startup ===", flush=True)
 
@@ -119,6 +149,8 @@ def main() -> None:
     load_avatar()
     set_brightness(100)
     start_touch_watcher()
+    start_muzu_monitor()
+    start_control_server()
 
     print("=== startup 完了 ===", flush=True)
 
