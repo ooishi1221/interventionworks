@@ -109,7 +109,9 @@ def clean_for_tts(text: str, max_chars: int) -> str:
 
 
 VOICEVOX_URL = "http://localhost:50021"
-
+IRODORI_TTS_DIR = Path("/Volumes/SSD2TB/Irodori-TTS")
+IRODORI_UV = Path.home() / ".local" / "bin" / "uv"
+BECKY_VOICE_CAPTION = "😊 親しみやすい若い女性の声。自然な話し方でやや低め。友達に話しかけるような温かみがある。"
 
 STACKCHAN_SAY_URL = "http://localhost:8766/say"
 
@@ -127,17 +129,68 @@ def _speak_stackchan(text: str, speaker_id: int) -> None:
         res.read()
 
 
+def _speak_irodori_tts(text: str) -> None:
+    """Irodori-TTS v3 VoiceDesign でベッキーの声を生成して再生。"""
+    if not IRODORI_TTS_DIR.exists() or not IRODORI_UV.exists():
+        raise FileNotFoundError("Irodori-TTS not installed")
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        tmp_path = f.name
+    try:
+        subprocess.run(
+            [
+                str(IRODORI_UV), "run", "python", "infer.py",
+                "--hf-checkpoint", "Aratako/Irodori-TTS-600M-v3-VoiceDesign",
+                "--text", text,
+                "--caption", BECKY_VOICE_CAPTION,
+                "--output-wav", tmp_path,
+                "--model-device", "mps",
+                "--model-precision", "fp32",
+                "--no-ref",
+            ],
+            cwd=str(IRODORI_TTS_DIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+            check=True,
+        )
+        proc = subprocess.Popen(
+            ["afplay", tmp_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        _write_pid(proc.pid)
+
+        def _handle_term(signum, frame):
+            proc.terminate()
+            _clear_pid()
+            Path(tmp_path).unlink(missing_ok=True)
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, _handle_term)
+        try:
+            proc.wait()
+        except KeyboardInterrupt:
+            proc.terminate()
+        finally:
+            _clear_pid()
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+
 def speak(text: str, voice: str, rate: int, speaker_id: int = 8, voicevox_params: dict | None = None) -> None:
     """
-    スタックちゃん経由で読み上げ。失敗時は VOICEVOX → say コマンドの順でフォールバック。
+    stackchan → Irodori-TTS → VOICEVOX → say の順でフォールバック。
     """
     try:
         _speak_stackchan(text, speaker_id)
     except Exception:
         try:
-            _speak_voicevox(text, speaker_id, voicevox_params or {})
+            _speak_irodori_tts(text)
         except Exception:
-            _speak_say(text, voice, rate)
+            try:
+                _speak_voicevox(text, speaker_id, voicevox_params or {})
+            except Exception:
+                _speak_say(text, voice, rate)
 
 
 def _write_pid(pid: int) -> None:
