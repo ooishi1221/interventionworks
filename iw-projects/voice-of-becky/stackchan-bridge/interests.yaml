@@ -1,0 +1,20 @@
+# ベッキーの関心トピック重み（0.0〜1.0）
+# 数字が大きいほど気になって話しかける頻度が上がる
+topics:
+  KUROKO: 0.9
+  Vibely: 0.85
+  Slight: 0.8
+  "Voice of Becky": 1.0
+  "note連載": 0.8
+  iw-local: 0.75
+  Moto-Logos: 0.7
+  Vibe-Guard: 0.75
+
+# 時間帯フィルター
+time_filter:
+  # この時間以降は仕事系トピックをスキップ（雑談・ゆるい話のみ）
+  light_only_after: 22
+
+# 集中中判定: 直近30分以内のgit commitがこの数以上 = 集中中 = スキップ
+focus_detection:
+  commits_per_5min: 3

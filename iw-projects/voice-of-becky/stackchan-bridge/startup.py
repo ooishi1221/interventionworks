@@ -23,7 +23,7 @@ from pathlib import Path
 BASE_URL = "http://localhost:8766"
 SCRIPT_DIR = Path(__file__).parent
 TOUCH_WATCHER = SCRIPT_DIR / "touch_watcher.py"
-MUZU_MONITOR = SCRIPT_DIR / "muzu_monitor.py"
+MUZU_MONITOR = SCRIPT_DIR / "becky_observer.py"
 CONTROL_SERVER = SCRIPT_DIR / "control_server.py"
 PYTHON = SCRIPT_DIR / ".venv" / "bin" / "python3"
 LOG = Path("/tmp/touch_watcher.log")
@@ -123,7 +123,7 @@ def start_muzu_monitor() -> None:
             stdout=log,
             stderr=log,
         )
-    print(f"  ✅ muzu_monitor 起動 PID={proc.pid}", flush=True)
+    print(f"  ✅ becky_observer 起動 PID={proc.pid}", flush=True)
 
 
 def start_control_server() -> None:

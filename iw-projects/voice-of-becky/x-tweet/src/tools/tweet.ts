@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getTodayTweetCount, logTweet, type Speaker } from "../lib/logger.js";
 import { checkSafetyGuard } from "../lib/safety-guard.js";
-import { postTweet } from "../lib/x-client.js";
+import { postTweet, uploadMedia } from "../lib/x-client.js";
 
 const HASHTAG_BY_SPEAKER: Record<Speaker, string> = {
   becky: "#ベッキー",
@@ -31,8 +31,12 @@ export function registerTweet(server: McpServer) {
         .string()
         .describe("返信時のターゲット tweet ID")
         .optional(),
+      image_path: z
+        .string()
+        .describe("添付画像のローカルファイルパス（絶対パス）。Canva export で取得したファイル等")
+        .optional(),
     },
-    async ({ text, speaker, reply_to }) => {
+    async ({ text, speaker, reply_to, image_path }) => {
       const finalText = appendHashtag(text, speaker);
 
       // 1 日上限チェック
@@ -64,8 +68,21 @@ export function registerTweet(server: McpServer) {
         };
       }
 
+      // 画像アップロード
+      let mediaId: string | undefined;
+      if (image_path) {
+        try {
+          mediaId = await uploadMedia(image_path);
+        } catch (err) {
+          return {
+            content: [{ type: "text" as const, text: `❌ 画像アップロード失敗: ${err}` }],
+            isError: true,
+          };
+        }
+      }
+
       // 投稿（dry run 含む）
-      const result = await postTweet(finalText, reply_to);
+      const result = await postTweet(finalText, reply_to, mediaId);
 
       // ログ書き込み
       logTweet({

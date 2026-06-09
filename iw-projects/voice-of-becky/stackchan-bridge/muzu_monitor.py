@@ -220,18 +220,35 @@ def build_prompt(signals: dict, todo: str | None = None) -> str:
     )
 
 
-def speak_via_claude(prompt: str, consume_todo_after: bool = False) -> None:
-    result = subprocess.run(
-        ["claude", "-p"],
-        input=prompt.encode(),
-        capture_output=True,
-        timeout=30,
-    )
-    if result.returncode != 0:
-        print(f"[muzu] claude -p エラー: {result.stderr.decode().strip()}", flush=True)
-        return
+def _call_claude_api(prompt: str) -> str | None:
+    """Anthropic API を直接叩く（claude サブプロセス → MCP 競合を避けるため）
+    config.yaml の becky_api_key があればそちらを優先（個人アカウント分離）。"""
+    try:
+        import anthropic
+        cfg = load_config()
+        personal_key = cfg.get("becky_api_key", "").strip()
+        client = anthropic.Anthropic(api_key=personal_key if personal_key else None)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=256,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return message.content[0].text.strip()
+    except ImportError:
+        result = subprocess.run(
+            ["claude", "-p"],
+            input=prompt.encode(),
+            capture_output=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            print(f"[muzu] claude -p エラー: {result.stderr.decode().strip()}", flush=True)
+            return None
+        return result.stdout.decode().strip()
 
-    text = result.stdout.decode().strip()
+
+def speak_via_claude(prompt: str, consume_todo_after: bool = False) -> None:
+    text = _call_claude_api(prompt)
     if not text:
         return
 

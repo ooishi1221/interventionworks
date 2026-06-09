@@ -1,6 +1,6 @@
 # Voice of Becky — Phase 4-α 着手 (2026-05-29)
 
-> **状態**: **声・顔・目・首・ライト・なでなで・スリープ・startup.sh 全部揃った (2026-05-30)** — 「スタックチャンがあればどこでも行けるぞ！」（裕司）。Phase B（ESP32 ボタン）はリモコン入手後。listen はファームウェア未対応（次回対応予定）。
+> **状態**: **curiosity engine (becky_observer.py) 全機能稼働（2026-06-09）** — カメラで裕司を探す / 自分で顔を変える / X自律投稿 / note締切番犬 / Telegram。Phase B（ESP32 ボタン）はリモコン入手後。
 > **元の予定**: 6/5 → **前倒し** (機材が予定より早く到着)
 > **隣人プロジェクト memory**: `working/reference_voice_of_becky_neighbor_project.md`
 

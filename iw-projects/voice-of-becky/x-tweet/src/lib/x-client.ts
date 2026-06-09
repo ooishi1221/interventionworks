@@ -1,4 +1,4 @@
-import { TwitterApi } from "twitter-api-v2";
+import { TwitterApi, type SendTweetV2Params } from "twitter-api-v2";
 
 let client: TwitterApi | null = null;
 
@@ -102,9 +102,19 @@ export async function getMentions(options: {
   });
 }
 
+export async function uploadMedia(filePath: string): Promise<string> {
+  const c = getClient();
+  // MIME タイプを明示して確実にアップロード
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  const mimeType = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : "image/jpeg";
+  const mediaId = await c.v1.uploadMedia(filePath, { mimeType });
+  return mediaId;
+}
+
 export async function postTweet(
   text: string,
-  replyTo?: string
+  replyTo?: string,
+  mediaId?: string
 ): Promise<PostTweetResult> {
   if (isDryRun()) {
     return {
@@ -116,10 +126,12 @@ export async function postTweet(
 
   try {
     const c = getClient();
-    const result = await c.v2.tweet(
-      text,
-      replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : undefined
-    );
+    // single-argument 形式で確実に media を含める
+    const payload: any = { text };
+    if (replyTo) payload.reply = { in_reply_to_tweet_id: replyTo };
+    if (mediaId) payload.media = { media_ids: [mediaId] };
+
+    const result = await c.v2.tweet(payload);
     return {
       success: true,
       tweetId: result.data.id,
