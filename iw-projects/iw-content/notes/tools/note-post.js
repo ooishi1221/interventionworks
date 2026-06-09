@@ -53,6 +53,10 @@ async function main() {
 
   const isFirstRun = !fs.existsSync(SESSION_MARKER);
 
+  // 既存プロファイルで開いている Chrome を先に閉じる
+  const { execSync } = require('child_process');
+  try { execSync(`pkill -f "note-chrome-profile"`, { stdio: 'ignore' }); await new Promise(r => setTimeout(r, 800)); } catch (_) {}
+
   // 永続コンテキスト（Chrome 使用でボット検知回避）
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
     headless: false,
