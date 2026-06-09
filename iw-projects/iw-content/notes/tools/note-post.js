@@ -177,9 +177,53 @@ async function main() {
 
   try { fs.unlinkSync(thumbPath); } catch (_) {}
 
+  // --publish フラグがあれば公開まで進む
+  const doPublish = process.argv.includes('--publish');
+  const autoClose = process.argv.includes('--auto');
+  if (doPublish) {
+    console.log('\n🚀 公開設定を開いています...');
+    const publishBtn = await page.$('button:has-text("公開に進む")');
+    if (publishBtn) {
+      await publishBtn.click();
+      await page.waitForURL('**/publish/**', { timeout: 10000 });
+      await page.waitForTimeout(1500);
+
+      // タグ入力
+      if (tags.length > 0) {
+        console.log(`🏷  タグ入力中: ${tags.join(' ')}`);
+        const tagInput = await page.$('[placeholder="ハッシュタグを追加する"]');
+        if (tagInput) {
+          for (const tag of tags) {
+            const tagText = tag.replace(/^#/, '');
+            await tagInput.click();
+            await tagInput.fill(tagText);
+            await page.keyboard.press('Enter');
+            await page.waitForTimeout(400);
+          }
+        }
+      }
+
+      // 投稿する
+      console.log('📤 投稿中...');
+      const postBtn = page.locator('button').filter({ hasText: /^投稿する$/ });
+      if (await postBtn.count() > 0) {
+        await postBtn.first().click();
+        await page.waitForTimeout(3000);
+        console.log('✅ 投稿完了！');
+      } else {
+        console.log('⚠️  「投稿する」ボタンが見つかりませんでした');
+      }
+    }
+  }
+
   console.log(`\n🔗 URL: ${page.url()}`);
-  console.log('\n完了！ブラウザを確認して Enter で閉じます。');
-  await waitForEnter('');
+  if (autoClose) {
+    await page.waitForTimeout(1500);
+    console.log('✅ 完了（自動クローズ）');
+  } else {
+    console.log('\n完了！ブラウザを確認して Enter で閉じます。');
+    await waitForEnter('');
+  }
   await context.close();
 }
 
