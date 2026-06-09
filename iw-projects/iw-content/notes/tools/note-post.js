@@ -1,171 +1,186 @@
 #!/usr/bin/env node
 /**
- * note-post.js — Playwright で note.com に記事を下書き保存
+ * note-post.js — Playwright で note.com に記事を下書き保存 + サムネイル自動生成
  *
  * Usage:
  *   node note-post.js <markdown-file-path>
  *
  * 初回: ブラウザが開いてログイン画面が出る → 手動でログイン → Enter
- * 2回目以降: session 再利用で自動
- *
- * markdown ファイル形式:
- *   [note ペースト用整形版]
- *   タイトル: ...
- *   サブタイトル / リード: ...
- *   タグ: #tag1 #tag2
- *   公開推し: YYYY-MM-DD
- *   ---
- *   本文...
+ * 2回目以降: 永続セッション (note-chrome-profile) で自動
  */
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { makeThumbnail } = require('./make-thumbnail');
 
-const SESSION_FILE = path.join(process.env.HOME, '.stackchan', 'note_session.json');
+const PROFILE_DIR = path.join(process.env.HOME, '.stackchan', 'note-chrome-profile');
+const SESSION_MARKER = path.join(PROFILE_DIR, '.logged_in');
 
 function parseArticle(filePath) {
   const raw = fs.readFileSync(filePath, 'utf-8');
   const lines = raw.split('\n');
-
-  let title = '';
-  let tags = [];
-  let bodyStart = 0;
-
+  let title = '', tags = [], bodyStart = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (line.startsWith('タイトル:')) {
-      title = line.replace('タイトル:', '').trim();
-    } else if (line.startsWith('タグ')) {
-      const tagLine = line.replace(/^タグ[（(].*?[)）]?\s*[:：]/, '').trim();
-      tags = tagLine.match(/#[\w぀-ヿ一-鿿･-ﾟ]+/g) || [];
-    } else if (line === '---') {
-      bodyStart = i + 1;
-      break;
-    }
+    if (line.startsWith('タイトル:')) title = line.replace('タイトル:', '').trim();
+    else if (line.startsWith('タグ')) {
+      tags = (line.replace(/^タグ[（(].*?[)）]?\s*[:：]/, '').trim()).match(/#[\w぀-ヿ一-鿿･-ﾟ]+/g) || [];
+    } else if (line === '---') { bodyStart = i + 1; break; }
   }
-
-  const body = lines.slice(bodyStart).join('\n').trim();
-  return { title, tags, body };
+  return { title, tags, body: lines.slice(bodyStart).join('\n').trim() };
 }
 
-async function waitForEnter(message) {
+async function waitForEnter(msg) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise(resolve => {
-    rl.question(message, () => { rl.close(); resolve(); });
-  });
+  return new Promise(r => rl.question(msg, () => { rl.close(); r(); }));
 }
 
 async function main() {
   const filePath = process.argv[2];
-  if (!filePath) {
-    console.error('Usage: node note-post.js <markdown-file-path>');
-    process.exit(1);
-  }
+  if (!filePath) { console.error('Usage: node note-post.js <markdown-file>'); process.exit(1); }
 
   const { title, tags, body } = parseArticle(filePath);
   console.log(`📝 タイトル: ${title}`);
   console.log(`🏷  タグ: ${tags.join(' ')}`);
   console.log(`📄 本文: ${body.length} 文字`);
 
-  const hasSession = fs.existsSync(SESSION_FILE);
+  // サムネイル生成
+  console.log('🎨 サムネイル生成中...');
+  const thumbPath = `/tmp/becky_thumb_${Date.now()}.png`;
+  await makeThumbnail(title, thumbPath);
 
-  const browser = await chromium.launch({ headless: false });
-  const context = hasSession
-    ? await chromium.launchPersistentContext(
-        path.join(process.env.HOME, '.stackchan', 'note-chrome-profile'),
-        { headless: false }
-      )
-    : await browser.newContext();
+  const isFirstRun = !fs.existsSync(SESSION_MARKER);
 
-  if (!hasSession) {
-    const page = await context.newPage();
+  // 永続コンテキスト（Chrome 使用でボット検知回避）
+  const context = await chromium.launchPersistentContext(PROFILE_DIR, {
+    headless: false,
+    channel: 'chrome',
+    args: ['--disable-blink-features=AutomationControlled'],
+  }).catch(() =>
+    // chrome がない場合は Playwright の Chromium にフォールバック
+    chromium.launchPersistentContext(PROFILE_DIR, { headless: false })
+  );
+
+  const page = await context.newPage();
+
+  if (isFirstRun) {
     await page.goto('https://note.com/login');
     console.log('\n⚠️  ブラウザが開きました。note.com にログインしてください。');
     await waitForEnter('ログイン完了したら Enter を押してください: ');
-    // session 保存
-    fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
-    const cookies = await context.cookies();
-    fs.writeFileSync(SESSION_FILE, JSON.stringify(cookies));
-    console.log('✅ セッション保存完了');
+    fs.mkdirSync(PROFILE_DIR, { recursive: true });
+    fs.writeFileSync(SESSION_MARKER, new Date().toISOString());
+    console.log('✅ ログイン状態を保存しました');
   }
 
-  const page = hasSession ? (await context.newPage()) : (context.pages()[0] || await context.newPage());
-
-  if (hasSession) {
-    // cookie を注入
-    const cookies = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
-    await context.addCookies(cookies);
-  }
-
-  console.log('\n🚀 note エディタを開いています...');
-  await page.goto('https://note.com/notes/new', { waitUntil: 'networkidle' });
+  // note.com トップ → 投稿 → テキスト で新規エディタを開く
+  console.log('\n🚀 note エディタを起動中...');
+  await page.goto('https://note.com/', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2000);
 
   // ログイン確認
-  const currentUrl = page.url();
-  if (currentUrl.includes('login')) {
-    console.log('⚠️  セッション切れ。再ログインが必要です。');
-    fs.unlinkSync(SESSION_FILE);
-    console.log('SESSION_FILE を削除しました。再実行してください。');
-    await browser.close();
-    process.exit(1);
+  if (page.url().includes('login')) {
+    fs.unlinkSync(SESSION_MARKER);
+    console.log('⚠️  セッション切れ。再実行してください。');
+    await context.close(); process.exit(1);
   }
+
+  // 「投稿」ボタン → 「テキスト」
+  try {
+    await page.locator('button:has-text("投稿"), a:has-text("投稿")').first().click();
+    await page.waitForTimeout(800);
+    await page.locator('text="テキスト"').click();
+    await page.waitForURL('**/notes/new', { timeout: 10000 });
+  } catch (_) {
+    // フォールバック: 直接 URL へ
+    await page.goto('https://note.com/notes/new', { waitUntil: 'networkidle' });
+  }
+  await page.waitForTimeout(2000);
 
   // タイトル入力
   console.log('✍️  タイトル入力中...');
-  const titleEl = await page.waitForSelector('[placeholder="記事タイトル"], .title input, h1[contenteditable]', { timeout: 10000 });
-  await titleEl.click();
+  const titleEl = await page.waitForSelector(
+    'textarea[placeholder="記事タイトル"], [placeholder="記事タイトル"]',
+    { timeout: 10000 }
+  );
   await titleEl.fill(title);
   await page.waitForTimeout(500);
 
+  // カバー画像アップロード（タイトル上の「画像を追加」ボタン）
+  console.log('🖼  カバー画像をセット中...');
+  let coverDone = false;
+  try {
+    // タイトルの上にあるカバー画像ボタン（aria-label="画像を追加" の最初の1個）
+    // ホバーで出現する場合に備えてマウスを上部に移動
+    await page.mouse.move(640, 150);
+    await page.waitForTimeout(600);
+    await page.mouse.move(640, 100);
+    await page.waitForTimeout(600);
+
+    // Step 1: カバー画像ボタンをクリックしてメニューを開く
+    const coverBtns = await page.$$('button[aria-label="画像を追加"]');
+    if (coverBtns.length > 0) {
+      await coverBtns[0].click();
+    } else {
+      await page.mouse.click(640, 120);
+    }
+    await page.waitForTimeout(600);
+
+    // Step 2: メニュー内の「画像をアップロード」をクリック → filechooser
+    const [fc] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 5000 }),
+      page.locator('text="画像をアップロード"').first().click(),
+    ]).catch(() => [null]);
+
+    if (fc) {
+      await fc.setFiles(thumbPath);
+      await page.waitForTimeout(3000);
+      // 画像プレビューダイアログの「保存」ボタンをクリック（完全一致）
+      const saveImageBtn = page.locator('button').filter({ hasText: /^保存$/ });
+      if (await saveImageBtn.count() > 0) {
+        await saveImageBtn.first().click();
+        await page.waitForTimeout(1500);
+      }
+      console.log('✅ カバー画像アップロード完了');
+      coverDone = true;
+    }
+  } catch (_) {}
+  if (!coverDone) console.log('⚠️  カバー画像: 自動設定できず（手動で追加してください）');
+
   // 本文入力
   console.log('✍️  本文入力中...');
-  // note の本文エリア
-  const bodyEl = await page.waitForSelector(
-    '.ProseMirror, [contenteditable="true"].body, .note-editor-body',
-    { timeout: 10000 }
-  );
+  const bodyEl = await page.waitForSelector('.ProseMirror', { timeout: 10000 });
   await bodyEl.click();
-  // clipboard 経由でペースト（日本語対応）
-  await page.evaluate((text) => {
-    navigator.clipboard.writeText(text);
-  }, body);
+  await page.evaluate(t => navigator.clipboard.writeText(t), body);
   await page.keyboard.down('Meta');
   await page.keyboard.press('a');
   await page.keyboard.up('Meta');
-  await page.keyboard.press('Delete');
+  await page.keyboard.press('Backspace');
   await page.keyboard.down('Meta');
   await page.keyboard.press('v');
   await page.keyboard.up('Meta');
   await page.waitForTimeout(1000);
 
-  // 下書き保存ボタン
+  // 下書き保存
   console.log('💾 下書き保存中...');
-  const saveBtn = await page.$('button:has-text("下書き保存"), button:has-text("保存")');
+  const saveBtn = await page.$('button:has-text("下書き保存")');
   if (saveBtn) {
     await saveBtn.click();
     await page.waitForTimeout(2000);
     console.log('✅ 下書き保存完了！');
   } else {
-    // キーボードショートカット試行
-    await page.keyboard.down('Meta');
-    await page.keyboard.press('s');
-    await page.keyboard.up('Meta');
+    await page.keyboard.down('Meta'); await page.keyboard.press('s'); await page.keyboard.up('Meta');
     await page.waitForTimeout(2000);
-    console.log('✅ 保存ショートカット実行');
+    console.log('✅ 自動保存');
   }
 
-  const finalUrl = page.url();
-  console.log(`\n🔗 URL: ${finalUrl}`);
-  console.log('\n完了！ブラウザを閉じてください。');
+  try { fs.unlinkSync(thumbPath); } catch (_) {}
 
-  await waitForEnter('確認したら Enter を押してブラウザを閉じます: ');
-  await browser.close();
+  console.log(`\n🔗 URL: ${page.url()}`);
+  console.log('\n完了！ブラウザを確認して Enter で閉じます。');
+  await waitForEnter('');
+  await context.close();
 }
 
-main().catch(e => {
-  console.error('❌ エラー:', e.message);
-  process.exit(1);
-});
+main().catch(e => { console.error('❌', e.message); process.exit(1); });
