@@ -1,4 +1,5 @@
 node_modules/
+iw-projects/voice-of-becky/stackchan-bridge/config.yaml
 .expo/
 __pycache__/
 *.pyc
