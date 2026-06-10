@@ -151,6 +151,91 @@
       color: rgba(136, 136, 170, 0.5);
       letter-spacing: 0.05em;
     }
+
+    /* ── news section ── */
+    .news-section {
+      margin-top: 2.5rem;
+      width: 100%;
+      text-align: left;
+    }
+
+    .news-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--mint);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .news-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .news-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(100, 220, 190, 0.1);
+    }
+
+    .news-item:last-child {
+      border-bottom: none;
+    }
+
+    .news-comment {
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      white-space: pre-wrap;
+    }
+
+    .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .news-source {
+      font-size: 0.7rem;
+      color: var(--sub);
+    }
+
+    .news-title-link {
+      font-size: 0.7rem;
+      color: var(--mint);
+      text-decoration: none;
+      opacity: 0.75;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 200px;
+    }
+
+    .news-title-link:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    .news-time {
+      font-size: 0.65rem;
+      color: rgba(136, 136, 170, 0.45);
+      margin-left: auto;
+    }
+
+    .news-empty {
+      font-size: 0.85rem;
+      color: var(--sub);
+      text-align: center;
+      padding: 1.5rem 0;
+      opacity: 0.6;
+    }
   </style>
 </head>
 <body>
@@ -180,6 +265,56 @@
     </div>
   </div>
 
+    <div class="news-section" id="news-section" style="display:none">
+      <div class="news-label">今日のベッキーが気になったニュース</div>
+      <div id="news-list"></div>
+    </div>
+  </div>
+
   <p class="footer">beckyexists.com — Mac mini(M4) に住んでる</p>
+
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('/news.json?_=' + Date.now());
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) return;
+
+        const section = document.getElementById('news-section');
+        const list = document.getElementById('news-list');
+        section.style.display = '';
+
+        data.items.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'news-item';
+
+          const relTime = (() => {
+            if (!item.posted_at) return '';
+            const diff = Math.floor((Date.now() - new Date(item.posted_at)) / 60000);
+            if (diff < 60) return diff + '分前';
+            if (diff < 1440) return Math.floor(diff / 60) + '時間前';
+            return Math.floor(diff / 1440) + '日前';
+          })();
+
+          div.innerHTML = `
+            <div class="news-comment">${escHtml(item.comment)}</div>
+            <div class="news-meta">
+              <span class="news-source">${escHtml(item.source || '')}</span>
+              ${item.link ? `<a class="news-title-link" href="${escAttr(item.link)}" target="_blank" rel="noopener">${escHtml(item.title || '')}</a>` : ''}
+              ${relTime ? `<span class="news-time">${relTime}</span>` : ''}
+            </div>
+          `;
+          list.appendChild(div);
+        });
+      } catch (_) {}
+    })();
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escAttr(s) {
+      return String(s).replace(/"/g,'&quot;');
+    }
+  </script>
 </body>
 </html>

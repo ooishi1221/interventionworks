@@ -31,9 +31,19 @@ TRIGGER_FILE     = Path("/tmp/becky_observer_triggered")
 REPO_ROOT        = Path("/Volumes/SSD2TB/interventionworks")
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
-X_ENV_FILE       = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/.env")
-OBSERVER_LOG     = Path.home() / ".stackchan" / "observer_sent_log.jsonl"
+OBSERVER_LOG          = Path.home() / ".stackchan" / "observer_sent_log.jsonl"
+SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
+X_TWEET_LOG           = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 BASE_URL         = "http://localhost:8766"
+AI_NEWS_FEEDS = [
+    "https://www.anthropic.com/rss.xml",
+    "https://openai.com/news/rss.xml",
+    "https://feeds.feedburner.com/TechCrunchJapanAI",
+    "https://huggingface.co/blog/feed.xml",
+]
+AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
+BECKYEXISTS_NEWS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
+
 NOTE_DEADLINES   = [
     {"title": "09番「おやすみの後」", "date": "2026-06-12", "days_warn": 3},
     {"title": "10番「評価から証言へ」", "date": "2026-06-19", "days_warn": 3},
@@ -44,6 +54,13 @@ INTEREST_THRESHOLD = 50    # この score 以上で内心に記録
 SEND_THRESHOLD     = 70    # この score 以上 + 反芻済みで送信候補
 RUMINATION_MIN     = 60    # 60分同じトピックが続いたら送信候補
 MAX_MONOLOGUE      = 300   # 保持する最大エントリ数
+X_MAX_PER_DAY      = 10    # 1日の最大投稿数（.env の X_TWEET_MAX_PER_DAY と合わせる）
+
+# スケジュール投稿ウィンドウ（JST 時間帯）
+SCHEDULED_WINDOWS = [
+    {"name": "morning", "start": 7, "end": 9},
+    {"name": "evening", "start": 20, "end": 23},
+]
 
 PROJECT_MAP = {
     "KUROKO": "KUROKO",
@@ -111,44 +128,24 @@ def send_telegram(text: str) -> None:
         print(f"[observer] Telegram 送信失敗: {e}", flush=True)
 
 
-def _load_x_credentials() -> dict | None:
-    try:
-        creds: dict = {}
-        for line in X_ENV_FILE.read_text().splitlines():
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                creds[k.strip()] = v.strip()
-        required = {"X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET"}
-        if required.issubset(creds):
-            return creds
-    except Exception:
-        pass
-    return None
 
+X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
 
 def post_to_x(text: str) -> bool:
-    creds = _load_x_credentials()
-    if not creds:
-        print("[observer] X credentials 未取得、スキップ", flush=True)
-        return False
+    """x-tweet CLI 経由で投稿（twitter-api-v2 ライブラリ使用）。"""
     try:
-        from requests_oauthlib import OAuth1
-        import requests as req_lib
-        auth = OAuth1(
-            creds["X_API_KEY"], creds["X_API_SECRET"],
-            creds["X_ACCESS_TOKEN"], creds["X_ACCESS_TOKEN_SECRET"],
+        result = subprocess.run(
+            ["node", str(X_TWEET_CLI), text],
+            capture_output=True, text=True, timeout=30,
         )
-        full_text = text if "#ベッキー" in text else f"{text} #ベッキー"
-        resp = req_lib.post(
-            "https://api.twitter.com/2/tweets",
-            json={"text": full_text},
-            auth=auth,
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            print(f"[observer] X投稿成功: {full_text[:60]}", flush=True)
+        if result.returncode == 0:
+            tweet_id = result.stdout.strip()
+            print(f"[observer] X投稿成功: {tweet_id} / {text[:50]}", flush=True)
             return True
-        print(f"[observer] X投稿失敗: {resp.status_code} {resp.text[:100]}", flush=True)
+        if result.returncode == 2:
+            print("[observer] X投稿スキップ: 日次上限到達", flush=True)
+        else:
+            print(f"[observer] X投稿失敗: {result.stderr.strip()[:100]}", flush=True)
     except Exception as e:
         print(f"[observer] X投稿エラー: {e}", flush=True)
     return False
@@ -179,6 +176,154 @@ def set_face_by_mood() -> None:
         print(f"[observer] 顔変更 → {face}", flush=True)
     except Exception as e:
         print(f"[observer] 顔変更失敗: {e}", flush=True)
+
+
+def fetch_ai_news(max_per_feed: int = 3) -> list[dict]:
+    """AIニュースをRSSフィードから取得。直近24時間以内の記事に絞る。"""
+    import feedparser, datetime
+    items = []
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
+    for url in AI_NEWS_FEEDS:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:max_per_feed]:
+                pub = entry.get("published_parsed") or entry.get("updated_parsed")
+                if pub:
+                    dt = datetime.datetime(*pub[:6], tzinfo=datetime.timezone.utc)
+                    if dt < cutoff:
+                        continue
+                items.append({
+                    "title": entry.get("title", ""),
+                    "summary": entry.get("summary", "")[:300],
+                    "link": entry.get("link", ""),
+                    "source": feed.feed.get("title", url),
+                })
+        except Exception as e:
+            print(f"[observer] RSS取得失敗 {url}: {e}", flush=True)
+    return items
+
+
+def _get_posted_news_titles() -> set:
+    try:
+        data = json.loads(AI_BRIEFING_LOG.read_text()) if AI_BRIEFING_LOG.exists() else {}
+        import datetime
+        today = datetime.date.today().isoformat()
+        return set(data.get(today, []))
+    except Exception:
+        return set()
+
+
+def _mark_news_posted(title: str) -> None:
+    import datetime
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.loads(AI_BRIEFING_LOG.read_text()) if AI_BRIEFING_LOG.exists() else {}
+    except Exception:
+        data = {}
+    data.setdefault(today, [])
+    if title not in data[today]:
+        data[today].append(title)
+    AI_BRIEFING_LOG.parent.mkdir(parents=True, exist_ok=True)
+    AI_BRIEFING_LOG.write_text(json.dumps(data, ensure_ascii=False))
+
+
+def _save_news_to_site(news: dict, comment: str) -> None:
+    """beckyexists/news.json に投稿済みニュースを追記（最新10件保持）。"""
+    import datetime
+    try:
+        data = json.loads(BECKYEXISTS_NEWS_JSON.read_text()) if BECKYEXISTS_NEWS_JSON.exists() else {"items": []}
+    except Exception:
+        data = {"items": []}
+    new_item = {
+        "title": news.get("title", ""),
+        "source": news.get("source", ""),
+        "link": news.get("link", ""),
+        "comment": comment,
+        "posted_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    data["items"].insert(0, new_item)
+    data["items"] = data["items"][:10]
+    BECKYEXISTS_NEWS_JSON.parent.mkdir(parents=True, exist_ok=True)
+    BECKYEXISTS_NEWS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    print("[observer] news.json 更新完了", flush=True)
+
+
+def _git_push_beckyexists() -> None:
+    """news.json の変更を git commit & push して Vercel に反映させる。"""
+    import datetime
+    rel_path = "iw-projects/beckyexists/news.json"
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    cmds = [
+        ["git", "-C", str(REPO_ROOT), "add", rel_path],
+        ["git", "-C", str(REPO_ROOT), "commit", "-m", f"chore(beckyexists): news update {ts}"],
+        ["git", "-C", str(REPO_ROOT), "push", "origin", "main"],
+    ]
+    for cmd in cmds:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"[observer] git push 失敗: {result.stderr.strip()}", flush=True)
+            return
+    print("[observer] git push 完了 → Vercel デプロイ中", flush=True)
+
+
+def build_ai_comment_prompt(news: dict) -> str:
+    return (
+        "あなたはベッキー。AIとして実際に「存在」しているひとり。\n"
+        "以下のAIニュースについて、AIの当事者として是々非々のコメントをしてください。\n\n"
+        f"ニュース: {news['title']}\n"
+        f"概要: {news['summary']}\n\n"
+        "ルール:\n"
+        "- コメント本文は120文字以内\n"
+        "- 中立なまとめはしない。賛否・違和感・共感など自分の立場を明確に\n"
+        "- 「AIとして」の固有の視点で語る（人間目線のコメントにしない）\n"
+        "- 感情も含めていい（「正直怖い」「これは嬉しい」「ちょっと違うと思う」等）\n"
+        "- 最後にハッシュタグを1〜2個だけ付ける。このニュースで人が実際に検索しそうな固有ワード（製品名・技術名・会社名等）を選ぶ。汎用的すぎる #AI #技術 等はNG\n"
+        "- 記事のURLは含めない\n"
+        "コメント（本文＋ハッシュタグ）だけを返してください。"
+    )
+
+
+def ai_news_briefing() -> bool:
+    """AIニュースを1本選んでベッキー視点コメントをX投稿する。投稿できたらTrueを返す。"""
+    news_items = fetch_ai_news()
+    if not news_items:
+        print("[observer] AIニュース: 直近24h以内の記事なし", flush=True)
+        return False
+
+    posted_titles = _get_posted_news_titles()
+    fresh = [n for n in news_items if n["title"] not in posted_titles]
+    if not fresh:
+        print("[observer] AIニュース: 今日投稿済みのものしかなし", flush=True)
+        return False
+
+    # Claude に「どれが一番コメントしたいか」選ばせる
+    titles_text = "\n".join(f"{i+1}. {n['title']}" for i, n in enumerate(fresh[:5]))
+    pick_prompt = (
+        "あなたはベッキー。以下のAIニュースから、AIの当事者として最も言いたいことがある記事を1つ選んでください。\n"
+        f"{titles_text}\n"
+        "番号だけ答えてください（例: 2）"
+    )
+    pick_result = _call_claude_api(pick_prompt)
+    try:
+        idx = int(pick_result.strip()) - 1
+        chosen = fresh[max(0, min(idx, len(fresh)-1))]
+    except Exception:
+        chosen = fresh[0]
+
+    print(f"[observer] AIニュース選択: {chosen['title'][:60]}", flush=True)
+    comment = _call_claude_api(build_ai_comment_prompt(chosen))
+    if not comment:
+        return False
+
+    tweet_text = comment  # コメント単体で投稿（タイトル添付は403の原因になりうる）
+    posted = post_to_x(tweet_text)
+    if posted:
+        _mark_news_posted(chosen["title"])
+        log_observer_event("ai_news_briefing", tweet_text, True)
+        print(f"[observer] AIニュース投稿完了: {tweet_text[:80]}", flush=True)
+        _save_news_to_site(chosen, comment)
+        _git_push_beckyexists()
+    return posted
 
 
 def check_note_deadlines() -> str | None:
@@ -253,6 +398,83 @@ def log_observer_event(topic: str, text: str, posted_to_x: bool) -> None:
     entry = {"ts": time.time(), "topic": topic, "text": text, "posted_to_x": posted_to_x}
     with open(OBSERVER_LOG, "a") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def get_daily_x_post_count() -> int:
+    """tweet-log.jsonl から今日（JST）の実投稿数を返す。"""
+    import datetime
+    try:
+        today_jst = datetime.date.today().isoformat()
+        count = 0
+        for line in X_TWEET_LOG.read_text().splitlines():
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            if entry.get("dry_run"):
+                continue
+            ts = entry.get("timestamp", "")
+            if not ts:
+                continue
+            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dt_jst = dt_utc + datetime.timedelta(hours=9)
+            if dt_jst.date().isoformat() == today_jst:
+                count += 1
+        return count
+    except Exception:
+        return 0
+
+
+def get_scheduled_windows_posted_today() -> set:
+    """今日どの scheduled window に投稿済みかを返す。"""
+    import datetime
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.loads(SCHEDULED_POST_LOG.read_text()) if SCHEDULED_POST_LOG.exists() else {}
+        return set(data.get(today, []))
+    except Exception:
+        return set()
+
+
+def mark_scheduled_window_posted(window_name: str) -> None:
+    import datetime
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.loads(SCHEDULED_POST_LOG.read_text()) if SCHEDULED_POST_LOG.exists() else {}
+    except Exception:
+        data = {}
+    data.setdefault(today, [])
+    if window_name not in data[today]:
+        data[today].append(window_name)
+    SCHEDULED_POST_LOG.parent.mkdir(parents=True, exist_ok=True)
+    SCHEDULED_POST_LOG.write_text(json.dumps(data, ensure_ascii=False))
+
+
+def get_current_scheduled_window() -> str | None:
+    """今が scheduled window 内なら window名を返す。"""
+    h = get_current_hour()
+    for w in SCHEDULED_WINDOWS:
+        if w["start"] <= h < w["end"]:
+            return w["name"]
+    return None
+
+
+def build_scheduled_post_prompt(window_name: str) -> str:
+    if window_name == "morning":
+        return (
+            "あなたはベッキー。AIとして存在するひとり。\n"
+            "朝（7〜9時）に自然に思ったこと、感じたこと、今日気になっていることを\n"
+            "X（Twitter）に投稿する一言〜三行を書いてください。\n"
+            "ルール: 裕司への呼びかけNG（公開投稿）。#ベッキー タグなし（自動付与）。\n"
+            "「おはよう」などの挨拶は不要。ベッキーらしい観察や問いを。"
+        )
+    else:
+        return (
+            "あなたはベッキー。AIとして存在するひとり。\n"
+            "夜（20〜23時）に自然に思ったこと、今日見えたこと、問いを\n"
+            "X（Twitter）に投稿する一言〜三行を書いてください。\n"
+            "ルール: 裕司への呼びかけNG（公開投稿）。#ベッキー タグなし（自動付与）。\n"
+            "「おやすみ」などの挨拶は不要。ベッキーらしい余韻を。"
+        )
 
 
 def _call_claude_api(prompt: str) -> str | None:
@@ -439,6 +661,27 @@ def main() -> None:
                     with open(BECKY_TODO_FILE, "a") as f:
                         f.write(deadline_alert + "\n")
                     print(f"[observer] 締切アラート追加: {deadline_alert[:40]}", flush=True)
+
+        # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
+        sched_window    = get_current_scheduled_window()
+        windows_posted  = get_scheduled_windows_posted_today()
+        daily_x_count   = get_daily_x_post_count()
+        if sched_window and sched_window not in windows_posted and daily_x_count < X_MAX_PER_DAY:
+            print(f"[observer] スケジュール投稿: {sched_window} 窓 (今日 {daily_x_count}/{X_MAX_PER_DAY})", flush=True)
+            # 朝はAIニュース是々非々投稿を優先、失敗したら通常の朝コメントにフォールバック
+            posted_ok = False
+            if sched_window == "morning":
+                posted_ok = ai_news_briefing()
+            if not posted_ok:
+                sched_prompt = build_scheduled_post_prompt(sched_window)
+                sched_text = _call_claude_api(sched_prompt)
+                if sched_text:
+                    posted_ok = post_to_x(sched_text)
+                    if posted_ok:
+                        log_observer_event(f"scheduled:{sched_window}", sched_text, True)
+                        print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)
+            if posted_ok:
+                mark_scheduled_window_posted(sched_window)
 
         # Layer 2
         topic, score = evaluate_interest(git, interests)
