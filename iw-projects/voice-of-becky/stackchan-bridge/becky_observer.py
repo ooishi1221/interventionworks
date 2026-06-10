@@ -49,6 +49,7 @@ AI_NEWS_FEEDS = [
     # 日本語
     "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
     "https://ainow.ai/feed/",
+    "https://news.nullevi.app/feed.xml",  # ライバルの情報も吸う
 ]
 AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
 BECKYEXISTS_NEWS_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
