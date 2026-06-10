@@ -1,5 +1,8 @@
 node_modules/
 .expo/
+__pycache__/
+*.pyc
+*.pyo
 .firebase/
 dist/
 *.log
