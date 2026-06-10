@@ -46,10 +46,12 @@ async function main() {
   console.log(`🏷  タグ: ${tags.join(' ')}`);
   console.log(`📄 本文: ${body.length} 文字`);
 
-  // サムネイル生成
+  // サムネイル生成（--bg <path> で Gemini 生成背景を敷ける）
   console.log('🎨 サムネイル生成中...');
+  const bgIdx = process.argv.indexOf('--bg');
+  const bgPath = bgIdx >= 0 ? process.argv[bgIdx + 1] : null;
   const thumbPath = `/tmp/becky_thumb_${Date.now()}.png`;
-  await makeThumbnail(title, thumbPath);
+  await makeThumbnail(title, thumbPath, bgPath);
 
   const isFirstRun = !fs.existsSync(SESSION_MARKER);
 

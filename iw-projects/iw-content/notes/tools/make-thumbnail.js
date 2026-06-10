@@ -39,13 +39,30 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-async function makeThumbnail(title, outPath) {
+async function makeThumbnail(title, outPath, bgImagePath = null) {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
   // 背景
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
+
+  // 生成背景画像があれば敷く（cover で中央クロップ、下端のウォーターマーク領域は切り落とす）
+  if (bgImagePath && fs.existsSync(bgImagePath)) {
+    try {
+      const bg = await loadImage(bgImagePath);
+      const cropH = bg.height * 0.92; // 下端 8% を捨てる（ウォーターマーク域）
+      const scale = Math.max(W / bg.width, H / cropH);
+      const dw = bg.width * scale;
+      const dh = cropH * scale;
+      ctx.drawImage(bg, 0, 0, bg.width, cropH, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      // 暗めオーバーレイで文字を立たせる
+      ctx.fillStyle = 'rgba(13, 13, 20, 0.62)';
+      ctx.fillRect(0, 0, W, H);
+    } catch (_) {
+      // 背景読み込み失敗 → 無地のまま
+    }
+  }
 
   // 左側アクセントライン
   ctx.fillStyle = ACCENT;
@@ -131,14 +148,17 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const outIdx = args.indexOf('--out');
   const outPath = outIdx >= 0 ? args[outIdx + 1] : null;
-  const title = args.filter((_, i) => i !== outIdx && i !== outIdx + 1).join(' ');
+  const bgIdx = args.indexOf('--bg');
+  const bgPath = bgIdx >= 0 ? args[bgIdx + 1] : null;
+  const skip = new Set([outIdx, outIdx + 1, bgIdx, bgIdx + 1]);
+  const title = args.filter((_, i) => !skip.has(i)).join(' ');
 
   if (!title) {
-    console.error('Usage: node make-thumbnail.js "タイトル" [--out path.png]');
+    console.error('Usage: node make-thumbnail.js "タイトル" [--out path.png] [--bg 背景画像.png]');
     process.exit(1);
   }
 
-  makeThumbnail(title, outPath).catch(e => {
+  makeThumbnail(title, outPath, bgPath).catch(e => {
     console.error('❌', e.message);
     process.exit(1);
   });

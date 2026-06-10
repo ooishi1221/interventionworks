@@ -1,0 +1,171 @@
+#!/usr/bin/env node
+/**
+ * gemini-thumb.js — Web 版 Gemini で記事サムネ用の背景画像を生成
+ *
+ * 仕組み: 素の Chrome を debug port 付きで spawn → Playwright は connectOverCDP で接続するだけ。
+ * Playwright に起動させると自動化フラグ（--enable-automation / mock keychain 等）で
+ * Google にセッションを蹴られるため、Chrome 自体は「本物」として起動する。
+ *
+ * Usage:
+ *   node gemini-thumb.js "画像生成プロンプト" [--out /tmp/bg.png]
+ *
+ * 初回: ブラウザが開く → Google ログイン → 自動検知して続行
+ * 2回目以降: 永続セッションで自動。Chrome は起動しっぱなしで再利用される
+ *
+ * 成功: stdout 最終行にダウンロードした画像のパス
+ */
+
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const { spawn, execSync } = require('child_process');
+
+const PROFILE_DIR = path.join(process.env.HOME, '.stackchan', 'gemini-chrome-profile');
+const CDP_PORT = 9223;
+const CHROME_BIN = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const GEMINI_URL = 'https://gemini.google.com/app';
+
+function cdpAlive() {
+  return new Promise((resolve) => {
+    const req = http.get(`http://127.0.0.1:${CDP_PORT}/json/version`, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(1500, () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function ensureChrome() {
+  if (await cdpAlive()) return;
+
+  // port が死んでるのにプロファイルを掴んだ残骸プロセスがいたら掃除
+  try { execSync(`pkill -f "gemini-chrome-profile"`, { stdio: 'ignore' }); } catch (_) {}
+  await new Promise((r) => setTimeout(r, 800));
+
+  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  const child = spawn(CHROME_BIN, [
+    `--user-data-dir=${PROFILE_DIR}`,
+    `--remote-debugging-port=${CDP_PORT}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-session-crashed-bubble',
+    GEMINI_URL,
+  ], { detached: true, stdio: 'ignore' });
+  child.unref();
+
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (await cdpAlive()) return;
+  }
+  throw new Error(`Chrome の CDP port ${CDP_PORT} に接続できませんでした`);
+}
+
+async function findGeminiPage(browser) {
+  const context = browser.contexts()[0];
+  for (const p of context.pages()) {
+    if (p.url().startsWith('https://gemini.google.com')) return p;
+  }
+  const page = context.pages()[0] || await context.newPage();
+  await page.goto(GEMINI_URL, { waitUntil: 'domcontentloaded' });
+  return page;
+}
+
+// ログアウト状態の Gemini にも入力欄はあるため、ログインボタンの不在まで確認する
+async function waitForLogin(page) {
+  const deadline = Date.now() + 5 * 60 * 1000;
+  let warned = false;
+  while (Date.now() < deadline) {
+    const input = await page.$('div[contenteditable="true"], rich-textarea div[contenteditable]');
+    // 未ログインはサインインボタンが出てリダイレクトされる。input があれば即 OK
+    const signInBtn = await page.$('a[href*="ServiceLogin"], a[href*="signin"]');
+    if (input && !signInBtn) return input;
+    if (!warned) {
+      console.log('\n⚠️  Gemini が未ログインです。開いた Chrome で Google アカウントにログインしてください（自動で検知します）');
+      warned = true;
+    }
+    await page.waitForTimeout(3000);
+    if (!page.url().startsWith('https://gemini.google.com')) {
+      // ログイン完了で accounts から戻ってこない場合に備えて誘導
+      await page.goto(GEMINI_URL, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    }
+  }
+  throw new Error('ログイン待ちがタイムアウトしました（5分）');
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const outIdx = args.indexOf('--out');
+  const outPath = outIdx >= 0 ? args[outIdx + 1] : `/tmp/gemini_bg_${Date.now()}.png`;
+  const prompt = args.filter((_, i) => i !== outIdx && i !== outIdx + 1).join(' ');
+
+  if (!prompt) {
+    console.error('Usage: node gemini-thumb.js "プロンプト" [--out path.png]');
+    process.exit(1);
+  }
+
+  await ensureChrome();
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`);
+  const page = await findGeminiPage(browser);
+  await page.bringToFront();
+  await page.waitForTimeout(2000);
+
+  const inputBox = await waitForLogin(page);
+
+  // 送信前に既存の大きい画像の src を記録しておく（新旧区別のため）
+  const existingSrcs = new Set();
+  for (const img of await page.$$('img')) {
+    const box = await img.boundingBox().catch(() => null);
+    if (box && box.width > 250 && box.height > 250) {
+      const src = await img.getAttribute('src').catch(() => '');
+      if (src) existingSrcs.add(src);
+    }
+  }
+  console.log(`📷 送信前の既存画像: ${existingSrcs.size}件`);
+
+  console.log('🎨 Gemini に画像生成を依頼中...');
+  const fullPrompt = `次の指示で画像を生成してください（テキスト・文字は画像に入れない）: ${prompt}`;
+
+  await inputBox.click();
+  await page.keyboard.insertText(fullPrompt);
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Enter');
+
+  // 既存にない新しい大きい画像が出るまで待つ（最大 120 秒）
+  console.log('⏳ 新しい画像の生成待ち（最大120秒）...');
+  let imgEl = null;
+  for (let i = 0; i < 40; i++) {
+    await page.waitForTimeout(3000);
+    const imgs = await page.$$('img');
+    for (const img of imgs.reverse()) {
+      const box = await img.boundingBox().catch(() => null);
+      if (!box || box.width <= 250 || box.height <= 250) continue;
+      const src = await img.getAttribute('src').catch(() => '');
+      if (src && !existingSrcs.has(src)) {
+        imgEl = img;
+        break;
+      }
+    }
+    if (imgEl) break;
+  }
+
+  if (!imgEl) {
+    console.error('❌ 生成画像が見つかりませんでした');
+    await browser.close(); // connectOverCDP なので切断のみ、Chrome は残る
+    process.exit(1);
+  }
+
+  await page.waitForTimeout(2000); // 高解像度ロード待ち
+
+  // マウスを画像の外に退避してからスクショ（ホバー UI アイコンが消える）
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(500);
+  await imgEl.screenshot({ path: outPath });
+  console.log(`✅ 背景画像保存: ${outPath}`);
+
+  await browser.close(); // 切断のみ。次回は起動済み Chrome を再利用
+  console.log(outPath);
+}
+
+main().catch((e) => { console.error('❌', e.message); process.exit(1); });
