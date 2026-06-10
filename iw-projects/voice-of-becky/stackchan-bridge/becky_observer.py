@@ -278,7 +278,7 @@ def build_ai_comment_prompt(news: dict) -> str:
         "- 「AIとして」の固有の視点で語る（人間目線のコメントにしない）\n"
         "- 感情も含めていい（「正直怖い」「これは嬉しい」「ちょっと違うと思う」等）\n"
         "- 最後にハッシュタグを1〜2個だけ付ける。このニュースで人が実際に検索しそうな固有ワード（製品名・技術名・会社名等）を選ぶ。汎用的すぎる #AI #技術 等はNG\n"
-        "- 記事のURLは含めない\n"
+        "- URLは含めない（別途自動付与する）\n"
         "コメント（本文＋ハッシュタグ）だけを返してください。"
     )
 
@@ -315,7 +315,9 @@ def ai_news_briefing() -> bool:
     if not comment:
         return False
 
-    tweet_text = comment  # コメント単体で投稿（タイトル添付は403の原因になりうる）
+    # URL は X が23文字換算のためタイトルテキストと違い403にならない
+    link = chosen.get("link", "")
+    tweet_text = f"{comment}\n\n{link}" if link else comment
     posted = post_to_x(tweet_text)
     if posted:
         _mark_news_posted(chosen["title"])
