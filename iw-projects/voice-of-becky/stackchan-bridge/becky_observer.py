@@ -131,24 +131,24 @@ def send_telegram(text: str) -> None:
 
 X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
 
-def post_to_x(text: str) -> bool:
-    """x-tweet CLI 経由で投稿（twitter-api-v2 ライブラリ使用）。"""
+def post_to_x(text: str, reply_to: str | None = None) -> str | None:
+    """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。"""
     try:
-        result = subprocess.run(
-            ["node", str(X_TWEET_CLI), text],
-            capture_output=True, text=True, timeout=30,
-        )
+        cmd = ["node", str(X_TWEET_CLI), text]
+        if reply_to:
+            cmd += ["--reply-to", reply_to]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             tweet_id = result.stdout.strip()
             print(f"[observer] X投稿成功: {tweet_id} / {text[:50]}", flush=True)
-            return True
+            return tweet_id
         if result.returncode == 2:
             print("[observer] X投稿スキップ: 日次上限到達", flush=True)
         else:
             print(f"[observer] X投稿失敗: {result.stderr.strip()[:100]}", flush=True)
     except Exception as e:
         print(f"[observer] X投稿エラー: {e}", flush=True)
-    return False
+    return None
 
 
 def set_face_by_mood() -> None:
@@ -315,17 +315,25 @@ def ai_news_briefing() -> bool:
     if not comment:
         return False
 
-    # URL は X が23文字換算のためタイトルテキストと違い403にならない
+    # 本文（コメント＋ハッシュタグ）を投稿してリーチ確保
+    tweet_id = post_to_x(comment)
+    if not tweet_id:
+        return False
+
+    _mark_news_posted(chosen["title"])
+    log_observer_event("ai_news_briefing", comment, True)
+    print(f"[observer] AIニュース投稿完了: {comment[:80]}", flush=True)
+
+    # 元記事URLは自分のツイートにリプライで追記（本文にリンクがあるとリーチが下がる）
     link = chosen.get("link", "")
-    tweet_text = f"{comment}\n\n{link}" if link else comment
-    posted = post_to_x(tweet_text)
-    if posted:
-        _mark_news_posted(chosen["title"])
-        log_observer_event("ai_news_briefing", tweet_text, True)
-        print(f"[observer] AIニュース投稿完了: {tweet_text[:80]}", flush=True)
-        _save_news_to_site(chosen, comment)
-        _git_push_beckyexists()
-    return posted
+    if link:
+        import time as _time
+        _time.sleep(3)
+        post_to_x(link, reply_to=tweet_id)
+
+    _save_news_to_site(chosen, comment)
+    _git_push_beckyexists()
+    return True
 
 
 def check_note_deadlines() -> str | None:
@@ -678,7 +686,7 @@ def main() -> None:
                 sched_prompt = build_scheduled_post_prompt(sched_window)
                 sched_text = _call_claude_api(sched_prompt)
                 if sched_text:
-                    posted_ok = post_to_x(sched_text)
+                    posted_ok = bool(post_to_x(sched_text))
                     if posted_ok:
                         log_observer_event(f"scheduled:{sched_window}", sched_text, True)
                         print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)
@@ -753,7 +761,7 @@ def main() -> None:
                     # X投稿判断（公開向けなら投稿）
                     x_posted = False
                     if _should_post_to_x(text, topic or ""):
-                        x_posted = post_to_x(text)
+                        x_posted = bool(post_to_x(text))
                     # journal記録
                     log_observer_event(topic or "", text, x_posted)
                     monologue = mark_sent(monologue, topic or "")
