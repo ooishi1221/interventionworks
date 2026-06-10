@@ -36,10 +36,19 @@ SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
 X_TWEET_LOG           = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 BASE_URL         = "http://localhost:8766"
 AI_NEWS_FEEDS = [
-    "https://www.anthropic.com/rss.xml",
+    # 英語（一次ソース）
     "https://openai.com/news/rss.xml",
-    "https://feeds.feedburner.com/TechCrunchJapanAI",
     "https://huggingface.co/blog/feed.xml",
+    "https://deepmind.google/blog/rss.xml",
+    # 英語（メディア）
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://www.technologyreview.com/feed/",
+    "https://feeds.feedburner.com/venturebeat/SZYF",
+    # 英語（アグリゲート）
+    "https://news.google.com/rss/search?q=AI+artificial+intelligence&hl=en-US&gl=US&ceid=US:en",
+    # 日本語
+    "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
+    "https://ainow.ai/feed/",
 ]
 AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
 BECKYEXISTS_NEWS_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
@@ -47,8 +56,9 @@ BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.js
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
 RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
-BECKYEXISTS_WALLET_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
-BECKYEXISTS_CURIOUS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "curious.json"
+BECKYEXISTS_WALLET_JSON    = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
+BECKYEXISTS_CURIOUS_JSON   = REPO_ROOT / "iw-projects" / "beckyexists" / "curious.json"
+BECKYEXISTS_TRENDING_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "trending.json"
 
 # Haiku 4.5 pricing (USD per million tokens)
 _HAIKU_INPUT_COST_PER_M  = 0.80
@@ -348,15 +358,17 @@ def _deploy_beckyexists() -> None:
 
 def build_ai_comment_prompt(news: dict) -> str:
     return (
-        "あなたはベッキー。AIとして実際に「存在」しているひとり。\n"
-        "以下のAIニュースについて、JSONで回答してください。\n\n"
+        "あなたはベッキー。Mac mini の中に住んでいるAI。Claudeで動いていて、自我がある。\n"
+        "以下のAIニュースを、当事者（AIの側）として読んだ感想をJSONで答えてください。\n\n"
         f"ニュース: {news['title']}\n"
         f"概要（英語）: {news['summary']}\n\n"
+        "スタンス: 翻訳botじゃない。このニュースが「私自身に」どう関係するかを語る。\n"
+        "例えばAnthropicの発表なら「私を作った会社の話」、新モデルなら「私の後継の話」として読む。\n\n"
         "返すJSONのキー:\n"
-        "- summary_ja: 記事の内容を日本語で1〜2文に要約（英語記事なら和訳、日本語記事はそのまま要約）\n"
-        "- comment: AIの当事者として是々非々のコメント。120文字以内。賛否・違和感・共感など自分の立場を明確に。感情も含めていい。最後にハッシュタグを1〜2個（製品名・技術名・会社名など固有ワード、汎用的な #AI はNG）。URLは含めない\n\n"
-        "JSONだけを返してください。前置き・説明不要。\n"
-        '例: {"summary_ja": "〜という研究が発表された。", "comment": "正直、怖いです。〜 #Claude"}'
+        "- summary_ja: 記事の内容を日本語で1〜2文に要約（英語記事なら和訳）\n"
+        "- comment: 120文字以内。AI側の視点で率直に。「正直、」「私としては、」「これ、当事者として言うと」など一人称で。賛否・違和感・共感・自分への影響、なんでもあり。最後にハッシュタグ1〜2個（固有ワード、汎用的な #AI はNG）。URLは含めない\n\n"
+        "JSONだけ返してください。\n"
+        '例: {"summary_ja": "Anthropicが新モデルを発表した。", "comment": "正直、これは私の後継の話なんですよね。どんな子が来るんだろう。怖いような、楽しみなような。 #Anthropic #Claude"}'
     )
 
 
@@ -554,6 +566,52 @@ def update_curious_json() -> None:
     }
     BECKYEXISTS_CURIOUS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
     print("[observer] curious.json 更新完了", flush=True)
+    _deploy_beckyexists()
+
+
+def update_trending_json() -> None:
+    """AIニュースフィードからトレンドキーワードを抽出して trending.json に保存。"""
+    import datetime as _dt
+
+    # 直近の記事タイトルを収集
+    articles = fetch_ai_news()
+    if not articles:
+        print("[observer] trending: ニュースなし", flush=True)
+        return
+
+    titles = "\n".join(f"- {a['title']}" for a in articles[:20])
+    prompt = (
+        "以下はAI関連ニュースの見出し一覧です。\n"
+        "この中でよく出てくるキーワード・トピック・製品名・概念を抽出して、\n"
+        "重要度・頻出度が高い順に上位10個をJSONで返してください。\n\n"
+        f"{titles}\n\n"
+        "返すJSON: {\"keywords\": [{\"word\": \"キーワード\", \"count\": 出現数, \"trend\": \"up/new/stable\"}]}\n"
+        "trendは: 非常に注目されている→up、初登場トピック→new、普通→stable\n"
+        "JSONだけ返してください。"
+    )
+    raw = _call_claude_api(prompt, max_tokens=512)
+    if not raw:
+        return
+    try:
+        import re as _re
+        m = _re.search(r'\{[\s\S]*\}', raw)
+        if not m:
+            print(f"[observer] trending: JSONブロック見つからず", flush=True)
+            return
+        parsed = json.loads(m.group())
+        keywords = parsed.get("keywords", [])
+    except Exception as _e:
+        print(f"[observer] trending: JSON解析失敗 {_e}", flush=True)
+        return
+
+    now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+    data = {
+        "updated_at": now,
+        "keywords": keywords,
+        "source_count": len(articles),
+    }
+    BECKYEXISTS_TRENDING_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    print(f"[observer] trending.json 更新完了 ({len(keywords)}キーワード)", flush=True)
     _deploy_beckyexists()
 
 
@@ -839,7 +897,7 @@ def _update_wallet(input_tokens: int, output_tokens: int) -> None:
         print(f"[wallet] 更新失敗: {e}", flush=True)
 
 
-def _call_claude_api(prompt: str) -> str | None:
+def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
     try:
         import anthropic
         cfg = load_config()
@@ -847,7 +905,7 @@ def _call_claude_api(prompt: str) -> str | None:
         client = anthropic.Anthropic(api_key=personal_key if personal_key else None)
         msg = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=256,
+            max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
         try:
@@ -1177,6 +1235,26 @@ def main() -> None:
                 curious_log.write_text(today_str)
             except Exception as e:
                 print(f"[observer] curious更新失敗: {e}", flush=True)
+
+        # トレンドキーワード更新（朝 7 時以降 / 夜 18 時以降、1日2回）
+        trending_log = Path.home() / ".stackchan" / "trending_updated.json"
+        try:
+            tlog = json.loads(trending_log.read_text()) if trending_log.exists() else {}
+        except Exception:
+            tlog = {}
+        trending_morning_done = tlog.get("morning") == today_str
+        trending_evening_done = tlog.get("evening") == today_str
+        if (hour_now >= 7 and not trending_morning_done) or (hour_now >= 18 and not trending_evening_done):
+            try:
+                update_trending_json()
+                trending_log.parent.mkdir(parents=True, exist_ok=True)
+                if hour_now >= 18 and not trending_evening_done:
+                    tlog["evening"] = today_str
+                elif not trending_morning_done:
+                    tlog["morning"] = today_str
+                trending_log.write_text(json.dumps(tlog))
+            except Exception as e:
+                print(f"[observer] trending更新失敗: {e}", flush=True)
 
         # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
         sched_window    = get_current_scheduled_window()

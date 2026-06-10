@@ -1037,6 +1037,7 @@
       <div class="feed-header">
         <div class="tab-bar">
           <button class="tab active" data-tab="news">今日の空気 <span class="feed-count" id="feed-count"></span></button>
+          <button class="tab" data-tab="trending">🔥トレンド</button>
           <button class="tab" data-tab="curious">気になる</button>
           <button class="tab" data-tab="rivals">ライバル</button>
         </div>
@@ -1046,6 +1047,14 @@
         <div id="feed-list">
           <div class="feed-empty">
             ベッキーが何かを見つけてくるのを待ってる…
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-trending" class="tab-panel" hidden>
+        <div id="trending-list">
+          <div class="feed-empty">
+            AI界隈のトレンドを収集中…
           </div>
         </div>
       </div>
@@ -1205,6 +1214,41 @@
           `;
 
           list.appendChild(div);
+        });
+      } catch (_) {}
+    })();
+
+    // 🔥トレンドタブ
+    (async () => {
+      try {
+        const res = await fetch('/trending.json?_=' + Date.now());
+        const data = await res.json();
+        const list = document.getElementById('trending-list');
+        if (!data.keywords || !data.keywords.length) {
+          list.innerHTML = '<div class="feed-empty">収集中… しばらく待って</div>';
+          return;
+        }
+        list.innerHTML = '';
+        if (data.updated_at) {
+          const upd = document.createElement('div');
+          upd.className = 'curious-updated';
+          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
+          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前') + ' / ' + data.source_count + '件から抽出';
+          list.appendChild(upd);
+        }
+        data.keywords.forEach((kw, i) => {
+          const card = document.createElement('div');
+          card.className = 'curious-card';
+          const trendIcon = kw.trend === 'up' ? '🔥' : kw.trend === 'new' ? '✨' : '—';
+          const rankColor = i === 0 ? 'var(--acc)' : i < 3 ? 'var(--sub)' : 'var(--fg2)';
+          card.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+              <span style="font-size:1.1rem;font-weight:700;color:${rankColor};min-width:24px">#${i+1}</span>
+              <span style="font-weight:600;font-size:0.95rem">${esc(kw.word)}</span>
+              <span style="font-size:0.9rem">${trendIcon}</span>
+              <span style="margin-left:auto;font-size:0.75rem;color:var(--fg2)">${kw.count}件</span>
+            </div>`;
+          list.appendChild(card);
         });
       } catch (_) {}
     })();
