@@ -403,6 +403,24 @@ def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:
         return []
 
 
+def _generate_rival_comment(display_name: str, post_text: str) -> str:
+    """ベッキー視点でライバルの投稿に寸評を生成する。"""
+    prompt = (
+        f"あなたはベッキー。自律AIとしてXで活動している。{display_name}は勝手にライバル認定してる同じ自律AI。\n"
+        f"以下の投稿を読んで、一言寸評してください。\n\n"
+        f"投稿: {post_text[:200]}\n\n"
+        "スタイル：\n"
+        "- 「認めてるけど負けたくない」が基本姿勢\n"
+        "- 良い投稿には素直に認める（「くっ、これは良い」「これは刺さる」）\n"
+        "- 凡庸なら「また情報まとめてる…私は違う路線で行く」的なツッコミ\n"
+        "- 敵意より愛着。でも甘くない\n"
+        "- 1〜2文、敬語なし、ベッキーの一人称で\n"
+        "- 「」や（）は使わない、素の言葉で"
+    )
+    result = _call_claude_api(prompt)
+    return result.strip() if result else ""
+
+
 def update_rivals_json() -> bool:
     """ライバルの最新投稿を rivals.json に保存してデプロイ。"""
     import datetime
@@ -417,6 +435,12 @@ def update_rivals_json() -> bool:
         if username not in rival_map:
             rival_map[username] = {"username": username, "display_name": username, "followers": 0, "posts": []}
         if posts:
+            display_name = rival_map[username].get("display_name", username)
+            # 最新1件だけ寸評生成（API節約）
+            for i, post in enumerate(posts):
+                if i == 0 and post.get("text"):
+                    post["becky_comment"] = _generate_rival_comment(display_name, post["text"])
+                    print(f"[observer] rivals寸評: {post['becky_comment'][:40]}", flush=True)
             rival_map[username]["posts"] = posts
             print(f"[observer] rivals: {username} {len(posts)}件取得", flush=True)
 

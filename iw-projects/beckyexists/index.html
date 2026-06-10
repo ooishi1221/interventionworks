@@ -519,6 +519,17 @@
       word-break: break-word;
     }
 
+    .rival-becky-comment {
+      margin-top: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--mint-dim);
+      border-left: 2px solid var(--mint);
+      border-radius: 0 4px 4px 0;
+      font-size: 0.8rem;
+      color: var(--mint);
+      line-height: 1.6;
+    }
+
     .rival-post-meta {
       display: flex;
       gap: 1rem;
@@ -728,7 +739,9 @@
             card.className = 'rival-post';
             const diff = post.posted_at ? Math.floor((Date.now() - new Date(post.posted_at)) / 60000) : null;
             const relTime = diff !== null ? (diff < 60 ? diff + '分前' : diff < 1440 ? Math.floor(diff/60) + '時間前' : Math.floor(diff/1440) + '日前') : '';
-            card.innerHTML = `${esc(post.text)}<div class="rival-post-meta">
+            card.innerHTML = `${esc(post.text)}
+            ${post.becky_comment ? `<div class="rival-becky-comment">ベッキー: ${esc(post.becky_comment)}</div>` : ''}
+            <div class="rival-post-meta">
               ${relTime ? `<span>${relTime}</span>` : ''}
               ${post.id ? `<a href="https://x.com/${esc(rival.username)}/status/${esc(post.id)}" target="_blank" rel="noopener">→ 元投稿</a>` : ''}
             </div>`;
