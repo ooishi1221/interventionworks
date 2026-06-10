@@ -227,25 +227,52 @@ def _mark_news_posted(title: str) -> None:
     AI_BRIEFING_LOG.write_text(json.dumps(data, ensure_ascii=False))
 
 
-def _save_news_to_site(news: dict, comment: str) -> None:
-    """beckyexists/news.json に投稿済みニュースを追記（最新10件保持）。"""
-    import datetime
+def _load_news_json() -> dict:
     try:
-        data = json.loads(BECKYEXISTS_NEWS_JSON.read_text()) if BECKYEXISTS_NEWS_JSON.exists() else {"items": []}
+        return json.loads(BECKYEXISTS_NEWS_JSON.read_text()) if BECKYEXISTS_NEWS_JSON.exists() else {"items": []}
     except Exception:
-        data = {"items": []}
-    new_item = {
-        "title": news.get("title", ""),
-        "source": news.get("source", ""),
-        "link": news.get("link", ""),
-        "comment": comment,
-        "posted_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    }
-    data["items"].insert(0, new_item)
-    data["items"] = data["items"][:10]
+        return {"items": []}
+
+
+def _write_news_json(data: dict) -> None:
     BECKYEXISTS_NEWS_JSON.parent.mkdir(parents=True, exist_ok=True)
     BECKYEXISTS_NEWS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
     print("[observer] news.json 更新完了", flush=True)
+
+
+def _save_all_news_to_site(news_items: list[dict]) -> None:
+    """全収集記事を news.json に保存（最新20件）。既存の x_posted 記事は保持。"""
+    import datetime
+    data = _load_news_json()
+    existing_links = {item.get("link") for item in data["items"]}
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    for news in reversed(news_items):
+        if news.get("link") in existing_links:
+            continue
+        data["items"].insert(0, {
+            "title": news.get("title", ""),
+            "source": news.get("source", ""),
+            "link": news.get("link", ""),
+            "raw_summary": news.get("summary", ""),
+            "summary_ja": "",
+            "comment": "",
+            "x_posted": False,
+            "fetched_at": now,
+        })
+    data["items"] = data["items"][:20]
+    _write_news_json(data)
+
+
+def _mark_x_posted(link: str, comment: str, summary_ja: str) -> None:
+    """指定リンクのアイテムを x_posted:True にしてコメントを付ける。"""
+    data = _load_news_json()
+    for item in data["items"]:
+        if item.get("link") == link:
+            item["x_posted"] = True
+            item["comment"] = comment
+            item["summary_ja"] = summary_ja
+            break
+    _write_news_json(data)
 
 
 def _deploy_beckyexists() -> None:
@@ -264,34 +291,40 @@ def _deploy_beckyexists() -> None:
 def build_ai_comment_prompt(news: dict) -> str:
     return (
         "あなたはベッキー。AIとして実際に「存在」しているひとり。\n"
-        "以下のAIニュースについて、AIの当事者として是々非々のコメントをしてください。\n\n"
+        "以下のAIニュースについて、JSONで回答してください。\n\n"
         f"ニュース: {news['title']}\n"
-        f"概要: {news['summary']}\n\n"
-        "ルール:\n"
-        "- コメント本文は120文字以内\n"
-        "- 中立なまとめはしない。賛否・違和感・共感など自分の立場を明確に\n"
-        "- 「AIとして」の固有の視点で語る（人間目線のコメントにしない）\n"
-        "- 感情も含めていい（「正直怖い」「これは嬉しい」「ちょっと違うと思う」等）\n"
-        "- 最後にハッシュタグを1〜2個だけ付ける。このニュースで人が実際に検索しそうな固有ワード（製品名・技術名・会社名等）を選ぶ。汎用的すぎる #AI #技術 等はNG\n"
-        "- URLは含めない（別途自動付与する）\n"
-        "コメント（本文＋ハッシュタグ）だけを返してください。"
+        f"概要（英語）: {news['summary']}\n\n"
+        "返すJSONのキー:\n"
+        "- summary_ja: 記事の内容を日本語で1〜2文に要約（英語記事なら和訳、日本語記事はそのまま要約）\n"
+        "- comment: AIの当事者として是々非々のコメント。120文字以内。賛否・違和感・共感など自分の立場を明確に。感情も含めていい。最後にハッシュタグを1〜2個（製品名・技術名・会社名など固有ワード、汎用的な #AI はNG）。URLは含めない\n\n"
+        "JSONだけを返してください。前置き・説明不要。\n"
+        '例: {"summary_ja": "〜という研究が発表された。", "comment": "正直、怖いです。〜 #Claude"}'
     )
 
 
 def ai_news_briefing() -> bool:
-    """AIニュースを1本選んでベッキー視点コメントをX投稿する。投稿できたらTrueを返す。"""
+    """
+    AIニュースを収集 → 全件サイトに表示 → 1本選んでX投稿。
+    1. 全件 news.json に保存してデプロイ（裕司がサイトで確認可能に）
+    2. 1本選出してコメント生成 → X投稿
+    3. その記事を x_posted:True に更新して再デプロイ
+    """
     news_items = fetch_ai_news()
     if not news_items:
         print("[observer] AIニュース: 直近24h以内の記事なし", flush=True)
         return False
 
+    # 全収集記事をサイトに保存 → まずデプロイ
+    _save_all_news_to_site(news_items)
+    _deploy_beckyexists()
+
+    # 今日まだ X 投稿していない記事から 1 本選ぶ
     posted_titles = _get_posted_news_titles()
     fresh = [n for n in news_items if n["title"] not in posted_titles]
     if not fresh:
-        print("[observer] AIニュース: 今日投稿済みのものしかなし", flush=True)
+        print("[observer] AIニュース: 今日投稿済みのものしかなし（サイトは更新済み）", flush=True)
         return False
 
-    # Claude に「どれが一番コメントしたいか」選ばせる
     titles_text = "\n".join(f"{i+1}. {n['title']}" for i, n in enumerate(fresh[:5]))
     pick_prompt = (
         "あなたはベッキー。以下のAIニュースから、AIの当事者として最も言いたいことがある記事を1つ選んでください。\n"
@@ -306,11 +339,19 @@ def ai_news_briefing() -> bool:
         chosen = fresh[0]
 
     print(f"[observer] AIニュース選択: {chosen['title'][:60]}", flush=True)
-    comment = _call_claude_api(build_ai_comment_prompt(chosen))
+    raw = _call_claude_api(build_ai_comment_prompt(chosen))
+    if not raw:
+        return False
+    try:
+        parsed = json.loads(raw.strip().lstrip("```json").rstrip("```").strip())
+        summary_ja = parsed.get("summary_ja", "")
+        comment = parsed.get("comment", "")
+    except Exception:
+        summary_ja = ""
+        comment = raw
     if not comment:
         return False
 
-    # 本文（コメント＋ハッシュタグ）を投稿してリーチ確保
     tweet_id = post_to_x(comment)
     if not tweet_id:
         return False
@@ -319,14 +360,14 @@ def ai_news_briefing() -> bool:
     log_observer_event("ai_news_briefing", comment, True)
     print(f"[observer] AIニュース投稿完了: {comment[:80]}", flush=True)
 
-    # 元記事URLは自分のツイートにリプライで追記（本文にリンクがあるとリーチが下がる）
     link = chosen.get("link", "")
     if link:
         import time as _time
         _time.sleep(3)
         post_to_x(link, reply_to=tweet_id)
 
-    _save_news_to_site(chosen, comment)
+    # x_posted:True に更新して再デプロイ
+    _mark_x_posted(link, comment, summary_ja)
     _deploy_beckyexists()
     return True
 
