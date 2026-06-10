@@ -1,5 +1,10 @@
 # Voice of Becky — stackchan-bridge config
 
+# ベッキーむずむずエンジン用 個人 Anthropic API キー
+# 会社アカウント（ANTHROPIC_API_KEY 環境変数）とは別に個人キーを使う
+# console.anthropic.com → API Keys で発行
+becky_api_key: "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"
+
 # Wake words: これらの文字列を含む発話だけ Claude Code に inject する
 wake_words:
   - "ベッキー"
