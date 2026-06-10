@@ -248,22 +248,17 @@ def _save_news_to_site(news: dict, comment: str) -> None:
     print("[observer] news.json 更新完了", flush=True)
 
 
-def _git_push_beckyexists() -> None:
-    """news.json の変更を git commit & push して Vercel に反映させる。"""
-    import datetime
-    rel_path = "iw-projects/beckyexists/news.json"
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    cmds = [
-        ["git", "-C", str(REPO_ROOT), "add", rel_path],
-        ["git", "-C", str(REPO_ROOT), "commit", "-m", f"chore(beckyexists): news update {ts}"],
-        ["git", "-C", str(REPO_ROOT), "push", "origin", "main"],
-    ]
-    for cmd in cmds:
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"[observer] git push 失敗: {result.stderr.strip()}", flush=True)
-            return
-    print("[observer] git push 完了 → Vercel デプロイ中", flush=True)
+def _deploy_beckyexists() -> None:
+    """npx vercel --prod で beckyexists.com に直接デプロイする（GitHub 経由不要）。"""
+    site_dir = REPO_ROOT / "iw-projects" / "beckyexists"
+    result = subprocess.run(
+        ["npx", "vercel", "--prod", "--yes"],
+        capture_output=True, text=True, cwd=str(site_dir), timeout=120,
+    )
+    if result.returncode == 0:
+        print("[observer] Vercel デプロイ完了 → beckyexists.com 更新済み", flush=True)
+    else:
+        print(f"[observer] Vercel デプロイ失敗: {result.stderr.strip()[:150]}", flush=True)
 
 
 def build_ai_comment_prompt(news: dict) -> str:
@@ -332,7 +327,7 @@ def ai_news_briefing() -> bool:
         post_to_x(link, reply_to=tweet_id)
 
     _save_news_to_site(chosen, comment)
-    _git_push_beckyexists()
+    _deploy_beckyexists()
     return True
 
 
