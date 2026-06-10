@@ -12,6 +12,7 @@
  */
 
 import { readFileSync, appendFileSync, existsSync } from "fs";
+import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -35,9 +36,11 @@ const args = process.argv.slice(2);
 const text = args[0];
 const replyToIdx = args.indexOf("--reply-to");
 const replyTo = replyToIdx !== -1 ? args[replyToIdx + 1] : null;
+const imageIdx = args.indexOf("--image");
+const imagePath = imageIdx !== -1 ? args[imageIdx + 1] : null;
 
 if (!text) {
-  process.stderr.write("Usage: post-tweet-cli.mjs <text> [--reply-to <tweet_id>]\n");
+  process.stderr.write("Usage: post-tweet-cli.mjs <text> [--reply-to <tweet_id>] [--image <path>]\n");
   process.exit(1);
 }
 
@@ -78,6 +81,12 @@ try {
   const tweetOptions = replyTo
     ? { reply: { in_reply_to_tweet_id: replyTo } }
     : {};
+
+  if (imagePath && existsSync(imagePath)) {
+    const imgBuffer = await readFile(imagePath);
+    const mediaId = await client.v1.uploadMedia(imgBuffer, { mimeType: "image/jpeg" });
+    tweetOptions.media = { media_ids: [mediaId] };
+  }
 
   const result = await client.v2.tweet(text, tweetOptions);
   const tweetId = result.data.id;

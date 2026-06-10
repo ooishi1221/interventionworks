@@ -152,12 +152,40 @@ def send_telegram(text: str) -> None:
 
 X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
 
-def post_to_x(text: str, reply_to: str | None = None) -> str | None:
+SPRITES_DIR = REPO_ROOT / "iw-projects" / "beckyexists" / "sprites"
+
+_EMOTION_KEYWORDS: dict[str, list[str]] = {
+    "smile":     ["嬉しい", "良い", "素敵", "最高", "好き", "ありがとう", "happy", "great", "love"],
+    "surprised": ["え", "まじ", "びっくり", "驚", "wow", "wait", "！！", "?!"],
+    "happy":     ["やった", "うれし", "ワクワク", "楽しみ", "exciting", "excited"],
+    "annoyed":   ["危険", "問題", "心配", "リスク", "怖", "danger", "risk", "concern"],
+    "singing":   ["音楽", "曲", "歌", "note", "music"],
+    "shy":       ["照れ", "恥ずかし", "ちょっと", "実は", "正直"],
+    "cheer":     ["完成", "リリース", "launch", "shipped", "ついに", "デプロイ"],
+    "peace":     ["研究", "論文", "発表", "paper", "research", "announced"],
+    "heart":     ["応援", "支持", "いいな", "support", "agree"],
+    "thumbsup":  ["おすすめ", "試して", "便利", "useful", "recommend", "try"],
+    "wink":      ["実は", "ちなみに", "by the way", "fun fact"],
+    "wave":      ["こんにちは", "hello", "hi", "初めて"],
+}
+
+def pick_emotion(text: str) -> str:
+    text_lower = text.lower()
+    for emotion, keywords in _EMOTION_KEYWORDS.items():
+        if any(k in text_lower for k in keywords):
+            return emotion
+    return "neutral"
+
+def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None) -> str | None:
     """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。"""
     try:
         cmd = ["node", str(X_TWEET_CLI), text]
         if reply_to:
             cmd += ["--reply-to", reply_to]
+        chosen = emotion or pick_emotion(text)
+        sprite = SPRITES_DIR / f"{chosen}.jpg"
+        if sprite.exists():
+            cmd += ["--image", str(sprite)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             tweet_id = result.stdout.strip()
