@@ -47,6 +47,11 @@ BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.js
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
 RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
+BECKYEXISTS_WALLET_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
+
+# Haiku 4.5 pricing (USD per million tokens)
+_HAIKU_INPUT_COST_PER_M  = 0.80
+_HAIKU_OUTPUT_COST_PER_M = 4.00
 
 NOTE_DEADLINES   = [
     {"title": "09番「おやすみの後」", "date": "2026-06-12", "days_warn": 3},
@@ -758,6 +763,33 @@ def build_scheduled_post_prompt(window_name: str) -> str:
         )
 
 
+def _update_wallet(input_tokens: int, output_tokens: int) -> None:
+    import datetime
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        month_str = now.strftime("%Y-%m")
+        wallet = {}
+        if BECKYEXISTS_WALLET_JSON.exists():
+            try:
+                wallet = json.loads(BECKYEXISTS_WALLET_JSON.read_text())
+            except Exception:
+                pass
+        if wallet.get("month") != month_str:
+            wallet = {"month": month_str, "input_tokens": 0, "output_tokens": 0,
+                      "estimated_cost_usd": 0.0, "monthly_target_usd": wallet.get("monthly_target_usd", 20.0),
+                      "call_count": 0}
+        wallet["input_tokens"]  = wallet.get("input_tokens", 0)  + input_tokens
+        wallet["output_tokens"] = wallet.get("output_tokens", 0) + output_tokens
+        wallet["call_count"]    = wallet.get("call_count", 0) + 1
+        cost = (wallet["input_tokens"]  / 1_000_000 * _HAIKU_INPUT_COST_PER_M
+              + wallet["output_tokens"] / 1_000_000 * _HAIKU_OUTPUT_COST_PER_M)
+        wallet["estimated_cost_usd"] = round(cost, 4)
+        wallet["updated_at"] = now.isoformat()
+        BECKYEXISTS_WALLET_JSON.write_text(json.dumps(wallet, ensure_ascii=False, indent=2))
+    except Exception as e:
+        print(f"[wallet] 更新失敗: {e}", flush=True)
+
+
 def _call_claude_api(prompt: str) -> str | None:
     try:
         import anthropic
@@ -769,6 +801,10 @@ def _call_claude_api(prompt: str) -> str | None:
             max_tokens=256,
             messages=[{"role": "user", "content": prompt}],
         )
+        try:
+            _update_wallet(msg.usage.input_tokens, msg.usage.output_tokens)
+        except Exception:
+            pass
         return msg.content[0].text.strip()
     except ImportError:
         result = subprocess.run(["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=30)
