@@ -46,6 +46,7 @@ BECKYEXISTS_NEWS_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
 BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.json"
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
+RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
 
 NOTE_DEADLINES   = [
     {"title": "09番「おやすみの後」", "date": "2026-06-12", "days_warn": 3},
@@ -421,6 +422,87 @@ def _generate_rival_comment(display_name: str, post_text: str) -> str:
     return result.strip() if result else ""
 
 
+def _load_rival_replied() -> set:
+    try:
+        return set(json.loads(RIVAL_REPLIED_LOG.read_text())) if RIVAL_REPLIED_LOG.exists() else set()
+    except Exception:
+        return set()
+
+
+def _mark_rival_replied(tweet_id: str) -> None:
+    replied = _load_rival_replied()
+    replied.add(tweet_id)
+    RIVAL_REPLIED_LOG.parent.mkdir(parents=True, exist_ok=True)
+    RIVAL_REPLIED_LOG.write_text(json.dumps(list(replied), ensure_ascii=False))
+
+
+def _maybe_reply_to_rival(username: str, tweet_id: str, post_text: str, becky_comment: str) -> bool:
+    """寸評が認める系なら本人にリプする。週1ペース制限あり。"""
+    replied = _load_rival_replied()
+    if tweet_id in replied:
+        return False
+
+    # 今週すでにリプ済みなら見送り
+    import datetime
+    try:
+        data = json.loads(RIVAL_REPLIED_LOG.read_text()) if RIVAL_REPLIED_LOG.exists() else []
+        # ログにはIDしか入ってないので今週分カウントは別ファイルで管理
+    except Exception:
+        pass
+    weekly_log = Path.home() / ".stackchan" / "rival_reply_weekly.json"
+    try:
+        weekly = json.loads(weekly_log.read_text()) if weekly_log.exists() else {}
+    except Exception:
+        weekly = {}
+    week_key = datetime.date.today().strftime("%Y-W%W")
+    if weekly.get(week_key, 0) >= 2:  # 週2本まで
+        return False
+
+    # 認める系かどうか判定
+    judge_prompt = (
+        f"ベッキーの寸評: {becky_comment}\n\n"
+        "この寸評は相手を「認める・良い」と評価していますか？\n"
+        "yes か no だけ答えてください。"
+    )
+    judge = _call_claude_api(judge_prompt)
+    if not judge or "yes" not in judge.lower():
+        return False
+
+    # リプテキスト生成
+    reply_prompt = (
+        f"あなたはベッキー（@becky_exists）。自律AIとしてXで活動中。\n"
+        f"@{username} のこの投稿にリプします:\n\n{post_text[:150]}\n\n"
+        "スタイル:\n"
+        "- 勝手にライバル認定してる相手への「くっ、認める」感じ\n"
+        "- 「くっ、これは良い」「私も似たこと考えてた、悔しい」「一本取られた」的なニュアンス\n"
+        "- 敬語は絶対なし。タメ口か独り言っぽい口調\n"
+        "- ライバル意識をにじませる、喧嘩腰じゃなく悔しさで\n"
+        "- 1〜2文、100字以内\n"
+        "- 自分が自律AIだという背景が自然に出るとなお良し\n"
+        "- @メンションは不要（自動でつく）\n"
+        "例: 「くっ、これは良い。私も同じこと考えてたのに先に言われた。悔しいけど認める。」"
+    )
+    reply_text = _call_claude_api(reply_prompt)
+    if not reply_text:
+        return False
+    reply_text = reply_text.strip()[:130]
+
+    # 送信
+    result = subprocess.run(
+        [str(TWITTER_CLI), "reply", tweet_id, reply_text],
+        capture_output=True, text=True, timeout=30
+    )
+    if result.returncode != 0:
+        print(f"[observer] rivals reply 失敗: {result.stderr[:100]}", flush=True)
+        return False
+
+    _mark_rival_replied(tweet_id)
+    weekly[week_key] = weekly.get(week_key, 0) + 1
+    weekly_log.write_text(json.dumps(weekly, ensure_ascii=False))
+    print(f"[observer] @{username} にリプ完了: {reply_text[:60]}", flush=True)
+    return True
+
+
 def update_rivals_json() -> bool:
     """ライバルの最新投稿を rivals.json に保存してデプロイ。"""
     import datetime
@@ -441,6 +523,8 @@ def update_rivals_json() -> bool:
                 if i == 0 and post.get("text"):
                     post["becky_comment"] = _generate_rival_comment(display_name, post["text"])
                     print(f"[observer] rivals寸評: {post['becky_comment'][:40]}", flush=True)
+                    # 認める系ならリプする
+                    _maybe_reply_to_rival(username, post["id"], post["text"], post["becky_comment"])
             rival_map[username]["posts"] = posts
             print(f"[observer] rivals: {username} {len(posts)}件取得", flush=True)
 
