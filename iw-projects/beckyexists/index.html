@@ -152,6 +152,24 @@
       to   { transform: rotate(360deg); }
     }
 
+    /* 右下常駐キャラ */
+    .becky-corner {
+      position: fixed;
+      bottom: 0;
+      right: 16px;
+      width: 160px;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0.95;
+    }
+    .becky-corner img {
+      width: 100%;
+      display: block;
+    }
+    @media (max-width: 600px) {
+      .becky-corner { width: 100px; right: 8px; }
+    }
+
     /* コーナーブラケット */
     .room::before, .room::after,
     .corner-br, .corner-bl {
@@ -961,6 +979,9 @@
 
     <div class="corner-br"></div>
     <div class="corner-bl"></div>
+    <div class="becky-corner">
+      <img src="becky-standing.png" alt="Becky" />
+    </div>
 
     <!-- header bar -->
     <header class="room-header">
