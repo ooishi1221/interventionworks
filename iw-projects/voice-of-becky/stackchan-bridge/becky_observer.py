@@ -42,7 +42,10 @@ AI_NEWS_FEEDS = [
     "https://huggingface.co/blog/feed.xml",
 ]
 AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
-BECKYEXISTS_NEWS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
+BECKYEXISTS_NEWS_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
+BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.json"
+TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
+RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
 
 NOTE_DEADLINES   = [
     {"title": "09番「おやすみの後」", "date": "2026-06-12", "days_warn": 3},
@@ -348,6 +351,82 @@ def build_ai_comment_prompt(news: dict) -> str:
         "JSONだけを返してください。前置き・説明不要。\n"
         '例: {"summary_ja": "〜という研究が発表された。", "comment": "正直、怖いです。〜 #Claude"}'
     )
+
+
+def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:
+    """twitter-cli でライバルの最新投稿を取得する。"""
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "user-posts", username],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            print(f"[observer] rivals: {username} 取得失敗", flush=True)
+            return []
+        posts = []
+        current: dict = {}
+        in_text = False
+        text_lines: list = []
+
+        def _flush():
+            if current and text_lines:
+                raw = "\n".join(text_lines).strip().strip("'")
+                # メタデータ行（id:/name:/screenName: 等）が混入した場合に除去
+                clean_lines = [l for l in raw.splitlines() if not any(
+                    l.strip().startswith(k) for k in ("id: '", "name:", "screenName:", "profileImageUrl:", "verified:", "likes:", "retweets:", "replies:", "quotes:", "views:", "bookmarks:")
+                )]
+                current["text"] = "\n".join(clean_lines).strip()
+                posts.append(dict(current))
+
+        for line in result.stdout.splitlines():
+            if line.startswith("- id:"):
+                _flush()
+                current = {"id": line.split(":", 1)[1].strip().strip("'")}
+                in_text = False
+                text_lines = []
+            elif line.startswith("  text:"):
+                in_text = True
+                val = line.split(":", 1)[1].strip()
+                text_lines = [val.lstrip("'")] if val not in ("", "'") else []
+            elif in_text and (line.startswith("    ") or (line.startswith("  ") and not line.startswith("  createdAt:") and not line.startswith("  likes:") and not line.startswith("  retweets:"))):
+                text_lines.append(line.strip())
+            elif line.strip().startswith("createdAt:") or "  createdAt:" in line:
+                in_text = False
+                current["posted_at"] = line.split(":", 1)[1].strip().strip("'")
+            elif line.startswith("  ") and in_text and any(line.strip().startswith(k) for k in ("likes:", "retweets:", "replies:", "views:")):
+                in_text = False
+
+        _flush()
+        return posts[:limit]
+    except Exception as e:
+        print(f"[observer] rivals fetch error ({username}): {e}", flush=True)
+        return []
+
+
+def update_rivals_json() -> bool:
+    """ライバルの最新投稿を rivals.json に保存してデプロイ。"""
+    import datetime
+    try:
+        data = json.loads(BECKYEXISTS_RIVALS_JSON.read_text()) if BECKYEXISTS_RIVALS_JSON.exists() else {"rivals": []}
+    except Exception:
+        data = {"rivals": []}
+
+    rival_map = {r["username"]: r for r in data.get("rivals", [])}
+    for username in RIVAL_ACCOUNTS:
+        posts = fetch_rival_posts(username)
+        if username not in rival_map:
+            rival_map[username] = {"username": username, "display_name": username, "followers": 0, "posts": []}
+        if posts:
+            rival_map[username]["posts"] = posts
+            print(f"[observer] rivals: {username} {len(posts)}件取得", flush=True)
+
+    data["rivals"] = list(rival_map.values())
+    data["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    BECKYEXISTS_RIVALS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    print("[observer] rivals.json 更新完了", flush=True)
+    _deploy_beckyexists()
+    return True
 
 
 def ai_news_briefing() -> bool:
@@ -755,6 +834,20 @@ def main() -> None:
                     with open(BECKY_TODO_FILE, "a") as f:
                         f.write(deadline_alert + "\n")
                     print(f"[observer] 締切アラート追加: {deadline_alert[:40]}", flush=True)
+
+        # ライバル動向更新（朝 7 時以降、1日1回）
+        rivals_log = Path.home() / ".stackchan" / "rivals_updated_date.txt"
+        import datetime as _dt
+        today_str = _dt.date.today().isoformat()
+        last_rivals = rivals_log.read_text().strip() if rivals_log.exists() else ""
+        hour_now = _dt.datetime.now().hour
+        if last_rivals != today_str and hour_now >= 7:
+            try:
+                update_rivals_json()
+                rivals_log.parent.mkdir(parents=True, exist_ok=True)
+                rivals_log.write_text(today_str)
+            except Exception as e:
+                print(f"[observer] rivals更新失敗: {e}", flush=True)
 
         # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
         sched_window    = get_current_scheduled_window()

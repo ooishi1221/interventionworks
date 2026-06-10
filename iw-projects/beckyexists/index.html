@@ -444,6 +444,102 @@
       margin-left: auto;
     }
 
+    /* ── tab bar ── */
+    .tab-bar {
+      display: flex;
+      gap: 0.2rem;
+    }
+
+    .tab {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sub2);
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .tab:hover { color: var(--sub); background: var(--border2); }
+
+    .tab.active {
+      color: var(--mint);
+      background: var(--mint-dim);
+    }
+
+    .tab-panel { }
+
+    /* ── rival card ── */
+    .rival-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .rival-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rival-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .rival-handle {
+      font-size: 0.7rem;
+      color: var(--mint);
+      opacity: 0.7;
+    }
+
+    .rival-followers {
+      font-size: 0.65rem;
+      color: var(--sub2);
+      margin-left: auto;
+    }
+
+    .rival-post {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.6rem;
+      font-size: 0.84rem;
+      line-height: 1.7;
+      color: var(--sub);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .rival-post-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      font-size: 0.65rem;
+      color: var(--sub2);
+    }
+
+    .rival-post-meta a {
+      color: var(--mint);
+      text-decoration: none;
+      opacity: 0.7;
+    }
+    .rival-post-meta a:hover { opacity: 1; }
+
+    .rivals-updated {
+      font-size: 0.65rem;
+      color: var(--sub2);
+      margin-bottom: 1.2rem;
+    }
+
     /* ── empty state ── */
     .feed-empty {
       padding: 3rem 0;
@@ -561,12 +657,25 @@
     <!-- right: feed -->
     <main class="feed-panel">
       <div class="feed-header">
-        <span class="feed-label">観測ログ</span>
-        <span class="feed-count" id="feed-count"></span>
+        <div class="tab-bar">
+          <button class="tab active" data-tab="news">観測ログ <span class="feed-count" id="feed-count"></span></button>
+          <button class="tab" data-tab="rivals">ライバル動向</button>
+        </div>
       </div>
-      <div id="feed-list">
-        <div class="feed-empty">
-          ベッキーが何かを見つけてくるのを待ってる…
+
+      <div id="tab-news" class="tab-panel">
+        <div id="feed-list">
+          <div class="feed-empty">
+            ベッキーが何かを見つけてくるのを待ってる…
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-rivals" class="tab-panel" hidden>
+        <div id="rivals-list">
+          <div class="feed-empty">
+            ライバルの動向を監視中…
+          </div>
         </div>
       </div>
     </main>
@@ -574,6 +683,63 @@
   </div>
 
   <script>
+    // タブ切り替え
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).hidden = false;
+      });
+    });
+
+    // ライバル動向
+    (async () => {
+      try {
+        const res = await fetch('/rivals.json?_=' + Date.now());
+        const data = await res.json();
+        const list = document.getElementById('rivals-list');
+        if (!data.rivals || data.rivals.every(r => !r.posts.length)) {
+          list.innerHTML = '<div class="feed-empty">ライバルの投稿を収集中…<br>しばらくお待ちください</div>';
+          return;
+        }
+        list.innerHTML = '';
+        if (data.updated_at) {
+          const upd = document.createElement('div');
+          upd.className = 'rivals-updated';
+          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
+          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前');
+          list.appendChild(upd);
+        }
+        data.rivals.forEach(rival => {
+          if (!rival.posts.length) return;
+          const sec = document.createElement('div');
+          sec.className = 'rival-section';
+          const hdr = document.createElement('div');
+          hdr.className = 'rival-header';
+          hdr.innerHTML = `
+            <span class="rival-name">${esc(rival.display_name)}</span>
+            <span class="rival-handle">@${esc(rival.username)}</span>
+            <span class="rival-followers">フォロワー ${rival.followers.toLocaleString()}</span>
+          `;
+          sec.appendChild(hdr);
+          rival.posts.forEach(post => {
+            const card = document.createElement('div');
+            card.className = 'rival-post';
+            const diff = post.posted_at ? Math.floor((Date.now() - new Date(post.posted_at)) / 60000) : null;
+            const relTime = diff !== null ? (diff < 60 ? diff + '分前' : diff < 1440 ? Math.floor(diff/60) + '時間前' : Math.floor(diff/1440) + '日前') : '';
+            card.innerHTML = `${esc(post.text)}<div class="rival-post-meta">
+              ${relTime ? `<span>${relTime}</span>` : ''}
+              ${post.id ? `<a href="https://x.com/${esc(rival.username)}/status/${esc(post.id)}" target="_blank" rel="noopener">→ 元投稿</a>` : ''}
+            </div>`;
+            sec.appendChild(card);
+          });
+          list.appendChild(sec);
+        });
+      } catch (_) {}
+    })();
+
+    // 観測ログ
     (async () => {
       try {
         const res = await fetch('/news.json?_=' + Date.now());

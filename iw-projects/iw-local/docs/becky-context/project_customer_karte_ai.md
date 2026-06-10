@@ -324,6 +324,19 @@ iPhone を会議室に置いてしゃべれば Mac の私がリアルタイム�
 - [ ] GnH カルテへの自動書き込み連携
 - [ ] バックグラウンド録音（iOS 制限あり、PWA 化で部分解決）
 
+## 2026-06-02 午後 — MAI Webアプリ版公開・ユーザー分離・GnH 本番マージ
+
+### MAI Webアプリ版（`https://mai.intervention.jp`）
+- ブラウザで開くだけでインストール不要（iPhone Safari / Chrome 対応）
+- フッターナビ5タブ（ホーム/履歴/録音/お願い/設定）— iPhoneアプリと同じ構成
+- **ユーザー分離**: 設定でユーザー名を入れると `~/.meeting/{username}/current.txt` に分離保存
+- **URLコピーボタン**: 設定画面に「Claude Codeで読む → URL」表示 + コピーボタン
+- 友達への共有方法: URL共有のみでOK（`/current/{username}` を Claude Code の WebFetch で読む）
+
+### GnH 本番マージ
+- `feat/gnh-flick-stage3` → `main` マージ完了 + 本番デプロイ
+- **`https://gnh-pink.vercel.app`** でログイン不要で誰でもアクセス可能
+
 ## 2026-06-02 — GnH メイン画面リデザイン完了
 
 人体図を廃止して UX を根本から整理。

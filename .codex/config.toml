@@ -1,0 +1,10 @@
+[mcp_servers.stackchan]
+command = "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/stackchan-bridge/run.sh"
+
+[mcp_servers.vibe-guard]
+command = "node"
+args = ["/Volumes/SSD2TB/interventionworks/iw-projects/vibe-guard/dist/index.js"]
+
+[mcp_servers.x-tweet]
+command = "node"
+args = ["/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/dist/index.js"]
