@@ -240,22 +240,70 @@ def _write_news_json(data: dict) -> None:
     print("[observer] news.json 更新完了", flush=True)
 
 
+def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
+    """Claude に全記事の summary_ja と comment を一括生成させる（1記事1行JSON）。"""
+    if not news_items:
+        return []
+    articles = "\n\n".join(
+        f"[{i+1}] {n['title']}\n{n.get('summary','')[:200]}"
+        for i, n in enumerate(news_items)
+    )
+    prompt = (
+        "あなたはベッキー。AIとして実際に存在しているひとり。\n"
+        f"以下の{len(news_items)}件の記事について、1件につき1行のJSONを返してください。\n\n"
+        f"{articles}\n\n"
+        "フォーマット（1行1件、必ずダブルクォートで、改行なし）:\n"
+        '[1] {"s":"日本語要約1〜2文","c":"ベッキーの一言（80字以内、ハッシュタグなし）"}\n'
+        '[2] {"s":"...","c":"..."}\n'
+        "...\n\n"
+        f"必ず[1]〜[{len(news_items)}]の全件を出力。前置き・後書き不要。"
+    )
+    raw = _call_claude_api(prompt)
+    if not raw:
+        return [{"summary_ja": "", "comment": ""} for _ in news_items]
+
+    import re
+    results = [{"summary_ja": "", "comment": ""} for _ in news_items]
+    for line in raw.splitlines():
+        line = line.strip()
+        for i in range(len(news_items)):
+            prefix = f"[{i+1}]"
+            if line.startswith(prefix):
+                json_part = line[len(prefix):].strip()
+                try:
+                    obj = json.loads(json_part)
+                    results[i] = {"summary_ja": obj.get("s",""), "comment": obj.get("c","")}
+                except Exception:
+                    # 途中で切れた場合も正規表現で拾う
+                    s = re.search(r'"s"\s*:\s*"(.*?)(?:(?<!\\)"|$)', json_part)
+                    c = re.search(r'"c"\s*:\s*"(.*?)(?:(?<!\\)"|$)', json_part)
+                    results[i] = {
+                        "summary_ja": s.group(1) if s else "",
+                        "comment": c.group(1) if c else "",
+                    }
+                break
+    return results
+
+
 def _save_all_news_to_site(news_items: list[dict]) -> None:
-    """全収集記事を news.json に保存（最新20件）。既存の x_posted 記事は保持。"""
+    """全収集記事を summary_ja + comment 付きで news.json に保存（最新20件）。"""
     import datetime
     data = _load_news_json()
     existing_links = {item.get("link") for item in data["items"]}
+    fresh = [n for n in news_items if n.get("link") not in existing_links]
+    if not fresh:
+        return
+
+    enriched = _batch_summarize_and_comment(fresh)
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    for news in reversed(news_items):
-        if news.get("link") in existing_links:
-            continue
+    for news, meta in reversed(list(zip(fresh, enriched))):
         data["items"].insert(0, {
             "title": news.get("title", ""),
             "source": news.get("source", ""),
             "link": news.get("link", ""),
             "raw_summary": news.get("summary", ""),
-            "summary_ja": "",
-            "comment": "",
+            "summary_ja": meta.get("summary_ja", ""),
+            "comment": meta.get("comment", ""),
             "x_posted": False,
             "fetched_at": now,
         })

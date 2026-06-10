@@ -466,36 +466,26 @@
             return Math.floor(diff / 1440) + '日前';
           })();
 
-          if (item.x_posted && item.comment) {
-            // フルカード（X に発信したもの）
-            div.className = 'news-card x-posted';
-            div.innerHTML = `
-              <div class="x-badge">𝕏 発信済み</div>
-              ${item.summary_ja ? `
-                <div class="news-summary-label">概要</div>
-                <div class="news-summary">${esc(item.summary_ja)}</div>
-              ` : ''}
+          div.className = 'news-card' + (item.x_posted ? ' x-posted' : '');
+          div.innerHTML = `
+            ${item.x_posted ? '<div class="x-badge">𝕏 発信済み</div>' : ''}
+            ${item.summary_ja ? `
+              <div class="news-summary-label">概要</div>
+              <div class="news-summary">${esc(item.summary_ja)}</div>
+            ` : (item.raw_summary ? `
+              <div class="news-summary-label">概要</div>
+              <div class="news-summary">${esc(item.raw_summary)}</div>
+            ` : '')}
+            ${item.comment ? `
               <div class="news-opinion-label">ベッキーの意見</div>
               <div class="news-opinion">${esc(item.comment)}</div>
-              <div class="card-meta">
-                <span class="meta-source">${esc(item.source || '')}</span>
-                ${item.link ? `<a class="meta-link" href="${escA(item.link)}" target="_blank" rel="noopener">→ 元記事</a>` : ''}
-                ${relTime ? `<span class="meta-time">${relTime}</span>` : ''}
-              </div>
-            `;
-          } else {
-            // コンパクトカード（収集中のもの）
-            div.className = 'news-card reading';
-            div.innerHTML = `
-              <div class="reading-title">${esc(item.title || '')}</div>
-              ${item.raw_summary ? `<div class="reading-snippet">${esc(item.raw_summary)}</div>` : ''}
-              <div class="card-meta">
-                <span class="meta-source">${esc(item.source || '')}</span>
-                ${item.link ? `<a class="meta-link" href="${escA(item.link)}" target="_blank" rel="noopener">→ 読む</a>` : ''}
-                ${relTime ? `<span class="meta-time">${relTime}</span>` : ''}
-              </div>
-            `;
-          }
+            ` : ''}
+            <div class="card-meta">
+              <span class="meta-source">${esc(item.source || '')}</span>
+              ${item.link ? `<a class="meta-link" href="${escA(item.link)}" target="_blank" rel="noopener">→ 元記事</a>` : ''}
+              ${relTime ? `<span class="meta-time">${relTime}</span>` : ''}
+            </div>
+          `;
 
           list.appendChild(div);
         });
