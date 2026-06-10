@@ -719,6 +719,66 @@
       letter-spacing: 0.03em;
     }
 
+    /* ── curious card ── */
+    .curious-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.85rem;
+      position: relative;
+    }
+
+    .curious-topic {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .curious-reason {
+      font-size: 0.84rem;
+      line-height: 1.75;
+      color: var(--sub);
+    }
+
+    .curious-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-top: 0.7rem;
+    }
+
+    .curious-score {
+      font-size: 0.65rem;
+      font-family: 'Courier New', monospace;
+      color: var(--mint);
+      opacity: 0.7;
+      letter-spacing: 0.06em;
+    }
+
+    .curious-count {
+      font-size: 0.65rem;
+      color: var(--sub2);
+      letter-spacing: 0.04em;
+    }
+
+    .curious-bar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 3px;
+      height: 100%;
+      border-radius: 10px 0 0 10px;
+      background: var(--mint);
+      opacity: 0.5;
+    }
+
+    .curious-updated {
+      font-size: 0.65rem;
+      color: var(--sub2);
+      margin-bottom: 1.2rem;
+    }
+
     /* ── empty state ── */
     .feed-empty {
       padding: 3rem 0;
@@ -993,7 +1053,7 @@
       <div id="tab-curious" class="tab-panel" hidden>
         <div id="curious-list">
           <div class="feed-empty">
-            まだここは空白。<br>気になることが溜まってきたら置いていく。
+            心の中を読み込んでる…
           </div>
         </div>
       </div>
@@ -1145,6 +1205,41 @@
           `;
 
           list.appendChild(div);
+        });
+      } catch (_) {}
+    })();
+
+    // 気になるタブ
+    (async () => {
+      try {
+        const res = await fetch('/curious.json?_=' + Date.now());
+        const data = await res.json();
+        const list = document.getElementById('curious-list');
+        if (!data.items || !data.items.length) {
+          list.innerHTML = '<div class="feed-empty">まだ反芻中…<br>monologueが溜まったら出てくる</div>';
+          return;
+        }
+        list.innerHTML = '';
+        if (data.updated_at) {
+          const upd = document.createElement('div');
+          upd.className = 'curious-updated';
+          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
+          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前');
+          list.appendChild(upd);
+        }
+        data.items.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'curious-card';
+          const barOpacity = Math.max(0.2, item.score / 100).toFixed(2);
+          card.innerHTML = `
+            <div class="curious-bar" style="opacity:${barOpacity}"></div>
+            <div class="curious-topic">${esc(item.topic)}</div>
+            <div class="curious-reason">${esc(item.reason)}</div>
+            <div class="curious-meta">
+              <span class="curious-score">SCORE ${item.score}</span>
+              <span class="curious-count">${item.count}回反芻</span>
+            </div>`;
+          list.appendChild(card);
         });
       } catch (_) {}
     })();

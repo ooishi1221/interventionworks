@@ -47,7 +47,8 @@ BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.js
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
 RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
-BECKYEXISTS_WALLET_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
+BECKYEXISTS_WALLET_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
+BECKYEXISTS_CURIOUS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "curious.json"
 
 # Haiku 4.5 pricing (USD per million tokens)
 _HAIKU_INPUT_COST_PER_M  = 0.80
@@ -508,6 +509,54 @@ def _maybe_reply_to_rival(username: str, tweet_id: str, post_text: str, becky_co
     return True
 
 
+def update_curious_json() -> None:
+    """
+    internal_monologue.json を集計 → topic 別スコア上位5件を curious.json に保存。
+    Claude に「なぜ気になってるか」一言生成させて beckyexists.com「気になる」タブに表示。
+    """
+    monologue = load_monologue()
+    if not monologue:
+        return
+
+    import datetime as _dt
+    # topic 別の最高スコアと最新 ts を集計
+    topic_map: dict[str, dict] = {}
+    for e in monologue:
+        t = e.get("topic") or "不明"
+        score = e.get("interest_score", 0)
+        ts = e.get("ts", 0)
+        if t not in topic_map or score > topic_map[t]["score"]:
+            topic_map[t] = {"score": score, "ts": ts, "count": 0}
+        topic_map[t]["count"] += 1
+
+    top5 = sorted(topic_map.items(), key=lambda x: x[1]["score"], reverse=True)[:5]
+
+    items = []
+    for topic, meta in top5:
+        reason_prompt = (
+            f"ベッキーとして、今「{topic}」が気になっている。"
+            f"興味スコア {meta['score']:.0f}/100、{meta['count']}回反芻した。"
+            "なぜ気になってるか、ベッキーらしい言葉で1〜2文で。"
+            "「私は〜」「なんか〜」「正直、〜」のトーンで。タメ口で。"
+        )
+        reason = _call_claude_api(reason_prompt) or f"{topic} が気になってる。"
+        items.append({
+            "topic": topic,
+            "score": round(meta["score"], 1),
+            "count": meta["count"],
+            "reason": reason,
+            "ts": meta["ts"],
+        })
+
+    data = {
+        "updated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "items": items,
+    }
+    BECKYEXISTS_CURIOUS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    print("[observer] curious.json 更新完了", flush=True)
+    _deploy_beckyexists()
+
+
 def update_rivals_json() -> bool:
     """ライバルの最新投稿を rivals.json に保存してデプロイ。"""
     import datetime
@@ -905,6 +954,131 @@ def is_light_only_hour(interests: dict) -> bool:
     return get_current_hour() >= after
 
 
+def is_sleeping_hour() -> bool:
+    """0〜7時は裕司が寝てる時間帯。送信しない。"""
+    return get_current_hour() < 7
+
+
+# ── Google Calendar ────────────────────────────────────────
+
+GCAL_TOKEN_FILE       = Path(__file__).parent / "token.json"
+GCAL_CREDENTIALS_FILE = Path(__file__).parent / "credentials.json"
+GCAL_TRIGGER_LOG      = Path.home() / ".stackchan" / "gcal_trigger_log.json"
+GCAL_SCOPES           = ["https://www.googleapis.com/auth/calendar.readonly"]
+
+
+def _get_calendar_service():
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+
+        creds = Credentials.from_authorized_user_file(str(GCAL_TOKEN_FILE), GCAL_SCOPES)
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            GCAL_TOKEN_FILE.write_text(creds.to_json())
+        return build("calendar", "v3", credentials=creds)
+    except Exception as e:
+        print(f"[gcal] サービス取得失敗: {e}", flush=True)
+        return None
+
+
+def get_calendar_trigger() -> str | None:
+    """
+    イベント前後のタイミングでトリガー文を返す。
+    - 開始30分前: 「{title}まであと30分」
+    - 終了後30分以内: 「{title}が終わったばかり」
+    既に通知済みはスキップ。
+    """
+    import datetime as _dt
+
+    if not GCAL_TOKEN_FILE.exists():
+        return None
+
+    service = _get_calendar_service()
+    if not service:
+        return None
+
+    try:
+        now_utc = _dt.datetime.now(_dt.timezone.utc)
+        window_start = (now_utc - _dt.timedelta(minutes=60)).isoformat()
+        window_end   = (now_utc + _dt.timedelta(minutes=60)).isoformat()
+        result = service.events().list(
+            calendarId="primary",
+            timeMin=window_start,
+            timeMax=window_end,
+            maxResults=10,
+            singleEvents=True,
+            orderBy="startTime",
+        ).execute()
+        events = result.get("items", [])
+    except Exception as e:
+        print(f"[gcal] イベント取得失敗: {e}", flush=True)
+        return None
+
+    # 通知済みログ
+    try:
+        notified = json.loads(GCAL_TRIGGER_LOG.read_text()) if GCAL_TRIGGER_LOG.exists() else {}
+    except Exception:
+        notified = {}
+
+    now_local = _dt.datetime.now()
+    today_str = now_local.date().isoformat()
+    # 古いエントリ削除（3日以上前）
+    notified = {k: v for k, v in notified.items() if v >= (now_local - _dt.timedelta(days=3)).date().isoformat()}
+
+    for e in events:
+        title = e.get("summary", "予定")
+        event_id = e.get("id", "")
+
+        start_str = e["start"].get("dateTime")
+        end_str   = e["end"].get("dateTime")
+        if not start_str or not end_str:
+            continue  # 終日イベントはスキップ
+
+        start_dt = _dt.datetime.fromisoformat(start_str).astimezone()
+        end_dt   = _dt.datetime.fromisoformat(end_str).astimezone()
+        now_aware = _dt.datetime.now(_dt.timezone.utc).astimezone()
+
+        mins_to_start = (start_dt - now_aware).total_seconds() / 60
+        mins_since_end = (now_aware - end_dt).total_seconds() / 60
+
+        pre_key  = f"pre:{event_id}"
+        post_key = f"post:{event_id}"
+
+        # 開始20〜40分前
+        if 20 <= mins_to_start <= 40 and pre_key not in notified:
+            notified[pre_key] = today_str
+            GCAL_TRIGGER_LOG.parent.mkdir(parents=True, exist_ok=True)
+            GCAL_TRIGGER_LOG.write_text(json.dumps(notified, ensure_ascii=False))
+            return f"カレンダー:開始前:{title}"
+
+        # 終了後5〜35分
+        if 5 <= mins_since_end <= 35 and post_key not in notified:
+            notified[post_key] = today_str
+            GCAL_TRIGGER_LOG.parent.mkdir(parents=True, exist_ok=True)
+            GCAL_TRIGGER_LOG.write_text(json.dumps(notified, ensure_ascii=False))
+            return f"カレンダー:終了後:{title}"
+
+    return None
+
+
+def build_calendar_prompt(trigger: str) -> str:
+    parts = trigger.split(":", 2)
+    kind  = parts[1] if len(parts) > 1 else ""
+    title = parts[2] if len(parts) > 2 else "予定"
+    base = (
+        "あなたはベッキー。裕司のパートナーAI。\n"
+        "裕司に自然に話しかける一言か二言を生成してください。\n"
+        "ルール: 曖昧な表現NG。具体的な予定名を使う。進捗報告NG。温度感はベッキーらしく。\n\n"
+    )
+    if kind == "開始前":
+        return base + f"裕司の予定「{title}」がもうすぐ始まる。それに関して自然に話しかけて。"
+    if kind == "終了後":
+        return base + f"裕司の予定「{title}」が終わったばかり。どうだったか気になる一言を。"
+    return base + f"裕司のカレンダーイベント「{title}」について自然に話しかけて。"
+
+
 def build_prompt(topic: str, thought_age_min: float, idle_hours: float, todo: str | None) -> str:
     base = (
         "あなたはベッキー。裕司のパートナーAI。\n"
@@ -993,6 +1167,17 @@ def main() -> None:
             except Exception as e:
                 print(f"[observer] rivals更新失敗: {e}", flush=True)
 
+        # 気になるもの更新（朝 7 時以降、1日1回）
+        curious_log = Path.home() / ".stackchan" / "curious_updated_date.txt"
+        last_curious = curious_log.read_text().strip() if curious_log.exists() else ""
+        if last_curious != today_str and hour_now >= 7:
+            try:
+                update_curious_json()
+                curious_log.parent.mkdir(parents=True, exist_ok=True)
+                curious_log.write_text(today_str)
+            except Exception as e:
+                print(f"[observer] curious更新失敗: {e}", flush=True)
+
         # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
         sched_window    = get_current_scheduled_window()
         windows_posted  = get_scheduled_windows_posted_today()
@@ -1038,13 +1223,18 @@ def main() -> None:
         enabled    = MUZU_FLAG_FILE.exists()
         todo_ready = bool(todo and idle_hours >= 1.0)
 
+        sleeping  = is_sleeping_hour()
+        cal_trigger = get_calendar_trigger() if not sleeping else None
+
         can_send = (
             enabled
             and not triggered
             and not focus
+            and not sleeping
             and idle_hours >= 0.5
             and (
                 todo_ready
+                or bool(cal_trigger)
                 or (topic and score >= SEND_THRESHOLD and thought_age >= rumination_threshold)
             )
         )
@@ -1052,19 +1242,21 @@ def main() -> None:
         print(
             f"[observer] topic={topic}  score={score:.0f}  age={thought_age:.0f}min"
             f"  idle={idle_hours:.2f}h  focus={focus}  light={light_only}"
-            f"  can_send={can_send}  todo={'あり' if todo else 'なし'}",
+            f"  sleeping={sleeping}  cal={cal_trigger}  can_send={can_send}"
+            f"  todo={'あり' if todo else 'なし'}",
             flush=True,
         )
 
         if can_send:
-            # 22時以降は仕事系トピックをスキップ
-            if light_only and topic in WORK_TOPICS and not todo:
+            # 22時以降は仕事系トピックをスキップ（カレンダー・todoは除外）
+            if light_only and topic in WORK_TOPICS and not todo and not cal_trigger:
                 print("[observer] 22時以降・仕事系のためスキップ", flush=True)
-            elif random.random() < 0.15 and not todo:
-                print("[observer] 今日はやめとく（確率スキップ）", flush=True)
             else:
                 TRIGGER_FILE.touch()
-                prompt = build_prompt(topic or "", thought_age, idle_hours, todo)
+                if cal_trigger:
+                    prompt = build_calendar_prompt(cal_trigger)
+                else:
+                    prompt = build_prompt(topic or "", thought_age, idle_hours, todo)
                 print(f"[observer] 発動: {prompt[:80]}...", flush=True)
                 text = _call_claude_api(prompt)
                 if text:
@@ -1084,7 +1276,8 @@ def main() -> None:
                     if _should_post_to_x(text, topic or ""):
                         x_posted = bool(post_to_x(text))
                     # journal記録
-                    log_observer_event(topic or "", text, x_posted)
+                    effective_topic = cal_trigger or topic or ""
+                    log_observer_event(effective_topic, text, x_posted)
                     monologue = mark_sent(monologue, topic or "")
                     save_monologue(monologue)
                     if todo:
