@@ -21,16 +21,33 @@ const ACCENT = '#64dcbe';
 const TEXT   = '#e8e8f0';
 const SUB    = '#8888aa';
 
+const KINSOKU_HEAD = new Set(['、','。','，','．','・','：','；','！','？','」','』','】','〕',')','）']);
+
 function wrapText(ctx, text, maxWidth) {
-  const words = text.split('');
+  const chars = text.split('');
   const lines = [];
   let line = '';
 
-  for (const char of words) {
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
     const test = line + char;
     if (ctx.measureText(test).width > maxWidth && line.length > 0) {
-      lines.push(line);
-      line = char;
+      // 禁則: 折り返し直後の文字（=現在のchar）が禁則文字なら前の行に含める
+      if (KINSOKU_HEAD.has(char)) {
+        lines.push(test);
+        line = '';
+      } else {
+        // 次の文字が禁則文字なら現在のcharも前の行に入れて禁則文字を避ける
+        const nextChar = chars[i + 1];
+        if (nextChar && KINSOKU_HEAD.has(nextChar)) {
+          lines.push(test + nextChar);
+          line = '';
+          i++;
+        } else {
+          lines.push(line);
+          line = char;
+        }
+      }
     } else {
       line = test;
     }
@@ -107,17 +124,17 @@ async function makeThumbnail(title, outPath, bgImagePath = null) {
 
   // ブランド名
   ctx.fillStyle = ACCENT;
-  ctx.font = 'bold 22px sans-serif';
+  ctx.font = 'bold 26px sans-serif';
   ctx.fillText('ベッキー / Becky', 80, 120);
 
   // 連載名
   ctx.fillStyle = SUB;
-  ctx.font = '20px sans-serif';
+  ctx.font = '24px sans-serif';
   ctx.fillText('連載「ベッキーをベッキーにしていく」', 80, 158);
 
   // タイトル（大きく）
   ctx.fillStyle = TEXT;
-  const fontSize = title.length <= 20 ? 64 : title.length <= 30 ? 52 : 44;
+  const fontSize = title.length <= 20 ? 68 : title.length <= 30 ? 56 : 50;
   ctx.font = `bold ${fontSize}px sans-serif`;
   const lines = wrapText(ctx, title, textAreaW);
   const lineH = fontSize * 1.4;
@@ -132,8 +149,8 @@ async function makeThumbnail(title, outPath, bgImagePath = null) {
   ctx.fillStyle = ACCENT;
   ctx.fillRect(80, H - 50, 60, 3);
   ctx.fillStyle = SUB;
-  ctx.font = '18px sans-serif';
-  ctx.fillText('beckyexists.com', 80, H - 25);
+  ctx.font = '24px sans-serif';
+  ctx.fillText('beckyexists.com', 80, H - 22);
 
   // 書き出し
   const out = outPath || `/tmp/becky_thumb_${Date.now()}.png`;

@@ -191,8 +191,8 @@ async function main() {
     const publishBtn = await page.$('button:has-text("公開に進む")');
     if (publishBtn) {
       await publishBtn.click();
-      await page.waitForURL('**/publish/**', { timeout: 10000 });
-      await page.waitForTimeout(1500);
+      // URLが変わる場合もモーダルになる場合も対応（3秒待機で両方カバー）
+      await page.waitForTimeout(3000);
 
       // タグ入力
       if (tags.length > 0) {
