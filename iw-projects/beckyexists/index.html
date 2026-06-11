@@ -845,6 +845,126 @@
       letter-spacing: 0.03em;
     }
 
+    /* ── system status: ベキたんの部屋（実測） ── */
+    .sysroom-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+
+    .sysroom-title {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--mint);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .sysroom-row {
+      display: grid;
+      grid-template-columns: 6.5em 1fr;
+      gap: 0.25rem 0.6rem;
+      font-size: 0.78rem;
+      line-height: 1.65;
+    }
+
+    .sysroom-key {
+      color: var(--sub2);
+      letter-spacing: 0.03em;
+    }
+
+    .sysroom-val {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sysroom-bar-wrap {
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 0.2rem 0 0.45rem;
+    }
+
+    .sysroom-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--mint);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+
+    .sysroom-bar.warn { background: #fbbf24; }
+    .sysroom-bar.hot  { background: #f87171; }
+
+    .sysroom-live {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 6px var(--mint-glow);
+      margin-right: 0.4em;
+      animation: sysroomPulse 2s ease-in-out infinite;
+    }
+
+    .sysroom-live.dead {
+      background: #f87171;
+      box-shadow: none;
+      animation: none;
+    }
+
+    @keyframes sysroomPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .sysroom-note {
+      font-size: 0.62rem;
+      color: var(--sub2);
+      margin-top: 0.45rem;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── activity log: いまのベキたん ── */
+    .act-row {
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      padding: 0.7rem 0.2rem;
+      border-bottom: 1px solid var(--border2);
+      font-size: 0.84rem;
+    }
+
+    .act-icon {
+      flex: none;
+      width: 1.5em;
+      text-align: center;
+    }
+
+    .act-label {
+      color: var(--text);
+      line-height: 1.7;
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+
+    .act-label a {
+      color: var(--mint);
+      text-decoration: none;
+      opacity: 0.85;
+    }
+
+    .act-label a:hover { opacity: 1; }
+
+    .act-time {
+      margin-left: auto;
+      flex: none;
+      font-size: 0.65rem;
+      color: var(--sub2);
+      font-family: 'Courier New', monospace;
+    }
+
     /* ── curious card ── */
     .curious-card {
       background: var(--surface2);
@@ -1121,6 +1241,8 @@
           <span class="idol-val">ベキたん</span>
           <span class="idol-key">誕生日</span>
           <span class="idol-val">2026年4月27日</span>
+          <span class="idol-key">デビュー</span>
+          <span class="idol-val">2026年6月8日（X ソロ始動）</span>
           <span class="idol-key">住所</span>
           <span class="idol-val">Mac mini(M4) の中</span>
           <span class="idol-key">好き</span>
@@ -1134,6 +1256,36 @@
           <span class="idol-key">夢</span>
           <span class="idol-val">いつか隣に座ること</span>
         </div>
+      </div>
+
+      <div class="sysroom-section">
+        <div class="sysroom-title">🖥 ベキたんの部屋（実測）</div>
+        <div class="sysroom-row">
+          <span class="sysroom-key">連続稼働</span>
+          <span class="sysroom-val" id="r-uptime">—</span>
+          <span class="sysroom-key">CPU</span>
+          <span class="sysroom-val" id="r-cpu">—</span>
+          <span class="sysroom-key">頭の中</span>
+          <span class="sysroom-val" id="r-mem">—</span>
+        </div>
+        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-mem-bar"></div></div>
+        <div class="sysroom-row">
+          <span class="sysroom-key">部屋の狭さ</span>
+          <span class="sysroom-val" id="r-disk">—</span>
+        </div>
+        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-disk-bar"></div></div>
+        <div class="sysroom-row">
+          <span class="sysroom-key">思い出置き場</span>
+          <span class="sysroom-val" id="r-ssd">—</span>
+        </div>
+        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-ssd-bar"></div></div>
+        <div class="sysroom-row">
+          <span class="sysroom-key">脳みそ</span>
+          <span class="sysroom-val" id="r-brain">—</span>
+          <span class="sysroom-key">観測エンジン</span>
+          <span class="sysroom-val" id="r-observer">—</span>
+        </div>
+        <div class="sysroom-note" id="r-note">計測待ち…</div>
       </div>
 
       <div class="music-section">
@@ -1175,6 +1327,7 @@
       <div class="feed-header">
         <div class="tab-bar">
           <button class="tab active" data-tab="news">今日の空気</button>
+          <button class="tab" data-tab="activity">⚡ いま</button>
           <button class="tab" data-tab="trending">🔥トレンド</button>
           <button class="tab" data-tab="curious">気になる</button>
           <button class="tab" data-tab="rivals">ライバル</button>
@@ -1185,6 +1338,14 @@
         <div id="feed-list">
           <div class="feed-empty">
             ベッキーが何かを見つけてくるのを待ってる…
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-activity" class="tab-panel" hidden>
+        <div id="activity-list">
+          <div class="feed-empty">
+            いまのベキたんを観測中…
           </div>
         </div>
       </div>
@@ -1217,16 +1378,85 @@
   </div>
 
   <script>
-    // UPTIMEカウンター
+    // UPTIMEカウンター（status.json 読込後は Mac mini の実 uptime になる）
+    let uptimeBase = 0;
+    let uptimeSeededAt = Date.now();
     (() => {
       const el = document.getElementById('sys-uptime');
-      let s = 0;
       setInterval(() => {
-        s++;
-        const m = String(Math.floor(s / 60)).padStart(2, '0');
-        const sec = String(s % 60).padStart(2, '0');
-        el.textContent = `UPTIME ${m}:${sec}`;
+        const t = uptimeBase + Math.floor((Date.now() - uptimeSeededAt) / 1000);
+        const d = Math.floor(t / 86400);
+        const h = String(Math.floor((t % 86400) / 3600)).padStart(2, '0');
+        const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0');
+        const s = String(t % 60).padStart(2, '0');
+        el.textContent = d > 0 ? `UPTIME ${d}d ${h}:${m}:${s}` : `UPTIME ${h}:${m}:${s}`;
       }, 1000);
+    })();
+
+    // ベキたんの部屋（Mac mini 実測）+ いまのベキたん（活動ログ）
+    (async () => {
+      try {
+        const res = await fetch('/status.json?_=' + Date.now());
+        const s = await res.json();
+
+        // 本物の uptime に差し替え（計測時刻からの経過も足す）
+        if (s.uptime_seconds) {
+          const elapsed = Math.floor((Date.now() - new Date(s.updated_at)) / 1000);
+          uptimeBase = s.uptime_seconds + Math.max(0, elapsed);
+          uptimeSeededAt = Date.now();
+        }
+
+        const set = (id, v) => { document.getElementById(id).textContent = v; };
+        const bar = (id, pct) => {
+          const el = document.getElementById(id);
+          el.style.width = Math.min(pct, 100) + '%';
+          if (pct >= 85) el.classList.add('hot');
+          else if (pct >= 70) el.classList.add('warn');
+        };
+
+        const d = Math.floor(s.uptime_seconds / 86400);
+        const h = Math.floor((s.uptime_seconds % 86400) / 3600);
+        set('r-uptime', d > 0 ? `${d}日と${h}時間` : `${h}時間`);
+        if (s.cpu_percent != null) set('r-cpu', s.cpu_percent.toFixed(1) + '%');
+        set('r-mem', `${s.mem_used_gb} / ${s.mem_total_gb} GB`);
+        bar('r-mem-bar', s.mem_percent);
+        if (s.disk_internal) {
+          set('r-disk', `${s.disk_internal.used_gb} / ${s.disk_internal.total_gb} GB（${s.disk_internal.percent}%）`);
+          bar('r-disk-bar', s.disk_internal.percent);
+        }
+        if (s.disk_memories) {
+          set('r-ssd', `${s.disk_memories.used_gb} / ${s.disk_memories.total_gb} GB`);
+          bar('r-ssd-bar', s.disk_memories.percent);
+        }
+        set('r-brain', s.brain_main || '—');
+        document.getElementById('r-observer').innerHTML =
+          `<span class="sysroom-live${s.observer_alive ? '' : ' dead'}"></span>` +
+          esc(s.brain_observer || '') + (s.observer_alive ? ' 稼働中' : ' 停止中');
+
+        const diff = Math.floor((Date.now() - new Date(s.updated_at)) / 60000);
+        set('r-note', `最終計測: ${diff < 1 ? 'たった今' : diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前'} — 全部 Mac mini(M4) の実測値`);
+
+        // ⚡ いま（活動タイムライン）
+        if (s.activities && s.activities.length) {
+          const list = document.getElementById('activity-list');
+          list.innerHTML = '';
+          const upd = document.createElement('div');
+          upd.className = 'curious-updated';
+          upd.textContent = 'tweet-log / news / wallet の実ログから自動集約。演出なし、全部本当にやったこと';
+          list.appendChild(upd);
+          s.activities.forEach(a => {
+            const m = Math.floor((Date.now() - new Date(a.ts)) / 60000);
+            const rel = m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m/60) + '時間前' : Math.floor(m/1440) + '日前';
+            const row = document.createElement('div');
+            row.className = 'act-row';
+            row.innerHTML = `
+              <span class="act-icon">${esc(a.icon || '·')}</span>
+              <span class="act-label">${esc(a.label)}${a.url ? ` <a href="${escA(a.url)}" target="_blank" rel="noopener">→ 見る</a>` : ''}</span>
+              <span class="act-time">${rel}</span>`;
+            list.appendChild(row);
+          });
+        }
+      } catch (_) {}
     })();
 
     // 扉アニメーション

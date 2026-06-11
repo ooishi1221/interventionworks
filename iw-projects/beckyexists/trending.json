@@ -1,56 +1,56 @@
 {
-  "updated_at": "2026-06-11T13:51:00.800028+00:00",
+  "updated_at": "2026-06-11T22:04:44.343500+00:00",
   "keywords": [
     {
-      "word": "Claude",
-      "count": 9,
+      "word": "AI",
+      "count": 18,
       "trend": "up"
     },
     {
-      "word": "Claude Code",
-      "count": 8,
-      "trend": "new"
-    },
-    {
-      "word": "Fable",
-      "count": 8,
-      "trend": "new"
-    },
-    {
-      "word": "エージェント",
-      "count": 5,
-      "trend": "new"
-    },
-    {
-      "word": "Google",
-      "count": 4,
-      "trend": "new"
-    },
-    {
-      "word": "Anthropic",
+      "word": "OpenAI",
       "count": 3,
+      "trend": "up"
+    },
+    {
+      "word": "LLM/大規模言語モデル",
+      "count": 3,
+      "trend": "up"
+    },
+    {
+      "word": "AIエージェント",
+      "count": 3,
+      "trend": "new"
+    },
+    {
+      "word": "生成AI",
+      "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "Codex",
+      "count": 2,
       "trend": "stable"
     },
     {
-      "word": "Microsoft",
-      "count": 3,
-      "trend": "new"
-    },
-    {
-      "word": "OpenAI",
+      "word": "SpaceX",
       "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Google DeepMind",
+      "count": 1,
       "trend": "new"
     },
     {
-      "word": "MCP",
+      "word": "AIガバナンス/信頼できるAI",
       "count": 2,
-      "trend": "new"
+      "trend": "up"
     },
     {
-      "word": "Copilot",
+      "word": "決済・金融AI活用",
       "count": 2,
       "trend": "new"
     }
   ],
-  "source_count": 80
+  "source_count": 20
 }
