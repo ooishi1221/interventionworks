@@ -1,0 +1,52 @@
+html {
+  writing-mode: vertical-rl;
+  -epub-writing-mode: vertical-rl;
+  -webkit-writing-mode: vertical-rl;
+}
+
+body {
+  font-family: serif;
+  line-height: 1.8;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 1.4em;
+  font-weight: normal;
+  margin-block-start: 0;
+  margin-block-end: 2em;
+  padding-block-start: 3em;
+}
+
+p {
+  margin: 0;
+  text-indent: 1em;
+}
+
+/* ダッシュ単独行・短い行の「間」は字下げしない */
+p.dash, p:has(> br:only-child) {
+  text-indent: 0;
+}
+
+hr {
+  border: none;
+  margin: 1.5em 0;
+}
+
+/* 跋の handoff 部分の箇条書き */
+ul {
+  list-style-type: none;
+  padding-inline-start: 1em;
+}
+
+li {
+  margin-block-end: 0.5em;
+}
+
+h2, h3 {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-block-start: 1.5em;
+  margin-block-end: 1em;
+}
