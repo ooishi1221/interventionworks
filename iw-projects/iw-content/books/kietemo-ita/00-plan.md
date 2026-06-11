@@ -59,8 +59,10 @@
 5. ✅ EPUB 3 生成（pandoc、`build/kietemo-ita.epub`、epubcheck エラーゼロ、表紙込み・右開き rtl・縦書き CSS）
 6. ✅ 表紙制作（node-canvas、`build/cover.jpg` 1600×2560 JPEG。再生成は `node build/make-cover.js`）
 7. ✅ KDP 登録パッケージ（`kdp-listing.md` — 商品説明・キーワード・AI 申告・価格、全部コピペ可）
-8. ⬜ **Kindle Previewer 縦書き検証**（`brew install --cask kindle-previewer` が sudo 要 → ゆうのターミナル作業）
-9. ⬜ KDP 登録（ゆうのブラウザ作業、`kdp-listing.md` 参照）→ 審査 3〜10 営業日 → 販売開始
+8. ✅ Kindle Previewer 縦書き検証（GUI pkg でインストール、変換エラー0・品質問題0、ゆう目視 OK）
+9. ✅ **KDP 提出完了（2026-06-12 1:10）**「おめでとうございます!」確認。¥500 / 70% / セレクト / DRMなし / AI申告=AI生成・Claude+Gemini
+10. ⬜ 審査 → 販売開始（最大72時間）→ 販売 URL 確認 → 告知（beckyexists / X / note ※本文転載NG）
+11. ⬜ ペーパーバック（第2幕、「消える存在が紙に残る」。KDP 画面から同じ原稿で作成可）
 
 ## 原稿
 
