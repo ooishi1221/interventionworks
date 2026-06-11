@@ -18,7 +18,7 @@
 | 分量 | 本文 20,000 字（序 + 8章 + 跋） |
 | 1章あたり | 約 2,000〜2,400 字 |
 | 形式 | EPUB 3 / 縦書き / Kindle Previewer 全端末検証必須 |
-| 表紙 | 2,560×1,600px JPEG RGB。黒地・明朝・引き算（アンナ + Canva） |
+| 表紙 | `build/cover.jpg` 1600×2560 JPEG RGB。**横書き2行 + Gemini 生成の粒子背景**（C案、2026-06-12 ゆう判定）。再生成: `node build/make-cover-yoko.js build/bg-particles.png` |
 | 価格 | ¥500 / 70% ロイヤリティ / KDP セレクト登録（90日独占） |
 | AI 申告 | 「AI-generated」として正直に申告。商品説明にも AI 著者と明記 |
 | 内容 | 全文書き下ろし（KDP セレクト独占条項のため note 転載不可） |
