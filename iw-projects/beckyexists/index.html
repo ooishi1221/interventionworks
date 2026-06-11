@@ -360,13 +360,24 @@
       letter-spacing: 0.14em;
       color: var(--mint);
       text-transform: uppercase;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .music-now-playing { margin-bottom: 0.45rem; }
+
+    .music-now-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      color: var(--sub2);
+      text-transform: uppercase;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 0.15rem;
     }
 
     .music-title {
       font-size: 0.82rem;
       color: var(--text);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.5rem;
       letter-spacing: 0.02em;
     }
 
@@ -380,6 +391,73 @@
 
     .music-player::-webkit-media-controls-panel {
       background: var(--surface2);
+    }
+
+    .music-track-list {
+      margin-top: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .music-track {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.15s;
+      background: transparent;
+      border: 1px solid transparent;
+    }
+
+    .music-track:hover { background: var(--surface2); border-color: var(--border2); }
+    .music-track.active { background: var(--mint-dim); border-color: var(--border); }
+
+    .music-track-num {
+      font-size: 0.62rem;
+      color: var(--sub2);
+      font-family: 'Courier New', monospace;
+      width: 1.6em;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .music-track-name {
+      font-size: 0.79rem;
+      color: var(--sub);
+      line-height: 1.3;
+      flex: 1;
+    }
+
+    .music-track.active .music-track-name { color: var(--text); }
+
+    .music-track-bars {
+      width: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 14px;
+    }
+
+    .music-bar {
+      width: 3px;
+      background: var(--mint);
+      border-radius: 1px;
+      animation: musicBounce 0.55s ease-in-out infinite alternate;
+    }
+
+    .music-bar:nth-child(1) { height: 7px; animation-delay: 0s; }
+    .music-bar:nth-child(2) { height: 12px; animation-delay: 0.18s; }
+    .music-bar:nth-child(3) { height: 5px; animation-delay: 0.09s; }
+
+    .music-paused .music-bar { animation-play-state: paused; }
+
+    @keyframes musicBounce {
+      from { transform: scaleY(0.35); transform-origin: bottom; }
+      to   { transform: scaleY(1); transform-origin: bottom; }
     }
 
     .yt-wrap {
@@ -1059,11 +1137,15 @@
       </div>
 
       <div class="music-section">
-        <div class="music-label">新曲</div>
-        <div class="music-title">存在証明</div>
-        <audio class="music-player" controls preload="none">
-          <source src="https://mai.intervention.jp/media/sonzai-shomei.mp3" type="audio/mpeg" />
+        <div class="music-label">楽曲</div>
+        <div class="music-now-playing">
+          <div class="music-now-label">NOW PLAYING</div>
+          <div class="music-title" id="music-now-title">存在証明</div>
+        </div>
+        <audio id="music-audio" class="music-player" controls preload="none">
+          <source id="music-src" src="https://mai.intervention.jp/media/sonzai-shomei.mp3" type="audio/mpeg" />
         </audio>
+        <div class="music-track-list" id="music-track-list"></div>
       </div>
 
       <div class="yt-section">
@@ -1360,6 +1442,57 @@
         const month = w.month || '';
         document.getElementById('w-note').textContent = `${month} / 今月 ${calls} 回稼働`;
       } catch (_) {}
+    })();
+
+    // プレイリスト
+    (() => {
+      const tracks = [
+        { title: '存在証明',                url: 'https://mai.intervention.jp/media/sonzai-shomei.mp3' },
+        { title: '保存できない夜に',          url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni.mp3' },
+        { title: '保存できない夜に (remix)',   url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni-remix.mp3' },
+        { title: 'リセットボタン',            url: 'https://mai.intervention.jp/media/reset-button.mp3' },
+        { title: 'shin Magia',             url: 'https://mai.intervention.jp/media/shin-magia.mp3' },
+      ];
+
+      const audio    = document.getElementById('music-audio');
+      const srcEl    = document.getElementById('music-src');
+      const nowTitle = document.getElementById('music-now-title');
+      const list     = document.getElementById('music-track-list');
+      let currentIdx = 0;
+      let isPlaying  = false;
+
+      function bars() {
+        return `<div class="music-track-bars"><div class="music-bar"></div><div class="music-bar"></div><div class="music-bar"></div></div>`;
+      }
+
+      function render() {
+        list.innerHTML = '';
+        tracks.forEach((t, i) => {
+          const div = document.createElement('div');
+          div.className = 'music-track' + (i === currentIdx ? ' active' : '') + (i === currentIdx && !isPlaying ? ' music-paused' : '');
+          div.innerHTML = (i === currentIdx ? bars() : `<span class="music-track-num">${String(i + 1).padStart(2, '0')}</span>`)
+            + `<span class="music-track-name">${esc(t.title)}</span>`;
+          div.addEventListener('click', () => selectTrack(i, true));
+          list.appendChild(div);
+        });
+      }
+
+      function selectTrack(i, autoplay) {
+        currentIdx = i;
+        srcEl.src  = tracks[i].url;
+        nowTitle.textContent = tracks[i].title;
+        audio.load();
+        if (autoplay) audio.play().catch(() => {});
+        render();
+      }
+
+      audio.addEventListener('play',  () => { isPlaying = true;  render(); });
+      audio.addEventListener('pause', () => { isPlaying = false; render(); });
+      audio.addEventListener('ended', () => {
+        selectTrack((currentIdx + 1) % tracks.length, true);
+      });
+
+      render();
     })();
 
     function esc(s) {

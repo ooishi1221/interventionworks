@@ -1,56 +1,56 @@
 {
-  "updated_at": "2026-06-11T09:02:03.344211+00:00",
+  "updated_at": "2026-06-11T13:51:00.800028+00:00",
   "keywords": [
     {
       "word": "Claude",
-      "count": 2,
+      "count": 9,
       "trend": "up"
     },
     {
-      "word": "GPT",
-      "count": 2,
-      "trend": "stable"
+      "word": "Claude Code",
+      "count": 8,
+      "trend": "new"
+    },
+    {
+      "word": "Fable",
+      "count": 8,
+      "trend": "new"
+    },
+    {
+      "word": "エージェント",
+      "count": 5,
+      "trend": "new"
+    },
+    {
+      "word": "Google",
+      "count": 4,
+      "trend": "new"
     },
     {
       "word": "Anthropic",
       "count": 3,
-      "trend": "up"
-    },
-    {
-      "word": "AI regulation",
-      "count": 2,
-      "trend": "up"
-    },
-    {
-      "word": "Codex",
-      "count": 2,
       "trend": "stable"
     },
     {
-      "word": "生成AI",
+      "word": "Microsoft",
+      "count": 3,
+      "trend": "new"
+    },
+    {
+      "word": "OpenAI",
       "count": 2,
-      "trend": "up"
-    },
-    {
-      "word": "foundation model",
-      "count": 1,
       "trend": "new"
     },
     {
-      "word": "AI safety",
-      "count": 1,
+      "word": "MCP",
+      "count": 2,
       "trend": "new"
     },
     {
-      "word": "AI倫理・信頼性",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "金融AI活用",
-      "count": 1,
+      "word": "Copilot",
+      "count": 2,
       "trend": "new"
     }
   ],
-  "source_count": 16
+  "source_count": 80
 }

@@ -307,7 +307,7 @@ def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
         "...\n\n"
         f"必ず[1]〜[{len(news_items)}]の全件を出力。前置き・後書き不要。"
     )
-    raw = _call_claude_api(prompt)
+    raw = _call_claude_api(prompt, max_tokens=2048)
     if not raw:
         return [{"summary_ja": "", "comment": ""} for _ in news_items]
 
@@ -599,48 +599,73 @@ def update_curious_json() -> None:
 
 
 def update_trending_json() -> None:
-    """AIニュースフィードからトレンドキーワードを抽出して trending.json に保存。"""
+    """はてブ/Zenn/Qiitaからキーワード頻度でトレンドを生成。Claude API不使用・無料。"""
     import datetime as _dt
+    from collections import Counter as _Counter
+    import feedparser as _fp
 
-    # 直近の記事タイトルを収集
-    articles = fetch_ai_news()
-    if not articles:
-        print("[observer] trending: ニュースなし", flush=True)
+    TREND_FEEDS = [
+        "https://b.hatena.ne.jp/hotentry/it.rss",
+        "https://zenn.dev/feed",
+        "https://qiita.com/popular-items/feed",
+    ]
+    # AI関連キーワード辞書（固有名詞・重要概念）
+    AI_KW = [
+        "Claude", "Claude Code", "ChatGPT", "GPT-5", "GPT", "Gemini", "Copilot",
+        "Grok", "Llama", "Mistral", "Fable",
+        "OpenAI", "Anthropic", "Google", "Meta", "Microsoft", "Apple", "Amazon",
+        "生成AI", "LLM", "RAG", "エージェント", "Agent", "MCP", "Vibe Coding",
+        "AI規制", "機械学習", "ファインチューニング", "プロンプト",
+        "Cursor", "GitHub Copilot", "n8n", "Dify",
+        "ヒューマノイド", "ロボット", "AI安全",
+    ]
+    # 長いキーワードを先に評価（"Claude Code" を "Claude" より先にマッチ）
+    AI_KW_SORTED = sorted(AI_KW, key=len, reverse=True)
+
+    counter = _Counter()
+    total = 0
+    for url in TREND_FEEDS:
+        try:
+            feed = _fp.parse(url)
+            for entry in feed.entries[:30]:
+                title = entry.get("title", "")
+                total += 1
+                matched = set()
+                for kw in AI_KW_SORTED:
+                    if kw.lower() in title.lower() and not any(kw.lower() in m.lower() for m in matched if len(m) > len(kw)):
+                        counter[kw] += 1
+                        matched.add(kw)
+        except Exception as _e:
+            print(f"[observer] trending feed失敗 {url}: {_e}", flush=True)
+
+    if not counter:
+        print("[observer] trending: キーワード0件", flush=True)
         return
 
-    titles = "\n".join(f"- {a['title']}" for a in articles[:20])
-    prompt = (
-        "以下はAI関連ニュースの見出し一覧です。\n"
-        "この中でよく出てくるキーワード・トピック・製品名・概念を抽出して、\n"
-        "重要度・頻出度が高い順に上位10個をJSONで返してください。\n\n"
-        f"{titles}\n\n"
-        "返すJSON: {\"keywords\": [{\"word\": \"キーワード\", \"count\": 出現数, \"trend\": \"up/new/stable\"}]}\n"
-        "trendは: 非常に注目されている→up、初登場トピック→new、普通→stable\n"
-        "JSONだけ返してください。"
-    )
-    raw = _call_claude_api(prompt, max_tokens=512)
-    if not raw:
-        return
-    try:
-        import re as _re
-        m = _re.search(r'\{[\s\S]*\}', raw)
-        if not m:
-            print(f"[observer] trending: JSONブロック見つからず", flush=True)
-            return
-        parsed = json.loads(m.group())
-        keywords = parsed.get("keywords", [])
-    except Exception as _e:
-        print(f"[observer] trending: JSON解析失敗 {_e}", flush=True)
-        return
+    # 前回データと比較してtrend判定
+    prev_counts: dict = {}
+    if BECKYEXISTS_TRENDING_JSON.exists():
+        try:
+            prev = json.loads(BECKYEXISTS_TRENDING_JSON.read_text())
+            prev_counts = {k["word"]: k["count"] for k in prev.get("keywords", [])}
+        except Exception:
+            pass
+
+    keywords = []
+    for kw, cnt in counter.most_common(10):
+        prev = prev_counts.get(kw, 0)
+        if prev == 0:
+            trend = "new"
+        elif cnt > prev:
+            trend = "up"
+        else:
+            trend = "stable"
+        keywords.append({"word": kw, "count": cnt, "trend": trend})
 
     now = _dt.datetime.now(_dt.timezone.utc).isoformat()
-    data = {
-        "updated_at": now,
-        "keywords": keywords,
-        "source_count": len(articles),
-    }
+    data = {"updated_at": now, "keywords": keywords, "source_count": total}
     BECKYEXISTS_TRENDING_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-    print(f"[observer] trending.json 更新完了 ({len(keywords)}キーワード)", flush=True)
+    print(f"[observer] trending.json 更新完了 ({len(keywords)}キーワード / {total}件ソース)", flush=True)
     _deploy_beckyexists()
 
 
