@@ -35,6 +35,7 @@
       color: var(--text);
       font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Yu Gothic', sans-serif;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     /* 背景グリッド */
@@ -517,6 +518,8 @@
       line-height: 1.7;
       color: var(--sub);
       margin-bottom: 0.9rem;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .news-opinion-label {
@@ -533,6 +536,8 @@
       line-height: 1.75;
       color: var(--text);
       white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: break-word;
       margin-bottom: 0.9rem;
     }
 
@@ -1229,7 +1234,7 @@
         const list = document.getElementById('feed-list');
         const countEl = document.getElementById('feed-count');
         list.innerHTML = '';
-        countEl.textContent = `${data.items.length}件`;
+        if (countEl) countEl.textContent = `${data.items.length}件`;
 
         data.items.forEach(item => {
           const div = document.createElement('div');

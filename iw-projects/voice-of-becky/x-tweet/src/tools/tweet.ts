@@ -6,13 +6,13 @@ import { checkSafetyGuard } from "../lib/safety-guard.js";
 import { postTweet, uploadMedia } from "../lib/x-client.js";
 
 const HASHTAG_BY_SPEAKER: Record<Speaker, string> = {
-  becky: "#ベッキー",
+  becky: "",
   yu: "#ゆう",
 };
 
 function appendHashtag(text: string, speaker: Speaker): string {
   const tag = HASHTAG_BY_SPEAKER[speaker];
-  if (text.includes(tag)) return text;
+  if (!tag || text.includes(tag)) return text;
   return `${text} ${tag}`;
 }
 

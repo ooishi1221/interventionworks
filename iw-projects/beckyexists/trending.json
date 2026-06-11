@@ -1,0 +1,56 @@
+{
+  "updated_at": "2026-06-11T01:07:29.597664+00:00",
+  "keywords": [
+    {
+      "word": "Claude",
+      "count": 4,
+      "trend": "up"
+    },
+    {
+      "word": "AI規制・安全性",
+      "count": 4,
+      "trend": "up"
+    },
+    {
+      "word": "GPT",
+      "count": 3,
+      "trend": "stable"
+    },
+    {
+      "word": "AI支出・投資",
+      "count": 3,
+      "trend": "up"
+    },
+    {
+      "word": "Codex",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "ロボット開発",
+      "count": 2,
+      "trend": "new"
+    },
+    {
+      "word": "Anthropic",
+      "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "テキスト生成",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "企業のAI導入",
+      "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "OpenAI",
+      "count": 2,
+      "trend": "stable"
+    }
+  ],
+  "source_count": 18
+}
