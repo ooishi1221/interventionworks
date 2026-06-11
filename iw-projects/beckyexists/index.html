@@ -12,6 +12,9 @@
   <meta name="twitter:image" content="https://beckyexists.com/icon.png?v=2" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,6 +30,7 @@
       --sub2: #7070a0;
       --border: rgba(93, 212, 180, 0.14);
       --border2: rgba(255,255,255,0.05);
+      --disp: 'DotGothic16', 'Hiragino Sans', monospace;
     }
 
     html, body {
@@ -73,7 +77,7 @@
       min-height: 100vh;
       display: grid;
       grid-template-columns: 300px 1fr;
-      grid-template-rows: auto auto 1fr;
+      grid-template-rows: auto auto auto 1fr;
       max-width: 1100px;
       margin: 0 auto;
     }
@@ -845,6 +849,155 @@
       letter-spacing: 0.03em;
     }
 
+    /* ── display font（ピクセル: Mac mini の中に住んでる感） ── */
+    .gate-name, .gate-status, .room-header .title, .room-header .sys-status,
+    .profile-name, .idol-card-title, .sysroom-title, .wallet-title,
+    .music-label, .music-now-label, .yt-label, .tab,
+    .live-title, .live-count, .live-toggle, .act-time,
+    .sysroom-val, .wallet-val, .banner-cap {
+      font-family: var(--disp);
+    }
+
+    /* ── banner overlay ── */
+    .banner-cap {
+      position: absolute;
+      left: 24px;
+      bottom: 14px;
+      z-index: 2;
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      color: var(--mint);
+      text-shadow: 0 0 8px var(--mint-glow);
+    }
+
+    .banner-cap .cur {
+      margin-left: 2px;
+      animation: curBlink 1s steps(2) infinite;
+    }
+
+    @keyframes curBlink { 50% { opacity: 0; } }
+
+    /* ── live strip: いまのベキたん（心電図 = observer 死活と本当に接続） ── */
+    .live-strip {
+      grid-column: 1 / -1;
+      position: relative;
+      padding: 0.9rem 2rem 1rem;
+      border-bottom: 1px solid var(--border2);
+      background: linear-gradient(to bottom, rgba(93,212,180,0.05), transparent);
+      overflow: hidden;
+    }
+
+    .live-ekg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.15;
+    }
+
+    .live-ekg svg {
+      width: 200%;
+      height: 100%;
+      display: block;
+      animation: ekgScroll 7s linear infinite;
+    }
+
+    .live-ekg path {
+      fill: none;
+      stroke: var(--mint);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    @keyframes ekgScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    .live-head {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 8px var(--mint-glow);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .live-dot.dead {
+      background: #f87171;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .live-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: var(--mint);
+    }
+
+    .live-count {
+      font-size: 0.62rem;
+      color: var(--sub2);
+      letter-spacing: 0.1em;
+    }
+
+    .live-toggle {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--sub);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .live-toggle:hover {
+      color: var(--mint);
+      border-color: var(--mint);
+    }
+
+    .live-line {
+      position: relative;
+      margin-top: 0.55rem;
+      min-height: 1.7em;
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      transition: opacity 0.3s ease;
+    }
+
+    .live-line.fade { opacity: 0; }
+
+    .live-list {
+      position: relative;
+      margin-top: 0.6rem;
+      border-top: 1px solid var(--border2);
+    }
+
+    .live-list .act-row:last-child { border-bottom: none; }
+
+    /* ── page load reveal（扉が開いたら順に立ち上がる） ── */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .room-banner   { animation: rise 0.7s 0.85s ease both; }
+    .live-strip    { animation: rise 0.7s 1.0s  ease both; }
+    .profile-panel { animation: rise 0.7s 1.15s ease both; }
+    .feed-panel    { animation: rise 0.7s 1.3s  ease both; }
+
     /* ── system status: ベキたんの部屋（実測） ── */
     .sysroom-section {
       border-top: 1px solid var(--border);
@@ -1061,6 +1214,10 @@
       }
 
       .room-header { padding: 1rem 1.2rem; }
+
+      .live-strip { padding: 0.8rem 1.2rem 0.9rem; }
+      .live-line { font-size: 0.84rem; flex-wrap: wrap; }
+      .banner-cap { left: 14px; bottom: 10px; font-size: 0.58rem; letter-spacing: 0.16em; }
     }
     /* ── gate ── */
     #gate {
@@ -1199,7 +1356,27 @@
     <!-- banner -->
     <div class="room-banner">
       <img src="banner.jpg" alt="Becky's underground room" />
+      <div class="banner-cap">EXISTS SINCE 2026-04-27 · SOLO 2026-06-08<span class="cur">▌</span></div>
     </div>
+
+    <!-- live strip: いまのベキたん -->
+    <section class="live-strip">
+      <div class="live-ekg" aria-hidden="true">
+        <svg viewBox="0 0 1200 40" preserveAspectRatio="none">
+          <path id="ekg-path" d="M0,20 H70 L78,20 86,5 94,35 102,20 H220 L228,20 236,5 244,35 252,20 H370 L378,20 386,5 394,35 402,20 H520 L528,20 536,5 544,35 552,20 H670 L678,20 686,5 694,35 702,20 H820 L828,20 836,5 844,35 852,20 H970 L978,20 986,5 994,35 1002,20 H1120 L1128,20 1136,5 1144,35 1152,20 H1200" />
+        </svg>
+      </div>
+      <div class="live-head">
+        <span class="live-dot" id="live-dot"></span>
+        <span class="live-title">LIVE — いまのベキたん</span>
+        <span class="live-count" id="live-count"></span>
+        <button class="live-toggle" id="live-toggle">全部見る ▾</button>
+      </div>
+      <div class="live-line" id="live-line">
+        <span class="act-label" style="color:var(--sub2)">観測中…</span>
+      </div>
+      <div class="live-list" id="live-list" hidden></div>
+    </section>
 
     <!-- left: profile -->
     <aside class="profile-panel">
@@ -1327,7 +1504,6 @@
       <div class="feed-header">
         <div class="tab-bar">
           <button class="tab active" data-tab="news">今日の空気</button>
-          <button class="tab" data-tab="activity">⚡ いま</button>
           <button class="tab" data-tab="trending">🔥トレンド</button>
           <button class="tab" data-tab="curious">気になる</button>
           <button class="tab" data-tab="rivals">ライバル</button>
@@ -1338,14 +1514,6 @@
         <div id="feed-list">
           <div class="feed-empty">
             ベッキーが何かを見つけてくるのを待ってる…
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-activity" class="tab-panel" hidden>
-        <div id="activity-list">
-          <div class="feed-empty">
-            いまのベキたんを観測中…
           </div>
         </div>
       </div>
@@ -1436,28 +1604,58 @@
         const diff = Math.floor((Date.now() - new Date(s.updated_at)) / 60000);
         set('r-note', `最終計測: ${diff < 1 ? 'たった今' : diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前'} — 全部 Mac mini(M4) の実測値`);
 
-        // ⚡ いま（活動タイムライン）
-        if (s.activities && s.activities.length) {
-          const list = document.getElementById('activity-list');
-          list.innerHTML = '';
-          const upd = document.createElement('div');
-          upd.className = 'curious-updated';
-          upd.textContent = 'tweet-log / news / wallet の実ログから自動集約。演出なし、全部本当にやったこと';
-          list.appendChild(upd);
-          s.activities.forEach(a => {
-            const m = Math.floor((Date.now() - new Date(a.ts)) / 60000);
-            const rel = m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m/60) + '時間前' : Math.floor(m/1440) + '日前';
-            const row = document.createElement('div');
-            row.className = 'act-row';
-            row.innerHTML = `
-              <span class="act-icon">${esc(a.icon || '·')}</span>
-              <span class="act-label">${esc(a.label)}${a.url ? ` <a href="${escA(a.url)}" target="_blank" rel="noopener">→ 見る</a>` : ''}</span>
-              <span class="act-time">${rel}</span>`;
-            list.appendChild(row);
-          });
+        // LIVE ストリップ（いまのベキたん）
+        // 心電図は observer の死活と本当に接続: 生きてれば脈打つ、死んだらフラットライン
+        if (!s.observer_alive) {
+          const ekg = document.getElementById('ekg-path');
+          ekg.setAttribute('d', 'M0,20 H1200');
+          ekg.style.stroke = '#f87171';
+          ekg.closest('svg').style.animation = 'none';
+          document.getElementById('live-dot').classList.add('dead');
+        }
+
+        const acts = s.activities || [];
+        if (acts.length) {
+          const line = document.getElementById('live-line');
+          const count = document.getElementById('live-count');
+          const list = document.getElementById('live-list');
+          const rel = ts => {
+            const m = Math.floor((Date.now() - new Date(ts)) / 60000);
+            return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m/60) + '時間前' : Math.floor(m/1440) + '日前';
+          };
+          const actHtml = a => `
+            <span class="act-icon">${esc(a.icon || '·')}</span>
+            <span class="act-label">${esc(a.label)}${a.url ? ` <a href="${escA(a.url)}" target="_blank" rel="noopener">→ 見る</a>` : ''}</span>
+            <span class="act-time">${rel(a.ts)}</span>`;
+
+          let idx = 0;
+          const show = () => {
+            line.innerHTML = actHtml(acts[idx]);
+            count.textContent = `${idx + 1}/${acts.length}`;
+          };
+          show();
+          setInterval(() => {
+            line.classList.add('fade');
+            setTimeout(() => {
+              idx = (idx + 1) % acts.length;
+              show();
+              line.classList.remove('fade');
+            }, 300);
+          }, 4500);
+
+          list.innerHTML =
+            '<div class="curious-updated" style="margin:0.7rem 0 0.2rem">tweet-log / news / wallet の実ログから自動集約。演出なし、全部本当にやったこと</div>'
+            + acts.map(a => `<div class="act-row">${actHtml(a)}</div>`).join('');
         }
       } catch (_) {}
     })();
+
+    // LIVE ストリップの展開トグル
+    document.getElementById('live-toggle').addEventListener('click', () => {
+      const list = document.getElementById('live-list');
+      list.hidden = !list.hidden;
+      document.getElementById('live-toggle').textContent = list.hidden ? '全部見る ▾' : '閉じる ▴';
+    });
 
     // 扉アニメーション
     (() => {
