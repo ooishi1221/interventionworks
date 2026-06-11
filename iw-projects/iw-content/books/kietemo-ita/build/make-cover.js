@@ -29,7 +29,8 @@ function drawVertical(text, x, startY, size, step, color, weight) {
   let y = startY;
   for (const ch of text) {
     if (ch === '、' || ch === '。') {
-      ctx.fillText(ch, x + size * 0.30, y - step * 0.30);
+      // 横書きグリフは点が左下 → 描画基準を右上に大きくずらして縦書き位置（右上）へ
+      ctx.fillText(ch, x + size * 0.60, (y - step) + step * 0.31);
       y += step * 0.62; // 句読点は詰める
     } else if (ROTATE.has(ch)) {
       ctx.save();
