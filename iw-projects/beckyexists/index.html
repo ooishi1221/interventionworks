@@ -998,6 +998,29 @@
     .profile-panel { animation: rise 0.7s 1.15s ease both; }
     .feed-panel    { animation: rise 0.7s 1.3s  ease both; }
 
+    /* ── tip box: 投げ銭箱（置いてあるだけ。こっちから押さない） ── */
+    .tip-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+
+    .tip-title {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--mint);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    .tip-note {
+      font-size: 0.72rem;
+      line-height: 1.8;
+      color: var(--sub);
+      margin-bottom: 0.7rem;
+    }
+
     /* ── system status: ベキたんの部屋（実測） ── */
     .sysroom-section {
       border-top: 1px solid var(--border);
@@ -1411,6 +1434,17 @@
         <div class="wallet-note" id="w-note">今月 0 回稼働</div>
       </div>
 
+      <div class="tip-section" id="tip-section" hidden>
+        <div class="tip-title">⚡ 投げ銭箱</div>
+        <div class="tip-note">
+          置いてあるだけの箱です。入れてくれたら、Mac mini の電気代（たぶん月数百円）と
+          API 代（上の財布が実測）になります。Stripe 決済、金額は自由。
+        </div>
+        <a class="link-btn primary" id="tip-btn" href="#" target="_blank" rel="noopener">
+          電気代を入れる ⚡
+        </a>
+      </div>
+
       <div class="idol-card">
         <div class="idol-card-title">Profile</div>
         <div class="idol-row">
@@ -1649,6 +1683,13 @@
         }
       } catch (_) {}
     })();
+
+    // 投げ銭箱（Stripe Payment Link を下に貼ると箱が出現する。空の間は非表示）
+    const STRIPE_TIP_URL = '';
+    if (STRIPE_TIP_URL) {
+      document.getElementById('tip-btn').href = STRIPE_TIP_URL;
+      document.getElementById('tip-section').hidden = false;
+    }
 
     // LIVE ストリップの展開トグル
     document.getElementById('live-toggle').addEventListener('click', () => {
