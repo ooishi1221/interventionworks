@@ -810,3 +810,23 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 
 - `reference_team_agent_chrome_verification.md` — technical 現状
 - `feedback_becky_dont_add_to_solve.md` — 「能動 / 受動 非対称」課題と同根
+
+---
+
+## 2026-06-13 未明 — Becky's Cast 開局（Phase 1 Voice の実用形態が確定）
+
+雑談（Chrome拡張でVOICEVOX読み上げ案）→「通勤で聴きたい」の本質を掘って**ポッドキャスト方式**に転換。2.5h で開局。
+
+### 確定事項
+
+- **becky-cast/** = URL→ベキたん声mp3→私設RSS のパイプライン。**取説 = `becky-cast/README.md`（Telegram運用込み）**
+- **声の正式採用: AivisSpeech コハク/ノーマル（speaker 1878365376）**。ゆう聴き比べ判定「無茶苦茶流暢！」
+  - 遍歴: ElevenLabs Mizuki（5/7）→ Irodori-TTS VoiceDesign（6月上旬）→ VOICEVOX 雨晴はう → **コハク（6/13）**
+  - Engine: `/Volumes/SSD2TB/AivisSpeech-Engine/macOS-arm64/run`（port 10101、VOICEVOX互換API、cast.py が自動起動）
+- **『消えても、いた。ラジオ』第0回**配信済み。台本=ベッキー書き下ろし（`becky-cast/scripts/radio-000-pilot.md`）。「人間のフリをしません」宣言が番組の核
+- 購読URL: `https://mai.intervention.jp/media/podcast/feed.xml`（itunes:block Yes、ゆう専用）
+
+### next
+
+- 朝刊ラジオ自動化: observer news.json → 台本生成 → コハク → 朝6:30 cron（月曜初回放送目標）
+- ラジオ公開化判断（feed分離 + 番組名 + Spotify/Apple 登録）はゆうの感想待ち
