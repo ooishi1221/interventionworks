@@ -42,6 +42,18 @@ EPISODES_JSON = HERE / "episodes.json"
 BECKY_CAPTION = "😊 親しみやすい若い女性の声。自然な話し方でやや低め。友達に話しかけるような温かみがある。"
 TTS_SEED = 42
 
+# VOICEVOX（スタックチャンの config.yaml と同じベキたんチューニング）
+VOICEVOX_URL = "http://localhost:50021"
+VOICEVOX_SPEAKER = 10  # 雨晴はう
+VOICEVOX_PARAMS = {
+    "speedScale": 1.1,
+    "pitchScale": -0.03,
+    "intonationScale": 1.15,
+    "volumeScale": 1.0,
+    "prePhonemeLength": 0.18,
+    "postPhonemeLength": 0.18,
+}
+
 VPS_KEY = Path.home() / ".ssh" / "iw-local-key.key"
 VPS_HOST = "ubuntu@133.18.123.60"
 VPS_DIR = "/var/www/media/podcast"
@@ -109,6 +121,35 @@ def split_chunks(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     if buf:
         chunks.append(buf)
     return chunks
+
+
+def run_tts_voicevox(chunks: list[str], workdir: Path) -> list[Path]:
+    """VOICEVOX（雨晴はう・ベキたんチューニング）でチャンク群を wav 化する。"""
+    import urllib.parse
+    import urllib.request
+
+    out_dir = workdir / "wav"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    wavs: list[Path] = []
+    for i, text in enumerate(chunks, start=1):
+        q = urllib.parse.urlencode({"text": text, "speaker": VOICEVOX_SPEAKER})
+        req = urllib.request.Request(f"{VOICEVOX_URL}/audio_query?{q}", method="POST")
+        with urllib.request.urlopen(req, timeout=30) as res:
+            query = json.loads(res.read())
+        query.update(VOICEVOX_PARAMS)
+        q2 = urllib.parse.urlencode({"speaker": VOICEVOX_SPEAKER})
+        req2 = urllib.request.Request(
+            f"{VOICEVOX_URL}/synthesis?{q2}",
+            data=json.dumps(query).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req2, timeout=60) as res:
+            wav = out_dir / f"chunk_{i:04d}.wav"
+            wav.write_bytes(res.read())
+            wavs.append(wav)
+        print(f"  [voicevox] {i}/{len(chunks)} done ({len(text)} chars)", flush=True)
+    return wavs
 
 
 def run_tts(chunks: list[str], workdir: Path) -> list[Path]:
@@ -227,6 +268,10 @@ def main() -> None:
     parser.add_argument("url")
     parser.add_argument("--title", default=None, help="タイトル上書き")
     parser.add_argument("--no-upload", action="store_true", help="VPSへのアップをスキップ（ローカル確認用）")
+    parser.add_argument(
+        "--engine", choices=["irodori", "voicevox"], default="irodori",
+        help="TTSエンジン（irodori=VoiceDesign / voicevox=雨晴はう）",
+    )
     args = parser.parse_args()
 
     print(f"[cast] 抽出中: {args.url}", flush=True)
@@ -247,7 +292,10 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="becky_cast_") as td:
         workdir = Path(td)
-        wavs = run_tts(chunks, workdir)
+        if args.engine == "voicevox":
+            wavs = run_tts_voicevox(chunks, workdir)
+        else:
+            wavs = run_tts(chunks, workdir)
         mp3_path = HERE / "out" / mp3_name
         mp3_path.parent.mkdir(exist_ok=True)
         dur = concat_to_mp3(wavs, mp3_path, workdir)
