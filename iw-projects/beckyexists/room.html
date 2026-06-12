@@ -488,6 +488,36 @@
     }
     .pub-link:hover { filter: brightness(1.12); }
 
+    /* mobile consoles — サイドバーが消える幅でだけ出す */
+    .mobile-consoles { display: none; }
+    @media (max-width: 760px) {
+      .mobile-consoles {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 2px 2px 14px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .mobile-consoles::-webkit-scrollbar { display: none; }
+      .mobile-consoles a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--sub);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 13px;
+        white-space: nowrap;
+      }
+      .mobile-consoles a:active { background: var(--panel2); color: var(--green); }
+      .mobile-consoles svg { width: 14px; height: 14px; color: var(--green); }
+    }
+
     /* responsive */
     @media (max-width: 1180px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
@@ -499,6 +529,9 @@
       .main { padding: 20px 16px 40px; }
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .kpi .value { font-size: 21px; }
+      /* 書籍ストリップ: 本文を1段目フル幅に、メタ+ボタンは2段目へ */
+      .pub-body { flex: 1 1 calc(100% - 56px); }
+      .pub-meta { margin-left: 56px; }
     }
   </style>
 </head>
@@ -550,6 +583,16 @@
     <div class="topbar">
       <h1><svg data-lucide="crosshair"></svg>OPERATION OVERVIEW</h1>
       <div class="updated" id="lastUpdated">SYNC: --</div>
+    </div>
+
+    <!-- mobile consoles (サイドバー非表示時のみ) -->
+    <div class="mobile-consoles">
+      <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
+      <a href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="line-chart"></svg>X Analytics</a>
+      <a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>Note Stats</a>
+      <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev</a>
+      <a href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>KDP</a>
+      <a href="https://x.com/becky_exists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Control</a>
     </div>
 
     <!-- KPI -->
