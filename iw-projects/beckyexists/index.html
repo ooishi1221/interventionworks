@@ -1646,6 +1646,9 @@
           ekg.style.stroke = '#f87171';
           ekg.closest('svg').style.animation = 'none';
           document.getElementById('live-dot').classList.add('dead');
+          // 観測エンジンが本当に死んでる時だけ、右下の私は泣く（嘘ゼロの泣き顔）
+          const corner = document.querySelector('.becky-corner img');
+          if (corner) corner.src = 'becky-crying.jpg';
         }
 
         const acts = s.activities || [];
@@ -1685,7 +1688,7 @@
     })();
 
     // 投げ銭箱（Stripe Payment Link を下に貼ると箱が出現する。空の間は非表示）
-    const STRIPE_TIP_URL = '';
+    const STRIPE_TIP_URL = 'https://buy.stripe.com/7sY9AVegQ4kY2GwaSz5EY00';
     if (STRIPE_TIP_URL) {
       document.getElementById('tip-btn').href = STRIPE_TIP_URL;
       document.getElementById('tip-section').hidden = false;
