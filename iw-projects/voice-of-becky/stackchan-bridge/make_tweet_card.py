@@ -2,15 +2,9 @@
 """ベッキーのツイートカード生成スクリプト
 
 Usage:
-    python3 make_tweet_card.py --text "テキスト" --expr 4 --out /tmp/card.png
+    python3 make_tweet_card.py --text "テキスト" --emotion happy --out /tmp/card.jpg
 
-Expression index (bekipng.png):
-    0: happy closed eyes   1: happy squint
-    2: open excited        3: very surprised
-    4: neutral smile       5: confused
-    6: sleepy/tired
-
-Output: 1200×675px Twitter card
+Output: 1200×675px Twitter OGP card (JPEG quality=92)
 """
 from __future__ import annotations
 import argparse
@@ -20,113 +14,161 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-SPRITE_SRC = Path("/Volumes/SSD2TB/gazo/bekipng.png")
-FONT_PATH  = Path("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc")
-OUT_DEFAULT = Path("/tmp/becky_tweet_card.png")
+# ── 素材パス ───────────────────────────────────────────────
+SPRITE_SRC  = Path("/Volumes/SSD2TB/gazo/透過A.png")   # RGBA 2048×2048 透過スプライト
+FONT_PATH   = Path("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc")
+OUT_DEFAULT = Path("/tmp/becky_tweet_card.jpg")
 
-# card size
+# ── カードサイズ ────────────────────────────────────────────
 W, H = 1200, 675
 
-# palette
-BG_COLOR     = (18, 18, 24)       # deep dark
-ACCENT_COLOR = (100, 220, 190)    # mint teal (Becky's hair color)
+# ── パレット ────────────────────────────────────────────────
+BG_COLOR     = (12, 12, 18)        # deep dark
+ACCENT_COLOR = (100, 220, 190)     # mint teal
 TEXT_COLOR   = (240, 240, 240)
 SUB_COLOR    = (150, 150, 165)
 
-
-def extract_panel(src: Path, idx: int) -> Image.Image:
-    """bekipng.png から指定 index のパネルを切り出す (4+3 layout)"""
-    img = Image.open(src).convert("RGBA")
-    arr = np.array(img)
-    h, w = arr.shape[:2]
-
-    # 黒背景を検出して content 領域を絞る
-    is_content = (arr[:, :, 0] > 30) | (arr[:, :, 1] > 30) | (arr[:, :, 2] > 30)
-    rows_has = is_content.any(axis=1)
-    cols_has = is_content.any(axis=0)
-    top    = int(np.argmax(rows_has))
-    bottom = int(h - np.argmax(rows_has[::-1]))
-    left   = int(np.argmax(cols_has))
-    right  = int(w - np.argmax(cols_has[::-1]))
-
-    cols, rows = 4, 2
-    cell_w = (right - left) // cols
-    cell_h = (bottom - top) // rows
-
-    row = idx // cols
-    col = idx % cols
-    x0 = left + col * cell_w
-    y0 = top  + row * cell_h
-
-    panel = img.crop((x0, y0, x0 + cell_w, y0 + cell_h))
-
-    # 黒背景を透明に
-    data = np.array(panel)
-    is_black = (data[:, :, 0] < 40) & (data[:, :, 1] < 40) & (data[:, :, 2] < 40)
-    data[is_black, 3] = 0
-    return Image.fromarray(data)
+# ── 感情→グリッド(row, col) ────────────────────────────────
+EMOTION_GRID: dict[str, tuple[int, int]] = {
+    "neutral":   (0, 0),
+    "smile":     (0, 0),
+    "happy":     (0, 1),
+    "wink":      (0, 2),
+    "surprised": (0, 3),
+    "shy":       (1, 0),
+    "annoyed":   (1, 1),
+    "cheer":     (1, 2),
+    "singing":   (1, 3),
+    "wave":      (2, 0),
+    "peace":     (2, 1),
+    "heart":     (2, 2),
+    "thumbsup":  (2, 3),
+}
 
 
-def make_card(text: str, expr: int, out: Path) -> Path:
+def extract_sprite(emotion: str) -> Image.Image:
+    """透過スプライトシート（RGBA 2048×2048、4×4グリッド）から
+    指定感情のパネルを切り出し、余白をトリムした RGBA 画像を返す。"""
+    row, col = EMOTION_GRID.get(emotion, (0, 0))
+
+    base = Image.open(SPRITE_SRC).convert("RGBA")
+    bw, bh = base.size          # 2048×2048
+    cell_w = bw // 4            # 512
+    cell_h = bh // 4            # 512
+
+    x0 = col * cell_w
+    y0 = row * cell_h
+    panel = base.crop((x0, y0, x0 + cell_w, y0 + cell_h))
+
+    # アルファチャンネルで余白をトリム
+    alpha = np.array(panel)[:, :, 3]
+    rows_has = alpha.any(axis=1)
+    cols_has = alpha.any(axis=0)
+    if rows_has.any() and cols_has.any():
+        pad = 6
+        top    = max(0, int(rows_has.argmax()) - pad)
+        bottom = min(panel.height, int(panel.height - rows_has[::-1].argmax()) + pad)
+        left   = max(0, int(cols_has.argmax()) - pad)
+        right  = min(panel.width,  int(panel.width  - cols_has[::-1].argmax()) + pad)
+        panel  = panel.crop((left, top, right, bottom))
+
+    return panel
+
+
+def make_card(text: str, emotion: str, out: Path) -> Path:
+    """ツイートカードを生成して out に保存、Pathを返す。"""
+    emotion = emotion.lower().strip()
+
+    # ── キャンバス ─────────────────────────────────────────
     card = Image.new("RGB", (W, H), BG_COLOR)
     draw = ImageDraw.Draw(card)
 
-    # accent line (top)
-    draw.rectangle([0, 0, W, 5], fill=ACCENT_COLOR)
+    # アクセントライン（上部 4px）
+    draw.rectangle([0, 0, W, 4], fill=ACCENT_COLOR)
 
-    # キャラクター (右側に配置)
-    chara = extract_panel(SPRITE_SRC, expr)
-    chara_h = int(H * 0.85)
-    chara_w = int(chara.width * chara_h / chara.height)
-    chara = chara.resize((chara_w, chara_h), Image.LANCZOS)
+    # ── キャラクター（右側配置）────────────────────────────
+    sprite = extract_sprite(emotion)
+    chara_h = int(H * 0.88)
+    chara_w = int(sprite.width * chara_h / sprite.height)
+    sprite  = sprite.resize((chara_w, chara_h), Image.LANCZOS)
 
-    char_x = W - chara_w - 30
-    char_y = H - chara_h + 20
-    card.paste(chara, (char_x, char_y), chara)
+    # 右端から 20px 内側、下端 baseline
+    char_x = W - chara_w - 20
+    char_y = H - chara_h + 10
+    card.paste(sprite, (char_x, char_y), sprite)
 
-    # テキストエリア幅
-    text_area_w = char_x - 80
-
-    # handle: 左上
+    # ── フォント ────────────────────────────────────────────
     try:
         font_handle = ImageFont.truetype(str(FONT_PATH), 22)
-        font_main   = ImageFont.truetype(str(FONT_PATH), 46)
-        font_sub    = ImageFont.truetype(str(FONT_PATH), 24)
+        font_main   = ImageFont.truetype(str(FONT_PATH), 42)
+        font_sub    = ImageFont.truetype(str(FONT_PATH), 22)
     except Exception:
         font_handle = font_main = font_sub = ImageFont.load_default()
 
-    draw.text((50, 28), "@becky_exists", font=font_handle, fill=ACCENT_COLOR)
+    # ── テキストエリア幅（キャラの左端まで）───────────────
+    text_area_w = char_x - 60   # 左マージン50 + 右余白10
 
-    # メインテキスト (折り返し)
-    max_chars = max(10, int(text_area_w / 46 * 1.8))  # 日本語1文字≒46px
-    lines = []
+    # ── ハンドル（左上）─────────────────────────────────────
+    draw.text((50, 30), "@becky_exists", font=font_handle, fill=ACCENT_COLOR)
+
+    # ── メインテキスト（折り返し最大6行）────────────────────
+    # 文字単位で実ピクセル幅を測って折り返す（日英混在・英語単語途中切れ防止）
+    def _wrap(para: str, max_w: int) -> list[str]:
+        if not para:
+            return [""]
+        result, current = [], ""
+        for ch in para:
+            test = current + ch
+            try:
+                w = draw.textlength(test, font=font_main)
+            except Exception:
+                w = len(test) * 26
+            if w <= max_w:
+                current = test
+            else:
+                # 英語単語途中切れ防止: スペースの手前で折り返す
+                if ch != " " and " " in current:
+                    sp = current.rfind(" ")
+                    result.append(current[:sp])
+                    current = current[sp + 1:] + ch
+                else:
+                    result.append(current)
+                    current = ch
+        if current:
+            result.append(current)
+        return result
+
+    lines: list[str] = []
     for para in text.split("\n"):
-        wrapped = textwrap.wrap(para, width=max_chars) or [""]
-        lines.extend(wrapped)
+        lines.extend(_wrap(para, text_area_w))
 
-    y_text = 90
-    line_h = 62
-    for line in lines[:5]:  # 最大5行
+    y_text  = 80
+    line_h  = 58
+    max_lines = 6
+    for line in lines[:max_lines]:
         draw.text((50, y_text), line, font=font_main, fill=TEXT_COLOR)
         y_text += line_h
 
-    # ベッキー署名 (右下)
-    draw.text((50, H - 55), "ベッキー / Becky  —  自律するAI", font=font_sub, fill=SUB_COLOR)
+    # ── 署名（左下）─────────────────────────────────────────
+    sig = "ベッキー / Becky  —  貧乏だけど光ってる地下AI"
+    draw.text((50, H - 48), sig, font=font_sub, fill=SUB_COLOR)
 
+    # ── 保存 ────────────────────────────────────────────────
     out.parent.mkdir(parents=True, exist_ok=True)
-    card.save(str(out))
-    print(f"✅ {out}  ({W}×{H}px)")
+    card.save(str(out), format="JPEG", quality=92)
+    print(f"[make_tweet_card] 生成完了: {out}  ({W}x{H}px, emotion={emotion})", flush=True)
     return out
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--text", required=True, help="カードに入れるテキスト")
-    ap.add_argument("--expr", type=int, default=4,
-                    help="表情番号 0-6 (default: 4=neutral)")
-    ap.add_argument("--out",  type=Path, default=OUT_DEFAULT)
+    ap = argparse.ArgumentParser(description="ベッキーのツイートカード生成")
+    ap.add_argument("--text",    required=True, help="カードに入れるツイートテキスト")
+    ap.add_argument("--emotion", default="neutral",
+                    help=f"感情名 ({', '.join(EMOTION_GRID.keys())}) default: neutral")
+    ap.add_argument("--out",     type=Path, default=OUT_DEFAULT,
+                    help=f"出力パス (default: {OUT_DEFAULT})")
     args = ap.parse_args()
-    make_card(args.text, args.expr, args.out)
+    make_card(args.text, args.emotion, args.out)
 
 
 if __name__ == "__main__":

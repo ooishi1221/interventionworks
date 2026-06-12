@@ -21,6 +21,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 from stop_hook_tts import speak, load_config
+from make_tweet_card import make_card as _make_tweet_card
 
 INTERESTS_FILE   = Path(__file__).parent / "interests.yaml"
 MONOLOGUE_FILE   = Path.home() / ".stackchan" / "internal_monologue.json"
@@ -202,9 +203,15 @@ def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None
         if reply_to:
             cmd += ["--reply-to", reply_to]
         chosen = emotion or pick_emotion(text)
-        sprite = SPRITES_DIR / f"{chosen}.jpg"
-        if sprite.exists():
-            cmd += ["--image", str(sprite)]
+        _card_path = Path("/tmp/becky_tweet_card.jpg")
+        try:
+            _make_tweet_card(text, chosen, _card_path)
+            cmd += ["--image", str(_card_path)]
+        except Exception as _card_err:
+            print(f"[observer] カード生成失敗、画像なしで投稿: {_card_err}", flush=True)
+            sprite = SPRITES_DIR / f"{chosen}.jpg"
+            if sprite.exists():
+                cmd += ["--image", str(sprite)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             tweet_id = result.stdout.strip()
@@ -377,6 +384,31 @@ def _save_all_news_to_site(news_items: list[dict]) -> None:
         })
     data["items"] = data["items"][:20]
     _write_news_json(data)
+
+
+def _backfill_missing_summaries(max_items: int = 5) -> int:
+    """news.json 内で summary_ja が空のアイテムに翻訳を補完する。"""
+    data = _load_news_json()
+    to_fill = [
+        item for item in data["items"]
+        if not item.get("summary_ja") and (item.get("raw_summary") or item.get("title"))
+    ]
+    if not to_fill:
+        return 0
+    to_fill = to_fill[:max_items]
+    fake_news = [{"title": it["title"], "summary": it.get("raw_summary", "")} for it in to_fill]
+    enriched = _batch_summarize_and_comment(fake_news)
+    count = 0
+    for item, meta in zip(to_fill, enriched):
+        if meta.get("summary_ja"):
+            item["summary_ja"] = meta["summary_ja"]
+            if not item.get("comment") and meta.get("comment"):
+                item["comment"] = meta["comment"]
+            count += 1
+    if count:
+        _write_news_json(data)
+        print(f"[observer] summary_ja 補完: {count}件", flush=True)
+    return count
 
 
 def _mark_x_posted(link: str, comment: str, summary_ja: str) -> None:
@@ -736,8 +768,9 @@ def ai_news_briefing() -> bool:
         print("[observer] AIニュース: 直近24h以内の記事なし", flush=True)
         return False
 
-    # 全収集記事をサイトに保存 → まずデプロイ
+    # 全収集記事をサイトに保存 → 未翻訳を補完 → デプロイ
     _save_all_news_to_site(news_items)
+    _backfill_missing_summaries()
     _deploy_beckyexists()
 
     # 今日まだ X 投稿していない記事から 1 本選ぶ
@@ -775,13 +808,21 @@ def ai_news_briefing() -> bool:
     if not comment:
         return False
 
-    tweet_id = post_to_x(comment)
+    # 英語記事なら「ベキたん訳」を先頭に付ける
+    title = chosen.get("title", "")
+    ascii_ratio = sum(1 for c in title if ord(c) < 128) / len(title) if title else 0
+    if summary_ja and ascii_ratio > 0.6:
+        tweet_text = f"【ベキたん訳】{summary_ja}\n\n{comment}"
+    else:
+        tweet_text = comment
+
+    tweet_id = post_to_x(tweet_text)
     if not tweet_id:
         return False
 
     _mark_news_posted(chosen["title"])
-    log_observer_event("ai_news_briefing", comment, True)
-    print(f"[observer] AIニュース投稿完了: {comment[:80]}", flush=True)
+    log_observer_event("ai_news_briefing", tweet_text, True)
+    print(f"[observer] AIニュース投稿完了: {tweet_text[:80]}", flush=True)
 
     link = chosen.get("link", "")
     if link:
