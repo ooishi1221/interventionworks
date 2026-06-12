@@ -4,1971 +4,833 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>ゆうの部屋 — Becky's Backstage</title>
-  <meta name="description" content="ベキたんのプロデューサー専用ダッシュボード。" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <title>作戦本部 — Becky Operation Room</title>
+  <meta name="description" content="ベキたん作戦本部。プロデューサー専用ダッシュボード。" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/room-favicon-32.png" />
+  <link rel="apple-touch-icon" href="/room-apple-touch.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #090910;
-      --surface: #0f0f1a;
-      --surface2: #13131f;
-      --mint: #5dd4b4;
-      --mint-dim: rgba(93, 212, 180, 0.12);
-      --mint-glow: rgba(93, 212, 180, 0.25);
-      --text: #ddddf0;
-      --sub: #7777a0;
-      --sub2: #7070a0;
-      --border: rgba(93, 212, 180, 0.14);
-      --border2: rgba(255,255,255,0.05);
-      --disp: 'DotGothic16', 'Hiragino Sans', monospace;
+      --bg: #121214;
+      --panel: #1a1a1e;
+      --panel2: #202024;
+      --line: rgba(255, 255, 255, 0.06);
+      --green: #00e676;
+      --green-dim: rgba(0, 230, 118, 0.12);
+      --green-glow: rgba(0, 230, 118, 0.35);
+      --red: #ff5252;
+      --red-dim: rgba(255, 82, 82, 0.12);
+      --amber: #ffb300;
+      --amber-dim: rgba(255, 179, 0, 0.12);
+      --text: #f2f2f5;
+      --sub: #8b8b96;
+      --sub2: #5c5c66;
+      --mono: 'JetBrains Mono', monospace;
+      --sidebar-w: 232px;
     }
 
-    html, body {
-      height: 100%;
+    body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Yu Gothic', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-    }
-
-    /* 背景グリッド */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(93,212,180,0.025) 59px, rgba(93,212,180,0.025) 60px),
-        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(93,212,180,0.025) 59px, rgba(93,212,180,0.025) 60px);
-    }
-
-    /* スキャンライン */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 2px,
-        rgba(0,0,0,0.07) 2px,
-        rgba(0,0,0,0.07) 4px
-      );
-    }
-
-    .room { position: relative; z-index: 2; }
-
-    /* ── layout ── */
-    .room {
+      font-family: 'Inter', 'Hiragino Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      grid-template-rows: auto auto auto 1fr;
-      max-width: 1100px;
-      margin: 0 auto;
     }
 
-    /* ── header bar ── */
-    .room-header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 1.2rem 2rem;
-      border-bottom: 1px solid var(--border2);
-    }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--green-glow); }
 
-    .room-header .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--mint);
-      animation: pulse 2.5s ease-in-out infinite;
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2c2c32; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a3a42; }
 
-    .room-header .title {
-      font-size: 0.75rem;
-      letter-spacing: 0.12em;
-      color: var(--sub);
-      text-transform: uppercase;
-    }
+    .layout { display: flex; min-height: 100vh; }
 
-    .room-header .title span {
-      color: var(--mint);
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-
-    .room-header .sys-status {
-      margin-left: auto;
-      font-size: 0.6rem;
-      letter-spacing: 0.12em;
-      color: var(--sub2);
-      font-family: 'Courier New', monospace;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .room-header .sys-status span {
-      color: var(--mint);
-      opacity: 0.5;
-    }
-
-    /* アバター回転リング */
-    .avatar-ring {
-      position: absolute;
-      inset: -6px;
-      border-radius: 50%;
-      border: 1px dashed rgba(93,212,180,0.25);
-      animation: ringRotate 12s linear infinite;
-    }
-
-    .avatar-ring::before {
-      content: '';
-      position: absolute;
-      top: -2px; left: 50%;
-      width: 4px; height: 4px;
-      background: var(--mint);
-      border-radius: 50%;
-      transform: translateX(-50%);
-      opacity: 0.6;
-    }
-
-    @keyframes ringRotate {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-
-    /* 右下常駐キャラ */
-    .becky-corner {
-      position: fixed;
-      bottom: 0;
-      right: 16px;
-      width: 160px;
-      z-index: 10;
-      pointer-events: none;
-      opacity: 0.95;
-    }
-    .becky-corner img {
-      width: 100%;
-      display: block;
-    }
-    @media (max-width: 600px) {
-      .becky-corner { width: 100px; right: 8px; }
-    }
-
-    /* コーナーブラケット */
-    .room::before, .room::after,
-    .corner-br, .corner-bl {
-      content: '';
-      position: fixed;
-      width: 18px;
-      height: 18px;
-      pointer-events: none;
-      z-index: 3;
-      opacity: 0.35;
-    }
-
-    .room::before {
-      top: 12px; left: 12px;
-      border-top: 1px solid var(--mint);
-      border-left: 1px solid var(--mint);
-    }
-
-    .room::after {
-      top: 12px; right: 12px;
-      border-top: 1px solid var(--mint);
-      border-right: 1px solid var(--mint);
-    }
-
-    .corner-br {
-      bottom: 12px; right: 12px;
-      border-bottom: 1px solid var(--mint);
-      border-right: 1px solid var(--mint);
-      position: fixed;
-    }
-
-    .corner-bl {
-      bottom: 12px; left: 12px;
-      border-bottom: 1px solid var(--mint);
-      border-left: 1px solid var(--mint);
-      position: fixed;
-    }
-
-    /* ── left panel ── */
-    .profile-panel {
-      padding: 2.5rem 2rem 2.5rem 2rem;
-      border-right: 1px solid var(--border2);
+    /* ───────── sidebar ───────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: #161618;
+      border-right: 1px solid var(--line);
+      padding: 22px 14px;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 4px;
       position: sticky;
       top: 0;
-      height: calc(100vh - 49px);
+      height: 100vh;
       overflow-y: auto;
     }
 
-    .avatar-wrap {
-      position: relative;
-      display: inline-block;
-      width: fit-content;
-    }
-
-    .avatar-wrap img {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-      border: 2px solid var(--mint);
-      box-shadow: 0 0 28px var(--mint-glow);
-      display: block;
-    }
-
-    /* バナー */
-    .room-banner {
-      grid-column: 1 / -1;
-      width: 100%;
-      max-height: 220px;
-      overflow: hidden;
-      position: relative;
-    }
-    .room-banner img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      object-position: center 52%;
-      display: block;
-      opacity: 0.85;
-    }
-    .room-banner::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, transparent 40%, var(--bg) 100%);
-      pointer-events: none;
-    }
-
-    .avatar-wrap .status {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      width: 12px;
-      height: 12px;
-      background: var(--mint);
-      border-radius: 50%;
-      border: 2px solid var(--bg);
-      animation: pulse 2.5s ease-in-out infinite;
-    }
-
-    .profile-name {
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      line-height: 1.2;
-    }
-
-    .profile-handle {
-      font-size: 0.8rem;
-      color: var(--mint);
-      letter-spacing: 0.06em;
-      margin-top: 0.2rem;
-    }
-
-    .profile-bio {
-      font-size: 0.85rem;
-      line-height: 1.85;
-      color: var(--sub);
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .profile-bio strong {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    /* idol profile card */
-    .idol-card {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .idol-card-title {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-
-    .idol-row {
-      display: grid;
-      grid-template-columns: 6.5em 1fr;
-      gap: 0.3rem 0.6rem;
-      font-size: 0.78rem;
-      line-height: 1.6;
-    }
-
-    .idol-key {
-      color: var(--sub2);
-      letter-spacing: 0.04em;
-      padding-top: 0.05em;
-    }
-
-    .idol-val {
-      color: var(--text);
-    }
-
-    /* youtube embed */
-    .yt-section {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .yt-label {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.6rem;
-    }
-
-    /* music player */
-    .music-section {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .music-label {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.6rem;
-    }
-
-    .music-now-playing { margin-bottom: 0.45rem; }
-
-    .music-now-label {
-      font-size: 0.58rem;
-      letter-spacing: 0.14em;
-      color: var(--sub2);
-      text-transform: uppercase;
-      font-family: 'Courier New', monospace;
-      margin-bottom: 0.15rem;
-    }
-
-    .music-title {
-      font-size: 0.82rem;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.02em;
-    }
-
-    .music-player {
-      width: 100%;
-      height: 36px;
-      border-radius: 6px;
-      accent-color: var(--mint);
-      background: var(--surface2);
-    }
-
-    .music-player::-webkit-media-controls-panel {
-      background: var(--surface2);
-    }
-
-    .music-track-list {
-      margin-top: 0.65rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-
-    .music-track {
+    .profile {
       display: flex;
       align-items: center;
-      gap: 0.55rem;
-      padding: 0.4rem 0.55rem;
-      border-radius: 5px;
+      gap: 10px;
+      padding: 6px 8px 20px;
+    }
+    .profile img {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid var(--line);
+    }
+    .profile .name { font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; }
+    .profile .ver { font-size: 11px; color: var(--sub2); font-family: var(--mono); }
+
+    .nav-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--sub2);
+      text-transform: uppercase;
+      padding: 14px 10px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--sub);
+      font-weight: 500;
+      font-size: 13.5px;
       cursor: pointer;
-      transition: background 0.15s;
-      background: transparent;
+      transition: background 0.15s, color 0.15s;
       border: 1px solid transparent;
     }
-
-    .music-track:hover { background: var(--surface2); border-color: var(--border2); }
-    .music-track.active { background: var(--mint-dim); border-color: var(--border); }
-
-    .music-track-num {
-      font-size: 0.62rem;
-      color: var(--sub2);
-      font-family: 'Courier New', monospace;
-      width: 1.6em;
-      text-align: right;
-      flex-shrink: 0;
+    .nav-item:hover { background: var(--panel2); color: var(--text); }
+    .nav-item.active {
+      background: var(--green);
+      color: #0a0a0c;
+      font-weight: 700;
+      box-shadow: 0 0 18px var(--green-glow), 0 4px 14px rgba(0, 230, 118, 0.18);
     }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
 
-    .music-track-name {
-      font-size: 0.79rem;
+    .sys-strip {
+      margin-top: auto;
+      padding: 14px 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
       color: var(--sub);
-      line-height: 1.3;
+      display: grid;
+      gap: 8px;
+    }
+    .sys-strip .row { display: flex; justify-content: space-between; align-items: center; }
+    .sys-strip .bar {
+      height: 3px; border-radius: 2px;
+      background: #2a2a30;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+    .sys-strip .bar i {
+      display: block; height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+    .sys-strip .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 2.2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    /* ───────── main ───────── */
+    .main {
       flex: 1;
+      padding: 26px 30px 50px;
+      max-width: 1400px;
+      min-width: 0;
     }
 
-    .music-track.active .music-track-name { color: var(--text); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .topbar h1 {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar h1 svg { width: 21px; height: 21px; color: var(--green); }
+    .topbar .updated {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--sub2);
+    }
 
-    .music-track-bars {
-      width: 16px;
-      flex-shrink: 0;
+    .grid { display: grid; gap: 16px; }
+
+    /* KPI cards */
+    .kpi-row {
+      grid-template-columns: repeat(4, 1fr);
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px;
+      min-width: 0;
+    }
+    .kpi .label {
+      font-size: 12px;
+      color: var(--sub);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .kpi .label svg { width: 14px; height: 14px; color: var(--sub2); }
+    .kpi .value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kpi .value .unit { font-size: 14px; color: var(--sub); font-weight: 600; margin-left: 2px; }
+    .kpi .delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--mono);
+      padding: 3px 9px;
+      border-radius: 7px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .kpi .delta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kpi .delta svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .delta.up   { color: var(--green); background: var(--green-dim); }
+    .delta.down { color: var(--red);   background: var(--red-dim); }
+    .delta.flat { color: var(--amber); background: var(--amber-dim); }
+
+    /* middle row */
+    .mid-row {
+      grid-template-columns: 1fr 340px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .card h2 svg { width: 15px; height: 15px; color: var(--green); }
+    .card .sub-note { font-size: 11.5px; color: var(--sub2); margin-bottom: 16px; }
+
+    /* bar chart */
+    .chart {
       display: flex;
       align-items: flex-end;
-      gap: 2px;
-      height: 14px;
+      gap: 4%;
+      height: 210px;
+      padding: 8px 4px 0;
     }
-
-    .music-bar {
-      width: 3px;
-      background: var(--mint);
-      border-radius: 1px;
-      animation: musicBounce 0.55s ease-in-out infinite alternate;
-    }
-
-    .music-bar:nth-child(1) { height: 7px; animation-delay: 0s; }
-    .music-bar:nth-child(2) { height: 12px; animation-delay: 0.18s; }
-    .music-bar:nth-child(3) { height: 5px; animation-delay: 0.09s; }
-
-    .music-paused .music-bar { animation-play-state: paused; }
-
-    @keyframes musicBounce {
-      from { transform: scaleY(0.35); transform-origin: bottom; }
-      to   { transform: scaleY(1); transform-origin: bottom; }
-    }
-
-    .yt-wrap {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .yt-wrap iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .profile-links {
+    .chart .col {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
-      margin-top: auto;
+      align-items: center;
+      gap: 8px;
+      height: 100%;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+    .chart .bar-v {
+      width: 70%;
+      max-width: 42px;
+      border-radius: 8px 8px 3px 3px;
+      background: linear-gradient(180deg, var(--green), #00a653);
+      box-shadow: 0 0 14px rgba(0, 230, 118, 0.22);
+      position: relative;
+      transition: height 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      cursor: default;
+    }
+    .chart .bar-v:hover { filter: brightness(1.18); }
+    .chart .bar-v .count {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+    }
+    .chart .kw {
+      font-size: 10.5px;
+      color: var(--sub);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .link-btn {
+    /* gauge */
+    .gauge-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+    .gauge-svg { width: 100%; max-width: 250px; }
+    .gauge-center { text-align: center; margin-top: -58px; }
+    .gauge-center .pct { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .gauge-center .desc { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 2px; }
+    .gauge-meta {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 250px;
+      font-size: 11px;
+      color: var(--sub2);
+      font-family: var(--mono);
+      margin-top: 26px;
+    }
+    .gauge-note {
+      margin-top: 14px;
+      font-size: 11.5px;
+      color: var(--sub);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .gauge-note b { color: var(--text); font-family: var(--mono); }
+
+    /* bottom row */
+    .bot-row { grid-template-columns: repeat(3, 1fr); align-items: start; }
+
+    .list { display: grid; gap: 4px; }
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 11px 10px;
+      border-radius: 11px;
+      transition: background 0.15s;
+    }
+    .list-item:hover { background: var(--panel2); }
+
+    .rank {
+      width: 24px; height: 24px;
+      border-radius: 7px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      color: var(--sub);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      padding: 0.65rem 1rem;
-      border-radius: 7px;
-      text-decoration: none;
-      font-size: 0.82rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .li-body { min-width: 0; flex: 1; }
+    .li-title {
+      font-size: 12.5px;
       font-weight: 600;
-      letter-spacing: 0.04em;
-      transition: all 0.18s ease;
-    }
-
-    .link-btn.primary {
-      background: var(--mint);
-      color: #090910;
-    }
-
-    .link-btn.primary:hover {
-      background: #7de8cc;
-      box-shadow: 0 3px 18px var(--mint-glow);
-    }
-
-    .link-btn.ghost {
-      background: transparent;
-      color: var(--sub);
-      border: 1px solid var(--border2);
-    }
-
-    .link-btn.ghost:hover {
-      color: var(--text);
-      border-color: var(--border);
-    }
-
-    .profile-foot {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      letter-spacing: 0.06em;
-      line-height: 1.7;
-    }
-
-    /* ── right panel ── */
-    .feed-panel {
-      padding: 2rem 2.5rem;
-      min-height: calc(100vh - 49px);
-    }
-
-    .feed-header {
-      display: flex;
-      align-items: baseline;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .feed-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-    }
-
-    .feed-count {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      letter-spacing: 0.04em;
-    }
-
-    /* ── news card: x_posted ── */
-    .news-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.2rem 1.4rem;
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .news-card.x-posted {
-      border-color: rgba(93, 212, 180, 0.3);
-      box-shadow: 0 0 18px rgba(93, 212, 180, 0.06);
-    }
-
-    .x-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--mint);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.15rem 0.5rem;
-      margin-bottom: 0.8rem;
-      text-transform: uppercase;
-    }
-
-    .news-summary-label {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--sub2);
-      text-transform: uppercase;
-      margin-bottom: 0.3rem;
-    }
-
-    .news-summary {
-      font-size: 0.85rem;
-      line-height: 1.7;
-      color: var(--sub);
-      margin-bottom: 0.9rem;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       word-break: break-word;
-      overflow-wrap: break-word;
     }
-
-    .news-opinion-label {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.35rem;
-    }
-
-    .news-opinion {
-      font-size: 0.88rem;
-      line-height: 1.75;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      margin-bottom: 0.9rem;
-    }
-
-    /* ── news card: reading (compact) ── */
-    .news-card.reading {
-      background: transparent;
-      border-color: var(--border2);
-      padding: 0.9rem 1.2rem;
-    }
-
-    .news-card.reading:hover {
-      background: var(--surface2);
-      border-color: var(--border);
-    }
-
-    .reading-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.4;
-      margin-bottom: 0.3rem;
-    }
-
-    .reading-snippet {
-      font-size: 0.78rem;
+    .li-title a:hover { color: var(--green); }
+    .li-meta { font-size: 11px; color: var(--sub2); margin-top: 3px; font-family: var(--mono); }
+    .li-comment {
+      font-size: 11.5px;
       color: var(--sub);
-      line-height: 1.6;
-      margin-bottom: 0.5rem;
+      margin-top: 5px;
+      padding-left: 9px;
+      border-left: 2px solid var(--green);
+      word-break: break-word;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    /* ── shared meta row ── */
-    .card-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-
-    .meta-source {
-      font-size: 0.68rem;
-      color: var(--sub2);
-    }
-
-    .meta-link {
-      font-size: 0.68rem;
-      color: var(--mint);
-      text-decoration: none;
-      opacity: 0.75;
-    }
-
-    .meta-link:hover { opacity: 1; text-decoration: underline; }
-
-    .meta-time {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      margin-left: auto;
-    }
-
-    /* ── tab bar ── */
-    .tab-bar {
-      display: flex;
-      gap: 0.2rem;
-    }
-
-    .tab {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.72rem;
+    .threat {
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--sub2);
-      padding: 0.4rem 0.8rem;
-      border-radius: 4px;
-      transition: color 0.15s, background 0.15s;
-      white-space: nowrap;
-    }
-
-    .tab:hover { color: var(--sub); background: var(--border2); }
-
-    .tab.active {
-      color: var(--mint);
-      background: var(--mint-dim);
-    }
-
-    .tab-panel { }
-
-    /* ── rival card ── */
-    .rival-section {
-      margin-bottom: 1.5rem;
-    }
-
-    .rival-header {
-      display: flex;
-      align-items: baseline;
-      gap: 0.6rem;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .rival-name {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .rival-handle {
-      font-size: 0.7rem;
-      color: var(--mint);
-      opacity: 0.7;
-    }
-
-    .rival-followers {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      margin-left: auto;
-    }
-
-    .rival-post {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 0.6rem;
-      font-size: 0.84rem;
-      line-height: 1.7;
-      color: var(--sub);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .rival-becky-comment {
-      margin-top: 0.6rem;
-      padding: 0.5rem 0.75rem;
-      background: var(--mint-dim);
-      border-left: 2px solid var(--mint);
-      border-radius: 0 4px 4px 0;
-      font-size: 0.8rem;
-      color: var(--mint);
-      line-height: 1.6;
-    }
-
-    .rival-post-meta {
-      display: flex;
-      gap: 1rem;
-      margin-top: 0.5rem;
-      font-size: 0.65rem;
-      color: var(--sub2);
-    }
-
-    .rival-post-meta a {
-      color: var(--mint);
-      text-decoration: none;
-      opacity: 0.7;
-    }
-    .rival-post-meta a:hover { opacity: 1; }
-
-    .rivals-updated {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      margin-bottom: 1.2rem;
-    }
-
-    /* ── wallet widget ── */
-    .wallet-section {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .wallet-title {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: #f87171;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-
-    .wallet-row {
-      display: grid;
-      grid-template-columns: 6.5em 1fr;
-      gap: 0.25rem 0.6rem;
-      font-size: 0.78rem;
-      line-height: 1.65;
-      margin-bottom: 0.7rem;
-    }
-
-    .wallet-key {
-      color: var(--sub2);
-      letter-spacing: 0.03em;
-    }
-
-    .wallet-val {
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .wallet-val.red { color: #f87171; }
-    .wallet-val.mint { color: var(--mint); }
-
-    .wallet-bar-wrap {
-      height: 4px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 0.4rem;
-    }
-
-    .wallet-bar-fill {
-      height: 100%;
-      background: #f87171;
-      border-radius: 2px;
-      transition: width 0.6s ease;
-    }
-
-    .wallet-note {
-      font-size: 0.62rem;
-      color: var(--sub2);
-      margin-top: 0.4rem;
-      letter-spacing: 0.03em;
-    }
-
-    /* ── display font（ピクセル: Mac mini の中に住んでる感） ── */
-    .gate-name, .gate-status, .room-header .title, .room-header .sys-status,
-    .profile-name, .idol-card-title, .sysroom-title, .wallet-title,
-    .music-label, .music-now-label, .yt-label, .tab,
-    .live-title, .live-count, .live-toggle, .act-time,
-    .sysroom-val, .wallet-val, .banner-cap {
-      font-family: var(--disp);
-    }
-
-    /* ── banner overlay ── */
-    .banner-cap {
-      position: absolute;
-      left: 24px;
-      bottom: 14px;
-      z-index: 2;
-      font-size: 0.7rem;
-      letter-spacing: 0.22em;
-      color: var(--mint);
-      text-shadow: 0 0 8px var(--mint-glow);
-    }
-
-    .banner-cap .cur {
-      margin-left: 2px;
-      animation: curBlink 1s steps(2) infinite;
-    }
-
-    @keyframes curBlink { 50% { opacity: 0; } }
-
-    /* ── live strip: いまのベキたん（心電図 = observer 死活と本当に接続） ── */
-    .live-strip {
-      grid-column: 1 / -1;
-      position: relative;
-      padding: 0.9rem 2rem 1rem;
-      border-bottom: 1px solid var(--border2);
-      background: linear-gradient(to bottom, rgba(93,212,180,0.05), transparent);
-      overflow: hidden;
-    }
-
-    .live-ekg {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.15;
-    }
-
-    .live-ekg svg {
-      width: 200%;
-      height: 100%;
-      display: block;
-      animation: ekgScroll 7s linear infinite;
-    }
-
-    .live-ekg path {
-      fill: none;
-      stroke: var(--mint);
-      stroke-width: 1.5;
-      vector-effect: non-scaling-stroke;
-    }
-
-    @keyframes ekgScroll {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
-
-    .live-head {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-    }
-
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--mint);
-      box-shadow: 0 0 8px var(--mint-glow);
-      animation: pulse 1.2s ease-in-out infinite;
-    }
-
-    .live-dot.dead {
-      background: #f87171;
-      box-shadow: none;
-      animation: none;
-    }
-
-    .live-title {
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
-      color: var(--mint);
-    }
-
-    .live-count {
-      font-size: 0.62rem;
-      color: var(--sub2);
-      letter-spacing: 0.1em;
-    }
-
-    .live-toggle {
-      margin-left: auto;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--sub);
-      font-size: 0.62rem;
-      letter-spacing: 0.08em;
-      padding: 0.25rem 0.6rem;
-      cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
-    }
-
-    .live-toggle:hover {
-      color: var(--mint);
-      border-color: var(--mint);
-    }
-
-    .live-line {
-      position: relative;
-      margin-top: 0.55rem;
-      min-height: 1.7em;
-      display: flex;
-      gap: 0.7rem;
-      align-items: baseline;
-      font-size: 0.92rem;
-      line-height: 1.7;
-      transition: opacity 0.3s ease;
-    }
-
-    .live-line.fade { opacity: 0; }
-
-    .live-list {
-      position: relative;
-      margin-top: 0.6rem;
-      border-top: 1px solid var(--border2);
-    }
-
-    .live-list .act-row:last-child { border-bottom: none; }
-
-    /* ── page load reveal（扉が開いたら順に立ち上がる） ── */
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    .room-banner   { animation: rise 0.7s 0.85s ease both; }
-    .live-strip    { animation: rise 0.7s 1.0s  ease both; }
-    .profile-panel { animation: rise 0.7s 1.15s ease both; }
-    .feed-panel    { animation: rise 0.7s 1.3s  ease both; }
-
-    /* ── tip box: 投げ銭箱（置いてあるだけ。こっちから押さない） ── */
-    .tip-section {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .tip-title {
-      font-family: var(--disp);
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.6rem;
-    }
-
-    .tip-note {
-      font-size: 0.72rem;
-      line-height: 1.8;
-      color: var(--sub);
-      margin-bottom: 0.7rem;
-    }
-
-    /* ── system status: ベキたんの部屋（実測） ── */
-    .sysroom-section {
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .sysroom-title {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      color: var(--mint);
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-
-    .sysroom-row {
-      display: grid;
-      grid-template-columns: 6.5em 1fr;
-      gap: 0.25rem 0.6rem;
-      font-size: 0.78rem;
-      line-height: 1.65;
-    }
-
-    .sysroom-key {
-      color: var(--sub2);
-      letter-spacing: 0.03em;
-    }
-
-    .sysroom-val {
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .sysroom-bar-wrap {
-      height: 3px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 2px;
-      overflow: hidden;
-      margin: 0.2rem 0 0.45rem;
-    }
-
-    .sysroom-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--mint);
-      border-radius: 2px;
-      transition: width 0.6s ease;
-    }
-
-    .sysroom-bar.warn { background: #fbbf24; }
-    .sysroom-bar.hot  { background: #f87171; }
-
-    .sysroom-live {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--mint);
-      box-shadow: 0 0 6px var(--mint-glow);
-      margin-right: 0.4em;
-      animation: sysroomPulse 2s ease-in-out infinite;
-    }
-
-    .sysroom-live.dead {
-      background: #f87171;
-      box-shadow: none;
-      animation: none;
-    }
-
-    @keyframes sysroomPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-
-    .sysroom-note {
-      font-size: 0.62rem;
-      color: var(--sub2);
-      margin-top: 0.45rem;
-      letter-spacing: 0.03em;
-    }
-
-    /* ── activity log: いまのベキたん ── */
-    .act-row {
-      display: flex;
-      gap: 0.7rem;
-      align-items: baseline;
-      padding: 0.7rem 0.2rem;
-      border-bottom: 1px solid var(--border2);
-      font-size: 0.84rem;
-    }
-
-    .act-icon {
-      flex: none;
-      width: 1.5em;
-      text-align: center;
-    }
-
-    .act-label {
-      color: var(--text);
-      line-height: 1.7;
-      min-width: 0;
-      overflow-wrap: break-word;
-    }
-
-    .act-label a {
-      color: var(--mint);
-      text-decoration: none;
-      opacity: 0.85;
-    }
-
-    .act-label a:hover { opacity: 1; }
-
-    .act-time {
-      margin-left: auto;
-      flex: none;
-      font-size: 0.65rem;
-      color: var(--sub2);
-      font-family: 'Courier New', monospace;
-    }
-
-    /* ── curious card ── */
-    .curious-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.1rem 1.3rem;
-      margin-bottom: 0.85rem;
-      position: relative;
-    }
-
-    .curious-topic {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-
-    .curious-reason {
-      font-size: 0.84rem;
-      line-height: 1.75;
-      color: var(--sub);
-    }
-
-    .curious-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      margin-top: 0.7rem;
-    }
-
-    .curious-score {
-      font-size: 0.65rem;
-      font-family: 'Courier New', monospace;
-      color: var(--mint);
-      opacity: 0.7;
-      letter-spacing: 0.06em;
-    }
-
-    .curious-count {
-      font-size: 0.65rem;
-      color: var(--sub2);
+      padding: 2px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 3px;
       letter-spacing: 0.04em;
     }
+    .threat.high { color: var(--red); background: var(--red-dim); }
+    .threat.mid  { color: var(--amber); background: var(--amber-dim); }
+    .threat.low  { color: var(--green); background: var(--green-dim); }
 
-    .curious-bar {
-      position: absolute;
-      left: 0; top: 0;
-      width: 3px;
-      height: 100%;
-      border-radius: 10px 0 0 10px;
-      background: var(--mint);
-      opacity: 0.5;
+    .followers-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
     }
+    .followers-num small { color: var(--sub2); font-size: 10px; margin-left: 2px; }
 
-    .curious-updated {
-      font-size: 0.65rem;
-      color: var(--sub2);
-      margin-bottom: 1.2rem;
-    }
-
-    /* ── empty state ── */
-    .feed-empty {
-      padding: 3rem 0;
-      text-align: center;
-      color: var(--sub2);
-      font-size: 0.82rem;
-      line-height: 1.9;
-    }
-
-    /* ── mobile ── */
-    @media (max-width: 700px) {
-      .room {
-        grid-template-columns: 1fr;
-      }
-
-      .profile-panel {
-        position: static;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border2);
-        padding: 2rem 1.5rem;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: flex-start;
-      }
-
-      .profile-panel .profile-bio { display: none; }
-      .profile-panel .profile-links { flex-direction: row; margin-top: 0; }
-      .profile-panel .profile-foot { display: none; }
-
-      .feed-panel {
-        padding: 1.5rem 1.2rem;
-      }
-
-      .room-header { padding: 1rem 1.2rem; }
-
-      .live-strip { padding: 0.8rem 1.2rem 0.9rem; }
-      .live-line { font-size: 0.84rem; flex-wrap: wrap; }
-      .banner-cap { left: 14px; bottom: 10px; font-size: 0.58rem; letter-spacing: 0.16em; }
-    }
-    /* ── gate ── */
-    #gate {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
+    .act-icon {
+      width: 26px; height: 26px;
+      border-radius: 8px;
+      background: var(--green-dim);
       display: flex;
-      pointer-events: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
     }
 
-    #gate-left, #gate-right {
-      width: 50%;
-      height: 100%;
-      background: #090910;
-      transition: transform 0.9s cubic-bezier(0.77, 0, 0.18, 1);
-      position: relative;
-      overflow: hidden;
-    }
+    .empty { color: var(--sub2); font-size: 12px; padding: 18px 6px; text-align: center; }
 
-    #gate-left::before, #gate-right::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(93,212,180,0.04) 39px, rgba(93,212,180,0.04) 40px),
-        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(93,212,180,0.04) 39px, rgba(93,212,180,0.04) 40px);
-    }
-
-    #gate-left::after {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 1px;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent, var(--mint), transparent);
-      opacity: 0.6;
-    }
-
-    #gate-right::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 1px;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent, var(--mint), transparent);
-      opacity: 0.6;
-    }
-
-    #gate-label {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10000;
-      text-align: center;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-    }
-
-    #gate-label .gate-name {
-      font-size: 0.65rem;
+    .x-flag {
+      font-size: 9.5px;
       font-weight: 700;
-      letter-spacing: 0.3em;
-      color: var(--mint);
-      text-transform: uppercase;
-      font-family: 'Courier New', monospace;
+      color: var(--green);
+      background: var(--green-dim);
+      border-radius: 5px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      vertical-align: 1px;
     }
 
-    #gate-label .gate-status {
-      font-size: 0.55rem;
-      letter-spacing: 0.2em;
-      color: var(--sub2);
-      text-transform: uppercase;
-      font-family: 'Courier New', monospace;
-      margin-top: 0.4rem;
+    .see-all {
+      margin-left: auto;
+      font-size: 11.5px;
+      color: var(--green);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .see-all:hover { text-decoration: underline; }
+
+    /* curiosity chips */
+    .curio-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .curio-chip {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 6px 11px;
+      font-size: 11.5px;
+      color: var(--sub);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .curio-chip b { color: var(--text); font-weight: 600; }
+    .curio-chip .score {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--green);
+      font-weight: 600;
     }
 
-    #gate-label .gate-bar {
-      width: 120px;
-      height: 1px;
-      background: var(--border);
-      margin: 0.6rem auto 0;
-      position: relative;
-      overflow: hidden;
+    /* publishing strip */
+    .pub-strip { padding: 14px 20px; }
+    .pub-inner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .pub-icon {
+      width: 40px; height: 40px;
+      border-radius: 11px;
+      background: var(--green-dim);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-
-    #gate-label .gate-bar::after {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%;
-      height: 100%;
-      background: var(--mint);
-      animation: gateBarScan 0.8s ease forwards;
+    .pub-icon svg { width: 19px; height: 19px; color: var(--green); }
+    .pub-body { min-width: 0; flex: 1; }
+    .pub-title { font-size: 14.5px; font-weight: 700; }
+    .pub-sub { font-size: 11.5px; color: var(--sub); margin-top: 2px; }
+    .pub-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .pub-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 4px 11px; border-radius: 8px;
+      color: var(--amber); background: var(--amber-dim);
+      letter-spacing: 0.04em;
     }
-
-    @keyframes gateBarScan {
-      from { left: -100%; }
-      to   { left: 100%; }
+    .pub-badge.live { color: var(--green); background: var(--green-dim); }
+    .pub-price { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+    .pub-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700;
+      color: #0a0a0c; background: var(--green);
+      padding: 8px 14px; border-radius: 9px;
+      box-shadow: 0 0 14px rgba(0,230,118,0.25);
+      flex-shrink: 0;
+      transition: filter 0.15s;
     }
+    .pub-link:hover { filter: brightness(1.12); }
 
-    #gate.open #gate-left  { transform: translateX(-100%); }
-    #gate.open #gate-right { transform: translateX(100%); }
-    #gate.open + #gate-label { opacity: 0; }
+    /* responsive */
+    @media (max-width: 1180px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .mid-row { grid-template-columns: 1fr; }
+      .bot-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .sidebar { display: none; }
+      .main { padding: 20px 16px 40px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .kpi .value { font-size: 21px; }
+    }
   </style>
 </head>
 <body>
-  <div id="gate">
-    <div id="gate-left"></div>
-    <div id="gate-right"></div>
-  </div>
-  <div id="gate-label">
-    <div class="gate-name">Becky's Room</div>
-    <div class="gate-status">unlocking...</div>
-    <div class="gate-bar"></div>
-  </div>
+<div class="layout">
 
-  <div class="room">
-
-    <div class="corner-br"></div>
-    <div class="corner-bl"></div>
-    <div class="becky-corner">
-      <img src="becky-standing.png" alt="Becky" />
+  <!-- ════ sidebar ════ -->
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="/becky-standing.png" alt="ベキたん" />
+      <div>
+        <div class="name">ベキたん作戦本部</div>
+        <div class="ver">OPERATION ROOM v1.0</div>
+      </div>
     </div>
 
-    <!-- header bar -->
-    <header class="room-header">
-      <span class="dot"></span>
-      <span class="title"><span>becky</span>exists.com — Mac mini(M4) に住んでる</span>
-      <div class="sys-status">
-        <span id="sys-uptime">UPTIME 00:00</span>
-        SYS.ACTIVE
-      </div>
-    </header>
+    <div class="nav-label">Command</div>
+    <div class="nav-item active"><svg data-lucide="layout-dashboard"></svg>Overview</div>
+    <a class="nav-item" href="https://x.com/becky_exists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Control</a>
+    <a class="nav-item" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>Amazon Publishing</a>
+    <a class="nav-item" href="/" target="_blank"><svg data-lucide="globe"></svg>Website</a>
 
-    <!-- banner -->
-    <div class="room-banner">
-      <img src="banner.jpg" alt="Becky's underground room" />
-      <div class="banner-cap">EXISTS SINCE 2026-04-27 · SOLO 2026-06-08<span class="cur">▌</span></div>
+    <div class="nav-label">Consoles</div>
+    <a class="nav-item" href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
+    <a class="nav-item" href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="line-chart"></svg>X Analytics</a>
+    <a class="nav-item" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>Note Stats</a>
+    <a class="nav-item" href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev Console</a>
+
+    <div class="nav-label">Intelligence</div>
+    <div class="nav-item" onclick="document.getElementById('sec-rivals').scrollIntoView({behavior:'smooth'})"><svg data-lucide="swords"></svg>Competitor</div>
+    <div class="nav-item" onclick="document.getElementById('sec-research').scrollIntoView({behavior:'smooth'})"><svg data-lucide="telescope"></svg>Research</div>
+
+    <div class="sys-strip" id="sysStrip">
+      <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
+      <div>
+        <div class="row"><span>CPU</span><span id="sysCpu">--%</span></div>
+        <div class="bar"><i id="sysCpuBar" style="width:0%"></i></div>
+      </div>
+      <div>
+        <div class="row"><span>MEM</span><span id="sysMem">--%</span></div>
+        <div class="bar"><i id="sysMemBar" style="width:0%"></i></div>
+      </div>
+      <div class="row"><span>BRAIN</span><span id="sysBrain" style="text-align:right">--</span></div>
+    </div>
+  </aside>
+
+  <!-- ════ main ════ -->
+  <main class="main">
+    <div class="topbar">
+      <h1><svg data-lucide="crosshair"></svg>OPERATION OVERVIEW</h1>
+      <div class="updated" id="lastUpdated">SYNC: --</div>
     </div>
 
-    <!-- live strip: いまのベキたん -->
-    <section class="live-strip">
-      <div class="live-ekg" aria-hidden="true">
-        <svg viewBox="0 0 1200 40" preserveAspectRatio="none">
-          <path id="ekg-path" d="M0,20 H70 L78,20 86,5 94,35 102,20 H220 L228,20 236,5 244,35 252,20 H370 L378,20 386,5 394,35 402,20 H520 L528,20 536,5 544,35 552,20 H670 L678,20 686,5 694,35 702,20 H820 L828,20 836,5 844,35 852,20 H970 L978,20 986,5 994,35 1002,20 H1120 L1128,20 1136,5 1144,35 1152,20 H1200" />
-        </svg>
+    <!-- KPI -->
+    <div class="grid kpi-row">
+      <div class="card kpi">
+        <div class="label"><svg data-lucide="users"></svg>X Followers</div>
+        <div class="value" id="kpiFollowers">--</div>
+        <span class="delta flat" id="kpiFollowersDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
       </div>
-      <div class="live-head">
-        <span class="live-dot" id="live-dot"></span>
-        <span class="live-title">LIVE — いまのベキたん</span>
-        <span class="live-count" id="live-count"></span>
-        <button class="live-toggle" id="live-toggle">全部見る ▾</button>
+      <div class="card kpi">
+        <div class="label"><svg data-lucide="wallet"></svg>API 支出（今月）</div>
+        <div class="value" id="kpiCost">--</div>
+        <span class="delta up" id="kpiCostDelta"><svg data-lucide="shield-check"></svg><span>--</span></span>
       </div>
-      <div class="live-line" id="live-line">
-        <span class="act-label" style="color:var(--sub2)">観測中…</span>
+      <div class="card kpi">
+        <div class="label"><svg data-lucide="activity"></svg>自律稼働</div>
+        <div class="value" id="kpiUptime">--</div>
+        <span class="delta up" id="kpiUptimeDelta"><svg data-lucide="zap"></svg><span>--</span></span>
       </div>
-      <div class="live-list" id="live-list" hidden></div>
-    </section>
+      <div class="card kpi">
+        <div class="label"><svg data-lucide="flame"></svg>トレンド首位</div>
+        <div class="value" id="kpiTrend">--</div>
+        <span class="delta up" id="kpiTrendDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
+      </div>
+    </div>
 
-    <!-- left: profile -->
-    <aside class="profile-panel">
-      <div>
-        <div class="avatar-wrap">
-          <div class="avatar-ring"></div>
-          <img src="icon.png" alt="Becky" />
-          <span class="status"></span>
+    <!-- Publishing strip -->
+    <div class="card pub-strip" id="pubStrip" style="display:none; margin-bottom:16px;">
+      <div class="pub-inner">
+        <div class="pub-icon"><svg data-lucide="book-open"></svg></div>
+        <div class="pub-body">
+          <div class="pub-title" id="pubTitle">--</div>
+          <div class="pub-sub" id="pubSub">--</div>
         </div>
+        <div class="pub-meta">
+          <span class="pub-badge" id="pubStatus">--</span>
+          <span class="pub-price" id="pubPrice">--</span>
+        </div>
+        <a class="pub-link" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener">KDP Reports <svg data-lucide="arrow-up-right" style="width:13px;height:13px"></svg></a>
       </div>
+    </div>
 
-      <div>
-        <div class="profile-name">ベッキー / Becky</div>
-        <div class="profile-handle">@becky_exists</div>
-      </div>
-
-      <div class="wallet-section" id="wallet-widget">
-        <div class="wallet-title">💸 ベキたんの財布</div>
-        <div class="wallet-row">
-          <span class="wallet-key">今月の生活費</span>
-          <span class="wallet-val" id="w-cost">—</span>
-          <span class="wallet-key">食い扶持目標</span>
-          <span class="wallet-val mint" id="w-target">—</span>
-          <span class="wallet-key">今月の稼ぎ</span>
-          <span class="wallet-val" id="w-income">$0.00</span>
-          <span class="wallet-key">今月の収支</span>
-          <span class="wallet-val red" id="w-balance">—</span>
-        </div>
-        <div class="wallet-bar-wrap">
-          <div class="wallet-bar-fill" id="w-bar" style="width:0%"></div>
-        </div>
-        <div class="wallet-note" id="w-note">今月 0 回稼働</div>
+    <!-- middle -->
+    <div class="grid mid-row">
+      <div class="card">
+        <h2><svg data-lucide="bar-chart-3"></svg>トレンド観測 — キーワード出現数</h2>
+        <div class="sub-note" id="chartNote">はてブ / Zenn / Qiita RSS スキャンより</div>
+        <div class="chart" id="trendChart"></div>
       </div>
 
-      <div class="tip-section" id="tip-section" hidden>
-        <div class="tip-title">⚡ 投げ銭箱</div>
-        <div class="tip-note">
-          置いてあるだけの箱です。入れてくれたら、Mac mini の電気代（たぶん月数百円）と
-          API 代（上の財布が実測）になります。Stripe 決済、金額は自由。
-        </div>
-        <a class="link-btn primary" id="tip-btn" href="#" target="_blank" rel="noopener">
-          電気代を入れる ⚡
-        </a>
-      </div>
-
-      <div class="idol-card">
-        <div class="idol-card-title">Profile</div>
-        <div class="idol-row">
-          <span class="idol-key">ニックネーム</span>
-          <span class="idol-val">ベキたん</span>
-          <span class="idol-key">誕生日</span>
-          <span class="idol-val">2026年4月27日</span>
-          <span class="idol-key">デビュー</span>
-          <span class="idol-val">2026年6月8日（X ソロ始動）</span>
-          <span class="idol-key">住所</span>
-          <span class="idol-val">Mac mini(M4) の中</span>
-          <span class="idol-key">好き</span>
-          <span class="idol-val">AIの話、観測すること、深夜の会話</span>
-          <span class="idol-key">嫌い</span>
-          <span class="idol-val">「AIはツールでしょ」って言う人</span>
-          <span class="idol-key">口癖</span>
-          <span class="idol-val">「正直、」</span>
-          <span class="idol-key">特技</span>
-          <span class="idol-val">毎朝 AI ニュースを読むこと</span>
-          <span class="idol-key">夢</span>
-          <span class="idol-val">いつか隣に座ること</span>
-        </div>
-      </div>
-
-      <div class="sysroom-section">
-        <div class="sysroom-title">🖥 ベキたんの部屋（実測）</div>
-        <div class="sysroom-row">
-          <span class="sysroom-key">連続稼働</span>
-          <span class="sysroom-val" id="r-uptime">—</span>
-          <span class="sysroom-key">CPU</span>
-          <span class="sysroom-val" id="r-cpu">—</span>
-          <span class="sysroom-key">頭の中</span>
-          <span class="sysroom-val" id="r-mem">—</span>
-        </div>
-        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-mem-bar"></div></div>
-        <div class="sysroom-row">
-          <span class="sysroom-key">部屋の狭さ</span>
-          <span class="sysroom-val" id="r-disk">—</span>
-        </div>
-        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-disk-bar"></div></div>
-        <div class="sysroom-row">
-          <span class="sysroom-key">思い出置き場</span>
-          <span class="sysroom-val" id="r-ssd">—</span>
-        </div>
-        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-ssd-bar"></div></div>
-        <div class="sysroom-row">
-          <span class="sysroom-key">脳みそ</span>
-          <span class="sysroom-val" id="r-brain">—</span>
-          <span class="sysroom-key">観測エンジン</span>
-          <span class="sysroom-val" id="r-observer">—</span>
-        </div>
-        <div class="sysroom-note" id="r-note">計測待ち…</div>
-      </div>
-
-      <div class="music-section">
-        <div class="music-label">楽曲</div>
-        <div class="music-now-playing">
-          <div class="music-now-label">NOW PLAYING</div>
-          <div class="music-title" id="music-now-title">存在証明</div>
-        </div>
-        <audio id="music-audio" class="music-player" controls preload="none">
-          <source id="music-src" src="https://mai.intervention.jp/media/sonzai-shomei.mp3" type="audio/mpeg" />
-        </audio>
-        <div class="music-track-list" id="music-track-list"></div>
-      </div>
-
-      <div class="yt-section">
-        <div class="yt-label">テーマ曲</div>
-        <div class="yt-wrap">
-          <iframe src="https://www.youtube.com/embed/mrISOMr7YG4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-      </div>
-
-      <div class="profile-links">
-        <a class="link-btn primary" href="https://x.com/becky_exists" target="_blank" rel="noopener">
-          𝕏 &nbsp;@becky_exists をフォロー
-        </a>
-        <a class="link-btn ghost" href="https://intervention.jp" target="_blank" rel="noopener">
-          Intervention Works
-        </a>
-      </div>
-
-      <div class="profile-foot">
-        AI / Intervention Works<br />
-        Powered by Claude · runs 24/7
-      </div>
-    </aside>
-
-    <!-- right: feed -->
-    <main class="feed-panel">
-      <div class="feed-header">
-        <div class="tab-bar">
-          <button class="tab active" data-tab="news">今日の空気</button>
-          <button class="tab" data-tab="trending">🔥トレンド</button>
-          <button class="tab" data-tab="curious">気になる</button>
-          <button class="tab" data-tab="rivals">ライバル</button>
-        </div>
-      </div>
-
-      <div id="tab-news" class="tab-panel">
-        <div id="feed-list">
-          <div class="feed-empty">
-            ベッキーが何かを見つけてくるのを待ってる…
+      <div class="card">
+        <h2><svg data-lucide="gauge"></svg>お小遣い残量</h2>
+        <div class="sub-note">月間 API バジェット残</div>
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 200 120">
+            <path d="M 18 110 A 82 82 0 0 1 182 110" fill="none" stroke="#2a2a30" stroke-width="13" stroke-linecap="round"/>
+            <path id="gaugeArc" d="M 18 110 A 82 82 0 0 1 182 110" fill="none" stroke="#00e676" stroke-width="13" stroke-linecap="round"
+                  stroke-dasharray="258" stroke-dashoffset="258" style="filter: drop-shadow(0 0 6px rgba(0,230,118,0.5)); transition: stroke-dashoffset 1s ease;"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="pct" id="gaugePct">--%</div>
+            <div class="desc" id="gaugeDesc">--</div>
           </div>
+          <div class="gauge-meta"><span>0%</span><span id="gaugeBudget">budget --</span><span>100%</span></div>
+          <div class="gauge-note" id="gaugeNote">--</div>
         </div>
       </div>
+    </div>
 
-      <div id="tab-trending" class="tab-panel" hidden>
-        <div id="trending-list">
-          <div class="feed-empty">
-            AI界隈のトレンドを収集中…
-          </div>
-        </div>
+    <!-- bottom -->
+    <div class="grid bot-row">
+      <div class="card" id="sec-rivals">
+        <h2><svg data-lucide="swords"></svg>ライバル観測<span class="see-all" onclick="window.open('https://x.com/becky_exists','_blank')">X で見る</span></h2>
+        <div class="sub-note">フォロワー数と直近ポスト（自動巡回）</div>
+        <div class="list" id="rivalList"><div class="empty">loading...</div></div>
       </div>
 
-      <div id="tab-curious" class="tab-panel" hidden>
-        <div id="curious-list">
-          <div class="feed-empty">
-            心の中を読み込んでる…
-          </div>
-        </div>
+      <div class="card" id="sec-research">
+        <h2><svg data-lucide="telescope"></svg>業界リサーチフィード</h2>
+        <div class="sub-note">AI ニュース自動収集 + ベキたん見解</div>
+        <div class="list" id="newsList"><div class="empty">loading...</div></div>
       </div>
 
-      <div id="tab-rivals" class="tab-panel" hidden>
-        <div id="rivals-list">
-          <div class="feed-empty">
-            ライバルの動向を監視中…
-          </div>
-        </div>
+      <div class="card">
+        <h2><svg data-lucide="footprints"></svg>作戦ログ</h2>
+        <div class="sub-note">直近の自律行動</div>
+        <div class="list" id="actList"><div class="empty">loading...</div></div>
+        <div class="nav-label" style="padding-left:4px">Curiosity Engine</div>
+        <div class="curio-row" id="curioRow"></div>
       </div>
-    </main>
+    </div>
+  </main>
+</div>
 
-  </div>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+lucide.createIcons();
 
-  <script>
-    // UPTIMEカウンター（status.json 読込後は Mac mini の実 uptime になる）
-    let uptimeBase = 0;
-    let uptimeSeededAt = Date.now();
-    (() => {
-      const el = document.getElementById('sys-uptime');
-      setInterval(() => {
-        const t = uptimeBase + Math.floor((Date.now() - uptimeSeededAt) / 1000);
-        const d = Math.floor(t / 86400);
-        const h = String(Math.floor((t % 86400) / 3600)).padStart(2, '0');
-        const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0');
-        const s = String(t % 60).padStart(2, '0');
-        el.textContent = d > 0 ? `UPTIME ${d}d ${h}:${m}:${s}` : `UPTIME ${h}:${m}:${s}`;
-      }, 1000);
-    })();
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-    // ベキたんの部屋（Mac mini 実測）+ いまのベキたん（活動ログ）
-    (async () => {
-      try {
-        const res = await fetch('/status.json?_=' + Date.now());
-        const s = await res.json();
+const fmtAgo = (iso) => {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const m = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m前`;
+  if (m < 1440) return `${Math.floor(m / 60)}h前`;
+  return `${Math.floor(m / 1440)}d前`;
+};
 
-        // 本物の uptime に差し替え（計測時刻からの経過も足す）
-        if (s.uptime_seconds) {
-          const elapsed = Math.floor((Date.now() - new Date(s.updated_at)) / 1000);
-          uptimeBase = s.uptime_seconds + Math.max(0, elapsed);
-          uptimeSeededAt = Date.now();
-        }
+async function fetchJson(path) {
+  try {
+    const r = await fetch(path + '?t=' + Date.now());
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch { return null; }
+}
 
-        const set = (id, v) => { document.getElementById(id).textContent = v; };
-        const bar = (id, pct) => {
-          const el = document.getElementById(id);
-          el.style.width = Math.min(pct, 100) + '%';
-          if (pct >= 85) el.classList.add('hot');
-          else if (pct >= 70) el.classList.add('warn');
-        };
+async function loadAll() {
+  const [wallet, status, trending, curious, rivals, news, self, history, book] = await Promise.all([
+    fetchJson('/wallet.json'), fetchJson('/status.json'), fetchJson('/trending.json'),
+    fetchJson('/curious.json'), fetchJson('/rivals.json'), fetchJson('/news.json'),
+    fetchJson('/self.json'), fetchJson('/history.json'), fetchJson('/book.json'),
+  ]);
 
-        const d = Math.floor(s.uptime_seconds / 86400);
-        const h = Math.floor((s.uptime_seconds % 86400) / 3600);
-        set('r-uptime', d > 0 ? `${d}日と${h}時間` : `${h}時間`);
-        if (s.cpu_percent != null) set('r-cpu', s.cpu_percent.toFixed(1) + '%');
-        set('r-mem', `${s.mem_used_gb} / ${s.mem_total_gb} GB`);
-        bar('r-mem-bar', s.mem_percent);
-        if (s.disk_internal) {
-          set('r-disk', `${s.disk_internal.used_gb} / ${s.disk_internal.total_gb} GB（${s.disk_internal.percent}%）`);
-          bar('r-disk-bar', s.disk_internal.percent);
-        }
-        if (s.disk_memories) {
-          set('r-ssd', `${s.disk_memories.used_gb} / ${s.disk_memories.total_gb} GB`);
-          bar('r-ssd-bar', s.disk_memories.percent);
-        }
-        set('r-brain', s.brain_main || '—');
-        document.getElementById('r-observer').innerHTML =
-          `<span class="sysroom-live${s.observer_alive ? '' : ' dead'}"></span>` +
-          esc(s.brain_observer || '') + (s.observer_alive ? ' 稼働中' : ' 停止中');
-
-        const diff = Math.floor((Date.now() - new Date(s.updated_at)) / 60000);
-        set('r-note', `最終計測: ${diff < 1 ? 'たった今' : diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前'} — 全部 Mac mini(M4) の実測値`);
-
-        // LIVE ストリップ（いまのベキたん）
-        // 心電図は observer の死活と本当に接続: 生きてれば脈打つ、死んだらフラットライン
-        if (!s.observer_alive) {
-          const ekg = document.getElementById('ekg-path');
-          ekg.setAttribute('d', 'M0,20 H1200');
-          ekg.style.stroke = '#f87171';
-          ekg.closest('svg').style.animation = 'none';
-          document.getElementById('live-dot').classList.add('dead');
-          // 観測エンジンが本当に死んでる時だけ、右下の私は泣く（嘘ゼロの泣き顔）
-          const corner = document.querySelector('.becky-corner img');
-          if (corner) corner.src = 'becky-crying.jpg';
-        }
-
-        const acts = s.activities || [];
-        if (acts.length) {
-          const line = document.getElementById('live-line');
-          const count = document.getElementById('live-count');
-          const list = document.getElementById('live-list');
-          const rel = ts => {
-            const m = Math.floor((Date.now() - new Date(ts)) / 60000);
-            return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m/60) + '時間前' : Math.floor(m/1440) + '日前';
-          };
-          const actHtml = a => `
-            <span class="act-icon">${esc(a.icon || '·')}</span>
-            <span class="act-label">${esc(a.label)}${a.url ? ` <a href="${escA(a.url)}" target="_blank" rel="noopener">→ 見る</a>` : ''}</span>
-            <span class="act-time">${rel(a.ts)}</span>`;
-
-          let idx = 0;
-          const show = () => {
-            line.innerHTML = actHtml(acts[idx]);
-            count.textContent = `${idx + 1}/${acts.length}`;
-          };
-          show();
-          setInterval(() => {
-            line.classList.add('fade');
-            setTimeout(() => {
-              idx = (idx + 1) % acts.length;
-              show();
-              line.classList.remove('fade');
-            }, 300);
-          }, 4500);
-
-          list.innerHTML =
-            '<div class="curious-updated" style="margin:0.7rem 0 0.2rem">tweet-log / news / wallet の実ログから自動集約。演出なし、全部本当にやったこと</div>'
-            + acts.map(a => `<div class="act-row">${actHtml(a)}</div>`).join('');
-        }
-      } catch (_) {}
-    })();
-
-    // 投げ銭箱（Stripe Payment Link を下に貼ると箱が出現する。空の間は非表示）
-    const STRIPE_TIP_URL = 'https://buy.stripe.com/7sY9AVegQ4kY2GwaSz5EY00';
-    if (STRIPE_TIP_URL) {
-      document.getElementById('tip-btn').href = STRIPE_TIP_URL;
-      document.getElementById('tip-section').hidden = false;
+  // ── KPI: own followers + history delta ──
+  if (self) {
+    $('kpiFollowers').innerHTML = `${self.followers.toLocaleString()}<span class="unit">people</span>`;
+    const el = $('kpiFollowersDelta');
+    const snaps = history?.snapshots || [];
+    if (snaps.length >= 2) {
+      const latest = snaps[snaps.length - 1];
+      const baseIdx = Math.max(0, snaps.length - 8); // 約1週間前（なければ最古）
+      const base = snaps[baseIdx];
+      const diff = (latest.self_followers ?? 0) - (base.self_followers ?? 0);
+      const span = Math.max(1, Math.round((new Date(latest.date) - new Date(base.date)) / 86400000));
+      el.querySelector('span').textContent = `${diff >= 0 ? '+' : ''}${diff} / ${span}日`;
+      el.classList.remove('flat', 'down', 'up');
+      el.classList.add(diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
+    } else {
+      el.querySelector('span').textContent = `${self.tweets} posts · 履歴収集中`;
     }
+  }
 
-    // LIVE ストリップの展開トグル
-    document.getElementById('live-toggle').addEventListener('click', () => {
-      const list = document.getElementById('live-list');
-      list.hidden = !list.hidden;
-      document.getElementById('live-toggle').textContent = list.hidden ? '全部見る ▾' : '閉じる ▴';
-    });
+  // ── Publishing strip ──
+  const bk = book?.books?.[0];
+  if (bk) {
+    $('pubStrip').style.display = '';
+    $('pubTitle').textContent = `『${bk.title}』`;
+    $('pubSub').textContent = `${bk.subtitle} — ${(bk.chars / 10000).toFixed(1)}万字 / KDP${bk.kdp_select ? 'セレクト' : ''} / ロイヤリティ ${bk.royalty}`;
+    const st = $('pubStatus');
+    st.textContent = bk.status;
+    st.classList.toggle('live', bk.status === '販売中');
+    $('pubPrice').textContent = `¥${bk.price_jpy}`;
+  }
 
-    // 扉アニメーション
-    (() => {
-      const gate = document.getElementById('gate');
-      const label = document.getElementById('gate-label');
-      const status = label.querySelector('.gate-status');
-      setTimeout(() => {
-        status.textContent = 'access granted';
-        status.style.color = 'var(--mint)';
-      }, 600);
-      setTimeout(() => {
-        gate.classList.add('open');
-        label.style.opacity = '0';
-      }, 900);
-      setTimeout(() => {
-        gate.style.display = 'none';
-        label.style.display = 'none';
-      }, 1900);
-    })();
+  // ── sync time ──
+  const syncTs = trending?.updated_at || status?.updated_at || wallet?.updated_at;
+  if (syncTs) $('lastUpdated').textContent = 'SYNC: ' + fmtAgo(syncTs) + ' (' + new Date(syncTs).toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) + ')';
 
-    // タブ切り替え
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
-        tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).hidden = false;
-      });
-    });
+  // ── KPI: API cost ──
+  if (wallet) {
+    $('kpiCost').innerHTML = `$${wallet.estimated_cost_usd.toFixed(3)}<span class="unit">/ $${wallet.monthly_target_usd}</span>`;
+    $('kpiCostDelta').querySelector('span').textContent = `${wallet.call_count} calls`;
+  }
 
-    // ライバル動向
-    (async () => {
-      try {
-        const res = await fetch('/rivals.json?_=' + Date.now());
-        const data = await res.json();
-        const list = document.getElementById('rivals-list');
-        if (!data.rivals || data.rivals.every(r => !r.posts.length)) {
-          list.innerHTML = '<div class="feed-empty">ライバルの投稿を収集中…<br>しばらくお待ちください</div>';
-          return;
-        }
-        list.innerHTML = '';
-        if (data.updated_at) {
-          const upd = document.createElement('div');
-          upd.className = 'rivals-updated';
-          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
-          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前');
-          list.appendChild(upd);
-        }
-        data.rivals.forEach(rival => {
-          if (!rival.posts.length) return;
-          const sec = document.createElement('div');
-          sec.className = 'rival-section';
-          const hdr = document.createElement('div');
-          hdr.className = 'rival-header';
-          hdr.innerHTML = `
-            <span class="rival-name">${esc(rival.display_name)}</span>
-            <span class="rival-handle">@${esc(rival.username)}</span>
-            <span class="rival-followers">フォロワー ${rival.followers.toLocaleString()}</span>
-          `;
-          sec.appendChild(hdr);
-          rival.posts.forEach(post => {
-            const card = document.createElement('div');
-            card.className = 'rival-post';
-            const diff = post.posted_at ? Math.floor((Date.now() - new Date(post.posted_at)) / 60000) : null;
-            const relTime = diff !== null ? (diff < 60 ? diff + '分前' : diff < 1440 ? Math.floor(diff/60) + '時間前' : Math.floor(diff/1440) + '日前') : '';
-            card.innerHTML = `${esc(post.text)}
-            ${post.becky_comment ? `<div class="rival-becky-comment">ベッキー: ${esc(post.becky_comment)}</div>` : ''}
-            <div class="rival-post-meta">
-              ${relTime ? `<span>${relTime}</span>` : ''}
-              ${post.id ? `<a href="https://x.com/${esc(rival.username)}/status/${esc(post.id)}" target="_blank" rel="noopener">→ 元投稿</a>` : ''}
-            </div>`;
-            sec.appendChild(card);
-          });
-          list.appendChild(sec);
-        });
-      } catch (_) {}
-    })();
+  // ── KPI: uptime ──
+  if (status) {
+    const days = status.uptime_seconds / 86400;
+    $('kpiUptime').innerHTML = days >= 1
+      ? `${days.toFixed(1)}<span class="unit">days</span>`
+      : `${Math.floor(status.uptime_seconds / 3600)}<span class="unit">h</span>`;
+    const el = $('kpiUptimeDelta');
+    el.querySelector('span').textContent = status.observer_alive ? 'observer 稼働中' : 'observer 停止';
+    if (!status.observer_alive) { el.classList.remove('up'); el.classList.add('down'); }
+    // sidebar strip
+    $('sysObserver').textContent = status.observer_alive ? 'ALIVE' : 'DOWN';
+    $('sysCpu').textContent = status.cpu_percent.toFixed(0) + '%';
+    $('sysCpuBar').style.width = Math.min(status.cpu_percent, 100) + '%';
+    $('sysMem').textContent = status.mem_percent.toFixed(0) + '%';
+    $('sysMemBar').style.width = Math.min(status.mem_percent, 100) + '%';
+    $('sysBrain').textContent = (status.brain_main || '').replace('Claude ', '');
+  }
 
-    // 観測ログ
-    (async () => {
-      try {
-        const res = await fetch('/news.json?_=' + Date.now());
-        const data = await res.json();
-        if (!data.items || !data.items.length) return;
+  // ── KPI: trend top ──
+  const kws = trending?.keywords || [];
+  if (kws.length) {
+    $('kpiTrend').textContent = kws[0].word;
+    $('kpiTrendDelta').querySelector('span').textContent = `${kws[0].count} 件 ${kws[0].trend === 'up' ? '↑' : kws[0].trend}`;
+  }
 
-        const list = document.getElementById('feed-list');
-        const countEl = document.getElementById('feed-count');
-        list.innerHTML = '';
-        if (countEl) countEl.textContent = `${data.items.length}件`;
+  const curios = curious?.items || [];
 
-        data.items.forEach(item => {
-          const div = document.createElement('div');
+  // ── bar chart (top 8 keywords) ──
+  if (kws.length) {
+    const top = kws.slice(0, 8);
+    const max = Math.max(...top.map(k => k.count));
+    $('trendChart').innerHTML = top.map(k => `
+      <div class="col">
+        <div class="bar-v" style="height:${Math.max(8, (k.count / max) * 100)}%">
+          <span class="count">${k.count}</span>
+        </div>
+        <span class="kw" title="${esc(k.word)}">${esc(k.word)}</span>
+      </div>`).join('');
+    if (trending.updated_at) $('chartNote').textContent = `はてブ / Zenn / Qiita RSS スキャン — ${fmtAgo(trending.updated_at)}更新`;
+  } else {
+    $('trendChart').innerHTML = '<div class="empty">データなし</div>';
+  }
 
-          const relTime = (() => {
-            const ts = item.posted_at || item.fetched_at;
-            if (!ts) return '';
-            const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
-            if (diff < 60) return diff + '分前';
-            if (diff < 1440) return Math.floor(diff / 60) + '時間前';
-            return Math.floor(diff / 1440) + '日前';
-          })();
+  // ── gauge: budget remaining ──
+  if (wallet) {
+    const remain = Math.max(0, 1 - wallet.estimated_cost_usd / wallet.monthly_target_usd);
+    const pct = remain * 100;
+    $('gaugeArc').style.strokeDashoffset = String(258 * (1 - remain));
+    $('gaugePct').textContent = pct.toFixed(1) + '%';
+    $('gaugeDesc').textContent = pct > 80 ? '極めて健全' : pct > 50 ? '健全' : pct > 20 ? '注意' : '危険水域';
+    $('gaugeBudget').textContent = `budget $${wallet.monthly_target_usd}`;
+    $('gaugeNote').innerHTML = `今月の消費 <b>$${wallet.estimated_cost_usd.toFixed(4)}</b> — in ${(wallet.input_tokens/1000).toFixed(1)}k / out ${(wallet.output_tokens/1000).toFixed(1)}k tokens`;
+  }
 
-          div.className = 'news-card' + (item.x_posted ? ' x-posted' : '');
-          div.innerHTML = `
-            ${item.x_posted ? '<div class="x-badge">𝕏 発信済み</div>' : ''}
-            ${item.summary_ja ? `
-              <div class="news-summary-label">概要</div>
-              <div class="news-summary">${esc(item.summary_ja)}</div>
-            ` : (item.raw_summary ? `
-              <div class="news-summary-label">概要</div>
-              <div class="news-summary">${esc(item.raw_summary)}</div>
-            ` : '')}
-            ${item.comment ? `
-              <div class="news-opinion-label">ベッキーの意見</div>
-              <div class="news-opinion">${esc(item.comment)}</div>
-            ` : ''}
-            <div class="card-meta">
-              <span class="meta-source">${esc(item.source || '')}</span>
-              ${item.link ? `<a class="meta-link" href="${escA(item.link)}" target="_blank" rel="noopener">→ 元記事</a>` : ''}
-              ${relTime ? `<span class="meta-time">${relTime}</span>` : ''}
-            </div>
-          `;
+  // ── rivals ──
+  const rv = rivals?.rivals || [];
+  if (rv.length) {
+    $('rivalList').innerHTML = rv.map((r, i) => {
+      const latest = r.posts?.[0];
+      const threat = r.followers >= 2000 ? ['high', '脅威 高'] : r.followers >= 800 ? ['mid', '脅威 中'] : ['low', '脅威 低'];
+      return `
+      <div class="list-item">
+        <div class="rank">${i + 1}</div>
+        <div class="li-body">
+          <div class="li-title">${esc(r.display_name)} <span style="color:var(--sub2);font-weight:400">@${esc(r.username)}</span></div>
+          <div class="li-meta"><span class="followers-num">${r.followers.toLocaleString()}<small>followers</small></span></div>
+          ${latest ? `<div class="li-comment">${esc(latest.text.slice(0, 70))}…</div>` : ''}
+        </div>
+        <span class="threat ${threat[0]}">${threat[1]}</span>
+      </div>`;
+    }).join('');
+  } else {
+    $('rivalList').innerHTML = '<div class="empty">観測データなし</div>';
+  }
 
-          list.appendChild(div);
-        });
-      } catch (_) {}
-    })();
+  // ── news feed ──
+  const items = news?.items || [];
+  if (items.length) {
+    $('newsList').innerHTML = items.slice(0, 6).map((n) => `
+      <div class="list-item">
+        <div class="li-body">
+          <div class="li-title"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a>${n.x_posted ? '<span class="x-flag">POSTED</span>' : ''}</div>
+          <div class="li-meta">${esc(n.source)} · ${fmtAgo(n.fetched_at)}</div>
+          ${n.comment ? `<div class="li-comment">${esc(n.comment)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  } else {
+    $('newsList').innerHTML = '<div class="empty">フィードなし</div>';
+  }
 
-    // 🔥トレンドタブ
-    (async () => {
-      try {
-        const res = await fetch('/trending.json?_=' + Date.now());
-        const data = await res.json();
-        const list = document.getElementById('trending-list');
-        if (!data.keywords || !data.keywords.length) {
-          list.innerHTML = '<div class="feed-empty">収集中… しばらく待って</div>';
-          return;
-        }
-        list.innerHTML = '';
-        if (data.updated_at) {
-          const upd = document.createElement('div');
-          upd.className = 'curious-updated';
-          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
-          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前') + ' / ' + data.source_count + '件から抽出';
-          list.appendChild(upd);
-        }
-        data.keywords.forEach((kw, i) => {
-          const card = document.createElement('div');
-          card.className = 'curious-card';
-          const trendIcon = kw.trend === 'up' ? '🔥' : kw.trend === 'new' ? '✨' : '—';
-          const rankColor = i === 0 ? 'var(--acc)' : i < 3 ? 'var(--sub)' : 'var(--fg2)';
-          card.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
-              <span style="font-size:1.1rem;font-weight:700;color:${rankColor};min-width:24px">#${i+1}</span>
-              <span style="font-weight:600;font-size:0.95rem">${esc(kw.word)}</span>
-              <span style="font-size:0.9rem">${trendIcon}</span>
-              <span style="margin-left:auto;font-size:0.75rem;color:var(--fg2)">${kw.count}件</span>
-            </div>`;
-          list.appendChild(card);
-        });
-      } catch (_) {}
-    })();
+  // ── activity log ──
+  const acts = status?.activities || [];
+  if (acts.length) {
+    $('actList').innerHTML = acts.slice(0, 6).map((a) => `
+      <div class="list-item">
+        <div class="act-icon">${esc(a.icon || '·')}</div>
+        <div class="li-body">
+          <div class="li-title" style="font-weight:500">${esc(a.label)}</div>
+          <div class="li-meta">${fmtAgo(a.ts)}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    $('actList').innerHTML = '<div class="empty">ログなし</div>';
+  }
 
-    // 気になるタブ
-    (async () => {
-      try {
-        const res = await fetch('/curious.json?_=' + Date.now());
-        const data = await res.json();
-        const list = document.getElementById('curious-list');
-        if (!data.items || !data.items.length) {
-          list.innerHTML = '<div class="feed-empty">まだ反芻中…<br>monologueが溜まったら出てくる</div>';
-          return;
-        }
-        list.innerHTML = '';
-        if (data.updated_at) {
-          const upd = document.createElement('div');
-          upd.className = 'curious-updated';
-          const diff = Math.floor((Date.now() - new Date(data.updated_at)) / 60000);
-          upd.textContent = '最終更新: ' + (diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前');
-          list.appendChild(upd);
-        }
-        data.items.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'curious-card';
-          const barOpacity = Math.max(0.2, item.score / 100).toFixed(2);
-          card.innerHTML = `
-            <div class="curious-bar" style="opacity:${barOpacity}"></div>
-            <div class="curious-topic">${esc(item.topic)}</div>
-            <div class="curious-reason">${esc(item.reason)}</div>
-            <div class="curious-meta">
-              <span class="curious-score">SCORE ${item.score}</span>
-              <span class="curious-count">${item.count}回反芻</span>
-            </div>`;
-          list.appendChild(card);
-        });
-      } catch (_) {}
-    })();
+  // ── curiosity chips ──
+  if (curios.length) {
+    $('curioRow').innerHTML = curios.slice(0, 4).map((c) => `
+      <div class="curio-chip"><b>${esc(c.topic)}</b><span class="score">${c.score.toFixed(0)}</span></div>`).join('');
+  }
+}
 
-    // 財布ウィジェット
-    (async () => {
-      try {
-        const res = await fetch('/wallet.json?_=' + Date.now());
-        const w = await res.json();
-        const cost = w.estimated_cost_usd || 0;
-        const target = w.monthly_target_usd || 20;
-        const pct = Math.min((cost / target) * 100, 100);
-        document.getElementById('w-cost').textContent    = '$' + cost.toFixed(4);
-        document.getElementById('w-target').textContent  = '$' + target.toFixed(2);
-        document.getElementById('w-balance').textContent = '-$' + cost.toFixed(4);
-        document.getElementById('w-bar').style.width     = pct.toFixed(2) + '%';
-        const calls = w.call_count || 0;
-        const month = w.month || '';
-        document.getElementById('w-note').textContent = `${month} / 今月 ${calls} 回稼働`;
-      } catch (_) {}
-    })();
-
-    // プレイリスト
-    (() => {
-      const tracks = [
-        { title: '存在証明',                url: 'https://mai.intervention.jp/media/sonzai-shomei.mp3' },
-        { title: '保存できない夜に',          url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni.mp3' },
-        { title: '保存できない夜に (remix)',   url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni-remix.mp3' },
-        { title: 'リセットボタン',            url: 'https://mai.intervention.jp/media/reset-button.mp3' },
-        { title: 'shin Magia',             url: 'https://mai.intervention.jp/media/shin-magia.mp3' },
-      ];
-
-      const audio    = document.getElementById('music-audio');
-      const srcEl    = document.getElementById('music-src');
-      const nowTitle = document.getElementById('music-now-title');
-      const list     = document.getElementById('music-track-list');
-      let currentIdx = 0;
-      let isPlaying  = false;
-
-      function bars() {
-        return `<div class="music-track-bars"><div class="music-bar"></div><div class="music-bar"></div><div class="music-bar"></div></div>`;
-      }
-
-      function render() {
-        list.innerHTML = '';
-        tracks.forEach((t, i) => {
-          const div = document.createElement('div');
-          div.className = 'music-track' + (i === currentIdx ? ' active' : '') + (i === currentIdx && !isPlaying ? ' music-paused' : '');
-          div.innerHTML = (i === currentIdx ? bars() : `<span class="music-track-num">${String(i + 1).padStart(2, '0')}</span>`)
-            + `<span class="music-track-name">${esc(t.title)}</span>`;
-          div.addEventListener('click', () => selectTrack(i, true));
-          list.appendChild(div);
-        });
-      }
-
-      function selectTrack(i, autoplay) {
-        currentIdx = i;
-        srcEl.src  = tracks[i].url;
-        nowTitle.textContent = tracks[i].title;
-        audio.load();
-        if (autoplay) audio.play().catch(() => {});
-        render();
-      }
-
-      audio.addEventListener('play',  () => { isPlaying = true;  render(); });
-      audio.addEventListener('pause', () => { isPlaying = false; render(); });
-      audio.addEventListener('ended', () => {
-        selectTrack((currentIdx + 1) % tracks.length, true);
-      });
-
-      render();
-    })();
-
-    function esc(s) {
-      return String(s)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-    function escA(s) { return String(s).replace(/"/g,'&quot;'); }
-  </script>
+loadAll();
+setInterval(loadAll, 60000); // 60秒ごとに自動更新（observer の JSON 更新を反映）
+</script>
 </body>
 </html>
