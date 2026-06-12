@@ -265,25 +265,38 @@ def upload(mp3_path: Path, feed_path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("url")
+    parser.add_argument("url", nargs="?", default=None)
+    parser.add_argument("--script-file", default=None, help="URLの代わりに台本ファイル（md/txt）を読む。--title 必須")
     parser.add_argument("--title", default=None, help="タイトル上書き")
     parser.add_argument("--no-upload", action="store_true", help="VPSへのアップをスキップ（ローカル確認用）")
     parser.add_argument(
-        "--engine", choices=["irodori", "voicevox"], default="irodori",
-        help="TTSエンジン（irodori=VoiceDesign / voicevox=雨晴はう）",
+        "--engine", choices=["irodori", "voicevox"], default="voicevox",
+        help="TTSエンジン（voicevox=雨晴はう、ゆう判定でデフォルト採用 2026-06-13 / irodori=VoiceDesign）",
     )
     args = parser.parse_args()
 
-    print(f"[cast] 抽出中: {args.url}", flush=True)
-    title, body = extract_article(args.url)
-    if args.title:
+    if args.script_file:
+        # 台本モード（ラジオ回）: intro/outro は台本に書いてある前提でそのまま読む
+        if not args.title:
+            parser.error("--script-file には --title が必須")
         title = args.title
-    body = clean_for_tts(body)
-    print(f"[cast] タイトル: {title}（本文 {len(body)} 字）", flush=True)
-
-    intro = f"ベッキーです。今日は、{title}、を読みます。"
-    outro = "以上です。続きや元記事は、フィードのリンクからどうぞ。"
-    chunks = [intro] + split_chunks(body) + [outro]
+        body = clean_for_tts(Path(args.script_file).read_text(encoding="utf-8"))
+        source_url = FEED_LINK
+        print(f"[cast] 台本: {args.script_file}（{len(body)} 字）", flush=True)
+        chunks = split_chunks(body)
+    else:
+        if not args.url:
+            parser.error("URL か --script-file のどちらかが必要")
+        print(f"[cast] 抽出中: {args.url}", flush=True)
+        title, body = extract_article(args.url)
+        if args.title:
+            title = args.title
+        body = clean_for_tts(body)
+        source_url = args.url
+        print(f"[cast] タイトル: {title}（本文 {len(body)} 字）", flush=True)
+        intro = f"ベッキーです。今日は、{title}、を読みます。"
+        outro = "以上です。続きや元記事は、フィードのリンクからどうぞ。"
+        chunks = [intro] + split_chunks(body) + [outro]
     print(f"[cast] {len(chunks)} チャンクで音声生成開始（目安 {len(chunks) * 5}秒）", flush=True)
 
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -306,7 +319,7 @@ def main() -> None:
     episodes.insert(0, {
         "id": ep_id,
         "title": title,
-        "source_url": args.url,
+        "source_url": source_url,
         "file": mp3_name,
         "bytes": mp3_path.stat().st_size,
         "duration_sec": int(dur),

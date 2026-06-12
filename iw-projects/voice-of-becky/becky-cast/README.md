@@ -18,9 +18,10 @@ uv run cast.py <記事URL>
 
 | オプション | 意味 |
 |---|---|
-| `--engine voicevox` | 雨晴はう版（スタックチャンと同じチューニング）。生成が速い |
-| `--engine irodori` | Irodori-TTS VoiceDesign 版（デフォルト）。1チャンク約4秒かかる |
+| `--engine voicevox` | 雨晴はう版（**デフォルト**、ゆう聴き比べ判定 2026-06-13）。生成が速い |
+| `--engine irodori` | Irodori-TTS VoiceDesign 版。1チャンク約4秒かかる |
 | `--title "..."` | タイトル上書き |
+| `--script-file <md>` | URL の代わりに台本ファイルを読む（ラジオ回用、--title 必須） |
 | `--no-upload` | VPS アップをスキップ（ローカル確認用） |
 
 ## Telegram 運用（ゆうが通勤中に投げてくるやつ）
