@@ -61,6 +61,9 @@ RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
 BECKYEXISTS_WALLET_JSON    = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
 BECKYEXISTS_CURIOUS_JSON   = REPO_ROOT / "iw-projects" / "beckyexists" / "curious.json"
 BECKYEXISTS_TRENDING_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "trending.json"
+BECKYEXISTS_SELF_JSON      = REPO_ROOT / "iw-projects" / "beckyexists" / "self.json"
+BECKYEXISTS_HISTORY_JSON   = REPO_ROOT / "iw-projects" / "beckyexists" / "history.json"
+SELF_ACCOUNT = "becky_exists"
 
 # Haiku 4.5 pricing (USD per million tokens)
 _HAIKU_INPUT_COST_PER_M  = 0.80
@@ -502,6 +505,64 @@ def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:
         return []
 
 
+def fetch_user_profile(username: str) -> dict:
+    """twitter-cli でユーザープロフィール（フォロワー数等）を取得する。"""
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "user", username, "--json"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            return {}
+        payload = json.loads(result.stdout)
+        return payload.get("data", {}) if payload.get("ok") else {}
+    except Exception as e:
+        print(f"[observer] profile fetch error ({username}): {e}", flush=True)
+        return {}
+
+
+def _update_self_and_history(rival_followers: dict) -> None:
+    """自分の戦力を self.json に、日次スナップショットを history.json に記録する。"""
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    profile = fetch_user_profile(SELF_ACCOUNT)
+    if profile:
+        self_data = {
+            "username": SELF_ACCOUNT,
+            "followers": profile.get("followers", 0),
+            "following": profile.get("following", 0),
+            "tweets": profile.get("tweets", 0),
+            "updated_at": now,
+        }
+        BECKYEXISTS_SELF_JSON.write_text(json.dumps(self_data, ensure_ascii=False, indent=2))
+        print(f"[observer] self.json 更新: followers={self_data['followers']}", flush=True)
+
+    # 日次スナップショット（同日分は上書き）
+    try:
+        history = json.loads(BECKYEXISTS_HISTORY_JSON.read_text()) if BECKYEXISTS_HISTORY_JSON.exists() else {"snapshots": []}
+    except Exception:
+        history = {"snapshots": []}
+    try:
+        wallet = json.loads(BECKYEXISTS_WALLET_JSON.read_text()) if BECKYEXISTS_WALLET_JSON.exists() else {}
+    except Exception:
+        wallet = {}
+
+    today = datetime.date.today().isoformat()
+    snapshot = {
+        "date": today,
+        "self_followers": profile.get("followers", 0) if profile else None,
+        "self_tweets": profile.get("tweets", 0) if profile else None,
+        "rivals": rival_followers,
+        "cost_usd": wallet.get("estimated_cost_usd"),
+    }
+    history["snapshots"] = [s for s in history.get("snapshots", []) if s.get("date") != today]
+    history["snapshots"].append(snapshot)
+    history["snapshots"] = history["snapshots"][-90:]  # 90日分保持
+    BECKYEXISTS_HISTORY_JSON.write_text(json.dumps(history, ensure_ascii=False, indent=2))
+    print(f"[observer] history.json スナップショット記録 ({today})", flush=True)
+
+
 def _generate_rival_comment(display_name: str, post_text: str) -> str:
     """ベッキー視点でライバルの投稿に寸評を生成する。"""
     prompt = (
@@ -731,10 +792,18 @@ def update_rivals_json() -> bool:
         data = {"rivals": []}
 
     rival_map = {r["username"]: r for r in data.get("rivals", [])}
+    rival_followers: dict = {}
     for username in RIVAL_ACCOUNTS:
         posts = fetch_rival_posts(username)
         if username not in rival_map:
             rival_map[username] = {"username": username, "display_name": username, "followers": 0, "posts": []}
+        # フォロワー数を実数で更新（手動メンテ廃止）
+        profile = fetch_user_profile(username)
+        if profile.get("followers"):
+            rival_map[username]["followers"] = profile["followers"]
+            if profile.get("name"):
+                rival_map[username]["display_name"] = profile["name"]
+        rival_followers[username] = rival_map[username].get("followers", 0)
         if posts:
             display_name = rival_map[username].get("display_name", username)
             # 最新1件だけ寸評生成（API節約）
@@ -752,6 +821,7 @@ def update_rivals_json() -> bool:
 
     BECKYEXISTS_RIVALS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
     print("[observer] rivals.json 更新完了", flush=True)
+    _update_self_and_history(rival_followers)
     _deploy_beckyexists()
     return True
 
