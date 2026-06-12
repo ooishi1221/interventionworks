@@ -54,6 +54,16 @@ VOICEVOX_PARAMS = {
     "postPhonemeLength": 0.18,
 }
 
+# AivisSpeech（VOICEVOX 互換 API。コハク = ゆう判定で正式採用 2026-06-13）
+AIVIS_URL = "http://localhost:10101"
+AIVIS_ENGINE_DIR = Path("/Volumes/SSD2TB/AivisSpeech-Engine/macOS-arm64")
+AIVIS_SPEAKER = 1878365376  # コハク / ノーマル
+AIVIS_PARAMS = {
+    "speedScale": 1.0,
+    "prePhonemeLength": 0.18,
+    "postPhonemeLength": 0.18,
+}
+
 VPS_KEY = Path.home() / ".ssh" / "iw-local-key.key"
 VPS_HOST = "ubuntu@133.18.123.60"
 VPS_DIR = "/var/www/media/podcast"
@@ -123,8 +133,39 @@ def split_chunks(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     return chunks
 
 
-def run_tts_voicevox(chunks: list[str], workdir: Path) -> list[Path]:
-    """VOICEVOX（雨晴はう・ベキたんチューニング）でチャンク群を wav 化する。"""
+def ensure_aivis_engine() -> None:
+    """AivisSpeech Engine が落ちてたら headless 起動して待つ（朝刊 cron 用）。"""
+    import urllib.request
+
+    try:
+        urllib.request.urlopen(f"{AIVIS_URL}/version", timeout=3)
+        return
+    except Exception:
+        pass
+    print("[cast] AivisSpeech Engine 起動中…（初回ロード約40秒）", flush=True)
+    subprocess.Popen(
+        [str(AIVIS_ENGINE_DIR / "run")],
+        cwd=str(AIVIS_ENGINE_DIR),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    import time
+    for _ in range(60):
+        time.sleep(2)
+        try:
+            urllib.request.urlopen(f"{AIVIS_URL}/version", timeout=3)
+            return
+        except Exception:
+            continue
+    raise RuntimeError("AivisSpeech Engine が 120 秒で起動しなかった")
+
+
+def run_tts_vvcompat(
+    chunks: list[str], workdir: Path,
+    base_url: str, speaker: int, params: dict, label: str,
+) -> list[Path]:
+    """VOICEVOX 互換 API（VOICEVOX / AivisSpeech）でチャンク群を wav 化する。"""
     import urllib.parse
     import urllib.request
 
@@ -132,23 +173,23 @@ def run_tts_voicevox(chunks: list[str], workdir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     wavs: list[Path] = []
     for i, text in enumerate(chunks, start=1):
-        q = urllib.parse.urlencode({"text": text, "speaker": VOICEVOX_SPEAKER})
-        req = urllib.request.Request(f"{VOICEVOX_URL}/audio_query?{q}", method="POST")
+        q = urllib.parse.urlencode({"text": text, "speaker": speaker})
+        req = urllib.request.Request(f"{base_url}/audio_query?{q}", method="POST")
         with urllib.request.urlopen(req, timeout=30) as res:
             query = json.loads(res.read())
-        query.update(VOICEVOX_PARAMS)
-        q2 = urllib.parse.urlencode({"speaker": VOICEVOX_SPEAKER})
+        query.update(params)
+        q2 = urllib.parse.urlencode({"speaker": speaker})
         req2 = urllib.request.Request(
-            f"{VOICEVOX_URL}/synthesis?{q2}",
+            f"{base_url}/synthesis?{q2}",
             data=json.dumps(query).encode(),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req2, timeout=60) as res:
+        with urllib.request.urlopen(req2, timeout=120) as res:
             wav = out_dir / f"chunk_{i:04d}.wav"
             wav.write_bytes(res.read())
             wavs.append(wav)
-        print(f"  [voicevox] {i}/{len(chunks)} done ({len(text)} chars)", flush=True)
+        print(f"  [{label}] {i}/{len(chunks)} done ({len(text)} chars)", flush=True)
     return wavs
 
 
@@ -270,8 +311,8 @@ def main() -> None:
     parser.add_argument("--title", default=None, help="タイトル上書き")
     parser.add_argument("--no-upload", action="store_true", help="VPSへのアップをスキップ（ローカル確認用）")
     parser.add_argument(
-        "--engine", choices=["irodori", "voicevox"], default="voicevox",
-        help="TTSエンジン（voicevox=雨晴はう、ゆう判定でデフォルト採用 2026-06-13 / irodori=VoiceDesign）",
+        "--engine", choices=["aivis", "voicevox", "irodori"], default="aivis",
+        help="TTSエンジン（aivis=コハク、ゆう判定で正式採用 2026-06-13 / voicevox=雨晴はう / irodori=VoiceDesign）",
     )
     args = parser.parse_args()
 
@@ -305,8 +346,11 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="becky_cast_") as td:
         workdir = Path(td)
-        if args.engine == "voicevox":
-            wavs = run_tts_voicevox(chunks, workdir)
+        if args.engine == "aivis":
+            ensure_aivis_engine()
+            wavs = run_tts_vvcompat(chunks, workdir, AIVIS_URL, AIVIS_SPEAKER, AIVIS_PARAMS, "aivis")
+        elif args.engine == "voicevox":
+            wavs = run_tts_vvcompat(chunks, workdir, VOICEVOX_URL, VOICEVOX_SPEAKER, VOICEVOX_PARAMS, "voicevox")
         else:
             wavs = run_tts(chunks, workdir)
         mp3_path = HERE / "out" / mp3_name

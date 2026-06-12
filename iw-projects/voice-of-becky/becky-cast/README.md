@@ -18,11 +18,15 @@ uv run cast.py <記事URL>
 
 | オプション | 意味 |
 |---|---|
-| `--engine voicevox` | 雨晴はう版（**デフォルト**、ゆう聴き比べ判定 2026-06-13）。生成が速い |
+| `--engine aivis` | AivisSpeech コハク（**デフォルト**、ゆう判定で正式採用 2026-06-13）。落ちてたら自動起動 |
+| `--engine voicevox` | VOICEVOX 雨晴はう（スタックチャンと同じチューニング） |
 | `--engine irodori` | Irodori-TTS VoiceDesign 版。1チャンク約4秒かかる |
 | `--title "..."` | タイトル上書き |
 | `--script-file <md>` | URL の代わりに台本ファイルを読む（ラジオ回用、--title 必須） |
 | `--no-upload` | VPS アップをスキップ（ローカル確認用） |
+
+AivisSpeech Engine 本体: `/Volumes/SSD2TB/AivisSpeech-Engine/macOS-arm64/run`（port 10101、
+VOICEVOX 互換 API）。別スタイルは `curl localhost:10101/speakers` で ID 確認、AivisHub で追加モデルも入る。
 
 ## Telegram 運用（ゆうが通勤中に投げてくるやつ）
 
