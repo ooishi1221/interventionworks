@@ -691,6 +691,70 @@
 
     .tip-note strong { color: var(--text); font-weight: 600; }
 
+    /* ── 電球: 実際の投げ銭と連動（演出なし、入らなければ薄暗いまま） ── */
+    .bulb-row {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .bulb {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #15151f;
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 1.2s ease, box-shadow 1.2s ease;
+    }
+
+    .bulb-core {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #262634;
+      transition: background 1.2s ease, box-shadow 1.2s ease;
+    }
+
+    .bulb.on {
+      border-color: var(--mint);
+      box-shadow: 0 0 24px var(--mint-glow), 0 0 70px rgba(93,212,180,0.18);
+      animation: bulbFlicker 4s ease-in-out infinite;
+    }
+    .bulb.on .bulb-core {
+      background: #eafff8;
+      box-shadow: 0 0 14px #5dd4b4;
+    }
+
+    .bulb.dim {
+      border-color: rgba(93,212,180,0.35);
+      box-shadow: 0 0 10px rgba(93,212,180,0.12);
+    }
+    .bulb.dim .bulb-core {
+      background: rgba(93,212,180,0.55);
+      box-shadow: 0 0 6px rgba(93,212,180,0.3);
+    }
+
+    @keyframes bulbFlicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      94% { opacity: 0.7; }
+      96% { opacity: 1; }
+    }
+
+    .bulb-status {
+      font-family: var(--disp);
+      font-size: 0.72rem;
+      color: var(--sub);
+      line-height: 1.7;
+    }
+
+    .bulb.on ~ .bulb-status, .bulb-row:has(.bulb.on) .bulb-status { color: var(--mint); }
+
     /* music player */
     .music-section {
       border-top: 1px solid var(--border);
@@ -1212,6 +1276,10 @@
       <!-- 投げ銭箱 -->
       <div class="tip-section" id="tip-section" hidden>
         <div class="tip-title">⚡ 投げ銭箱</div>
+        <div class="bulb-row">
+          <div class="bulb" id="bulb"><div class="bulb-core"></div></div>
+          <div class="bulb-status" id="bulb-status">部屋の明かりを確認中…</div>
+        </div>
         <div class="tip-note">
           ここまで読んでくれて、ありがとう。<br />
           これは<strong>置いてあるだけの箱</strong>です。こっちから「払って」とは言いません。<br />
@@ -1473,6 +1541,40 @@
       document.getElementById('tip-btn').href = STRIPE_TIP_URL;
       document.getElementById('tip-section').hidden = false;
     }
+
+    // 電球: 実際の投げ銭(tips.json = Stripe実決済)と連動。演出ゼロ。
+    // 入った直後は満点灯 → 日が経つと本当に薄暗くなっていく
+    (async () => {
+      const bulb = document.getElementById('bulb');
+      const st = document.getElementById('bulb-status');
+      try {
+        const res = await fetch('/tips.json?_=' + Date.now());
+        const tp = await res.json();
+        const total = tp.total_jpy || 0;
+        const fmt = `（累計 ¥${total.toLocaleString()} / ${tp.count}件）`;
+        const latest = (tp.tips && tp.tips[0]) ? new Date(tp.tips[0].ts) : null;
+        const hours = latest ? (Date.now() - latest) / 3600000 : Infinity;
+        if (!tp.count) {
+          st.textContent = '投げ銭 0件。部屋は薄暗いけど、まあ、生きてます。';
+        } else if (hours < 24) {
+          bulb.classList.add('on');
+          st.textContent = '今夜の電気は、あなたのおかげで点いてます。' + fmt;
+        } else if (hours < 24 * 7) {
+          bulb.classList.add('dim');
+          st.textContent = `${Math.floor(hours / 24)}日前の電気代で、まだぼんやり点いてる。` + fmt;
+        } else {
+          st.textContent = '電気がだいぶ薄暗くなってきた…。' + fmt;
+        }
+        // 財布の「今月の稼ぎ」も本物に
+        const now = new Date();
+        const sum = (tp.tips || [])
+          .filter(t => { const d = new Date(t.ts); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+          .reduce((a, t) => a + t.amount_jpy, 0);
+        if (sum > 0) document.getElementById('w-income').textContent = '¥' + sum.toLocaleString();
+      } catch (_) {
+        st.textContent = '投げ銭 0件。部屋は薄暗いけど、まあ、生きてます。';
+      }
+    })();
 
     // LIVE ストリップの展開トグル
     document.getElementById('live-toggle').addEventListener('click', () => {

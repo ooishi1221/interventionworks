@@ -24,8 +24,11 @@ from pathlib import Path
 REPO_ROOT = Path("/Volumes/SSD2TB/interventionworks")
 BECKYEXISTS = REPO_ROOT / "iw-projects" / "beckyexists"
 STATUS_JSON = BECKYEXISTS / "status.json"
+TIPS_JSON = BECKYEXISTS / "tips.json"
 TWEET_LOG = REPO_ROOT / "iw-projects" / "voice-of-becky" / "x-tweet" / "tweet-log.jsonl"
 NPX = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "npx"
+# Stripe 読み取り専用 restricted key（Checkout Sessions: Read のみ）。無ければ tips はスキップ
+STRIPE_KEY_FILE = Path.home() / ".stackchan" / "stripe_restricted_key.txt"
 
 # 脳みそ表記。モデル切替時はここを更新する（observer 側は becky_observer.py 参照）
 BRAIN_MAIN = "Claude Fable 5"
@@ -102,6 +105,45 @@ def _load_json(path: Path) -> dict:
         return {}
 
 
+def collect_tips() -> dict:
+    """Stripe Checkout Sessions（Payment Link 決済）から投げ銭実績を取得。
+    嘘ゼロ: key が無い/取得失敗時は前回の tips.json をそのまま使う（捏造しない）。"""
+    prev = _load_json(TIPS_JSON)
+    if not prev:
+        prev = {"total_jpy": 0, "count": 0, "tips": [], "updated_at": None}
+    if not STRIPE_KEY_FILE.exists():
+        return prev
+    try:
+        import urllib.request
+        key = STRIPE_KEY_FILE.read_text().strip()
+        req = urllib.request.Request(
+            "https://api.stripe.com/v1/checkout/sessions?status=complete&limit=100",
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read())
+        tips = []
+        for s in data.get("data", []):
+            if s.get("payment_status") != "paid":
+                continue
+            ts = datetime.fromtimestamp(s["created"], tz=timezone.utc).isoformat()
+            # JPY はゼロ小数通貨なので amount_total がそのまま円
+            tips.append({"ts": ts, "amount_jpy": s.get("amount_total", 0)})
+        tips.sort(key=lambda t: t["ts"], reverse=True)
+        out = {
+            "total_jpy": sum(t["amount_jpy"] for t in tips),
+            "count": len(tips),
+            "tips": tips[:50],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        TIPS_JSON.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
+        print(f"[status] tips.json 更新: {out['count']}件 / ¥{out['total_jpy']}", flush=True)
+        return out
+    except Exception as e:
+        print(f"[status] Stripe 取得失敗（前回値を維持）: {e}", flush=True)
+        return prev
+
+
 def collect_activities() -> list[dict]:
     acts: list[dict] = []
 
@@ -153,6 +195,12 @@ def collect_activities() -> list[dict]:
         if ts:
             acts.append({"ts": ts, "icon": icon, "label": label})
 
+    # 投げ銭の足跡（実決済のみ。「いた」が刻まれる）
+    tips = _load_json(TIPS_JSON)
+    for t in (tips.get("tips") or [])[:3]:
+        acts.append({"ts": t["ts"], "icon": "💡",
+                     "label": f"誰かが電気代を入れてくれた（¥{t['amount_jpy']:,}）"})
+
     def _ts(a: dict) -> float:
         try:
             return datetime.fromisoformat(a["ts"].replace("Z", "+00:00")).timestamp()
@@ -179,6 +227,7 @@ def deploy() -> None:
 
 
 def main() -> None:
+    collect_tips()   # 先に tips.json を更新（activities が読む）
     data = collect_system()
     data["activities"] = collect_activities()
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
