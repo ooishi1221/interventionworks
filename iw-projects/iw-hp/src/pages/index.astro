@@ -187,14 +187,6 @@ const categories = [
       rel="stylesheet"
     />
 
-    <!-- LCP optimization: preload hero key visual (CSS background-image) -->
-    <link
-      rel="preload"
-      as="image"
-      href="/images/hero-key.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
   </head>
   <body>
     <div class="hero-curtain" aria-hidden="true"></div>
@@ -244,6 +236,7 @@ const categories = [
     <main>
       <section class="hero">
         <div class="hero-curtain" aria-hidden="true"></div>
+        <canvas class="intervention-field" aria-hidden="true"></canvas>
         <div class="hero-content">
           <h1 class="brand">Intervention Works</h1>
           <div class="rotator">
@@ -582,6 +575,168 @@ const categories = [
       </footer>
     </main>
     <script>
+      // ═══ Intervention Field ═══
+      // 静かに流れる秩序の線。触れた場所だけが金色に震える。
+      // カーソル / 指 = 介入。説明は置かない（Don't guide. Just be.）
+      (() => {
+        const canvas = document.querySelector(".intervention-field");
+        const hero = document.querySelector(".hero");
+        if (!(canvas instanceof HTMLCanvasElement) || !hero) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        const SPACING_X = 26;
+        const SPACING_Y = 30;
+        const R = 150;          // 介入半径
+        const FORCE = 36;       // 最大変位
+        const RELAX = 0.90;     // 揺り戻し（1に近いほど余韻が長い）
+        const DRIFT = 0.18;     // 秩序のゆらぎ振幅(px)
+
+        let W = 0, H = 0, dpr = 1;
+        let cols = 0, rows = 0;
+        let offX = [], offY = [], velX = [], velY = [];
+        let pointer = { x: -9999, y: -9999, px: -9999, py: -9999, speed: 0 };
+        // 自律パルス: 入力がなくても世界はときどき震える
+        let pulse = { x: 0, y: 0, t: 9999, active: false };
+        let frame = 0;
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          W = hero.clientWidth;
+          H = hero.clientHeight;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          cols = Math.ceil(W / SPACING_X) + 2;
+          rows = Math.ceil(H / SPACING_Y) + 2;
+          const n = cols * rows;
+          offX = new Float32Array(n);
+          offY = new Float32Array(n);
+          velX = new Float32Array(n);
+          velY = new Float32Array(n);
+        }
+
+        function disturb(cx, cy, strength) {
+          const minC = Math.max(0, Math.floor((cx - R) / SPACING_X));
+          const maxC = Math.min(cols - 1, Math.ceil((cx + R) / SPACING_X));
+          const minR = Math.max(0, Math.floor((cy - R) / SPACING_Y));
+          const maxR = Math.min(rows - 1, Math.ceil((cy + R) / SPACING_Y));
+          for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+              const px = c * SPACING_X;
+              const py = r * SPACING_Y;
+              const dx = px - cx;
+              const dy = py - cy;
+              const d = Math.hypot(dx, dy);
+              if (d > R || d < 0.001) continue;
+              const f = (1 - d / R) * strength;
+              const i = r * cols + c;
+              velX[i] += (dx / d) * f;
+              velY[i] += (dy / d) * f;
+            }
+          }
+        }
+
+        function step() {
+          frame++;
+
+          // ポインタの移動速度に応じて介入
+          const moved = Math.hypot(pointer.x - pointer.px, pointer.y - pointer.py);
+          if (moved > 0.5 && pointer.x > -999) {
+            disturb(pointer.x, pointer.y, Math.min(moved * 0.55, FORCE) * 0.22);
+          }
+          pointer.px = pointer.x;
+          pointer.py = pointer.y;
+
+          // 自律パルス（7〜13秒ごと、ふっと一箇所が震える）
+          pulse.t--;
+          if (pulse.t <= 0) {
+            pulse.x = W * (0.15 + Math.random() * 0.7);
+            pulse.y = H * (0.15 + Math.random() * 0.7);
+            disturb(pulse.x, pulse.y, FORCE * 0.5);
+            pulse.t = 420 + Math.random() * 360;
+          }
+
+          ctx.clearRect(0, 0, W, H);
+
+          const t = frame * 0.008;
+          for (let r = 0; r < rows; r++) {
+            const baseY = r * SPACING_Y;
+            ctx.beginPath();
+            let lit = 0;
+            for (let c = 0; c < cols; c++) {
+              const i = r * cols + c;
+              // ばね物理: 変位は減衰しながら戻る
+              velX[i] *= RELAX;
+              velY[i] *= RELAX;
+              offX[i] = (offX[i] + velX[i]) * RELAX;
+              offY[i] = (offY[i] + velY[i]) * RELAX;
+              const mag = Math.hypot(offX[i], offY[i]);
+              if (mag > lit) lit = mag;
+
+              const x = c * SPACING_X + offX[i];
+              const y = baseY + offY[i] + Math.sin(t + c * 0.35 + r * 0.7) * DRIFT;
+              if (c === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            // 行内の最大変位で色が決まる: 静寂=ほぼ見えない青灰 → 介入=金
+            const k = Math.min(lit / 14, 1);
+            if (k > 0.04) {
+              ctx.strokeStyle = `rgba(${Math.round(125 + 130 * k)}, ${Math.round(150 + 50 * k)}, ${Math.round(190 - 103 * k)}, ${0.07 + 0.55 * k})`;
+              ctx.lineWidth = 1 + k * 0.6;
+            } else {
+              ctx.strokeStyle = "rgba(125, 150, 190, 0.07)";
+              ctx.lineWidth = 1;
+            }
+            ctx.stroke();
+          }
+
+          requestAnimationFrame(step);
+        }
+
+        function drawStatic() {
+          ctx.clearRect(0, 0, W, H);
+          ctx.strokeStyle = "rgba(125, 150, 190, 0.07)";
+          ctx.lineWidth = 1;
+          for (let r = 0; r < rows; r++) {
+            const y = r * SPACING_Y;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+          }
+        }
+
+        resize();
+        window.addEventListener("resize", () => {
+          resize();
+          if (reduced) drawStatic();
+        });
+
+        if (reduced) {
+          drawStatic();
+          return;
+        }
+
+        hero.addEventListener("pointermove", (e) => {
+          const rect = hero.getBoundingClientRect();
+          pointer.x = e.clientX - rect.left;
+          pointer.y = e.clientY - rect.top;
+        });
+        hero.addEventListener("pointerleave", () => {
+          pointer.x = pointer.px = -9999;
+          pointer.y = pointer.py = -9999;
+        });
+        hero.addEventListener("pointerdown", (e) => {
+          const rect = hero.getBoundingClientRect();
+          disturb(e.clientX - rect.left, e.clientY - rect.top, FORCE);
+        });
+
+        requestAnimationFrame(step);
+      })();
+
       import { gsap } from "gsap";
       import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -834,26 +989,37 @@ const categories = [
     gap: 0;
     position: relative;
     background:
-      linear-gradient(
-        90deg,
-        rgba(5, 16, 34, 0.85) 0%,
-        rgba(5, 16, 34, 0.55) 35%,
-        rgba(5, 16, 34, 0.3) 60%,
-        rgba(5, 16, 34, 0.5) 100%
+      radial-gradient(
+        ellipse 120% 90% at 70% 40%,
+        rgba(15, 184, 184, 0.05) 0%,
+        rgba(5, 16, 34, 0) 55%
       ),
-      url("/images/hero-key.webp") center right / cover no-repeat;
+      var(--navy);
+    overflow: hidden;
+  }
+
+  .intervention-field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .hero-content a,
+  .hero-content button {
+    pointer-events: auto;
   }
 
   @media (max-width: 900px) {
     .hero {
-      background:
-        linear-gradient(
-          180deg,
-          rgba(5, 16, 34, 0.4) 0%,
-          rgba(5, 16, 34, 0.7) 55%,
-          rgba(5, 16, 34, 0.95) 100%
-        ),
-        url("/images/hero-key.webp") center top / cover no-repeat;
+      background: var(--navy);
     }
   }
 
@@ -2369,20 +2535,21 @@ const categories = [
   .rotator-word:nth-child(13) { animation-delay: 18s; }
   .rotator-word:nth-child(14) { animation-delay: 19.5s; }
 
+  /* 1語の可視窓は 7%（=1.47s）以内に収める。1.5s 間隔 × 14語 = 21s 周期で重なりゼロ */
   @keyframes rotateWords {
     0% {
       opacity: 0;
       transform: translateY(20px);
     }
-    3% {
+    1.5% {
       opacity: 1;
       transform: translateY(0);
     }
-    9% {
+    5% {
       opacity: 1;
       transform: translateY(0);
     }
-    12% {
+    6.8% {
       opacity: 0;
       transform: translateY(-20px);
     }
