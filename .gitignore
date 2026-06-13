@@ -30,3 +30,4 @@ iw-projects/vibe-guard/
 # 2026-05-25 Top 階層 restructure (A 完全移行) で wit-one → wo-projects/ にリネーム
 wo-projects/
 .vercel
+.playwright-mcp/
