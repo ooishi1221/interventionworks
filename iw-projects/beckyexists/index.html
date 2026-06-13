@@ -2206,6 +2206,7 @@
         list.querySelectorAll('.radio-ep').forEach(el => {
           el.addEventListener('click', () => {
             audio.src = el.dataset.src;
+            audio.load();   // src 差し替え後に load しないと再生中の音源が居座って切り替わらない
             onairText.textContent = el.dataset.title;
             list.querySelectorAll('.radio-ep').forEach(x => {
               x.classList.remove('active');
