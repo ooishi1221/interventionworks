@@ -38,6 +38,8 @@ IRODORI_DIR = Path("/Volumes/SSD2TB/Irodori-TTS")
 UV = Path.home() / ".local" / "bin" / "uv"
 BATCH_TTS = HERE / "batch_tts.py"
 EPISODES_JSON = HERE / "episodes.json"
+# beckyexists.com のラジオアーカイブが読む台帳（サイトから fetch するためコピー）
+SITE_PODCAST_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/podcast.json")
 
 BECKY_CAPTION = "😊 親しみやすい若い女性の声。自然な話し方でやや低め。友達に話しかけるような温かみがある。"
 TTS_SEED = 42
@@ -370,6 +372,12 @@ def main() -> None:
         "pub_date": format_datetime(now),
     })
     EPISODES_JSON.write_text(json.dumps(episodes, ensure_ascii=False, indent=2), encoding="utf-8")
+    # beckyexists.com のアーカイブ用にもコピー（次回 deploy でサイトに反映）
+    try:
+        SITE_PODCAST_JSON.write_text(json.dumps(episodes, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[cast] podcast.json をサイトへコピー（要 deploy）", flush=True)
+    except Exception as e:
+        print(f"[cast] サイトへのコピー失敗（手動コピー要）: {e}", flush=True)
 
     feed_path = HERE / "out" / "feed.xml"
     feed_path.write_text(build_feed(episodes), encoding="utf-8")
