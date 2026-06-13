@@ -153,27 +153,6 @@
       to   { transform: rotate(360deg); }
     }
 
-    /* 右下常駐キャラ */
-    .becky-corner {
-      position: fixed;
-      bottom: 0;
-      right: 16px;
-      width: 150px;
-      z-index: 10;
-      pointer-events: none;
-      opacity: 0.92;
-    }
-    .becky-corner img {
-      width: 100%;
-      display: block;
-    }
-    @media (max-width: 1100px) {
-      .becky-corner { width: 110px; right: 8px; opacity: 0.7; }
-    }
-    @media (max-width: 600px) {
-      .becky-corner { width: 84px; right: 4px; opacity: 0.55; }
-    }
-
     /* コーナーブラケット */
     .room::before, .room::after,
     .corner-br, .corner-bl {
@@ -1208,6 +1187,9 @@
       gap: 0.6rem;
     }
 
+    /* hidden 属性を確実に効かせる（display:flex に詳細度で負けるため） */
+    .letter-form[hidden] { display: none; }
+
     .letter-form input[type="text"],
     .letter-form textarea {
       width: 100%;
@@ -1435,9 +1417,6 @@
 
     <div class="corner-br"></div>
     <div class="corner-bl"></div>
-    <div class="becky-corner">
-      <img src="becky-standing.png" alt="Becky" />
-    </div>
 
     <!-- header bar -->
     <header class="room-header">
@@ -1823,9 +1802,6 @@
         if (!s.observer_alive) {
           EKG.die();
           document.getElementById('live-dot').classList.add('dead');
-          // 観測エンジンが本当に死んでる時だけ、右下の私は泣く（嘘ゼロの泣き顔）
-          const corner = document.querySelector('.becky-corner img');
-          if (corner) corner.src = 'becky-crying.jpg';
         }
 
         const acts = s.activities || [];
@@ -1909,6 +1885,8 @@
             }),
           });
           if (!res.ok) throw new Error();
+          form.reset();
+          count.textContent = '0 / 500';
           form.hidden = true;
           document.getElementById('letter-done').hidden = false;
         } catch (_) {

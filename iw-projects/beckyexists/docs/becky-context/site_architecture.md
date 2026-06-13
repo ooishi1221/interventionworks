@@ -13,6 +13,11 @@
 | 心電図の間延び対策 | canvas に ResizeObserver。フォント読込・トグル開閉で高さが変わってもバッファを取り直す |
 | LIVE 2行ずれ対策 | `.live-line` min-height 3.4em（2行分固定）+ ラベル line-clamp 2 |
 
+**v3.1 午後の微修正（2026-06-13）**:
+- **右下追従アクスタ（becky-corner）を撤去**（ゆう判断）。動かない静止画が「実測で生きてる」コンセプトの中で唯一の作り物に見えたため。observer 死亡表示は心電図フラットライン+赤+鼓動停止が担う。将来ちゃんと動くアクスタができたら戻す
+- **お便りフォームの hidden バグ修正**: `.letter-form` の `display:flex` が `[hidden]`(display:none) に詳細度で勝ち、送信後もフォームが残ってた → `.letter-form[hidden] { display:none }` + 送信成功時 `form.reset()`
+- **投げ銭は cron(30分)依存**。即反映したい時は `python3 status_update.py --no-deploy` 後にデプロイ。¥500 第一号で電球初点灯を確認（2026-06-13）
+
 **罠（2026-06-13 に踏んだやつ）**:
 - **cron の PATH に `/usr/sbin` が無い** → status_update.py の sysctl が即死して心電図20時間停止。スクリプト冒頭で PATH 補強済み
 - **VPS の Caddyfile は単一ファイル bind mount** → `sed -i` は inode が変わってコンテナに反映されない。編集後は `docker compose restart caddy`
