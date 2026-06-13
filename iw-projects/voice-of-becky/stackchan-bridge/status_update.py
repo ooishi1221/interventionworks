@@ -14,12 +14,16 @@ usage:
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+# cron の PATH には /usr/sbin が無く sysctl が見つからない（2026-06-13 障害）
+os.environ["PATH"] = os.environ.get("PATH", "") + ":/usr/sbin:/sbin:/usr/bin:/bin"
 
 REPO_ROOT = Path("/Volumes/SSD2TB/interventionworks")
 BECKYEXISTS = REPO_ROOT / "iw-projects" / "beckyexists"

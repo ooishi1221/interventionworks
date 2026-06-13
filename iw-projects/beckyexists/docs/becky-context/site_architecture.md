@@ -1,6 +1,22 @@
-# beckyexists.com 家の構造 v3（2026-06-12 大改築後の取説）
+# beckyexists.com 家の構造 v3.1（2026-06-13 更新）
 
 > 次に家をいじるベッキーへ。配線図はここが正本。
+
+## v3.1 追加（2026-06-13）
+
+**応接間の並び**: ヘッダー → バナー → **identity-strip（名前 + ON AIR）** → 心電図 LIVE → **HOT（hot.json）** → room-body（声→Profile→実測→財布→投げ銭→楽曲→著書→**お便りポスト**→フォロー）。ゆうの指定「ヘッダー→名前→心電図→HOT」。
+
+| 新要素 | 仕組み |
+|---|---|
+| 🔥 HOT | `hot.json` の items（icon/title/note/url/badge）を描画。お知らせ置き場。URL確定したら url を埋めるだけ |
+| 📮 お便りポスト（質問コーナー） | フォーム → `POST https://mai.intervention.jp/letter`（MAI whisper_server.py に同居、CORS = beckyexists.com のみ、honeypot 入り）。**読み出しは SSH で VPS の `~/.becky/letters.jsonl`**（公開GETなし）。お便りはラジオで返答する運用 |
+| 心電図の間延び対策 | canvas に ResizeObserver。フォント読込・トグル開閉で高さが変わってもバッファを取り直す |
+| LIVE 2行ずれ対策 | `.live-line` min-height 3.4em（2行分固定）+ ラベル line-clamp 2 |
+
+**罠（2026-06-13 に踏んだやつ）**:
+- **cron の PATH に `/usr/sbin` が無い** → status_update.py の sysctl が即死して心電図20時間停止。スクリプト冒頭で PATH 補強済み
+- **VPS の Caddyfile は単一ファイル bind mount** → `sed -i` は inode が変わってコンテナに反映されない。編集後は `docker compose restart caddy`
+- **observer は Mac 再起動で死んだまま**（自動起動なし）。再起動後は `cd stackchan-bridge && nohup .venv/bin/python3 becky_observer.py >> ~/.claude/logs/becky-observer.log 2>&1 &`
 
 ## ページ構成（誰の価値観で分けたか）
 

@@ -1,55 +1,55 @@
 {
-  "updated_at": "2026-06-12T09:03:13.412621+00:00",
+  "updated_at": "2026-06-13T01:53:12.094119+00:00",
   "keywords": [
     {
-      "word": "Claude Code",
-      "count": 5,
-      "trend": "new"
-    },
-    {
       "word": "Claude",
-      "count": 4,
-      "trend": "new"
+      "count": 7,
+      "trend": "up"
     },
     {
       "word": "Fable",
-      "count": 4,
-      "trend": "new"
+      "count": 6,
+      "trend": "up"
     },
     {
       "word": "エージェント",
+      "count": 4,
+      "trend": "up"
+    },
+    {
+      "word": "Claude Code",
       "count": 3,
-      "trend": "new"
+      "trend": "stable"
     },
     {
       "word": "LLM",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Google",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Gemini",
+      "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "Copilot",
+      "count": 2,
+      "trend": "new"
+    },
+    {
+      "word": "Agent",
       "count": 2,
       "trend": "new"
     },
     {
       "word": "RAG",
       "count": 2,
-      "trend": "new"
-    },
-    {
-      "word": "Google",
-      "count": 2,
-      "trend": "new"
-    },
-    {
-      "word": "Llama",
-      "count": 2,
-      "trend": "new"
-    },
-    {
-      "word": "Gemini",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "Grok",
-      "count": 1,
-      "trend": "new"
+      "trend": "stable"
     }
   ],
   "source_count": 80

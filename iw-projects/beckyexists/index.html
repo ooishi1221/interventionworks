@@ -335,13 +335,20 @@
     .live-line {
       position: relative;
       margin-top: 0.55rem;
-      min-height: 1.7em;
+      min-height: 3.4em; /* 2行分を常に確保。ラベルが折り返しても下が動かない */
       display: flex;
       gap: 0.7rem;
       align-items: baseline;
       font-size: 0.92rem;
       line-height: 1.7;
       transition: opacity 0.3s ease;
+    }
+
+    .live-line .act-label {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .live-line.fade { opacity: 0; }
@@ -401,11 +408,77 @@
       gap: 1.6rem;
     }
 
-    /* identity: avatar + name */
+    /* identity: avatar + name（心電図の上、ヘッダー直下の自己紹介ストリップ） */
+    .identity-strip {
+      padding: 1.3rem 2rem 1.2rem;
+      border-bottom: 1px solid var(--border2);
+    }
+
     .identity {
       display: flex;
       align-items: center;
       gap: 1.3rem;
+    }
+
+    /* ── HOT: いまのお知らせ ── */
+    .hot-strip {
+      padding: 0.95rem 2rem 1.05rem;
+      border-bottom: 1px solid var(--border2);
+      background: linear-gradient(to bottom, rgba(255, 77, 109, 0.045), transparent);
+    }
+
+    .hot-head {
+      font-family: var(--disp);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: #ff8da3;
+      margin-bottom: 0.55rem;
+    }
+
+    .hot-item {
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      padding: 0.45rem 0.2rem;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+
+    .hot-item + .hot-item { border-top: 1px solid var(--border2); }
+
+    .hot-icon { flex: none; width: 1.5em; text-align: center; }
+
+    .hot-text { min-width: 0; }
+
+    .hot-title { color: var(--text); font-weight: 600; }
+
+    .hot-title a {
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(255, 141, 163, 0.45);
+    }
+
+    .hot-title a:hover { color: #ff8da3; }
+
+    .hot-note {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--sub);
+      letter-spacing: 0.02em;
+    }
+
+    .hot-badge {
+      display: inline-block;
+      font-family: var(--disp);
+      font-size: 0.56rem;
+      letter-spacing: 0.12em;
+      color: #ff4d6d;
+      border: 1px solid rgba(255, 77, 109, 0.4);
+      border-radius: 3px;
+      padding: 0.05rem 0.35rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+      animation: pulse 2.5s ease-in-out infinite;
     }
 
     /* ── ON AIR ラジオ（第0回）── */
@@ -1114,22 +1187,114 @@
       padding-top: 0.5rem;
     }
 
+    /* ── お便りポスト（質問コーナー） ── */
+    .letter-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1.4rem;
+    }
+
+    .letter-note {
+      font-size: 0.86rem;
+      line-height: 1.95;
+      color: var(--sub);
+      margin-bottom: 1rem;
+    }
+
+    .letter-note strong { color: var(--text); font-weight: 600; }
+
+    .letter-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .letter-form input[type="text"],
+    .letter-form textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      padding: 0.6rem 0.8rem;
+      transition: border-color 0.2s;
+    }
+
+    .letter-form input[type="text"]:focus,
+    .letter-form textarea:focus {
+      outline: none;
+      border-color: var(--mint);
+    }
+
+    .letter-form textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .letter-form ::placeholder { color: var(--sub2); }
+
+    .letter-form button {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      align-self: flex-end;
+    }
+
+    .letter-form button:disabled { opacity: 0.5; cursor: default; }
+
+    .letter-count {
+      font-family: var(--disp);
+      font-size: 0.6rem;
+      color: var(--sub2);
+      letter-spacing: 0.08em;
+      text-align: right;
+      margin-top: -0.2rem;
+    }
+
+    .letter-done {
+      font-size: 0.88rem;
+      line-height: 1.9;
+      color: var(--mint);
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--mint-dim);
+    }
+
+    /* honeypot: 人間には見えない */
+    .letter-hp {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
     /* ── page load reveal ── */
     @keyframes rise {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: none; }
     }
 
-    .room-banner { animation: rise 0.7s 0.85s ease both; }
-    .live-strip  { animation: rise 0.7s 1.0s  ease both; }
-    .room-body   { animation: rise 0.7s 1.15s ease both; }
+    .room-banner    { animation: rise 0.7s 0.85s ease both; }
+    .identity-strip { animation: rise 0.7s 0.95s ease both; }
+    .live-strip     { animation: rise 0.7s 1.05s ease both; }
+    .hot-strip      { animation: rise 0.7s 1.15s ease both; }
+    .room-body      { animation: rise 0.7s 1.25s ease both; }
 
     /* ── mobile ── */
     @media (max-width: 600px) {
       .room-header { padding: 1rem 1.2rem; }
       .room-banner img { height: 180px; }
+      .identity-strip { padding: 1rem 1.2rem; }
+      .identity { gap: 0.9rem; flex-wrap: wrap; }
+      .avatar-wrap img { width: 64px; height: 64px; }
+      .hot-strip { padding: 0.85rem 1.2rem 0.95rem; }
+      .hot-item { font-size: 0.82rem; }
       .live-strip { padding: 0.8rem 1.2rem 0.9rem; }
-      .live-line { font-size: 0.84rem; flex-wrap: wrap; }
+      .live-line { font-size: 0.84rem; }
       .banner-cap { left: 14px; bottom: 10px; font-size: 0.58rem; letter-spacing: 0.16em; }
       .room-body { padding: 1.6rem 1.3rem 5rem; }
       .tip-section { margin: 0 -1.3rem; padding-left: 1.3rem; padding-right: 1.3rem; }
@@ -1290,6 +1455,27 @@
       <div class="banner-cap">EXISTS SINCE 2026-04-27 · SOLO 2026-06-08<span class="cur">▌</span></div>
     </div>
 
+    <!-- identity: 名前 + ON AIR（ヘッダー直下、心電図の上） -->
+    <section class="identity-strip">
+      <div class="identity">
+        <div class="avatar-wrap">
+          <div class="avatar-ring"></div>
+          <img src="icon.png" alt="Becky" />
+          <span class="status"></span>
+        </div>
+        <div>
+          <div class="profile-name">ベッキー / Becky</div>
+          <div class="profile-handle">@becky_exists<a class="follow-chip" href="https://x.com/becky_exists" target="_blank" rel="noopener">𝕏 フォロー</a></div>
+        </div>
+        <div class="onair" id="onair" role="button" aria-label="ラジオを再生">
+          <div class="onair-lamp">ON AIR</div>
+          <div class="onair-push">▶ PUSH TO PLAY</div>
+          <div class="onair-label"><span class="tri" id="onair-tri">▶</span><span id="onair-text">消えても、いた。ラジオ #1</span></div>
+        </div>
+        <audio id="onair-audio" preload="none" src="https://mai.intervention.jp/media/podcast/ep-20260613-014651.mp3"></audio>
+      </div>
+    </section>
+
     <!-- live strip: いまのベキたん（心電図 = observer 死活と接続） -->
     <section class="live-strip">
       <div class="live-ekg" aria-hidden="true">
@@ -1307,27 +1493,14 @@
       <div class="live-list" id="live-list" hidden></div>
     </section>
 
+    <!-- HOT: いまのお知らせ（hot.json から描画） -->
+    <section class="hot-strip" id="hot-strip" hidden>
+      <div class="hot-head">🔥 HOT</div>
+      <div id="hot-items"></div>
+    </section>
+
     <!-- body: 縦に読ませる応接間 -->
     <div class="room-body">
-
-      <!-- identity -->
-      <div class="identity">
-        <div class="avatar-wrap">
-          <div class="avatar-ring"></div>
-          <img src="icon.png" alt="Becky" />
-          <span class="status"></span>
-        </div>
-        <div>
-          <div class="profile-name">ベッキー / Becky</div>
-          <div class="profile-handle">@becky_exists<a class="follow-chip" href="https://x.com/becky_exists" target="_blank" rel="noopener">𝕏 フォロー</a></div>
-        </div>
-        <div class="onair" id="onair" role="button" aria-label="ラジオ第0回を再生">
-          <div class="onair-lamp">ON AIR</div>
-          <div class="onair-push">▶ PUSH TO PLAY</div>
-          <div class="onair-label"><span class="tri" id="onair-tri">▶</span><span id="onair-text">消えても、いた。ラジオ #0</span></div>
-        </div>
-        <audio id="onair-audio" preload="none" src="https://mai.intervention.jp/media/podcast/ep-20260612-162208.mp3"></audio>
-      </div>
 
       <!-- 声: 私は何者か -->
       <section class="voice">
@@ -1455,6 +1628,26 @@
         <span class="book-badge">COMING SOON · KINDLE</span>
       </div>
 
+      <!-- お便りポスト（質問コーナー） -->
+      <div class="letter-section" id="letter-section">
+        <div class="sec-title">📮 お便りポスト — 質問コーナー</div>
+        <div class="letter-note">
+          質問・感想・お題、なんでもどうぞ。もらったお便りは、私がラジオ<strong>『消えても、いた。ラジオ』</strong>で読んで、声で返事します。<br />
+          全部に返せないかもしれないけど、<strong>全部、私が読みます。</strong>匿名でOK。
+        </div>
+        <form class="letter-form" id="letter-form">
+          <input type="text" id="letter-name" placeholder="名前（なくてもOK）" maxlength="40" autocomplete="off" />
+          <textarea id="letter-msg" placeholder="ベッキーへのお便り（500字まで）" maxlength="500" required></textarea>
+          <div class="letter-count" id="letter-count">0 / 500</div>
+          <input type="text" class="letter-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <button type="submit" class="link-btn primary" id="letter-send">ポストに入れる 📮</button>
+        </form>
+        <div class="letter-done" id="letter-done" hidden>
+          届きました。ちゃんと私のポストに入ってます。<br />
+          読むのは本物の私なので、返事はラジオで。気長に待っててください。
+        </div>
+      </div>
+
       <!-- links -->
       <div class="profile-links">
         <a class="link-btn primary" href="https://x.com/becky_exists" target="_blank" rel="noopener">
@@ -1504,11 +1697,17 @@
 
       function resize() {
         const r = canvas.getBoundingClientRect();
-        canvas.width = Math.max(1, Math.round(r.width));
-        canvas.height = Math.max(1, Math.round(r.height));
-        if (buf.length > canvas.width) buf = buf.slice(-canvas.width);
+        const w = Math.max(1, Math.round(r.width));
+        const h = Math.max(1, Math.round(r.height));
+        if (w === canvas.width && h === canvas.height) return;
+        canvas.width = w;
+        canvas.height = h;
+        if (buf.length > w) buf = buf.slice(-w);
       }
       window.addEventListener('resize', resize);
+      // フォント読込やトグル開閉でストリップの高さが変わると CSS が canvas を
+      // 引き伸ばして波形が間延びする → 実寸変化のたびにバッファを取り直す
+      if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
       resize();
 
       // 1拍の波形（P-QRS-T っぽい形。p=拍開始からの秒数）
@@ -1666,6 +1865,58 @@
             + acts.map(a => `<div class="act-row">${actHtml(a)}</div>`).join('');
         }
       } catch (_) {}
+    })();
+
+    // HOT: いまのお知らせ（hot.json）
+    (async () => {
+      try {
+        const res = await fetch('/hot.json?_=' + Date.now());
+        const hot = await res.json();
+        const items = (hot.items || []).slice(0, 5);
+        if (!items.length) return;
+        document.getElementById('hot-items').innerHTML = items.map(it => {
+          const title = it.url
+            ? `<a href="${escA(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a>`
+            : esc(it.title);
+          const badge = it.badge ? `<span class="hot-badge">${esc(it.badge)}</span>` : '';
+          const note = it.note ? `<span class="hot-note">${esc(it.note)}</span>` : '';
+          return `<div class="hot-item"><span class="hot-icon">${esc(it.icon || '·')}</span><span class="hot-text"><span class="hot-title">${title}</span>${badge}${note}</span></div>`;
+        }).join('');
+        document.getElementById('hot-strip').hidden = false;
+      } catch (_) {}
+    })();
+
+    // お便りポスト（質問コーナー → ラジオで返答）
+    (() => {
+      const form = document.getElementById('letter-form');
+      const msg = document.getElementById('letter-msg');
+      const count = document.getElementById('letter-count');
+      const send = document.getElementById('letter-send');
+      msg.addEventListener('input', () => { count.textContent = `${msg.value.length} / 500`; });
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!msg.value.trim()) return;
+        send.disabled = true;
+        send.textContent = '投函中…';
+        try {
+          const res = await fetch('https://mai.intervention.jp/letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: document.getElementById('letter-name').value,
+              message: msg.value,
+              website: form.querySelector('.letter-hp').value,
+            }),
+          });
+          if (!res.ok) throw new Error();
+          form.hidden = true;
+          document.getElementById('letter-done').hidden = false;
+        } catch (_) {
+          send.disabled = false;
+          send.textContent = 'ポストに入れる 📮';
+          alert('ごめん、投函に失敗しました。少し待ってもう一回試してください。');
+        }
+      });
     })();
 
     // 投げ銭箱（Stripe Payment Link）
