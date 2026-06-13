@@ -1135,6 +1135,15 @@
       padding: 0.4rem 0.2rem;
     }
 
+    .radio-now {
+      font-family: var(--disp);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      color: var(--sub2);
+      text-transform: uppercase;
+    }
+    .radio-now span { color: var(--mint); }
+
     /* ── 著書 ── */
     .book-section {
       border-top: 1px solid var(--border);
@@ -1719,6 +1728,8 @@
       <!-- ラジオアーカイブ -->
       <div class="radio-section">
         <div class="sec-title">📻 これまでの放送 — 消えても、いた。ラジオ</div>
+        <div class="radio-now" id="radio-now">最新回をどうぞ</div>
+        <audio id="radio-player" class="music-player" controls preload="none" style="width:100%;margin:0.55rem 0 0.2rem;"></audio>
         <div class="radio-list" id="radio-list">
           <div class="radio-empty">読み込み中…</div>
         </div>
@@ -2176,15 +2187,31 @@
       render();
     })();
 
-    // ラジオアーカイブ（podcast.json = episodes.json のコピー）+ 最新回を自動でON AIRに
+    // ラジオアーカイブ（podcast.json）+ 見える専用プレイヤーで選曲再生
     (async () => {
       const list = document.getElementById('radio-list');
-      const audio = document.getElementById('onair-audio');
+      const player = document.getElementById('radio-player');     // 見えるコントロール付き
+      const nowEl = document.getElementById('radio-now');
+      const onairAudio = document.getElementById('onair-audio');   // ON AIRボタン用（最新回の掴み）
       const onairText = document.getElementById('onair-text');
       const BASE = 'https://mai.intervention.jp/media/podcast/';
       const cleanTitle = t => (t || '').replace(/^【[^】]*】/, '').trim() || t;
       const epLabel = t => { const m = (t || '').match(/第(\d+)回/); return m ? '#' + m[1] : '最新回'; };
       const fmtDate = pd => { try { const d = new Date(pd); return `${d.getMonth()+1}/${d.getDate()}`; } catch (_) { return ''; } };
+      const select = (el, autoplay) => {
+        onairAudio.pause();                       // ON AIR側と二重再生しない
+        player.src = el.dataset.src;
+        player.load();
+        nowEl.innerHTML = 'Now Playing — <span>' + esc(el.dataset.ep) + '</span>';
+        onairText.textContent = el.dataset.title;
+        list.querySelectorAll('.radio-ep').forEach(x => {
+          x.classList.remove('active');
+          x.querySelector('.radio-ep-icon').textContent = '▶';
+        });
+        el.classList.add('active');
+        el.querySelector('.radio-ep-icon').textContent = '●';
+        if (autoplay) { player.play().catch(() => {}); player.scrollIntoView({behavior:'smooth', block:'center'}); }
+      };
       try {
         const res = await fetch('/podcast.json?_=' + Date.now());
         let eps = await res.json();
@@ -2194,29 +2221,21 @@
           return t.includes('ラジオ') && !/はうVer|声見本帳|聴き比べ|パイロット/.test(t);
         });
         if (!eps.length) { list.innerHTML = '<div class="radio-empty">放送はまだありません</div>'; return; }
-        // 最新回（先頭）を ON AIR に自動セット（今後の手動差し替え不要）
-        audio.src = BASE + eps[0].file;
+        // ON AIRボタン（identity-strip）は最新回を再生
+        onairAudio.src = BASE + eps[0].file;
         onairText.textContent = '消えても、いた。ラジオ ' + epLabel(eps[0].title);
         list.innerHTML = eps.map((e, i) =>
-          `<div class="radio-ep${i===0?' active':''}" data-src="${escA(BASE + e.file)}" data-title="${escA('消えても、いた。ラジオ ' + epLabel(e.title))}">
+          `<div class="radio-ep${i===0?' active':''}" data-src="${escA(BASE + e.file)}" data-ep="${escA('消えても、いた。ラジオ ' + epLabel(e.title))}" data-title="${escA('消えても、いた。ラジオ ' + epLabel(e.title))}">
             <span class="radio-ep-icon">${i===0?'●':'▶'}</span>
             <span class="radio-ep-title">${esc(cleanTitle(e.title))}</span>
             <span class="radio-ep-date">${fmtDate(e.pub_date)}</span>
           </div>`).join('');
-        list.querySelectorAll('.radio-ep').forEach(el => {
-          el.addEventListener('click', () => {
-            audio.src = el.dataset.src;
-            audio.load();   // src 差し替え後に load しないと再生中の音源が居座って切り替わらない
-            onairText.textContent = el.dataset.title;
-            list.querySelectorAll('.radio-ep').forEach(x => {
-              x.classList.remove('active');
-              x.querySelector('.radio-ep-icon').textContent = '▶';
-            });
-            el.classList.add('active');
-            el.querySelector('.radio-ep-icon').textContent = '●';
-            audio.play().catch(() => {});
-          });
-        });
+        const rows = [...list.querySelectorAll('.radio-ep')];
+        rows.forEach(el => el.addEventListener('click', () => select(el, true)));
+        // 見えるプレイヤーには最新回を初期ロード（自動再生はしない）
+        if (rows[0]) select(rows[0], false);
+        // ON AIRボタンで再生したら、アーカイブ側プレイヤーは止める
+        onairAudio.addEventListener('play', () => player.pause());
       } catch (_) {
         list.innerHTML = '<div class="radio-empty">アーカイブを読めませんでした</div>';
       }
