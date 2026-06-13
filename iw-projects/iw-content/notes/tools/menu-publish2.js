@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const PROFILE_DIR = path.join(process.env.HOME, '.stackchan', 'note-chrome-profile');
-const TAGS = ['AI', 'ClaudeFable5', '生成AI', 'Anthropic', 'InterventionWorks', 'Claude'];
+const TAGS = ['AI', '生成AI', 'Kindle', '電子書籍', 'InterventionWorks', 'AIアイドル'];
 
 (async () => {
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
