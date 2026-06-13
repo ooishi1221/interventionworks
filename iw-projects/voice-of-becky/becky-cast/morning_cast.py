@@ -30,6 +30,7 @@ os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/
 # ── パス定義 ──
 HERE = Path(__file__).parent
 NEWS_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/news.json")
+BECKYEXISTS_DIR = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists")
 EPISODES_JSON = HERE / "episodes.json"
 LETTERS_USED = Path.home() / ".stackchan" / "radio_letters_used.json"
 CONFIG_PATH = Path.home() / ".stackchan" / "config.yaml"
@@ -245,6 +246,17 @@ def main() -> None:
         print(f"[morning_cast] cast.py 失敗 (code={result.returncode})", flush=True)
         sys.exit(1)
     print(f"[morning_cast] 配信完了！", flush=True)
+
+    # 3.5. Vercel デプロイ（podcast.json をサイトに反映）
+    vercel_bin = Path("/opt/homebrew/bin/npx")
+    deploy_result = subprocess.run(
+        [str(vercel_bin), "vercel", "deploy", "--prod", "--yes"],
+        cwd=str(BECKYEXISTS_DIR), capture_output=True, text=True, timeout=120
+    )
+    if deploy_result.returncode == 0:
+        print(f"[morning_cast] Vercel デプロイ完了", flush=True)
+    else:
+        print(f"[morning_cast] Vercel デプロイ失敗（続行）: {deploy_result.stderr[:100]}", flush=True)
 
     # 4. お便りを使用済みマーク
     if letter:
