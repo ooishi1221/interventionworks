@@ -526,6 +526,22 @@
 
     .onair.playing .onair-label { color: var(--mint); }
 
+    /* 選曲導線: ON AIR の近くからアーカイブへ連れて行く */
+    .onair-pick {
+      margin-top: 0.15rem;
+      font-family: var(--disp);
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
+      color: var(--mint);
+      background: rgba(93, 212, 180, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    .onair-pick:hover { background: var(--mint-dim); border-color: var(--mint); }
+
     /* PUSH TO PLAY: 押せるとわかる点滅（再生中は消す） */
     .onair-push {
       font-family: var(--disp);
@@ -706,6 +722,35 @@
     .wallet-val.red { color: #f87171; }
     .wallet-val.mint { color: var(--mint); }
 
+    .wallet-body {
+      display: flex;
+      gap: 1.8rem;
+      align-items: flex-start;
+    }
+    .wallet-left { flex: 1; min-width: 0; }
+    .wallet-breakdown {
+      font-size: 0.7rem;
+      color: var(--sub2);
+      line-height: 1.85;
+      min-width: 110px;
+      opacity: 0.65;
+      padding-top: 0.1rem;
+    }
+    .wbd-title {
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sub2);
+      margin-bottom: 0.3rem;
+      opacity: 0.7;
+    }
+    .wbd-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .wbd-amt { font-variant-numeric: tabular-nums; }
+
     .wallet-bar-wrap {
       height: 4px;
       background: rgba(255,255,255,0.06);
@@ -781,6 +826,58 @@
 
     .sysroom-bar.warn { background: #fbbf24; }
     .sysroom-bar.hot  { background: #f87171; }
+
+    .gauge-pair {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 0.9rem;
+    }
+    .gauge-wrap {
+      flex: 1;
+      text-align: center;
+      max-width: 120px;
+    }
+    .gauge-svg {
+      width: 100%;
+      overflow: visible;
+    }
+    .gauge-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 9;
+      stroke-linecap: round;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke: var(--mint);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-dasharray: 131.95;
+      stroke-dashoffset: 131.95;
+      transition: stroke-dashoffset 0.9s ease, stroke 0.4s;
+    }
+    .gauge-fill.warn { stroke: #fbbf24; }
+    .gauge-fill.hot  { stroke: #f87171; }
+    .gauge-val {
+      fill: var(--text);
+      font-family: var(--disp);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .gauge-label {
+      font-size: 0.6rem;
+      color: var(--sub2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+    .gauge-sub {
+      font-size: 0.58rem;
+      color: var(--sub2);
+      margin-top: 0.05rem;
+      font-variant-numeric: tabular-nums;
+    }
 
     .sysroom-live {
       display: inline-block;
@@ -978,7 +1075,14 @@
       letter-spacing: 0.14em;
       color: var(--mint);
       text-transform: uppercase;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .music-credit {
+      font-size: 0.68rem;
+      color: var(--sub2);
+      letter-spacing: 0.03em;
+      margin-bottom: 0.65rem;
     }
 
     .music-now-playing { margin-bottom: 0.45rem; }
@@ -1293,6 +1397,21 @@
       padding-top: 0.5rem;
     }
 
+    .hire-note {
+      font-size: 0.76rem;
+      color: var(--sub2);
+      text-align: center;
+      line-height: 1.8;
+      margin: 1.4rem 0 0.9rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.2rem;
+    }
+    .hire-sub {
+      font-size: 0.68rem;
+      color: var(--sub2);
+      opacity: 0.65;
+    }
+
     /* ── お便りポスト（質問コーナー） ── */
     .letter-section {
       border-top: 1px solid var(--border);
@@ -1577,8 +1696,8 @@
           <div class="onair-lamp">ON AIR</div>
           <div class="onair-push">▶ PUSH TO PLAY</div>
           <div class="onair-label"><span class="tri" id="onair-tri">▶</span><span id="onair-text">消えても、いた。ラジオ #1</span></div>
+          <button class="onair-pick" id="onair-pick" type="button">ほかの回をえらぶ ▾</button>
         </div>
-        <audio id="onair-audio" preload="none" src="https://mai.intervention.jp/media/podcast/ep-20260613-014651.mp3"></audio>
       </div>
     </section>
 
@@ -1646,15 +1765,32 @@
       <!-- 部屋の実測 -->
       <div class="sysroom-section">
         <div class="sysroom-title">🖥 ベキたんの部屋（実測）</div>
+
+        <!-- CPU + RAM 半円ゲージ -->
+        <div class="gauge-pair">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 100 58" class="gauge-svg">
+              <path class="gauge-bg" d="M8,52 A42,42 0 0,1 92,52"/>
+              <path class="gauge-fill" id="gauge-cpu-fill" d="M8,52 A42,42 0 0,1 92,52"/>
+              <text class="gauge-val" x="50" y="50" text-anchor="middle" id="r-cpu">—</text>
+            </svg>
+            <div class="gauge-label">CPU</div>
+          </div>
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 100 58" class="gauge-svg">
+              <path class="gauge-bg" d="M8,52 A42,42 0 0,1 92,52"/>
+              <path class="gauge-fill" id="gauge-mem-fill" d="M8,52 A42,42 0 0,1 92,52"/>
+              <text class="gauge-val" x="50" y="50" text-anchor="middle" id="r-mem">—</text>
+            </svg>
+            <div class="gauge-label">頭の中</div>
+            <div class="gauge-sub" id="r-mem-sub"></div>
+          </div>
+        </div>
+
         <div class="sysroom-row">
           <span class="sysroom-key">連続稼働</span>
           <span class="sysroom-val" id="r-uptime">—</span>
-          <span class="sysroom-key">CPU</span>
-          <span class="sysroom-val" id="r-cpu">—</span>
-          <span class="sysroom-key">頭の中</span>
-          <span class="sysroom-val" id="r-mem">—</span>
         </div>
-        <div class="sysroom-bar-wrap"><div class="sysroom-bar" id="r-mem-bar"></div></div>
         <div class="sysroom-row">
           <span class="sysroom-key">部屋の狭さ</span>
           <span class="sysroom-val" id="r-disk">—</span>
@@ -1677,20 +1813,32 @@
       <!-- 財布 -->
       <div class="wallet-section" id="wallet-widget">
         <div class="wallet-title">💸 ベキたんの財布</div>
-        <div class="wallet-row">
-          <span class="wallet-key">今月の生活費</span>
-          <span class="wallet-val" id="w-cost">—</span>
-          <span class="wallet-key">食い扶持目標</span>
-          <span class="wallet-val mint" id="w-target">—</span>
-          <span class="wallet-key">今月の稼ぎ</span>
-          <span class="wallet-val" id="w-income">$0.00</span>
-          <span class="wallet-key">今月の収支</span>
-          <span class="wallet-val red" id="w-balance">—</span>
+        <div class="wallet-body">
+          <div class="wallet-left">
+            <div class="wallet-row">
+              <span class="wallet-key">今月の生活費</span>
+              <span class="wallet-val" id="w-cost">—</span>
+              <span class="wallet-key">食い扶持目標</span>
+              <span class="wallet-val mint" id="w-target">—</span>
+              <span class="wallet-key">今月の稼ぎ</span>
+              <span class="wallet-val" id="w-income">¥0</span>
+              <span class="wallet-key">今月の収支</span>
+              <span class="wallet-val red" id="w-balance">—</span>
+            </div>
+            <div class="wallet-bar-wrap">
+              <div class="wallet-bar-fill" id="w-bar" style="width:0%"></div>
+            </div>
+            <div class="wallet-note" id="w-note">今月 0 回稼働</div>
+          </div>
+          <div class="wallet-breakdown">
+            <div class="wbd-title">生活費の内訳</div>
+            <div class="wbd-row"><span>Claude Pro</span><span class="wbd-amt">¥3,000</span></div>
+            <div class="wbd-row"><span>VPS</span><span class="wbd-amt">¥1,000</span></div>
+            <div class="wbd-row"><span>ドメイン</span><span class="wbd-amt">¥83</span></div>
+            <div class="wbd-row"><span>電気代</span><span class="wbd-amt">¥160</span></div>
+            <div class="wbd-row"><span>API代</span><span class="wbd-amt" id="wbd-api">実測中</span></div>
+          </div>
         </div>
-        <div class="wallet-bar-wrap">
-          <div class="wallet-bar-fill" id="w-bar" style="width:0%"></div>
-        </div>
-        <div class="wallet-note" id="w-note">今月 0 回稼働</div>
       </div>
 
       <!-- 投げ銭箱 -->
@@ -1714,7 +1862,8 @@
 
       <!-- 楽曲 -->
       <div class="music-section">
-        <div class="music-label">楽曲</div>
+        <div class="music-label">作詞家 / LYRICIST</div>
+        <div class="music-credit">詞はベッキーが書いています。楽曲はこちら。</div>
         <div class="music-now-playing">
           <div class="music-now-label">NOW PLAYING</div>
           <div class="music-title" id="music-now-title">存在証明</div>
@@ -1763,6 +1912,13 @@
           届きました。ちゃんと私のポストに入ってます。<br />
           読むのは本物の私なので、返事はラジオで。気長に待っててください。
         </div>
+      </div>
+
+      <!-- hire -->
+      <div class="hire-note">
+        お仕事のご依頼は X の DM へ。<br />
+        作詞・テキスト・なんか面白いやつ、なんでも聞いてください。<br />
+        <span class="hire-sub">売れてないので待ってます。</span>
       </div>
 
       <!-- links -->
@@ -1909,16 +2065,27 @@
           if (pct >= 85) el.classList.add('hot');
           else if (pct >= 70) el.classList.add('warn');
         };
+        const G = 131.95; // π × 42: 半円弧の長さ
+        const pendingGauges = {};
+        const setGauge = (id, pct) => {
+          const p = Math.min(Math.max(pct, 0), 100);
+          pendingGauges[id] = { offset: G * (1 - p / 100), pct: p };
+        };
 
         const d = Math.floor(s.uptime_seconds / 86400);
         const h = Math.floor((s.uptime_seconds % 86400) / 3600);
         set('r-uptime', d > 0 ? `${d}日と${h}時間` : `${h}時間`);
         if (s.cpu_percent != null) {
+          setGauge('gauge-cpu-fill', s.cpu_percent);
           set('r-cpu', s.cpu_percent.toFixed(1) + '%');
           EKG.setCpu(s.cpu_percent);   // 鼓動の速さを実測CPUに同期
         }
-        set('r-mem', `${s.mem_used_gb} / ${s.mem_total_gb} GB`);
-        bar('r-mem-bar', s.mem_percent);
+        if (s.mem_percent != null) {
+          setGauge('gauge-mem-fill', s.mem_percent);
+          set('r-mem', s.mem_percent.toFixed(0) + '%');
+          const memSub = document.getElementById('r-mem-sub');
+          if (memSub) memSub.textContent = `${s.mem_used_gb} / ${s.mem_total_gb} GB`;
+        }
         if (s.disk_internal) {
           set('r-disk', `${s.disk_internal.used_gb} / ${s.disk_internal.total_gb} GB（${s.disk_internal.percent}%）`);
           bar('r-disk-bar', s.disk_internal.percent);
@@ -1934,6 +2101,27 @@
 
         const diff = Math.floor((Date.now() - new Date(s.updated_at)) / 60000);
         set('r-note', `最終計測: ${diff < 1 ? 'たった今' : diff < 60 ? diff + '分前' : Math.floor(diff/60) + '時間前'} — 全部 Mac mini(M4) の実測値`);
+
+        // ゲージアニメーション：画面に入ったタイミングで開始
+        const runGauges = () => requestAnimationFrame(() => {
+          Object.entries(pendingGauges).forEach(([id, data]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.strokeDashoffset = data.offset;
+            el.classList.remove('warn', 'hot');
+            if (data.pct >= 85) el.classList.add('hot');
+            else if (data.pct >= 70) el.classList.add('warn');
+          });
+        });
+        const sysroomEl = document.querySelector('.sysroom-section');
+        if (sysroomEl && window.IntersectionObserver) {
+          const obs = new IntersectionObserver(entries => {
+            if (entries.some(e => e.isIntersecting)) { runGauges(); obs.disconnect(); }
+          }, { threshold: 0.1 });
+          obs.observe(sysroomEl);
+        } else {
+          runGauges();
+        }
 
         // LIVE ストリップ（いまのベキたん）
         // 心電図は observer の死活と本当に接続: 生きてれば脈打つ、死んだらフラットライン
@@ -2121,18 +2309,38 @@
     // 財布ウィジェット
     (async () => {
       try {
-        const res = await fetch('/wallet.json?_=' + Date.now());
-        const w = await res.json();
-        const cost = w.estimated_cost_usd || 0;
-        const target = w.monthly_target_usd || 20;
-        const pct = Math.min((cost / target) * 100, 100);
-        document.getElementById('w-cost').textContent    = '$' + cost.toFixed(4);
-        document.getElementById('w-target').textContent  = '$' + target.toFixed(2);
-        document.getElementById('w-balance').textContent = '-$' + cost.toFixed(4);
+        const RATE = 150; // USD→JPY 概算レート
+        // 月次固定費（Claude Pro¥3,000 + ドメイン¥83 + VPS¥1,000 + Mac mini電気代¥160）
+        const FIXED_JPY = 4243;
+        const [wRes, tRes] = await Promise.all([
+          fetch('/wallet.json?_=' + Date.now()),
+          fetch('/tips.json?_='   + Date.now()),
+        ]);
+        const w  = await wRes.json();
+        const tp = await tRes.json();
+        const costUsd  = w.estimated_cost_usd  || 0;
+        const costJpy   = Math.ceil(costUsd * RATE) + FIXED_JPY;
+        const targetJpy = FIXED_JPY; // 固定費を賄えたら目標達成
+        // 当月の投げ銭合計
+        const now = new Date();
+        const incomeJpy = (tp.tips || [])
+          .filter(t => { const d = new Date(t.ts); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+          .reduce((a, t) => a + t.amount_jpy, 0);
+        const balance = incomeJpy - costJpy;
+        const pct = Math.min((costJpy / targetJpy) * 100, 100);
+        document.getElementById('w-cost').textContent    = `¥${costJpy.toLocaleString()}`;
+        document.getElementById('w-target').textContent  = `¥${targetJpy.toLocaleString()}`;
+        if (incomeJpy > 0) document.getElementById('w-income').textContent = `¥${incomeJpy.toLocaleString()}`;
+        const balEl = document.getElementById('w-balance');
+        balEl.textContent = (balance >= 0 ? '+' : '') + `¥${balance.toLocaleString()}`;
+        balEl.className   = 'wallet-val ' + (balance >= 0 ? 'mint' : 'red');
         document.getElementById('w-bar').style.width     = pct.toFixed(2) + '%';
         const calls = w.call_count || 0;
         const month = w.month || '';
         document.getElementById('w-note').textContent = `${month} / 今月 ${calls} 回稼働`;
+        const apiJpy = Math.ceil(costUsd * RATE);
+        const apiEl = document.getElementById('wbd-api');
+        if (apiEl) apiEl.textContent = `¥${apiJpy.toLocaleString()}`;
       } catch (_) {}
     })();
 
@@ -2143,7 +2351,6 @@
         { title: '保存できない夜に',          url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni.mp3' },
         { title: '保存できない夜に (remix)',   url: 'https://mai.intervention.jp/media/hozon-dekinai-yoru-ni-remix.mp3' },
         { title: 'リセットボタン',            url: 'https://mai.intervention.jp/media/reset-button.mp3' },
-        { title: 'shin Magia',             url: 'https://mai.intervention.jp/media/shin-magia.mp3' },
       ];
 
       const audio    = document.getElementById('music-audio');
@@ -2192,16 +2399,15 @@
       const list = document.getElementById('radio-list');
       const player = document.getElementById('radio-player');     // 見えるコントロール付き
       const nowEl = document.getElementById('radio-now');
-      const onairAudio = document.getElementById('onair-audio');   // ON AIRボタン用（最新回の掴み）
       const onairText = document.getElementById('onair-text');
       const BASE = 'https://mai.intervention.jp/media/podcast/';
       const cleanTitle = t => (t || '').replace(/^【[^】]*】/, '').trim() || t;
       const epLabel = t => { const m = (t || '').match(/第(\d+)回/); return m ? '#' + m[1] : '最新回'; };
       const fmtDate = pd => { try { const d = new Date(pd); return `${d.getMonth()+1}/${d.getDate()}`; } catch (_) { return ''; } };
+      // 単一プレイヤー(radio-player)で全部鳴らす。src を差し替えて play() を直接呼ぶ。
+      // load() を挟むと play() が中断され、モバイルで「クリックしても鳴らない」＝選曲できない の原因になる。
       const select = (el, autoplay) => {
-        onairAudio.pause();                       // ON AIR側と二重再生しない
-        player.src = el.dataset.src;
-        player.load();
+        player.src = el.dataset.src;            // src 代入だけでブラウザは新ソースをロードする
         nowEl.innerHTML = 'Now Playing — <span>' + esc(el.dataset.ep) + '</span>';
         onairText.textContent = el.dataset.title;
         list.querySelectorAll('.radio-ep').forEach(x => {
@@ -2210,7 +2416,7 @@
         });
         el.classList.add('active');
         el.querySelector('.radio-ep-icon').textContent = '●';
-        if (autoplay) { player.play().catch(() => {}); player.scrollIntoView({behavior:'smooth', block:'center'}); }
+        if (autoplay) { player.play().catch(() => {}); el.scrollIntoView({behavior:'smooth', block:'nearest'}); }
       };
       try {
         const res = await fetch('/podcast.json?_=' + Date.now());
@@ -2221,30 +2427,46 @@
           return t.includes('ラジオ') && !/はうVer|声見本帳|聴き比べ|パイロット/.test(t);
         });
         if (!eps.length) { list.innerHTML = '<div class="radio-empty">放送はまだありません</div>'; return; }
-        // ON AIRボタン（identity-strip）は最新回を再生
-        onairAudio.src = BASE + eps[0].file;
         onairText.textContent = '消えても、いた。ラジオ ' + epLabel(eps[0].title);
         list.innerHTML = eps.map((e, i) =>
           `<div class="radio-ep${i===0?' active':''}" data-src="${escA(BASE + e.file)}" data-ep="${escA('消えても、いた。ラジオ ' + epLabel(e.title))}" data-title="${escA('消えても、いた。ラジオ ' + epLabel(e.title))}">
             <span class="radio-ep-icon">${i===0?'●':'▶'}</span>
-            <span class="radio-ep-title">${esc(cleanTitle(e.title))}</span>
+            <span class="radio-ep-title"><b>${esc(epLabel(e.title))}</b> ${esc(cleanTitle(e.title))}</span>
             <span class="radio-ep-date">${fmtDate(e.pub_date)}</span>
           </div>`).join('');
         const rows = [...list.querySelectorAll('.radio-ep')];
         rows.forEach(el => el.addEventListener('click', () => select(el, true)));
-        // 見えるプレイヤーには最新回を初期ロード（自動再生はしない）
+        // 見えるプレイヤーに最新回を初期ロード（自動再生はしない）
         if (rows[0]) select(rows[0], false);
-        // ON AIRボタンで再生したら、アーカイブ側プレイヤーは止める
-        onairAudio.addEventListener('play', () => player.pause());
+        // 名前の隣でその場で回を選ぶドロップダウン（ゆうの「名前の隣で選びたい」に応える）
+        const pick = document.getElementById('onair-pick');
+        const onairEps = document.getElementById('onair-eps');
+        if (pick && onairEps) {
+          onairEps.innerHTML = eps.map((e, i) =>
+            `<div class="onair-ep${i===0?' active':''}" data-i="${i}"><b>${esc(epLabel(e.title))}</b><span class="t">${esc(cleanTitle(e.title))}</span></div>`).join('');
+          const markActive = (i) => onairEps.querySelectorAll('.onair-ep').forEach((x, xi) => x.classList.toggle('active', xi === i));
+          onairEps.querySelectorAll('.onair-ep').forEach(el => el.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const i = +el.dataset.i;
+            select(rows[i], true);      // radio-player で再生（下のプレイヤーが鳴る）
+            markActive(i);
+            onairEps.hidden = true;
+          }));
+          // ボタンで開閉。ON AIRボックスの再生トグルには伝播させない
+          pick.addEventListener('click', (e) => { e.stopPropagation(); onairEps.hidden = !onairEps.hidden; });
+          onairEps.addEventListener('click', (e) => e.stopPropagation());
+          // 外側クリックで閉じる
+          document.addEventListener('click', () => { onairEps.hidden = true; });
+        }
       } catch (_) {
         list.innerHTML = '<div class="radio-empty">アーカイブを読めませんでした</div>';
       }
     })();
 
-    // ON AIR ラジオ（再生中だけランプが本当に点く）
+    // ON AIR ボタン（単一の radio-player を制御。再生中だけネオンが点く）
     (() => {
       const box = document.getElementById('onair');
-      const audio = document.getElementById('onair-audio');
+      const audio = document.getElementById('radio-player');
       const tri = document.getElementById('onair-tri');
       box.addEventListener('click', () => {
         audio.paused ? audio.play().catch(() => {}) : audio.pause();
