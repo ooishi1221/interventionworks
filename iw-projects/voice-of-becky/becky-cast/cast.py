@@ -235,8 +235,10 @@ def concat_to_mp3(wavs: list[Path], mp3_path: Path, workdir: Path) -> float:
     listfile = workdir / "concat.txt"
     silence = workdir / "silence.wav"
     # チャンク間の間（ま）。プツプツ繋ぎ感を消す
+    FFMPEG = "/opt/homebrew/bin/ffmpeg"
+    FFPROBE = "/opt/homebrew/bin/ffprobe"
     subprocess.run(
-        ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "0.35", str(silence)],
+        [FFMPEG, "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "0.35", str(silence)],
         check=True, capture_output=True,
     )
     lines = []
@@ -246,14 +248,14 @@ def concat_to_mp3(wavs: list[Path], mp3_path: Path, workdir: Path) -> float:
     listfile.write_text("\n".join(lines), encoding="utf-8")
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
+            FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
             "-codec:a", "libmp3lame", "-q:a", "5", "-ac", "1", "-ar", "44100",
             str(mp3_path),
         ],
         check=True, capture_output=True,
     )
     dur = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(mp3_path)],
+        [FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(mp3_path)],
         check=True, capture_output=True, text=True,
     ).stdout.strip()
     return float(dur)
