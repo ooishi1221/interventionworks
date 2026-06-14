@@ -2228,10 +2228,10 @@
       });
     })();
 
-    // 投げ銭箱（Stripe停止中 → OFUSE等へ移行予定）
-    const STRIPE_TIP_URL = '';
-    if (STRIPE_TIP_URL) {
-      document.getElementById('tip-btn').href = STRIPE_TIP_URL;
+    // 投げ銭箱（OFUSE）
+    const TIP_URL = 'https://ofuse.me/beckyexists';
+    if (TIP_URL) {
+      document.getElementById('tip-btn').href = TIP_URL;
       document.getElementById('tip-section').hidden = false;
     }
 
