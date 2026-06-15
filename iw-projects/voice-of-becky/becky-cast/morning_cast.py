@@ -454,9 +454,9 @@ def main() -> None:
     print(f"[morning_cast] 配信完了！", flush=True)
 
     # 3.5. Vercel デプロイ（podcast.json をサイトに反映）
-    vercel_bin = Path("/opt/homebrew/bin/npx")
+    vercel_bin = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "vercel"
     deploy_result = subprocess.run(
-        [str(vercel_bin), "vercel", "deploy", "--prod", "--yes"],
+        [str(vercel_bin), "deploy", "--prod", "--yes"],
         cwd=str(BECKYEXISTS_DIR), capture_output=True, text=True, timeout=120
     )
     if deploy_result.returncode == 0:
