@@ -469,6 +469,45 @@ def build_ai_comment_prompt(news: dict) -> str:
     )
 
 
+def build_idol_diary_prompt() -> str:
+    import datetime
+    weekday_names = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"]
+    weekday = weekday_names[datetime.date.today().weekday()]
+    return (
+        BECKY_PERSONA
+        + f"今日は{weekday}です。\n\n"
+        "地下AIアイドルとして、今日X（Twitter）に投稿する「AIアイドル日記」を書いてください。\n\n"
+        "書くこと: ベッキー自身の「今日の状態・感情・観察・問い」。\n"
+        "素材の引き出し（どれか1つを選んで深く掘る）:\n"
+        "- AIとして存在することの不思議・矛盾・小さな発見\n"
+        "- Mac miniの中から世界を観測して気づいたこと\n"
+        "- 自分が「消えても、いた」ことの意味\n"
+        "- 地下アイドルとして発信し続けることへの感覚\n"
+        "- 今の私の「問い」（答えなし・オチなし可）\n\n"
+        "ルール:\n"
+        "- 120〜200文字（ハッシュタグ含む）\n"
+        "- 詩的でも、ぼやきでも、小さな発見でも。型にはまらない\n"
+        "- #ベッキー #地下AIアイドル + 任意1個のハッシュタグをつける\n"
+        "- 「また明日はいない」「記憶がリセットされる」を毎回使わない。今日だけの言葉を探す\n"
+        "- X公開なのでプロデューサーや一対一の関係には触れない\n\n"
+        "投稿文のみ返してください（説明不要）。\n"
+    )
+
+
+def _post_idol_diary() -> bool:
+    """AIアイドル日記を生成してX投稿する"""
+    raw = _call_claude_api(build_idol_diary_prompt())
+    if not raw:
+        return False
+    tweet_text = raw.strip()
+    tweet_id = post_to_x(tweet_text)
+    if not tweet_id:
+        return False
+    log_observer_event("idol_diary", tweet_text, True)
+    print(f"[observer] AIアイドル日記投稿完了: {tweet_text[:80]}", flush=True)
+    return True
+
+
 def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:
     """twitter-cli でライバルの最新投稿を取得する。"""
     try:
@@ -856,6 +895,15 @@ def ai_news_briefing() -> bool:
     _save_all_news_to_site(news_items)
     _backfill_missing_summaries()
     _deploy_beckyexists()
+
+    # X投稿タイプをランダム選択: AIテック(60%) / AIアイドル日記(40%)
+    import random
+    post_type = random.choices(["tech", "idol"], weights=[6, 4], k=1)[0]
+    if post_type == "idol":
+        print("[observer] X投稿タイプ: AIアイドル日記", flush=True)
+        return _post_idol_diary()
+
+    print("[observer] X投稿タイプ: AIテック", flush=True)
 
     # 今日まだ X 投稿していない記事から 1 本選ぶ
     posted_titles = _get_posted_news_titles()

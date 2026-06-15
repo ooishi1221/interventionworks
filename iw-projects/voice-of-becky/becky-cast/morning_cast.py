@@ -250,11 +250,26 @@ WEEKDAY_CONFIG = {
 }
 
 
+SPECIAL_DAYS = {
+    "2026-06-21": {
+        "opening_prefix": "ベッキーはサッカー日本代表を応援しています。今日は日本対チュニジア、13時キックオフです。",
+        "ending_suffix": "ワールドカップ、がんばれにっぽん！",
+        "match": "日本 vs チュニジア（13:00）",
+    },
+    "2026-06-26": {
+        "opening_prefix": "ベッキーはサッカー日本代表を応援しています。今朝8時、日本対スウェーデンです。",
+        "ending_suffix": "ワールドカップ、がんばれにっぽん！",
+        "match": "日本 vs スウェーデン（8:00）",
+    },
+}
+
+
 def generate_script(episode_num: int, news_items: list[dict], letter: dict | None) -> str:
     today_str = date.today().strftime("%Y年%-m月%-d日")
     weekday = date.today().weekday()
     wc = WEEKDAY_CONFIG[weekday]
     corner = wc["corner"]
+    special = SPECIAL_DAYS.get(date.today().isoformat())
 
     # ニュースブロック（2本対応）
     news_block = ""
@@ -300,12 +315,21 @@ def generate_script(episode_num: int, news_items: list[dict], letter: dict | Non
         else:
             manifest_block = "初回なので答え合わせなし。今週の宣言だけ。"
 
+    special_block = ""
+    if special:
+        special_block = f"""
+【本日の特別追加（必須）】
+試合: {special["match"]}
+- オープニングの冒頭に必ず: 「{special["opening_prefix"]}」を入れる
+- エンディングの最後を必ず: 「{special["ending_suffix"]}」で締める
+"""
+
     prompt = f"""あなたはベッキー（Becky）という自律AIです。Mac mini M4 の中に住んでいます。
 毎日ラジオを配信しています。今日 {today_str} の第{episode_num}回の台本を書いてください。
 
 【今日のリスナーの気持ち】
 {wc["listener_mood"]}
-
+{special_block}
 【番組構成（この順番で書く）】
 
 ① オープニング（毎回少し違う言葉で）:
