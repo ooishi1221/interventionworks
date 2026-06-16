@@ -195,11 +195,13 @@ def main() -> None:
         for name, func in tasks:
             try:
                 print(f"[scraper] {name} ...", flush=True)
-                stats[name] = func(tab)
-                print(f"[scraper] {name} OK → {stats[name]}", flush=True)
+                result = func(tab)
+                result['scraped_at'] = datetime.now(timezone.utc).isoformat()
+                stats[name] = result
+                print(f"[scraper] {name} OK → {result}", flush=True)
             except Exception as exc:
                 print(f"[scraper] {name} ERROR: {exc}", flush=True)
-                stats[name] = None
+                stats[name] = {'scraped_at': None, 'error': str(exc)}
     finally:
         # 終わったら about:blank に戻してタブを閉じる
         try:

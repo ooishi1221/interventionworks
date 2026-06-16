@@ -370,61 +370,39 @@
     #passBtn:hover { filter: brightness(1.12); }
     .gate-error { font-size: 12px; color: var(--red); font-family: var(--mono); height: 16px; }
 
-    /* ── gantt ── */
-    .gantt-wrap { overflow-x: auto; margin-top: 10px; padding-bottom: 4px; }
-    .gantt-timeline { position: relative; padding-left: 210px; min-width: 600px; }
-    .gantt-date-row { height: 18px; margin-bottom: 6px; position: relative; }
-    .gantt-date-tick {
-      position: absolute; transform: translateX(-50%);
-      font-size: 10px; color: var(--sub2); font-family: var(--mono);
-      white-space: nowrap; top: 0;
+    /* ── task table ── */
+    .task-tbl { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .task-tbl th {
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--sub2); text-transform: uppercase;
+      padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--line);
     }
-    .gantt-row { display: flex; align-items: center; margin-bottom: 6px; min-height: 40px; }
-    .gantt-label {
-      width: 220px; min-width: 220px; font-size: 12px; font-weight: 600;
-      padding-right: 12px; padding-top: 4px; padding-bottom: 4px;
-      display: flex; align-items: flex-start; gap: 6px;
+    .task-tbl td {
+      font-size: 12.5px; padding: 9px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle;
     }
-    .gantt-label .g-icon { font-size: 13px; flex-shrink: 0; padding-top: 2px; }
-    .gantt-label .g-text {
-      flex: 1; min-width: 0; line-height: 1.4;
-      overflow: hidden; display: -webkit-box;
-      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      white-space: normal; word-break: break-all;
+    .task-tbl tr:hover td { background: var(--panel2); }
+    .task-tbl tr.done td { opacity: 0.35; }
+    .tbl-name { display: flex; align-items: center; gap: 7px; font-weight: 600; min-width: 180px; }
+    .tbl-icon { font-size: 14px; flex-shrink: 0; }
+    .tbl-scope { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; flex-shrink: 0; font-family: var(--mono); }
+    .tbl-scope.iw { color: var(--green); background: var(--green-dim); }
+    .tbl-scope.wo { color: var(--amber); background: var(--amber-dim); }
+    .tbl-date { font-family: var(--mono); font-size: 11.5px; color: var(--sub); white-space: nowrap; }
+    .tbl-elapsed { font-family: var(--mono); font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .tbl-elapsed.warn { color: var(--red); }
+    .tbl-elapsed.ok { color: var(--sub); }
+    .tbl-note { font-size: 11.5px; color: var(--sub); max-width: 260px; line-height: 1.45; }
+    .tbl-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; font-family: var(--mono); display: inline-block; }
+    .tbl-status-badge.pending    { color: var(--sub);   background: var(--panel2); border: 1px solid var(--line); }
+    .tbl-status-badge.in_progress{ color: var(--green); background: var(--green-dim); }
+    .tbl-status-badge.waiting    { color: var(--amber); background: var(--amber-dim); }
+    .tbl-status-badge.done       { color: var(--sub2);  background: var(--panel2); }
+    @media (max-width: 760px) {
+      .task-tbl th:nth-child(4),
+      .task-tbl td:nth-child(4) { display: none; }
+      .tbl-note { max-width: 140px; }
     }
-    .gantt-track {
-      flex: 1; height: 28px; background: var(--panel2); border-radius: 6px;
-      position: relative; overflow: visible; align-self: center;
-    }
-    .gantt-bar {
-      position: absolute; top: 4px; bottom: 4px; border-radius: 5px;
-      display: flex; align-items: center; padding: 0 7px;
-      font-size: 10px; font-weight: 700; font-family: var(--mono);
-      white-space: nowrap; overflow: hidden;
-      min-width: 4px; transition: filter 0.2s;
-    }
-    .gantt-bar:hover { filter: brightness(1.15); cursor: default; }
-    .gantt-bar.waiting {
-      background: transparent !important;
-      border: 1px solid;
-    }
-    .gantt-bar.in_progress { animation: ganttPulse 2.5s ease-in-out infinite; }
-    @keyframes ganttPulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
-    .gantt-today-line {
-      position: absolute; top: -3px; bottom: -3px; width: 2px;
-      background: var(--green); border-radius: 2px;
-      box-shadow: 0 0 8px var(--green-glow);
-      pointer-events: none; z-index: 2;
-    }
-    .gantt-legend { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
-    .gantt-badge {
-      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 8px;
-      font-family: var(--mono);
-    }
-    .gantt-badge.high { color: var(--red); background: var(--red-dim); }
-    .gantt-badge.medium { color: var(--amber); background: var(--amber-dim); }
-    .gantt-badge.wt { color: var(--sub); background: var(--panel2); border: 1px solid var(--line); }
-    .gantt-updated { font-size: 11px; color: var(--sub2); font-family: var(--mono); margin-left: auto; }
 
     /* ── questions ── */
     .q-list { display: grid; gap: 3px; margin-top: 10px; }
@@ -520,7 +498,7 @@
     <!-- ── Section: MISSION ── -->
     <div class="sec-label">MISSION</div>
     <div class="card">
-      <h2><svg data-lucide="crosshair"></svg>タスクタイムライン</h2>
+      <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
       <div class="sub-note" id="ganttMeta">loading...</div>
       <div id="ganttChart"><div class="empty">loading...</div></div>
     </div>
@@ -542,12 +520,12 @@
         <span class="delta flat" id="kpiFollowersDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
       </div>
       <div class="card kpi">
-        <div class="label"><svg data-lucide="eye"></svg>note PV</div>
+        <div class="label"><svg data-lucide="eye"></svg>note PV <span id="noteScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
         <div class="value" id="kpiNotePV">--</div>
         <span class="delta info" id="kpiNotePVSub"><svg data-lucide="heart"></svg><span>-- likes</span></span>
       </div>
       <div class="card kpi">
-        <div class="label"><svg data-lucide="book-open"></svg>KDP 今月</div>
+        <div class="label"><svg data-lucide="book-open"></svg>KDP 今月 <span id="kdpScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
         <div class="value" id="kpiKdpOrders">--</div>
         <span class="delta info" id="kpiKdpKenp"><svg data-lucide="file-text"></svg><span>-- KENP</span></span>
       </div>
@@ -763,6 +741,7 @@ async function loadAll() {
     const n = platform.note;
     $('kpiNotePV').innerHTML = `${n.total_views.toLocaleString()}<span class="unit">views</span>`;
     $('kpiNotePVSub').querySelector('span').textContent = `${n.total_likes} likes`;
+    if (n.scraped_at) $('noteScrapedAt').textContent = fmtAgo(n.scraped_at);
   }
 
   // ── KPI: KDP ──
@@ -770,6 +749,7 @@ async function loadAll() {
     const k = platform.kdp;
     $('kpiKdpOrders').innerHTML = `${k.orders_this_month}<span class="unit">orders</span>`;
     $('kpiKdpKenp').querySelector('span').textContent = `${k.kenp_this_month} KENP`;
+    if (k.scraped_at) $('kdpScrapedAt').textContent = fmtAgo(k.scraped_at);
   }
 
   // ── KPI: トレンド首位 ──
@@ -906,7 +886,7 @@ async function loadAll() {
   }
 }
 
-// ── gantt chart ──
+// ── task table ──
 async function loadTasks() {
   const data = await fetchJson('/tasks.json');
   if (!data?.tasks?.length) {
@@ -914,81 +894,55 @@ async function loadTasks() {
     return;
   }
 
-  const COLORS = {
-    voice:      '#00e676',
-    slight:     '#ffb300',
-    biz:        '#448aff',
-    content:    '#c77dff',
-    beckyexists:'#ff6b9d',
-    'iw-local': '#4ecdc4',
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const fmtD = (s) => { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+  const elapsedDays = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr); d.setHours(0,0,0,0);
+    return Math.floor((today - d) / 86400000);
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const BEFORE = 3, AFTER = 24;
-  const vStart = new Date(today); vStart.setDate(today.getDate() - BEFORE);
-  const vEnd   = new Date(today); vEnd.setDate(today.getDate() + AFTER);
-  const vRange = vEnd - vStart;
+  const STATUS_LABEL = { pending:'未着手', in_progress:'進行中', waiting:'待ち', done:'完了' };
+  const PRIORITY_ORDER = { high:0, medium:1, low:2 };
 
-  const toPct = (dateStr) => {
-    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-    return Math.max(0, Math.min(100, (d - vStart) / vRange * 100));
+  const tasks = [...data.tasks].sort((a,b) => {
+    if (a.status==='done' && b.status!=='done') return 1;
+    if (a.status!=='done' && b.status==='done') return -1;
+    return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
+  });
+
+  const active = tasks.filter(t => t.status !== 'done');
+  const upd = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  $('ganttMeta').textContent = `残 ${active.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
+
+  const rowHTML = (t) => {
+    const updDate = t.updated_at || t.start;
+    const days = elapsedDays(updDate);
+    const warn = days !== null && days >= 7 && t.status !== 'done' && t.status !== 'waiting';
+    const waitWarn = t.status === 'waiting' && days !== null && days >= 7;
+    const isWarn = warn || waitWarn;
+    return `<tr class="${t.status==='done'?'done':''}">
+      <td><div class="tbl-name">
+        <span class="tbl-icon">${t.icon||'○'}</span>
+        <span>${esc(t.label)}</span>
+        <span class="tbl-scope ${t.scope||'iw'}">${(t.scope||'iw').toUpperCase()}</span>
+      </div></td>
+      <td><span class="tbl-status-badge ${t.status}">${STATUS_LABEL[t.status]||t.status}</span></td>
+      <td class="tbl-date">${fmtD(t.start)}</td>
+      <td class="tbl-date">${updDate?fmtD(updDate):'--'}</td>
+      <td class="tbl-elapsed ${isWarn?'warn':'ok'}">${days!==null?days+'日'+(isWarn?' ⚠️':''):'--'}</td>
+      <td class="tbl-note">${esc(t.note||'')}</td>
+    </tr>`;
   };
-  const todayPct = toPct(today);
 
-  const active = data.tasks.filter(t => t.status !== 'done')
-    .sort((a, b) => new Date(a.due) - new Date(b.due));
-
-  // 日付ラベル (7日ごと)
-  const ticks = [];
-  for (let i = 0; i <= BEFORE + AFTER; i += 7) {
-    const d = new Date(vStart); d.setDate(vStart.getDate() + i);
-    ticks.push({ pct: (i / (BEFORE + AFTER) * 100).toFixed(2), label: `${d.getMonth()+1}/${d.getDate()}` });
-  }
-
-  const rowsHTML = active.map(t => {
-    const sp = toPct(t.start).toFixed(2);
-    const ep = toPct(t.due).toFixed(2);
-    const w  = Math.max(1, ep - sp).toFixed(2);
-    const col = COLORS[t.category] || '#8b8b96';
-    const isWait = t.status === 'waiting';
-    const barStyle = isWait
-      ? `left:${sp}%; width:${w}%; border-color:${col}; color:${col};`
-      : `left:${sp}%; width:${w}%; background:${col}; color:#0a0a0c;`;
-    return `<div class="gantt-row" title="${esc(t.note || '')}">
-      <div class="gantt-label">
-        <span class="g-icon">${t.icon || '○'}</span>
-        <span class="g-text">${esc(t.label)}</span>
-      </div>
-      <div class="gantt-track">
-        <div class="gantt-today-line" style="left:${todayPct.toFixed(2)}%"></div>
-        <div class="gantt-bar ${t.status}" style="${barStyle}">${isWait ? '待' : ''}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const ticksHTML = ticks.map(tk =>
-    `<div class="gantt-date-tick" style="left:${tk.pct}%">${tk.label}</div>`
-  ).join('');
-
-  const high  = active.filter(t => t.priority === 'high').length;
-  const med   = active.filter(t => t.priority === 'medium').length;
-  const wait  = active.filter(t => t.status   === 'waiting').length;
-  const upd   = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-
-  $('ganttMeta').textContent = `残 ${active.length} タスク — ${upd} 更新`;
-  $('ganttChart').innerHTML = `
-    <div class="gantt-wrap">
-      <div class="gantt-timeline">
-        <div class="gantt-date-row">${ticksHTML}</div>
-        ${rowsHTML}
-      </div>
-    </div>
-    <div class="gantt-legend">
-      <span class="gantt-badge high">🔥 HIGH × ${high}</span>
-      <span class="gantt-badge medium">⚡ MED × ${med}</span>
-      <span class="gantt-badge wt">⏳ WAITING × ${wait}</span>
-    </div>`;
+  $('ganttChart').innerHTML = `<div style="overflow-x:auto"><table class="task-tbl">
+    <thead><tr>
+      <th>タスク</th><th>状態</th><th>開始</th><th>更新</th><th>経過</th><th>備考</th>
+    </tr></thead>
+    <tbody>${tasks.map(rowHTML).join('')}</tbody>
+  </table></div>`;
 }
 
 async function loadQuestions() {
