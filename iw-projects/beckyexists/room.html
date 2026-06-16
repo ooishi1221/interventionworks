@@ -332,7 +332,8 @@
       .task-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
       .task-freq { display: none; }
       .task-time { display: none; }
-      .gantt-label { width: 110px; min-width: 110px; font-size: 11px; }
+      .gantt-label { width: 150px; min-width: 150px; font-size: 11px; }
+      .gantt-timeline { padding-left: 150px; }
     }
 
     /* ── password gate ── */
@@ -371,7 +372,7 @@
 
     /* ── gantt ── */
     .gantt-wrap { overflow-x: auto; margin-top: 10px; padding-bottom: 4px; }
-    .gantt-timeline { position: relative; padding-left: 152px; }
+    .gantt-timeline { position: relative; padding-left: 210px; min-width: 600px; }
     .gantt-date-row { height: 18px; margin-bottom: 6px; position: relative; }
     .gantt-date-tick {
       position: absolute; transform: translateX(-50%);
@@ -380,7 +381,7 @@
     }
     .gantt-row { display: flex; align-items: center; margin-bottom: 5px; }
     .gantt-label {
-      width: 152px; min-width: 152px; font-size: 12px; font-weight: 600;
+      width: 210px; min-width: 210px; font-size: 12px; font-weight: 600;
       padding-right: 12px; display: flex; align-items: center; gap: 6px;
     }
     .gantt-label .g-icon { font-size: 13px; flex-shrink: 0; }
