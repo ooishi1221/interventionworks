@@ -7,11 +7,11 @@ Usage:
 
 依存: pip install pychrome
 出力: iw-projects/beckyexists/platform_stats.json
+
+タブは1つだけ開いて使い回す（毎回開閉するとブラウザがアクティブになるため）
 """
 import json
 import os
-import re
-import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,32 +21,8 @@ import pychrome
 CDP_URL = "http://localhost:9223"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
 
-_browser: pychrome.Browser | None = None
 
-
-def get_browser() -> pychrome.Browser:
-    global _browser
-    if _browser is None:
-        _browser = pychrome.Browser(url=CDP_URL)
-    return _browser
-
-
-def new_tab() -> pychrome.Tab:
-    tab = get_browser().new_tab()
-    tab.start()
-    tab.Page.enable()
-    return tab
-
-
-def close_tab(tab: pychrome.Tab) -> None:
-    try:
-        tab.stop()
-        get_browser().close_tab(tab)
-    except Exception:
-        pass
-
-
-def js(tab: pychrome.Tab, code: str) -> str | None:
+def js(tab: pychrome.Tab, code: str):
     result = tab.Runtime.evaluate(expression=code)
     return result["result"].get("value")
 
@@ -58,11 +34,9 @@ def navigate(tab: pychrome.Tab, url: str, wait: float = 2.5) -> None:
 
 # ── Claude Platform ──────────────────────────────────────────────────────────
 
-def scrape_claude_platform() -> dict:
-    tab = new_tab()
-    try:
-        navigate(tab, "https://platform.claude.com/dashboard", 3)
-        raw = js(tab, r"""
+def scrape_claude_platform(tab: pychrome.Tab) -> dict:
+    navigate(tab, "https://platform.claude.com/dashboard", 3)
+    raw = js(tab, r"""
 (function() {
   var dollar = Array.from(document.querySelectorAll('*'))
     .filter(function(el){ return el.children.length === 0; })
@@ -77,22 +51,18 @@ def scrape_claude_platform() -> dict:
   });
 })()
 """)
-        d = json.loads(raw) if raw else {}
-        return {
-            "credit_remaining": float((d.get("credit") or "$0").replace("$", "")),
-            "monthly_cost_usd": float((d.get("monthly") or "$0").replace("$", "")),
-        }
-    finally:
-        close_tab(tab)
+    d = json.loads(raw) if raw else {}
+    return {
+        "credit_remaining": float((d.get("credit") or "$0").replace("$", "")),
+        "monthly_cost_usd": float((d.get("monthly") or "$0").replace("$", "")),
+    }
 
 
 # ── note stats ───────────────────────────────────────────────────────────────
 
-def scrape_note() -> dict:
-    tab = new_tab()
-    try:
-        navigate(tab, "https://note.com/sitesettings/stats", 3)
-        raw = js(tab, r"""
+def scrape_note(tab: pychrome.Tab) -> dict:
+    navigate(tab, "https://note.com/sitesettings/stats", 3)
+    raw = js(tab, r"""
 (function() {
   var lines = document.body.innerText
     .split('\n')
@@ -135,19 +105,14 @@ def scrape_note() -> dict:
   return JSON.stringify({ total_views: views, total_likes: likes, articles: articles });
 })()
 """)
-        return json.loads(raw) if raw else {"total_views": 0, "total_likes": 0, "articles": []}
-    finally:
-        close_tab(tab)
+    return json.loads(raw) if raw else {"total_views": 0, "total_likes": 0, "articles": []}
 
 
 # ── KDP ──────────────────────────────────────────────────────────────────────
 
-def scrape_kdp() -> dict:
-    tab = new_tab()
-    try:
-        navigate(tab, "https://kdpreports.amazon.co.jp/dashboard", 6)
-        # 「今月」タブをクリック
-        js(tab, r"""
+def scrape_kdp(tab: pychrome.Tab) -> dict:
+    navigate(tab, "https://kdpreports.amazon.co.jp/dashboard", 6)
+    js(tab, r"""
 (function() {
   var els = document.querySelectorAll('a, button, span, div');
   for (var i = 0; i < els.length; i++) {
@@ -155,8 +120,8 @@ def scrape_kdp() -> dict:
   }
 })()
 """)
-        time.sleep(3)
-        raw = js(tab, r"""
+    time.sleep(3)
+    raw = js(tab, r"""
 (function() {
   var lines = document.body.innerText
     .split('\n')
@@ -178,18 +143,14 @@ def scrape_kdp() -> dict:
   return JSON.stringify({ orders_this_month: orders, kenp_this_month: kenp });
 })()
 """)
-        return json.loads(raw) if raw else {"orders_this_month": 0, "kenp_this_month": 0}
-    finally:
-        close_tab(tab)
+    return json.loads(raw) if raw else {"orders_this_month": 0, "kenp_this_month": 0}
 
 
 # ── X Developer Console ───────────────────────────────────────────────────────
 
-def scrape_x_dev() -> dict:
-    tab = new_tab()
-    try:
-        navigate(tab, "https://console.x.com/accounts/2053290251490340864", 9)
-        raw = js(tab, r"""
+def scrape_x_dev(tab: pychrome.Tab) -> dict:
+    navigate(tab, "https://console.x.com/accounts/2053290251490340864", 9)
+    raw = js(tab, r"""
 (function() {
   var lines = document.body.innerText
     .split('\n')
@@ -209,9 +170,7 @@ def scrape_x_dev() -> dict:
   return JSON.stringify({ credit_remaining: credit });
 })()
 """)
-        return json.loads(raw) if raw else {"credit_remaining": 0.0}
-    finally:
-        close_tab(tab)
+    return json.loads(raw) if raw else {"credit_remaining": 0.0}
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -220,6 +179,11 @@ def main() -> None:
     print("[scraper] 起動", flush=True)
     stats: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
+    browser = pychrome.Browser(url=CDP_URL)
+    tab = browser.new_tab()
+    tab.start()
+    tab.Page.enable()
+
     tasks = [
         ("claude_api", scrape_claude_platform),
         ("note",       scrape_note),
@@ -227,14 +191,24 @@ def main() -> None:
         ("x_dev",      scrape_x_dev),
     ]
 
-    for name, func in tasks:
+    try:
+        for name, func in tasks:
+            try:
+                print(f"[scraper] {name} ...", flush=True)
+                stats[name] = func(tab)
+                print(f"[scraper] {name} OK → {stats[name]}", flush=True)
+            except Exception as exc:
+                print(f"[scraper] {name} ERROR: {exc}", flush=True)
+                stats[name] = None
+    finally:
+        # 終わったら about:blank に戻してタブを閉じる
         try:
-            print(f"[scraper] {name} ...", flush=True)
-            stats[name] = func()
-            print(f"[scraper] {name} OK → {stats[name]}", flush=True)
-        except Exception as exc:
-            print(f"[scraper] {name} ERROR: {exc}", flush=True)
-            stats[name] = None
+            tab.Page.navigate(url="about:blank")
+            time.sleep(0.5)
+            tab.stop()
+            browser.close_tab(tab)
+        except Exception:
+            pass
 
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
     print(f"[scraper] 完了: {OUTPUT}", flush=True)
