@@ -1,0 +1,40 @@
+{
+  "updated_at": "2026-06-17T08:00:00+09:00",
+  "questions": [
+    {
+      "id": "q-today-priority",
+      "label": "今日いちばんやりたいことどれ？ガント見た上で教えて",
+      "category": "general",
+      "urgency": "high",
+      "icon": "💬"
+    },
+    {
+      "id": "q-anthropic-ccaf",
+      "label": "Anthropic 認定（CCAF）の「portal launch待ち」って何の portal？何が変わる？",
+      "category": "biz",
+      "urgency": "high",
+      "icon": "🏆"
+    },
+    {
+      "id": "q-vocals",
+      "label": "歌わせる vocals.mp3 って何の曲？変換後どう使う予定？",
+      "category": "voice",
+      "urgency": "medium",
+      "icon": "🎤"
+    },
+    {
+      "id": "q-gnh",
+      "label": "GnH って何の略？どんなプロダクト？",
+      "category": "iw-local",
+      "urgency": "medium",
+      "icon": "❓"
+    },
+    {
+      "id": "q-spotify-mail",
+      "label": "Spotify の確認メール踏んだ？チェックリスト3/3 完了するやつ",
+      "category": "beckyexists",
+      "urgency": "low",
+      "icon": "📧"
+    }
+  ]
+}

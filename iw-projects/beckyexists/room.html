@@ -332,8 +332,8 @@
       .task-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
       .task-freq { display: none; }
       .task-time { display: none; }
-      .gantt-label { width: 150px; min-width: 150px; font-size: 11px; }
-      .gantt-timeline { padding-left: 150px; }
+      .gantt-label { width: 140px; min-width: 140px; font-size: 11px; }
+      .gantt-timeline { padding-left: 140px; min-width: 480px; }
     }
 
     /* ── password gate ── */
@@ -379,16 +379,22 @@
       font-size: 10px; color: var(--sub2); font-family: var(--mono);
       white-space: nowrap; top: 0;
     }
-    .gantt-row { display: flex; align-items: center; margin-bottom: 5px; }
+    .gantt-row { display: flex; align-items: center; margin-bottom: 6px; min-height: 40px; }
     .gantt-label {
-      width: 210px; min-width: 210px; font-size: 12px; font-weight: 600;
-      padding-right: 12px; display: flex; align-items: center; gap: 6px;
+      width: 220px; min-width: 220px; font-size: 12px; font-weight: 600;
+      padding-right: 12px; padding-top: 4px; padding-bottom: 4px;
+      display: flex; align-items: flex-start; gap: 6px;
     }
-    .gantt-label .g-icon { font-size: 13px; flex-shrink: 0; }
-    .gantt-label .g-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .gantt-label .g-icon { font-size: 13px; flex-shrink: 0; padding-top: 2px; }
+    .gantt-label .g-text {
+      flex: 1; min-width: 0; line-height: 1.4;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      white-space: normal; word-break: break-all;
+    }
     .gantt-track {
       flex: 1; height: 28px; background: var(--panel2); border-radius: 6px;
-      position: relative; overflow: visible;
+      position: relative; overflow: visible; align-self: center;
     }
     .gantt-bar {
       position: absolute; top: 4px; bottom: 4px; border-radius: 5px;
@@ -419,6 +425,24 @@
     .gantt-badge.medium { color: var(--amber); background: var(--amber-dim); }
     .gantt-badge.wt { color: var(--sub); background: var(--panel2); border: 1px solid var(--line); }
     .gantt-updated { font-size: 11px; color: var(--sub2); font-family: var(--mono); margin-left: auto; }
+
+    /* ── questions ── */
+    .q-list { display: grid; gap: 3px; margin-top: 10px; }
+    .q-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; transition: background 0.15s;
+    }
+    .q-item:hover { background: var(--panel2); }
+    .q-urgency {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+      white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+      font-family: var(--mono); letter-spacing: 0.04em;
+    }
+    .q-urgency.high   { color: var(--red);   background: var(--red-dim); }
+    .q-urgency.medium { color: var(--amber); background: var(--amber-dim); }
+    .q-urgency.low    { color: var(--blue);  background: var(--blue-dim); }
+    .q-icon { font-size: 15px; flex-shrink: 0; }
+    .q-text { font-size: 13px; line-height: 1.55; color: var(--text); }
   </style>
 </head>
 <body>
@@ -499,6 +523,12 @@
       <h2><svg data-lucide="crosshair"></svg>タスクタイムライン</h2>
       <div class="sub-note" id="ganttMeta">loading...</div>
       <div id="ganttChart"><div class="empty">loading...</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
+      <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
+      <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
     </div>
 
     <!-- ── Section: MEDIA ── -->
@@ -961,9 +991,23 @@ async function loadTasks() {
     </div>`;
 }
 
+async function loadQuestions() {
+  const data = await fetchJson('/questions.json');
+  const list = $('questionList');
+  if (!data?.questions?.length) { list.innerHTML = '<div class="empty">質問なし</div>'; return; }
+  const UL = { high: '!!', medium: '!', low: '?' };
+  list.innerHTML = data.questions.map(q => `
+    <div class="q-item">
+      <span class="q-urgency ${q.urgency}">${UL[q.urgency] || '?'}</span>
+      <span class="q-icon">${q.icon || '❓'}</span>
+      <span class="q-text">${esc(q.label)}</span>
+    </div>`).join('');
+}
+
 if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
   loadAll();
   loadTasks();
+  loadQuestions();
   setInterval(loadAll, 60000);
   setInterval(loadTasks, 300000);
 }
