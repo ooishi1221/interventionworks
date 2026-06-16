@@ -182,7 +182,7 @@
       font-size: 13px;
     }
     .article-item:hover { background: var(--panel2); }
-    .article-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+    .article-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; min-width: 0; }
     .article-num {
       font-family: var(--mono); font-size: 12px; color: var(--sub);
       text-align: right; white-space: nowrap;
@@ -324,6 +324,14 @@
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .kpi .value { font-size: 21px; }
       .cost-row { grid-template-columns: 1fr; }
+      .pub-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .pub-body { width: 100%; min-width: 0; }
+      .pub-title { white-space: normal; word-break: break-word; }
+      .pub-meta { width: 100%; }
+      .pub-link { width: 100%; justify-content: center; }
+      .task-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
+      .task-freq { display: none; }
+      .task-time { display: none; }
     }
   </style>
 </head>
