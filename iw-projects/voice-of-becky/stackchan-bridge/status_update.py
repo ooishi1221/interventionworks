@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # cron の PATH には /usr/sbin が無く sysctl が見つからない（2026-06-13 障害）
@@ -33,6 +33,8 @@ TWEET_LOG = REPO_ROOT / "iw-projects" / "voice-of-becky" / "x-tweet" / "tweet-lo
 NPX = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "npx"
 # Stripe 読み取り専用 restricted key（Checkout Sessions: Read のみ）。無ければ tips はスキップ
 STRIPE_KEY_FILE = Path.home() / ".stackchan" / "stripe_restricted_key.txt"
+SCHEDULED_POST_LOG = Path.home() / ".stackchan" / "scheduled_post_log.json"
+PODCAST_JSON = BECKYEXISTS / "podcast.json"
 
 # 脳みそ表記。モデル切替時はここを更新する（observer 側は becky_observer.py 参照）
 BRAIN_MAIN = "Claude Fable 5"
@@ -215,6 +217,80 @@ def collect_activities() -> list[dict]:
     return acts[:8]
 
 
+def collect_schedule() -> dict:
+    """ラジオ・X投稿・note の定期タスク実績を収集。"""
+    from email.utils import parsedate_to_datetime
+    jst = timezone(timedelta(hours=9))
+    now_utc = datetime.now(timezone.utc)
+    now_jst = now_utc.astimezone(jst)
+    today_jst = now_jst.date().isoformat()
+    yesterday_jst = (now_jst.date() - timedelta(days=1)).isoformat()
+
+    result: dict = {}
+
+    # ── ラジオ配信 ──
+    try:
+        eps = json.loads(PODCAST_JSON.read_text()) if PODCAST_JSON.exists() else []
+        if eps:
+            last_dt = parsedate_to_datetime(eps[0]["pub_date"])
+            elapsed_h = (now_utc - last_dt).total_seconds() / 3600
+            result["radio"] = {
+                "label": "ラジオ配信",
+                "last_run": last_dt.isoformat(),
+                "ok": elapsed_h < 26,
+                "warn": 26 <= elapsed_h < 48,
+            }
+        else:
+            result["radio"] = {"label": "ラジオ配信", "ok": None}
+    except Exception:
+        result["radio"] = {"label": "ラジオ配信", "ok": None}
+
+    # ── X 朝投稿 / 夜投稿 ──
+    try:
+        sched = json.loads(SCHEDULED_POST_LOG.read_text()) if SCHEDULED_POST_LOG.exists() else {}
+
+        def last_run_date(key: str) -> str | None:
+            for d in sorted(sched.keys(), reverse=True):
+                if key in sched[d]:
+                    return d
+            return None
+
+        last_morn = last_run_date("morning")
+        last_eve = last_run_date("evening")
+        today_runs = sched.get(today_jst, [])
+        yesterday_runs = sched.get(yesterday_jst, [])
+
+        result["x_morning"] = {
+            "label": "X 朝投稿",
+            "last_run_date": last_morn,
+            "ok": "morning" in today_runs,
+            "warn": "morning" not in today_runs and "morning" in yesterday_runs,
+        }
+        result["x_evening"] = {
+            "label": "X 夜投稿",
+            "last_run_date": last_eve,
+            "ok": "evening" in today_runs or "evening" in yesterday_runs,
+            "warn": False,
+        }
+    except Exception:
+        result["x_morning"] = {"label": "X 朝投稿", "ok": None}
+        result["x_evening"] = {"label": "X 夜投稿", "ok": None}
+
+    # ── note 連載 (木曜週次・手動投稿) ──
+    today_date = now_jst.date()
+    days_since_thu = (today_date.weekday() - 3) % 7
+    last_thu = today_date - timedelta(days=days_since_thu)
+    next_thu = last_thu + timedelta(days=7)
+    result["note"] = {
+        "label": "note 連載",
+        "next_run_date": next_thu.isoformat(),
+        "last_thu": last_thu.isoformat(),
+        "ok": None,  # 自動検知なし（手動投稿）
+    }
+
+    return result
+
+
 def deploy() -> None:
     # observer 側の deploy と被ったらスキップ（次回 cron で反映される）
     if subprocess.run(["pgrep", "-f", "vercel --prod"], capture_output=True).returncode == 0:
@@ -234,6 +310,7 @@ def main() -> None:
     collect_tips()   # 先に tips.json を更新（activities が読む）
     data = collect_system()
     data["activities"] = collect_activities()
+    data["schedule"] = collect_schedule()
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
     STATUS_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
     print(f"[status] status.json 更新 {data['updated_at']}", flush=True)

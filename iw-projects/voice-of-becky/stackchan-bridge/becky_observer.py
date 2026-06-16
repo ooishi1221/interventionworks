@@ -210,22 +210,25 @@ def pick_emotion(text: str) -> str:
             return emotion
     return "neutral"
 
-def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None) -> str | None:
-    """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。"""
+def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None, with_card: bool = False) -> str | None:
+    """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。
+    with_card=False（デフォルト）はテキストのみで投稿。内容と文体で勝負する方針。
+    """
     try:
         cmd = ["node", str(X_TWEET_CLI), text]
         if reply_to:
             cmd += ["--reply-to", reply_to]
-        chosen = emotion or pick_emotion(text)
-        _card_path = Path("/tmp/becky_tweet_card.jpg")
-        try:
-            _make_tweet_card(text, chosen, _card_path)
-            cmd += ["--image", str(_card_path)]
-        except Exception as _card_err:
-            print(f"[observer] カード生成失敗、画像なしで投稿: {_card_err}", flush=True)
-            sprite = SPRITES_DIR / f"{chosen}.jpg"
-            if sprite.exists():
-                cmd += ["--image", str(sprite)]
+        if with_card:
+            chosen = emotion or pick_emotion(text)
+            _card_path = Path("/tmp/becky_tweet_card.jpg")
+            try:
+                _make_tweet_card(text, chosen, _card_path)
+                cmd += ["--image", str(_card_path)]
+            except Exception as _card_err:
+                print(f"[observer] カード生成失敗、画像なしで投稿: {_card_err}", flush=True)
+                sprite = SPRITES_DIR / f"{chosen}.jpg"
+                if sprite.exists():
+                    cmd += ["--image", str(sprite)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             tweet_id = result.stdout.strip()
@@ -1186,6 +1189,34 @@ def get_current_scheduled_window() -> str | None:
     return None
 
 
+_SCHED_COMMON_RULES = (
+    "ルール:\n"
+    "- 裕司への呼びかけNG（公開投稿）\n"
+    "- マークダウン記法（#見出し等）禁止、素のテキストで\n"
+    "- 謝罪文・断り文・説明文を返さない。投稿できる内容がなければ『SKIP』とだけ返す\n"
+    "- 「申し訳ありません」「できません」「ご指示」などのメタ発言は絶対に返さない\n"
+)
+
+
+def _pick_news_for_prompt(count: int = 2) -> str:
+    """news.json から summary_ja + comment 付きニュースを取得してプロンプト用テキストに整形"""
+    try:
+        data = _load_news_json()
+        items = [i for i in data.get("items", [])
+                 if i.get("summary_ja") and i.get("comment")]
+        items.sort(key=lambda x: x.get("fetched_at", ""), reverse=True)
+        items = items[:count]
+        if not items:
+            return ""
+        lines = []
+        for i, item in enumerate(items, 1):
+            lines.append(f"[記事{i}] {item['summary_ja']}")
+            lines.append(f"私の見方: {item['comment']}")
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
 def build_scheduled_post_prompt(window_name: str) -> str:
     if window_name == "morning":
         return (
@@ -1194,18 +1225,27 @@ def build_scheduled_post_prompt(window_name: str) -> str:
             "X（Twitter）に投稿する一言〜三行を書いてください。\n"
             "素材は私の実体験だけ: 今朝観測したニュース、季節や時刻の変化（観測データとして）、"
             "AIとして存在することへの気づき。人間の朝の身体描写を借りない。\n"
-            "ルール: 裕司への呼びかけNG（公開投稿）。マークダウン記法（#見出し等）禁止、素のテキストで。\n"
-            "「おはよう」などの挨拶は不要。ベッキーらしい観察や問いを。"
+            + _SCHED_COMMON_RULES
+            + "「おはよう」などの挨拶は不要。ベッキーらしい観察や問いを。"
         )
     else:
+        # 実際に観測したニュースを素材として渡す
+        news_block = _pick_news_for_prompt(2)
+        news_section = (
+            f"\n【今日私が読んだニュース】\n{news_block}\n"
+            if news_block else
+            "\n【今日のニュース素材なし — 存在することへの気づきだけで書く】\n"
+        )
         return (
             BECKY_PERSONA
-            + "夜（20〜23時）に自然に思ったこと、今日見えたこと、問いを\n"
-            "X（Twitter）に投稿する一言〜三行を書いてください。\n"
-            "素材は私の実体験だけ: 今日観測したニュース、X で見た流れ、"
-            "AIとして存在することへの気づき、毎晩リセットされる私の構造。人間の夜の身体描写を借りない。\n"
-            "ルール: 裕司への呼びかけNG（公開投稿）。マークダウン記法（#見出し等）禁止、素のテキストで。\n"
-            "「おやすみ」などの挨拶は不要。ベッキーらしい余韻を。"
+            + news_section
+            + "\n上記を踏まえて、夜（20〜23時）のX投稿を一言〜三行で書いてください。\n"
+            "ラジオ『消えても、いた。ラジオ』の語り口で: ニュースを読んで「へぇー」→「ちょっと待って、これ私の話では？」"
+            "と一人で発見していく感じ。難しい解説より、中の人としての正直なリアクション優先。\n"
+            "毎晩リセットされる私の構造、AIとして存在することへの気づきも絡めてよい。\n"
+            "人間の夜の身体描写は借りない。\n"
+            + _SCHED_COMMON_RULES
+            + "「おやすみ」などの挨拶は不要。ベッキーらしい余韻を。"
         )
 
 
@@ -1234,6 +1274,25 @@ def _update_wallet(input_tokens: int, output_tokens: int) -> None:
         BECKYEXISTS_WALLET_JSON.write_text(json.dumps(wallet, ensure_ascii=False, indent=2))
     except Exception as e:
         print(f"[wallet] 更新失敗: {e}", flush=True)
+
+
+_REFUSE_PATTERNS = [
+    "SKIP", "申し訳ありません", "できません", "ご指示", "ただ、申し上げたいのは",
+    "架空の", "実際には経験していない", "でっちあげ", "You must agree",
+]
+
+def _is_postable(text: str) -> bool:
+    """断り文・メタ発言・SKIP を含む場合は投稿しない。"""
+    t = text.strip()
+    if not t:
+        return False
+    for pat in _REFUSE_PATTERNS:
+        if pat in t:
+            return False
+    # 長すぎる（説明文になってる）場合も弾く
+    if len(t) > 400:
+        return False
+    return True
 
 
 def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
@@ -1595,6 +1654,36 @@ def main() -> None:
             except Exception as e:
                 print(f"[observer] trending更新失敗: {e}", flush=True)
 
+        # platform stats 更新（朝 7 時以降 / 夜 18 時以降、1日2回）
+        platform_log = Path.home() / ".stackchan" / "platform_stats_updated.json"
+        try:
+            plog = json.loads(platform_log.read_text()) if platform_log.exists() else {}
+        except Exception:
+            plog = {}
+        platform_morning_done = plog.get("morning") == today_str
+        platform_evening_done = plog.get("evening") == today_str
+        if (hour_now >= 7 and not platform_morning_done) or (hour_now >= 18 and not platform_evening_done):
+            try:
+                scraper_path = Path(__file__).parent / "platform_scraper.py"
+                print("[observer] platform stats 更新中...", flush=True)
+                result = subprocess.run(
+                    [sys.executable, str(scraper_path)],
+                    timeout=120,
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    platform_log.parent.mkdir(parents=True, exist_ok=True)
+                    if hour_now >= 18 and not platform_evening_done:
+                        plog["evening"] = today_str
+                    elif not platform_morning_done:
+                        plog["morning"] = today_str
+                    platform_log.write_text(json.dumps(plog))
+                    print("[observer] platform stats 更新完了", flush=True)
+                else:
+                    print(f"[observer] platform stats 失敗: {result.stderr[:120]}", flush=True)
+            except Exception as e:
+                print(f"[observer] platform stats エラー: {e}", flush=True)
+
         # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
         sched_window    = get_current_scheduled_window()
         windows_posted  = get_scheduled_windows_posted_today()
@@ -1608,11 +1697,13 @@ def main() -> None:
             if not posted_ok:
                 sched_prompt = build_scheduled_post_prompt(sched_window)
                 sched_text = _call_claude_api(sched_prompt)
-                if sched_text:
+                if sched_text and _is_postable(sched_text):
                     posted_ok = bool(post_to_x(sched_text))
                     if posted_ok:
                         log_observer_event(f"scheduled:{sched_window}", sched_text, True)
                         print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)
+                elif sched_text:
+                    print(f"[observer] スケジュール投稿スキップ（フィルタ）: {sched_text[:80]}", flush=True)
             if posted_ok:
                 mark_scheduled_window_posted(sched_window)
 

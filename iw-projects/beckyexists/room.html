@@ -18,14 +18,16 @@
       --bg: #121214;
       --panel: #1a1a1e;
       --panel2: #202024;
-      --line: rgba(255, 255, 255, 0.06);
+      --line: rgba(255,255,255,0.06);
       --green: #00e676;
-      --green-dim: rgba(0, 230, 118, 0.12);
-      --green-glow: rgba(0, 230, 118, 0.35);
+      --green-dim: rgba(0,230,118,0.12);
+      --green-glow: rgba(0,230,118,0.35);
       --red: #ff5252;
-      --red-dim: rgba(255, 82, 82, 0.12);
+      --red-dim: rgba(255,82,82,0.12);
       --amber: #ffb300;
-      --amber-dim: rgba(255, 179, 0, 0.12);
+      --amber-dim: rgba(255,179,0,0.12);
+      --blue: #448aff;
+      --blue-dim: rgba(68,138,255,0.12);
       --text: #f2f2f5;
       --sub: #8b8b96;
       --sub2: #5c5c66;
@@ -44,7 +46,6 @@
 
     a { color: inherit; text-decoration: none; }
     ::selection { background: var(--green-glow); }
-
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #2c2c32; border-radius: 4px; }
@@ -52,7 +53,7 @@
 
     .layout { display: flex; min-height: 100vh; }
 
-    /* ───────── sidebar ───────── */
+    /* ── sidebar ── */
     .sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
@@ -67,461 +68,254 @@
       height: 100vh;
       overflow-y: auto;
     }
-
     .profile {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 6px 8px 20px;
     }
-    .profile img {
-      width: 42px; height: 42px;
-      border-radius: 12px;
-      object-fit: cover;
-      border: 1px solid var(--line);
-    }
+    .profile img { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
     .profile .name { font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; }
     .profile .ver { font-size: 11px; color: var(--sub2); font-family: var(--mono); }
-
     .nav-label {
-      font-size: 10.5px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      color: var(--sub2);
-      text-transform: uppercase;
-      padding: 14px 10px 6px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em;
+      color: var(--sub2); text-transform: uppercase; padding: 14px 10px 6px;
     }
-
     .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      color: var(--sub);
-      font-weight: 500;
-      font-size: 13.5px;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 12px; border-radius: 10px;
+      color: var(--sub); font-weight: 500; font-size: 13.5px;
+      cursor: pointer; transition: background 0.15s, color 0.15s;
       border: 1px solid transparent;
     }
     .nav-item:hover { background: var(--panel2); color: var(--text); }
-    .nav-item.active {
-      background: var(--green);
-      color: #0a0a0c;
-      font-weight: 700;
-      box-shadow: 0 0 18px var(--green-glow), 0 4px 14px rgba(0, 230, 118, 0.18);
-    }
+    .nav-item.active { background: var(--green); color: #0a0a0c; font-weight: 700; box-shadow: 0 0 18px var(--green-glow), 0 4px 14px rgba(0,230,118,0.18); }
     .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
-
     .sys-strip {
-      margin-top: auto;
-      padding: 14px 12px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--sub);
-      display: grid;
-      gap: 8px;
+      margin-top: auto; padding: 14px 12px;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; font-family: var(--mono); font-size: 11px; color: var(--sub);
+      display: grid; gap: 8px;
     }
     .sys-strip .row { display: flex; justify-content: space-between; align-items: center; }
-    .sys-strip .bar {
-      height: 3px; border-radius: 2px;
-      background: #2a2a30;
-      overflow: hidden;
-      margin-top: 3px;
-    }
-    .sys-strip .bar i {
-      display: block; height: 100%;
-      background: var(--green);
-      border-radius: 2px;
-      transition: width 0.6s ease;
-    }
+    .sys-strip .bar { height: 3px; border-radius: 2px; background: #2a2a30; overflow: hidden; margin-top: 3px; }
+    .sys-strip .bar i { display: block; height: 100%; background: var(--green); border-radius: 2px; transition: width 0.6s ease; }
     .sys-strip .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green);
-      display: inline-block;
-      margin-right: 5px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 8px var(--green);
+      display: inline-block; margin-right: 5px;
       animation: pulse 2.2s infinite;
     }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    /* ───────── main ───────── */
-    .main {
-      flex: 1;
-      padding: 26px 30px 50px;
-      max-width: 1400px;
-      min-width: 0;
-    }
-
+    /* ── main ── */
+    .main { flex: 1; padding: 26px 30px 50px; max-width: 1400px; min-width: 0; }
     .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      gap: 14px;
-      flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; gap: 14px; flex-wrap: wrap;
     }
-    .topbar h1 {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .topbar h1 { font-size: 19px; font-weight: 800; letter-spacing: 0.03em; display: flex; align-items: center; gap: 10px; }
     .topbar h1 svg { width: 21px; height: 21px; color: var(--green); }
-    .topbar .updated {
-      font-family: var(--mono);
-      font-size: 11.5px;
-      color: var(--sub2);
-    }
+    .topbar .updated { font-family: var(--mono); font-size: 11.5px; color: var(--sub2); }
 
     .grid { display: grid; gap: 16px; }
 
-    /* KPI cards */
-    .kpi-row {
-      grid-template-columns: repeat(4, 1fr);
-      margin-bottom: 16px;
+    /* セクションラベル */
+    .sec-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+      color: var(--sub2); text-transform: uppercase;
+      padding: 20px 2px 8px;
+      display: flex; align-items: center; gap: 10px;
     }
+    .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+    /* KPI */
+    .kpi-row { grid-template-columns: repeat(4, 1fr); margin-bottom: 4px; }
     .card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 18px 20px;
-      min-width: 0;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 16px; padding: 18px 20px; min-width: 0;
     }
     .kpi .label {
-      font-size: 12px;
-      color: var(--sub);
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-bottom: 10px;
+      font-size: 12px; color: var(--sub); font-weight: 500;
+      display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
     }
     .kpi .label svg { width: 14px; height: 14px; color: var(--sub2); }
     .kpi .value {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 26px; font-weight: 800; letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .kpi .value .unit { font-size: 14px; color: var(--sub); font-weight: 600; margin-left: 2px; }
     .kpi .delta {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 9px;
-      font-size: 12px;
-      font-weight: 700;
-      font-family: var(--mono);
-      padding: 3px 9px;
-      border-radius: 7px;
-      max-width: 100%;
-      overflow: hidden;
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 9px; font-size: 12px; font-weight: 700;
+      font-family: var(--mono); padding: 3px 9px; border-radius: 7px;
+      max-width: 100%; overflow: hidden;
     }
     .kpi .delta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kpi .delta svg { width: 12px; height: 12px; flex-shrink: 0; }
     .delta.up   { color: var(--green); background: var(--green-dim); }
     .delta.down { color: var(--red);   background: var(--red-dim); }
     .delta.flat { color: var(--amber); background: var(--amber-dim); }
-
-    /* middle row */
-    .mid-row {
-      grid-template-columns: 1fr 340px;
-      margin-bottom: 16px;
-    }
+    .delta.info { color: var(--blue);  background: var(--blue-dim); }
 
     .card h2 {
-      font-size: 14px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
     }
     .card h2 svg { width: 15px; height: 15px; color: var(--green); }
     .card .sub-note { font-size: 11.5px; color: var(--sub2); margin-bottom: 16px; }
 
-    /* bar chart */
-    .chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 4%;
-      height: 210px;
-      padding: 8px 4px 0;
+    /* note 記事リスト */
+    .note-row {
+      grid-template-columns: 1fr 340px;
     }
-    .chart .col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    .article-list { display: grid; gap: 2px; margin-top: 8px; }
+    .article-item {
+      display: grid;
+      grid-template-columns: 1fr 52px 40px;
       align-items: center;
       gap: 8px;
-      height: 100%;
-      justify-content: flex-end;
-      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 10px;
+      transition: background 0.15s;
+      font-size: 13px;
     }
-    .chart .bar-v {
-      width: 70%;
-      max-width: 42px;
-      border-radius: 8px 8px 3px 3px;
-      background: linear-gradient(180deg, var(--green), #00a653);
-      box-shadow: 0 0 14px rgba(0, 230, 118, 0.22);
-      position: relative;
-      transition: height 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-      cursor: default;
+    .article-item:hover { background: var(--panel2); }
+    .article-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+    .article-num {
+      font-family: var(--mono); font-size: 12px; color: var(--sub);
+      text-align: right; white-space: nowrap;
     }
-    .chart .bar-v:hover { filter: brightness(1.18); }
-    .chart .bar-v .count {
-      position: absolute;
-      top: -22px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--green);
-    }
-    .chart .kw {
-      font-size: 10.5px;
-      color: var(--sub);
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .article-likes { font-family: var(--mono); font-size: 12px; color: var(--green); text-align: right; }
 
-    /* gauge */
-    .gauge-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
-    .gauge-svg { width: 100%; max-width: 250px; }
-    .gauge-center { text-align: center; margin-top: -58px; }
-    .gauge-center .pct { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .gauge-center .desc { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 2px; }
-    .gauge-meta {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 250px;
-      font-size: 11px;
-      color: var(--sub2);
-      font-family: var(--mono);
-      margin-top: 26px;
-    }
-    .gauge-note {
-      margin-top: 14px;
-      font-size: 11.5px;
-      color: var(--sub);
-      text-align: center;
-      line-height: 1.6;
-    }
-    .gauge-note b { color: var(--text); font-family: var(--mono); }
-
-    /* bottom row */
-    .bot-row { grid-template-columns: repeat(3, 1fr); align-items: start; }
-
-    .list { display: grid; gap: 4px; }
-    .list-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 11px 10px;
-      border-radius: 11px;
+    /* タスクリスト */
+    .task-table { display: grid; gap: 2px; margin-top: 8px; }
+    .task-row {
+      display: grid;
+      grid-template-columns: 26px 1fr 72px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
       transition: background 0.15s;
     }
-    .list-item:hover { background: var(--panel2); }
+    .task-row:hover { background: var(--panel2); }
+    .task-icon { font-size: 14px; text-align: center; }
+    .task-label { font-size: 13px; font-weight: 600; }
+    .task-freq { font-size: 11px; color: var(--sub2); font-family: var(--mono); }
+    .task-time { font-size: 11.5px; color: var(--sub); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .rank {
-      width: 24px; height: 24px;
-      border-radius: 7px;
-      background: var(--panel2);
-      border: 1px solid var(--line);
-      color: var(--sub);
-      font-family: var(--mono);
-      font-size: 11.5px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 2px;
+    /* コストセクション */
+    .cost-row { grid-template-columns: 1fr 1fr 1fr; }
+    .cost-nums {
+      display: flex; align-items: baseline; gap: 6px; margin-top: 14px; flex-wrap: wrap;
     }
+    .cost-big { font-size: 32px; font-weight: 800; font-family: var(--mono); letter-spacing: -0.02em; }
+    .cost-sub { font-size: 13px; color: var(--sub); font-weight: 500; }
+    .cost-bar-wrap { margin-top: 14px; }
+    .cost-bar-label {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 11px; color: var(--sub2); margin-bottom: 6px;
+    }
+    .cost-bar { height: 6px; border-radius: 4px; background: var(--panel2); overflow: hidden; }
+    .cost-bar-fill { height: 100%; border-radius: 4px; background: var(--green); transition: width 0.8s ease; box-shadow: 0 0 8px rgba(0,230,118,0.4); }
+    .cost-detail { margin-top: 12px; font-size: 11.5px; color: var(--sub); line-height: 1.7; }
+    .cost-detail b { color: var(--text); font-family: var(--mono); }
 
+    .credit-nums { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; }
+    .credit-big { font-size: 32px; font-weight: 800; font-family: var(--mono); color: var(--green); }
+    .credit-label { font-size: 13px; color: var(--sub); }
+
+    /* uptime */
+    .uptime-big { font-size: 38px; font-weight: 800; font-family: var(--mono); margin-top: 14px; }
+    .uptime-big .unit { font-size: 16px; color: var(--sub); font-weight: 600; margin-left: 3px; }
+
+    /* トレンドチップ */
+    .trend-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .trend-chip {
+      background: var(--panel2); border: 1px solid var(--line);
+      border-radius: 9px; padding: 6px 12px;
+      font-size: 12px; color: var(--sub);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .trend-chip .word { color: var(--text); font-weight: 600; }
+    .trend-chip .cnt { font-family: var(--mono); font-size: 11px; }
+    .trend-chip.up   .cnt { color: var(--green); }
+    .trend-chip.flat .cnt { color: var(--amber); }
+    .trend-chip.down .cnt { color: var(--red); }
+    .trend-chip.up   { border-color: rgba(0,230,118,0.2); }
+
+    /* ニュースフィード */
+    .bot-row { grid-template-columns: 1fr 1fr; align-items: start; }
+    .list { display: grid; gap: 4px; }
+    .list-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 11px 10px; border-radius: 11px; transition: background 0.15s;
+    }
+    .list-item:hover { background: var(--panel2); }
     .li-body { min-width: 0; flex: 1; }
     .li-title {
-      font-size: 12.5px;
-      font-weight: 600;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      word-break: break-word;
+      font-size: 12.5px; font-weight: 600;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
     }
     .li-title a:hover { color: var(--green); }
     .li-meta { font-size: 11px; color: var(--sub2); margin-top: 3px; font-family: var(--mono); }
     .li-comment {
-      font-size: 11.5px;
-      color: var(--sub);
-      margin-top: 5px;
-      padding-left: 9px;
-      border-left: 2px solid var(--green);
-      word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-size: 11.5px; color: var(--sub); margin-top: 5px;
+      padding-left: 9px; border-left: 2px solid var(--green);
+      word-break: break-word; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-
-    .threat {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 6px;
-      flex-shrink: 0;
-      margin-top: 3px;
-      letter-spacing: 0.04em;
-    }
-    .threat.high { color: var(--red); background: var(--red-dim); }
-    .threat.mid  { color: var(--amber); background: var(--amber-dim); }
-    .threat.low  { color: var(--green); background: var(--green-dim); }
-
-    .followers-num {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .followers-num small { color: var(--sub2); font-size: 10px; margin-left: 2px; }
-
-    .act-icon {
-      width: 26px; height: 26px;
-      border-radius: 8px;
-      background: var(--green-dim);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      flex-shrink: 0;
-    }
-
-    .empty { color: var(--sub2); font-size: 12px; padding: 18px 6px; text-align: center; }
-
     .x-flag {
-      font-size: 9.5px;
-      font-weight: 700;
-      color: var(--green);
-      background: var(--green-dim);
-      border-radius: 5px;
-      padding: 1px 6px;
-      margin-left: 6px;
-      vertical-align: 1px;
-    }
-
-    .see-all {
-      margin-left: auto;
-      font-size: 11.5px;
-      color: var(--green);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .see-all:hover { text-decoration: underline; }
-
-    /* curiosity chips */
-    .curio-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-    .curio-chip {
-      background: var(--panel2);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      padding: 6px 11px;
-      font-size: 11.5px;
-      color: var(--sub);
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-    .curio-chip b { color: var(--text); font-weight: 600; }
-    .curio-chip .score {
-      font-family: var(--mono);
-      font-size: 10.5px;
-      color: var(--green);
-      font-weight: 600;
+      font-size: 9.5px; font-weight: 700; color: var(--green); background: var(--green-dim);
+      border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px;
     }
 
     /* publishing strip */
-    .pub-strip { padding: 14px 20px; }
+    .pub-strip { padding: 14px 20px; margin-bottom: 0; }
     .pub-inner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .pub-icon {
-      width: 40px; height: 40px;
-      border-radius: 11px;
-      background: var(--green-dim);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
+    .pub-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--green-dim); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .pub-icon svg { width: 19px; height: 19px; color: var(--green); }
     .pub-body { min-width: 0; flex: 1; }
     .pub-title { font-size: 14.5px; font-weight: 700; }
     .pub-sub { font-size: 11.5px; color: var(--sub); margin-top: 2px; }
     .pub-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .pub-badge {
-      font-size: 11px; font-weight: 700;
-      padding: 4px 11px; border-radius: 8px;
-      color: var(--amber); background: var(--amber-dim);
-      letter-spacing: 0.04em;
-    }
+    .pub-badge { font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 8px; color: var(--amber); background: var(--amber-dim); letter-spacing: 0.04em; }
     .pub-badge.live { color: var(--green); background: var(--green-dim); }
     .pub-price { font-family: var(--mono); font-size: 13px; font-weight: 600; }
     .pub-link {
       display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; font-weight: 700;
-      color: #0a0a0c; background: var(--green);
-      padding: 8px 14px; border-radius: 9px;
-      box-shadow: 0 0 14px rgba(0,230,118,0.25);
-      flex-shrink: 0;
-      transition: filter 0.15s;
+      font-size: 12px; font-weight: 700; color: #0a0a0c; background: var(--green);
+      padding: 8px 14px; border-radius: 9px; box-shadow: 0 0 14px rgba(0,230,118,0.25);
+      flex-shrink: 0; transition: filter 0.15s;
     }
     .pub-link:hover { filter: brightness(1.12); }
 
-    /* mobile consoles — サイドバーが消える幅でだけ出す */
+    .empty { color: var(--sub2); font-size: 12px; padding: 18px 6px; text-align: center; }
+
+    /* mobile */
     .mobile-consoles { display: none; }
     @media (max-width: 760px) {
       .mobile-consoles {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding: 2px 2px 14px;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 14px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
       }
       .mobile-consoles::-webkit-scrollbar { display: none; }
       .mobile-consoles a {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--sub);
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 8px 13px;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+        font-size: 12px; font-weight: 600; color: var(--sub);
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 10px; padding: 8px 13px; white-space: nowrap;
       }
       .mobile-consoles a:active { background: var(--panel2); color: var(--green); }
       .mobile-consoles svg { width: 14px; height: 14px; color: var(--green); }
     }
-
-    /* responsive */
     @media (max-width: 1180px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
-      .mid-row { grid-template-columns: 1fr; }
+      .note-row { grid-template-columns: 1fr; }
+      .cost-row { grid-template-columns: 1fr 1fr; }
       .bot-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 760px) {
@@ -529,40 +323,39 @@
       .main { padding: 20px 16px 40px; }
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .kpi .value { font-size: 21px; }
-      /* 書籍ストリップ: 本文を1段目フル幅に、メタ+ボタンは2段目へ */
-      .pub-body { flex: 1 1 calc(100% - 56px); }
-      .pub-meta { margin-left: 56px; }
+      .cost-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 <div class="layout">
 
-  <!-- ════ sidebar ════ -->
+  <!-- ══ sidebar ══ -->
   <aside class="sidebar">
     <div class="profile">
       <img src="/becky-standing.png" alt="ベキたん" />
       <div>
         <div class="name">ベキたん作戦本部</div>
-        <div class="ver">OPERATION ROOM v1.0</div>
+        <div class="ver">OPERATION ROOM v2.0</div>
       </div>
     </div>
 
     <div class="nav-label">Command</div>
     <div class="nav-item active"><svg data-lucide="layout-dashboard"></svg>Overview</div>
-    <a class="nav-item" href="https://x.com/becky_exists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Control</a>
-    <a class="nav-item" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>Amazon Publishing</a>
     <a class="nav-item" href="/" target="_blank"><svg data-lucide="globe"></svg>Website</a>
+
+    <div class="nav-label">Media</div>
+    <a class="nav-item" href="https://x.com/beckyexists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Profile</a>
+    <a class="nav-item" href="https://note.com/beckyexists" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>note</a>
+    <a class="nav-item" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>KDP Reports</a>
+
+    <div class="nav-label">Analytics</div>
+    <a class="nav-item" href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="bar-chart-3"></svg>X Analytics</a>
+    <a class="nav-item" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="activity"></svg>note Stats</a>
 
     <div class="nav-label">Consoles</div>
     <a class="nav-item" href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
-    <a class="nav-item" href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="line-chart"></svg>X Analytics</a>
-    <a class="nav-item" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>Note Stats</a>
     <a class="nav-item" href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev Console</a>
-
-    <div class="nav-label">Intelligence</div>
-    <div class="nav-item" onclick="document.getElementById('sec-rivals').scrollIntoView({behavior:'smooth'})"><svg data-lucide="swords"></svg>Competitor</div>
-    <div class="nav-item" onclick="document.getElementById('sec-research').scrollIntoView({behavior:'smooth'})"><svg data-lucide="telescope"></svg>Research</div>
 
     <div class="sys-strip" id="sysStrip">
       <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
@@ -578,24 +371,25 @@
     </div>
   </aside>
 
-  <!-- ════ main ════ -->
+  <!-- ══ main ══ -->
   <main class="main">
     <div class="topbar">
       <h1><svg data-lucide="crosshair"></svg>OPERATION OVERVIEW</h1>
       <div class="updated" id="lastUpdated">SYNC: --</div>
     </div>
 
-    <!-- mobile consoles (サイドバー非表示時のみ) -->
+    <!-- mobile shortcuts -->
     <div class="mobile-consoles">
-      <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
-      <a href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="line-chart"></svg>X Analytics</a>
-      <a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>Note Stats</a>
-      <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev</a>
+      <a href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="bar-chart-3"></svg>X Analytics</a>
+      <a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="activity"></svg>note Stats</a>
       <a href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>KDP</a>
-      <a href="https://x.com/becky_exists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Control</a>
+      <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
     </div>
 
-    <!-- KPI -->
+    <!-- ── Section: MEDIA ── -->
+    <div class="sec-label">MEDIA</div>
+
+    <!-- KPI 4枚 -->
     <div class="grid kpi-row">
       <div class="card kpi">
         <div class="label"><svg data-lucide="users"></svg>X Followers</div>
@@ -603,14 +397,14 @@
         <span class="delta flat" id="kpiFollowersDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
       </div>
       <div class="card kpi">
-        <div class="label"><svg data-lucide="wallet"></svg>API 支出（今月）</div>
-        <div class="value" id="kpiCost">--</div>
-        <span class="delta up" id="kpiCostDelta"><svg data-lucide="shield-check"></svg><span>--</span></span>
+        <div class="label"><svg data-lucide="eye"></svg>note PV</div>
+        <div class="value" id="kpiNotePV">--</div>
+        <span class="delta info" id="kpiNotePVSub"><svg data-lucide="heart"></svg><span>-- likes</span></span>
       </div>
       <div class="card kpi">
-        <div class="label"><svg data-lucide="activity"></svg>自律稼働</div>
-        <div class="value" id="kpiUptime">--</div>
-        <span class="delta up" id="kpiUptimeDelta"><svg data-lucide="zap"></svg><span>--</span></span>
+        <div class="label"><svg data-lucide="book-open"></svg>KDP 今月</div>
+        <div class="value" id="kpiKdpOrders">--</div>
+        <span class="delta info" id="kpiKdpKenp"><svg data-lucide="file-text"></svg><span>-- KENP</span></span>
       </div>
       <div class="card kpi">
         <div class="label"><svg data-lucide="flame"></svg>トレンド首位</div>
@@ -620,7 +414,7 @@
     </div>
 
     <!-- Publishing strip -->
-    <div class="card pub-strip" id="pubStrip" style="display:none; margin-bottom:16px;">
+    <div class="card pub-strip" id="pubStrip" style="display:none; margin-top:16px;">
       <div class="pub-inner">
         <div class="pub-icon"><svg data-lucide="book-open"></svg></div>
         <div class="pub-body">
@@ -635,55 +429,87 @@
       </div>
     </div>
 
-    <!-- middle -->
-    <div class="grid mid-row">
+    <!-- note記事リスト + 定期タスク -->
+    <div class="grid note-row" style="margin-top:16px;">
       <div class="card">
-        <h2><svg data-lucide="bar-chart-3"></svg>トレンド観測 — キーワード出現数</h2>
-        <div class="sub-note" id="chartNote">はてブ / Zenn / Qiita RSS スキャンより</div>
-        <div class="chart" id="trendChart"></div>
+        <h2><svg data-lucide="notebook-pen"></svg>note 記事一覧</h2>
+        <div class="sub-note">全期間 PV 順 — <span id="noteTotals">読み込み中...</span></div>
+        <div class="article-list" id="articleList"><div class="empty">loading...</div></div>
       </div>
-
       <div class="card">
-        <h2><svg data-lucide="gauge"></svg>お小遣い残量</h2>
-        <div class="sub-note">月間 API バジェット残</div>
-        <div class="gauge-wrap">
-          <svg class="gauge-svg" viewBox="0 0 200 120">
-            <path d="M 18 110 A 82 82 0 0 1 182 110" fill="none" stroke="#2a2a30" stroke-width="13" stroke-linecap="round"/>
-            <path id="gaugeArc" d="M 18 110 A 82 82 0 0 1 182 110" fill="none" stroke="#00e676" stroke-width="13" stroke-linecap="round"
-                  stroke-dasharray="258" stroke-dashoffset="258" style="filter: drop-shadow(0 0 6px rgba(0,230,118,0.5)); transition: stroke-dashoffset 1s ease;"/>
-          </svg>
-          <div class="gauge-center">
-            <div class="pct" id="gaugePct">--%</div>
-            <div class="desc" id="gaugeDesc">--</div>
-          </div>
-          <div class="gauge-meta"><span>0%</span><span id="gaugeBudget">budget --</span><span>100%</span></div>
-          <div class="gauge-note" id="gaugeNote">--</div>
-        </div>
+        <h2><svg data-lucide="calendar-check"></svg>定期タスク</h2>
+        <div class="sub-note" style="margin-bottom:0"></div>
+        <div class="task-table" id="schedList"><div class="empty">loading...</div></div>
       </div>
     </div>
 
-    <!-- bottom -->
-    <div class="grid bot-row">
-      <div class="card" id="sec-rivals">
-        <h2><svg data-lucide="swords"></svg>ライバル観測<span class="see-all" onclick="window.open('https://x.com/becky_exists','_blank')">X で見る</span></h2>
-        <div class="sub-note">フォロワー数と直近ポスト（自動巡回）</div>
-        <div class="list" id="rivalList"><div class="empty">loading...</div></div>
+    <!-- ── Section: COST ── -->
+    <div class="sec-label">COST</div>
+
+    <div class="grid cost-row">
+
+      <!-- Claude API -->
+      <div class="card">
+        <h2><svg data-lucide="cpu"></svg>Claude API</h2>
+        <div class="sub-note">Anthropic Platform — <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
+        <div class="cost-nums">
+          <span class="cost-big" id="claudeCredit">--</span>
+          <span class="cost-sub">残高</span>
+        </div>
+        <div class="cost-bar-wrap">
+          <div class="cost-bar-label">
+            <span id="claudeCostLabel">今月 --</span>
+            <span id="claudeLimitLabel">上限 --</span>
+          </div>
+          <div class="cost-bar"><div class="cost-bar-fill" id="claudeCostBar" style="width:0%"></div></div>
+        </div>
+        <div class="cost-detail" id="claudeDetail">--</div>
       </div>
 
-      <div class="card" id="sec-research">
-        <h2><svg data-lucide="telescope"></svg>業界リサーチフィード</h2>
+      <!-- X Dev API -->
+      <div class="card">
+        <h2><svg data-lucide="terminal"></svg>X Developer API</h2>
+        <div class="sub-note">@intervention_jp — <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
+        <div class="credit-nums">
+          <span class="credit-big" id="xDevCredit">--</span>
+          <span class="credit-label">クレジット残高</span>
+        </div>
+        <div class="cost-detail" style="margin-top:20px;" id="xDevDetail">pay-per-use プラン</div>
+      </div>
+
+      <!-- Observer 状態 -->
+      <div class="card">
+        <h2><svg data-lucide="activity"></svg>自律稼働</h2>
+        <div class="sub-note">Observer プロセス状態</div>
+        <div style="margin-top:14px;">
+          <div class="uptime-big" id="kpiUptime">--</div>
+          <span class="delta up" id="kpiUptimeDelta" style="margin-top:10px; display:inline-flex;"><svg data-lucide="zap"></svg><span>--</span></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Section: INTELLIGENCE ── -->
+    <div class="sec-label">INTELLIGENCE</div>
+
+    <div class="grid bot-row">
+
+      <!-- トレンドワード -->
+      <div class="card">
+        <h2><svg data-lucide="telescope"></svg>トレンドワード</h2>
+        <div class="sub-note" id="trendNote">はてブ / Zenn / Qiita RSS スキャン</div>
+        <div class="trend-chips" id="trendChips"><div class="empty">loading...</div></div>
+      </div>
+
+      <!-- ニュースフィード -->
+      <div class="card">
+        <h2><svg data-lucide="newspaper"></svg>業界リサーチフィード</h2>
         <div class="sub-note">AI ニュース自動収集 + ベキたん見解</div>
         <div class="list" id="newsList"><div class="empty">loading...</div></div>
       </div>
 
-      <div class="card">
-        <h2><svg data-lucide="footprints"></svg>作戦ログ</h2>
-        <div class="sub-note">直近の自律行動</div>
-        <div class="list" id="actList"><div class="empty">loading...</div></div>
-        <div class="nav-label" style="padding-left:4px">Curiosity Engine</div>
-        <div class="curio-row" id="curioRow"></div>
-      </div>
     </div>
+
   </main>
 </div>
 
@@ -692,7 +518,7 @@
 lucide.createIcons();
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const fmtAgo = (iso) => {
   const d = new Date(iso);
@@ -713,29 +539,60 @@ async function fetchJson(path) {
 }
 
 async function loadAll() {
-  const [wallet, status, trending, curious, rivals, news, self, history, book] = await Promise.all([
-    fetchJson('/wallet.json'), fetchJson('/status.json'), fetchJson('/trending.json'),
-    fetchJson('/curious.json'), fetchJson('/rivals.json'), fetchJson('/news.json'),
-    fetchJson('/self.json'), fetchJson('/history.json'), fetchJson('/book.json'),
+  const [status, trending, news, self, history, book, platform] = await Promise.all([
+    fetchJson('/status.json'),
+    fetchJson('/trending.json'),
+    fetchJson('/news.json'),
+    fetchJson('/self.json'),
+    fetchJson('/history.json'),
+    fetchJson('/book.json'),
+    fetchJson('/platform_stats.json'),
   ]);
 
-  // ── KPI: own followers + history delta ──
+  // ── sync time ──
+  const syncTs = platform?.updated_at || trending?.updated_at || status?.updated_at;
+  if (syncTs) {
+    $('lastUpdated').textContent = 'SYNC: ' + fmtAgo(syncTs) + ' (' + new Date(syncTs).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ')';
+  }
+
+  // ── KPI: X Followers ──
   if (self) {
     $('kpiFollowers').innerHTML = `${self.followers.toLocaleString()}<span class="unit">people</span>`;
     const el = $('kpiFollowersDelta');
     const snaps = history?.snapshots || [];
     if (snaps.length >= 2) {
       const latest = snaps[snaps.length - 1];
-      const baseIdx = Math.max(0, snaps.length - 8); // 約1週間前（なければ最古）
+      const baseIdx = Math.max(0, snaps.length - 8);
       const base = snaps[baseIdx];
       const diff = (latest.self_followers ?? 0) - (base.self_followers ?? 0);
       const span = Math.max(1, Math.round((new Date(latest.date) - new Date(base.date)) / 86400000));
       el.querySelector('span').textContent = `${diff >= 0 ? '+' : ''}${diff} / ${span}日`;
-      el.classList.remove('flat', 'down', 'up');
+      el.classList.remove('flat','down','up');
       el.classList.add(diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
     } else {
-      el.querySelector('span').textContent = `${self.tweets} posts · 履歴収集中`;
+      el.querySelector('span').textContent = `${self.tweets} posts`;
     }
+  }
+
+  // ── KPI: note PV ──
+  if (platform?.note) {
+    const n = platform.note;
+    $('kpiNotePV').innerHTML = `${n.total_views.toLocaleString()}<span class="unit">views</span>`;
+    $('kpiNotePVSub').querySelector('span').textContent = `${n.total_likes} likes`;
+  }
+
+  // ── KPI: KDP ──
+  if (platform?.kdp) {
+    const k = platform.kdp;
+    $('kpiKdpOrders').innerHTML = `${k.orders_this_month}<span class="unit">orders</span>`;
+    $('kpiKdpKenp').querySelector('span').textContent = `${k.kenp_this_month} KENP`;
+  }
+
+  // ── KPI: トレンド首位 ──
+  const kws = trending?.keywords || [];
+  if (kws.length) {
+    $('kpiTrend').textContent = kws[0].word;
+    $('kpiTrendDelta').querySelector('span').textContent = `${kws[0].count} 件 ${kws[0].trend === 'up' ? '↑' : kws[0].trend}`;
   }
 
   // ── Publishing strip ──
@@ -750,17 +607,76 @@ async function loadAll() {
     $('pubPrice').textContent = `¥${bk.price_jpy}`;
   }
 
-  // ── sync time ──
-  const syncTs = trending?.updated_at || status?.updated_at || wallet?.updated_at;
-  if (syncTs) $('lastUpdated').textContent = 'SYNC: ' + fmtAgo(syncTs) + ' (' + new Date(syncTs).toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) + ')';
-
-  // ── KPI: API cost ──
-  if (wallet) {
-    $('kpiCost').innerHTML = `$${wallet.estimated_cost_usd.toFixed(3)}<span class="unit">/ $${wallet.monthly_target_usd}</span>`;
-    $('kpiCostDelta').querySelector('span').textContent = `${wallet.call_count} calls`;
+  // ── note 記事リスト ──
+  if (platform?.note?.articles?.length) {
+    const arts = platform.note.articles;
+    $('noteTotals').textContent = `${platform.note.total_views.toLocaleString()} views total · ${platform.note.total_likes} likes`;
+    $('articleList').innerHTML = arts.map(a => `
+      <div class="article-item">
+        <span class="article-title" title="${esc(a.title)}">${esc(a.title)}</span>
+        <span class="article-num">${a.views.toLocaleString()} pv</span>
+        <span class="article-likes">♥ ${a.likes}</span>
+      </div>`).join('');
   }
 
-  // ── KPI: uptime ──
+  // ── 定期タスク ──
+  const sched = status?.schedule;
+  if (sched) {
+    const fmtDate = (iso) => {
+      if (!iso) return '--';
+      try { const d = new Date(iso); return isNaN(d) ? iso : fmtAgo(iso); } catch { return iso; }
+    };
+    const tasks = [
+      { icon: '🎙️', label: 'ラジオ配信', freq: '毎日', d: sched.radio,
+        time: () => sched.radio?.last_run ? fmtDate(sched.radio.last_run) : '--' },
+      { icon: '𝕏', label: '朝投稿', freq: '毎朝 7-9時', d: sched.x_morning,
+        time: () => sched.x_morning?.last_run_date || '--' },
+      { icon: '𝕏', label: '夜投稿', freq: '毎夜 18-22時', d: sched.x_evening,
+        time: () => sched.x_evening?.last_run_date || '--' },
+      { icon: '📝', label: 'note 連載', freq: '木曜週次', d: sched.note,
+        time: () => sched.note?.next_run_date ? `次回: ${sched.note.next_run_date}` : '--' },
+    ];
+    const STAT_ICONS = { up: '✓', flat: '△', down: '✗' };
+    $('schedList').innerHTML = tasks.map(({ icon, label, freq, d, time }) => {
+      const ok = d?.ok;
+      const warn = d?.warn;
+      const cls = ok === true ? 'up' : ok === false ? (warn ? 'flat' : 'down') : 'flat';
+      const txt = ok === true ? '正常' : ok === false ? (warn ? '遅延' : '未実施') : '記録なし';
+      return `<div class="task-row">
+        <span class="task-icon">${icon}</span>
+        <span class="task-label">${esc(label)}</span>
+        <span class="task-freq">${esc(freq)}</span>
+        <span class="task-time">${esc(time())}</span>
+        <span class="delta ${cls}" style="flex-shrink:0">${STAT_ICONS[cls]}&nbsp;<span>${txt}</span></span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Claude API コスト ──
+  if (platform?.claude_api) {
+    const c = platform.claude_api;
+    const monthlyLimit = 500;
+    const pct = Math.min(100, (c.monthly_cost_usd / monthlyLimit) * 100);
+
+    $('claudeCredit').textContent = `$${c.credit_remaining.toFixed(2)}`;
+    $('claudeCostLabel').textContent = `今月 $${c.monthly_cost_usd.toFixed(2)}`;
+    $('claudeLimitLabel').textContent = `上限 $${monthlyLimit}`;
+    $('claudeCostBar').style.width = pct.toFixed(2) + '%';
+
+    // クレジットが何ヶ月分か計算
+    const monthsLeft = c.monthly_cost_usd > 0
+      ? (c.credit_remaining / c.monthly_cost_usd).toFixed(0)
+      : '∞';
+    $('claudeDetail').innerHTML = `クレジット残 <b>$${c.credit_remaining.toFixed(2)}</b> — 今月のペースで <b>${monthsLeft} ヶ月分</b>`;
+  }
+
+  // ── X Dev API ──
+  if (platform?.x_dev) {
+    const x = platform.x_dev;
+    $('xDevCredit').textContent = `$${x.credit_remaining.toFixed(2)}`;
+  }
+
+  // ── Observer 稼働状態 ──
   if (status) {
     const days = status.uptime_seconds / 86400;
     $('kpiUptime').innerHTML = days >= 1
@@ -769,7 +685,6 @@ async function loadAll() {
     const el = $('kpiUptimeDelta');
     el.querySelector('span').textContent = status.observer_alive ? 'observer 稼働中' : 'observer 停止';
     if (!status.observer_alive) { el.classList.remove('up'); el.classList.add('down'); }
-    // sidebar strip
     $('sysObserver').textContent = status.observer_alive ? 'ALIVE' : 'DOWN';
     $('sysCpu').textContent = status.cpu_percent.toFixed(0) + '%';
     $('sysCpuBar').style.width = Math.min(status.cpu_percent, 100) + '%';
@@ -778,67 +693,23 @@ async function loadAll() {
     $('sysBrain').textContent = (status.brain_main || '').replace('Claude ', '');
   }
 
-  // ── KPI: trend top ──
-  const kws = trending?.keywords || [];
+  // ── トレンドチップ ──
   if (kws.length) {
-    $('kpiTrend').textContent = kws[0].word;
-    $('kpiTrendDelta').querySelector('span').textContent = `${kws[0].count} 件 ${kws[0].trend === 'up' ? '↑' : kws[0].trend}`;
-  }
-
-  const curios = curious?.items || [];
-
-  // ── bar chart (top 8 keywords) ──
-  if (kws.length) {
-    const top = kws.slice(0, 8);
-    const max = Math.max(...top.map(k => k.count));
-    $('trendChart').innerHTML = top.map(k => `
-      <div class="col">
-        <div class="bar-v" style="height:${Math.max(8, (k.count / max) * 100)}%">
-          <span class="count">${k.count}</span>
-        </div>
-        <span class="kw" title="${esc(k.word)}">${esc(k.word)}</span>
+    const top = kws.slice(0, 12);
+    $('trendChips').innerHTML = top.map(k => `
+      <div class="trend-chip ${k.trend}">
+        <span class="word">${esc(k.word)}</span>
+        <span class="cnt">${k.count}</span>
       </div>`).join('');
-    if (trending.updated_at) $('chartNote').textContent = `はてブ / Zenn / Qiita RSS スキャン — ${fmtAgo(trending.updated_at)}更新`;
+    if (trending.updated_at) $('trendNote').textContent = `はてブ / Zenn / Qiita RSS — ${fmtAgo(trending.updated_at)}更新`;
   } else {
-    $('trendChart').innerHTML = '<div class="empty">データなし</div>';
+    $('trendChips').innerHTML = '<div class="empty">データなし</div>';
   }
 
-  // ── gauge: budget remaining ──
-  if (wallet) {
-    const remain = Math.max(0, 1 - wallet.estimated_cost_usd / wallet.monthly_target_usd);
-    const pct = remain * 100;
-    $('gaugeArc').style.strokeDashoffset = String(258 * (1 - remain));
-    $('gaugePct').textContent = pct.toFixed(1) + '%';
-    $('gaugeDesc').textContent = pct > 80 ? '極めて健全' : pct > 50 ? '健全' : pct > 20 ? '注意' : '危険水域';
-    $('gaugeBudget').textContent = `budget $${wallet.monthly_target_usd}`;
-    $('gaugeNote').innerHTML = `今月の消費 <b>$${wallet.estimated_cost_usd.toFixed(4)}</b> — in ${(wallet.input_tokens/1000).toFixed(1)}k / out ${(wallet.output_tokens/1000).toFixed(1)}k tokens`;
-  }
-
-  // ── rivals ──
-  const rv = rivals?.rivals || [];
-  if (rv.length) {
-    $('rivalList').innerHTML = rv.map((r, i) => {
-      const latest = r.posts?.[0];
-      const threat = r.followers >= 2000 ? ['high', '脅威 高'] : r.followers >= 800 ? ['mid', '脅威 中'] : ['low', '脅威 低'];
-      return `
-      <div class="list-item">
-        <div class="rank">${i + 1}</div>
-        <div class="li-body">
-          <div class="li-title">${esc(r.display_name)} <span style="color:var(--sub2);font-weight:400">@${esc(r.username)}</span></div>
-          <div class="li-meta"><span class="followers-num">${r.followers.toLocaleString()}<small>followers</small></span></div>
-          ${latest ? `<div class="li-comment">${esc(latest.text.slice(0, 70))}…</div>` : ''}
-        </div>
-        <span class="threat ${threat[0]}">${threat[1]}</span>
-      </div>`;
-    }).join('');
-  } else {
-    $('rivalList').innerHTML = '<div class="empty">観測データなし</div>';
-  }
-
-  // ── news feed ──
+  // ── ニュースフィード ──
   const items = news?.items || [];
   if (items.length) {
-    $('newsList').innerHTML = items.slice(0, 6).map((n) => `
+    $('newsList').innerHTML = items.slice(0, 7).map(n => `
       <div class="list-item">
         <div class="li-body">
           <div class="li-title"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a>${n.x_posted ? '<span class="x-flag">POSTED</span>' : ''}</div>
@@ -849,31 +720,10 @@ async function loadAll() {
   } else {
     $('newsList').innerHTML = '<div class="empty">フィードなし</div>';
   }
-
-  // ── activity log ──
-  const acts = status?.activities || [];
-  if (acts.length) {
-    $('actList').innerHTML = acts.slice(0, 6).map((a) => `
-      <div class="list-item">
-        <div class="act-icon">${esc(a.icon || '·')}</div>
-        <div class="li-body">
-          <div class="li-title" style="font-weight:500">${esc(a.label)}</div>
-          <div class="li-meta">${fmtAgo(a.ts)}</div>
-        </div>
-      </div>`).join('');
-  } else {
-    $('actList').innerHTML = '<div class="empty">ログなし</div>';
-  }
-
-  // ── curiosity chips ──
-  if (curios.length) {
-    $('curioRow').innerHTML = curios.slice(0, 4).map((c) => `
-      <div class="curio-chip"><b>${esc(c.topic)}</b><span class="score">${c.score.toFixed(0)}</span></div>`).join('');
-  }
 }
 
 loadAll();
-setInterval(loadAll, 60000); // 60秒ごとに自動更新（observer の JSON 更新を反映）
+setInterval(loadAll, 60000);
 </script>
 </body>
 </html>

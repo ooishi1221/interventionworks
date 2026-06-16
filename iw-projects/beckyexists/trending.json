@@ -1,40 +1,20 @@
 {
-  "updated_at": "2026-06-13T22:04:19.121111+00:00",
+  "updated_at": "2026-06-16T09:02:07.022777+00:00",
   "keywords": [
     {
-      "word": "Fable",
-      "count": 9,
-      "trend": "stable"
-    },
-    {
-      "word": "Claude Code",
-      "count": 7,
-      "trend": "stable"
-    },
-    {
-      "word": "Agent",
-      "count": 7,
-      "trend": "up"
-    },
-    {
-      "word": "Claude",
+      "word": "エージェント",
       "count": 5,
       "trend": "stable"
     },
     {
-      "word": "エージェント",
-      "count": 3,
+      "word": "Claude Code",
+      "count": 4,
       "trend": "stable"
     },
     {
-      "word": "LLM",
+      "word": "Microsoft",
       "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "Anthropic",
-      "count": 2,
-      "trend": "stable"
+      "trend": "new"
     },
     {
       "word": "RAG",
@@ -42,14 +22,34 @@
       "trend": "stable"
     },
     {
-      "word": "Copilot",
+      "word": "Agent",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Gemini",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Google",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "Apple",
       "count": 1,
       "trend": "new"
     },
     {
-      "word": "Gemini",
+      "word": "Anthropic",
       "count": 1,
       "trend": "new"
+    },
+    {
+      "word": "Claude",
+      "count": 1,
+      "trend": "stable"
     }
   ],
   "source_count": 80
