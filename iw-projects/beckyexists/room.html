@@ -126,8 +126,14 @@
       color: var(--sub2); text-transform: uppercase;
       padding: 20px 2px 8px;
       display: flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none;
     }
     .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+    .sec-chev { flex-shrink: 0; transition: transform 0.25s ease; }
+    .sec-chev svg { width: 13px; height: 13px; }
+    .sec-label.closed .sec-chev { transform: rotate(-90deg); }
+    .sec-content { overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease; max-height: 4000px; opacity: 1; }
+    .sec-content.closed { max-height: 0 !important; opacity: 0; pointer-events: none; }
 
     /* KPI */
     .kpi-row { grid-template-columns: repeat(4, 1fr); margin-bottom: 4px; }
@@ -496,21 +502,23 @@
     </div>
 
     <!-- ── Section: MISSION ── -->
-    <div class="sec-label">MISSION</div>
-    <div class="card">
-      <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
-      <div class="sub-note" id="ganttMeta">loading...</div>
-      <div id="ganttChart"><div class="empty">loading...</div></div>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-      <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
-      <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
-      <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
+    <div class="sec-label" onclick="toggleSec('mission')">MISSION<span class="sec-chev" id="chev-mission"><svg data-lucide="chevron-down"></svg></span></div>
+    <div class="sec-content" id="sec-mission">
+      <div class="card">
+        <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
+        <div class="sub-note" id="ganttMeta">loading...</div>
+        <div id="ganttChart"><div class="empty">loading...</div></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
+        <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
+        <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
+      </div>
     </div>
 
     <!-- ── Section: MEDIA ── -->
-    <div class="sec-label">MEDIA</div>
+    <div class="sec-label" onclick="toggleSec('media')">MEDIA<span class="sec-chev" id="chev-media"><svg data-lucide="chevron-down"></svg></span></div>
+    <div class="sec-content" id="sec-media">
 
     <!-- KPI 4枚 -->
     <div class="grid kpi-row">
@@ -566,8 +574,11 @@
       </div>
     </div>
 
+    </div><!-- /sec-media -->
+
     <!-- ── Section: COST ── -->
-    <div class="sec-label">COST</div>
+    <div class="sec-label" onclick="toggleSec('cost')">COST<span class="sec-chev" id="chev-cost"><svg data-lucide="chevron-down"></svg></span></div>
+    <div class="sec-content" id="sec-cost">
 
     <div class="grid cost-row">
 
@@ -612,8 +623,11 @@
 
     </div>
 
+    </div><!-- /sec-cost -->
+
     <!-- ── Section: INTELLIGENCE ── -->
-    <div class="sec-label">INTELLIGENCE</div>
+    <div class="sec-label" onclick="toggleSec('intel')">INTELLIGENCE<span class="sec-chev" id="chev-intel"><svg data-lucide="chevron-down"></svg></span></div>
+    <div class="sec-content" id="sec-intel">
 
     <div class="grid bot-row">
 
@@ -632,6 +646,8 @@
       </div>
 
     </div>
+
+    </div><!-- /sec-intel -->
 
   </main>
 </div>
@@ -677,7 +693,32 @@ const PASS_KEY = 'room_auth_v1';
   input.focus();
 })();
 
+// ── section accordion ──
+const SEC_DEFAULTS = { mission: '1', media: '1', cost: '0', intel: '0' };
+
+function toggleSec(id) {
+  const content = document.getElementById('sec-' + id);
+  const label = content.previousElementSibling;
+  const isClosed = content.classList.toggle('closed');
+  label.classList.toggle('closed', isClosed);
+  localStorage.setItem('sec_' + id, isClosed ? '0' : '1');
+}
+
+function initSections() {
+  Object.entries(SEC_DEFAULTS).forEach(([id, def]) => {
+    const open = localStorage.getItem('sec_' + id) ?? def;
+    if (open === '0') {
+      const content = document.getElementById('sec-' + id);
+      if (!content) return;
+      content.classList.add('closed');
+      const label = content.previousElementSibling;
+      if (label) label.classList.add('closed');
+    }
+  });
+}
+
 lucide.createIcons();
+initSections();
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
