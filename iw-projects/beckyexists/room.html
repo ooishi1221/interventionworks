@@ -332,11 +332,109 @@
       .task-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
       .task-freq { display: none; }
       .task-time { display: none; }
+      .gantt-label { width: 110px; min-width: 110px; font-size: 11px; }
     }
+
+    /* ── password gate ── */
+    #passGate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gate-box {
+      text-align: center;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 20px; padding: 40px 48px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      width: 320px; max-width: 90vw;
+      box-shadow: 0 0 40px rgba(0,230,118,0.08);
+    }
+    .gate-icon { font-size: 36px; margin-bottom: 2px; }
+    .gate-title { font-size: 17px; font-weight: 800; letter-spacing: 0.04em; }
+    .gate-sub { font-size: 11px; color: var(--sub2); letter-spacing: 0.14em; font-family: var(--mono); }
+    #passInput {
+      width: 100%; padding: 12px 16px; font-size: 16px;
+      background: var(--panel2); border: 1px solid var(--line);
+      border-radius: 12px; color: var(--text); outline: none;
+      font-family: var(--mono); letter-spacing: 0.2em; text-align: center;
+      transition: border-color 0.2s; margin-top: 4px;
+    }
+    #passInput:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-dim); }
+    #passBtn {
+      width: 100%; padding: 13px; font-size: 14px; font-weight: 700;
+      background: var(--green); color: #0a0a0c;
+      border: none; border-radius: 12px; cursor: pointer;
+      transition: filter 0.15s; letter-spacing: 0.06em;
+    }
+    #passBtn:hover { filter: brightness(1.12); }
+    .gate-error { font-size: 12px; color: var(--red); font-family: var(--mono); height: 16px; }
+
+    /* ── gantt ── */
+    .gantt-wrap { overflow-x: auto; margin-top: 10px; padding-bottom: 4px; }
+    .gantt-timeline { position: relative; padding-left: 152px; }
+    .gantt-date-row { height: 18px; margin-bottom: 6px; position: relative; }
+    .gantt-date-tick {
+      position: absolute; transform: translateX(-50%);
+      font-size: 10px; color: var(--sub2); font-family: var(--mono);
+      white-space: nowrap; top: 0;
+    }
+    .gantt-row { display: flex; align-items: center; margin-bottom: 5px; }
+    .gantt-label {
+      width: 152px; min-width: 152px; font-size: 12px; font-weight: 600;
+      padding-right: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .gantt-label .g-icon { font-size: 13px; flex-shrink: 0; }
+    .gantt-label .g-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .gantt-track {
+      flex: 1; height: 28px; background: var(--panel2); border-radius: 6px;
+      position: relative; overflow: visible;
+    }
+    .gantt-bar {
+      position: absolute; top: 4px; bottom: 4px; border-radius: 5px;
+      display: flex; align-items: center; padding: 0 7px;
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      white-space: nowrap; overflow: hidden;
+      min-width: 4px; transition: filter 0.2s;
+    }
+    .gantt-bar:hover { filter: brightness(1.15); cursor: default; }
+    .gantt-bar.waiting {
+      background: transparent !important;
+      border: 1px solid;
+    }
+    .gantt-bar.in_progress { animation: ganttPulse 2.5s ease-in-out infinite; }
+    @keyframes ganttPulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
+    .gantt-today-line {
+      position: absolute; top: -3px; bottom: -3px; width: 2px;
+      background: var(--green); border-radius: 2px;
+      box-shadow: 0 0 8px var(--green-glow);
+      pointer-events: none; z-index: 2;
+    }
+    .gantt-legend { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+    .gantt-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 8px;
+      font-family: var(--mono);
+    }
+    .gantt-badge.high { color: var(--red); background: var(--red-dim); }
+    .gantt-badge.medium { color: var(--amber); background: var(--amber-dim); }
+    .gantt-badge.wt { color: var(--sub); background: var(--panel2); border: 1px solid var(--line); }
+    .gantt-updated { font-size: 11px; color: var(--sub2); font-family: var(--mono); margin-left: auto; }
   </style>
 </head>
 <body>
-<div class="layout">
+
+<!-- ══ password gate ══ -->
+<div id="passGate">
+  <div class="gate-box">
+    <div class="gate-icon">🔒</div>
+    <div class="gate-title">ベキたん作戦本部</div>
+    <div class="gate-sub">RESTRICTED ACCESS</div>
+    <input type="password" id="passInput" placeholder="パスコード" autocomplete="current-password" />
+    <button id="passBtn">入室</button>
+    <div class="gate-error" id="passError"></div>
+  </div>
+</div>
+
+<div id="appLayout" class="layout" style="display:none;">
 
   <!-- ══ sidebar ══ -->
   <aside class="sidebar">
@@ -392,6 +490,14 @@
       <a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="activity"></svg>note Stats</a>
       <a href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>KDP</a>
       <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
+    </div>
+
+    <!-- ── Section: MISSION ── -->
+    <div class="sec-label">MISSION</div>
+    <div class="card">
+      <h2><svg data-lucide="crosshair"></svg>タスクタイムライン</h2>
+      <div class="sub-note" id="ganttMeta">loading...</div>
+      <div id="ganttChart"><div class="empty">loading...</div></div>
     </div>
 
     <!-- ── Section: MEDIA ── -->
@@ -520,9 +626,48 @@
 
   </main>
 </div>
+</div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
+// ── password gate ──
+const ROOM_PASS = 'bk2026'; // ← パスコード変更ここ
+const PASS_KEY = 'room_auth_v1';
+
+(function initGate() {
+  const gate = document.getElementById('passGate');
+  const app = document.getElementById('appLayout');
+  if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
+    gate.style.display = 'none';
+    app.style.display = 'flex';
+    return;
+  }
+  gate.style.display = 'flex';
+  app.style.display = 'none';
+
+  const input = document.getElementById('passInput');
+  const btn = document.getElementById('passBtn');
+  const err = document.getElementById('passError');
+
+  function tryAuth() {
+    if (input.value === ROOM_PASS) {
+      localStorage.setItem(PASS_KEY, ROOM_PASS);
+      gate.style.display = 'none';
+      app.style.display = 'flex';
+      loadAll();
+      loadTasks();
+    } else {
+      err.textContent = '— 認証失敗 —';
+      input.value = '';
+      input.focus();
+      setTimeout(() => { err.textContent = ''; }, 2000);
+    }
+  }
+  btn.addEventListener('click', tryAuth);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryAuth(); });
+  input.focus();
+})();
+
 lucide.createIcons();
 
 const $ = (id) => document.getElementById(id);
@@ -730,8 +875,97 @@ async function loadAll() {
   }
 }
 
-loadAll();
-setInterval(loadAll, 60000);
+// ── gantt chart ──
+async function loadTasks() {
+  const data = await fetchJson('/tasks.json');
+  if (!data?.tasks?.length) {
+    $('ganttChart').innerHTML = '<div class="empty">タスクなし</div>';
+    return;
+  }
+
+  const COLORS = {
+    voice:      '#00e676',
+    slight:     '#ffb300',
+    biz:        '#448aff',
+    content:    '#c77dff',
+    beckyexists:'#ff6b9d',
+    'iw-local': '#4ecdc4',
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const BEFORE = 3, AFTER = 24;
+  const vStart = new Date(today); vStart.setDate(today.getDate() - BEFORE);
+  const vEnd   = new Date(today); vEnd.setDate(today.getDate() + AFTER);
+  const vRange = vEnd - vStart;
+
+  const toPct = (dateStr) => {
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.min(100, (d - vStart) / vRange * 100));
+  };
+  const todayPct = toPct(today);
+
+  const active = data.tasks.filter(t => t.status !== 'done')
+    .sort((a, b) => new Date(a.due) - new Date(b.due));
+
+  // 日付ラベル (7日ごと)
+  const ticks = [];
+  for (let i = 0; i <= BEFORE + AFTER; i += 7) {
+    const d = new Date(vStart); d.setDate(vStart.getDate() + i);
+    ticks.push({ pct: (i / (BEFORE + AFTER) * 100).toFixed(2), label: `${d.getMonth()+1}/${d.getDate()}` });
+  }
+
+  const rowsHTML = active.map(t => {
+    const sp = toPct(t.start).toFixed(2);
+    const ep = toPct(t.due).toFixed(2);
+    const w  = Math.max(1, ep - sp).toFixed(2);
+    const col = COLORS[t.category] || '#8b8b96';
+    const isWait = t.status === 'waiting';
+    const barStyle = isWait
+      ? `left:${sp}%; width:${w}%; border-color:${col}; color:${col};`
+      : `left:${sp}%; width:${w}%; background:${col}; color:#0a0a0c;`;
+    return `<div class="gantt-row" title="${esc(t.note || '')}">
+      <div class="gantt-label">
+        <span class="g-icon">${t.icon || '○'}</span>
+        <span class="g-text">${esc(t.label)}</span>
+      </div>
+      <div class="gantt-track">
+        <div class="gantt-today-line" style="left:${todayPct.toFixed(2)}%"></div>
+        <div class="gantt-bar ${t.status}" style="${barStyle}">${isWait ? '待' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const ticksHTML = ticks.map(tk =>
+    `<div class="gantt-date-tick" style="left:${tk.pct}%">${tk.label}</div>`
+  ).join('');
+
+  const high  = active.filter(t => t.priority === 'high').length;
+  const med   = active.filter(t => t.priority === 'medium').length;
+  const wait  = active.filter(t => t.status   === 'waiting').length;
+  const upd   = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+
+  $('ganttMeta').textContent = `残 ${active.length} タスク — ${upd} 更新`;
+  $('ganttChart').innerHTML = `
+    <div class="gantt-wrap">
+      <div class="gantt-timeline">
+        <div class="gantt-date-row">${ticksHTML}</div>
+        ${rowsHTML}
+      </div>
+    </div>
+    <div class="gantt-legend">
+      <span class="gantt-badge high">🔥 HIGH × ${high}</span>
+      <span class="gantt-badge medium">⚡ MED × ${med}</span>
+      <span class="gantt-badge wt">⏳ WAITING × ${wait}</span>
+    </div>`;
+}
+
+if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
+  loadAll();
+  loadTasks();
+  setInterval(loadAll, 60000);
+  setInterval(loadTasks, 300000);
+}
 </script>
 </body>
 </html>

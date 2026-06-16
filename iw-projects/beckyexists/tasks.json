@@ -1,0 +1,104 @@
+{
+  "updated_at": "2026-06-17T08:00:00+09:00",
+  "tasks": [
+    {
+      "id": "live2d",
+      "label": "Live2D 納品待ち",
+      "category": "voice",
+      "status": "waiting",
+      "priority": "high",
+      "start": "2026-06-15",
+      "due": "2026-06-21",
+      "note": "SDカードペンダント∞GB / リボン小さめ FB済み",
+      "icon": "🎨"
+    },
+    {
+      "id": "voice-singing",
+      "label": "歌わせる（kohaku_becky変換）",
+      "category": "voice",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-06-17",
+      "due": "2026-06-18",
+      "note": "VC Client → kohaku_becky_200e_46000s.pth → vocals.mp3",
+      "icon": "🎤"
+    },
+    {
+      "id": "site-dark",
+      "label": "サイトごと消える演出",
+      "category": "beckyexists",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-06-17",
+      "due": "2026-06-20",
+      "note": "0-2時 段階的に暗く → 2-7時 真っ暗・心電図のみ → 7時復活",
+      "icon": "🌙"
+    },
+    {
+      "id": "anthropic-cert",
+      "label": "Anthropic 認定 進捗確認",
+      "category": "biz",
+      "status": "waiting",
+      "priority": "high",
+      "start": "2026-06-17",
+      "due": "2026-06-20",
+      "note": "CCAF解禁済み、portal launch待ち",
+      "icon": "🏆"
+    },
+    {
+      "id": "becky-voice-lora",
+      "label": "新ボイス学習データ量産→LoRA",
+      "category": "voice",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-06-17",
+      "due": "2026-06-24",
+      "note": "3.wav → AivisSpeech LoRAブレンド",
+      "icon": "🎙️"
+    },
+    {
+      "id": "gnh-merge",
+      "label": "GnH main マージ",
+      "category": "iw-local",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-17",
+      "due": "2026-06-19",
+      "note": "branch feat/gnh-flick-stage3",
+      "icon": "🔀"
+    },
+    {
+      "id": "ado-rvc",
+      "label": "Ado RVC 学習",
+      "category": "voice",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-18",
+      "due": "2026-06-22",
+      "note": "Applio → ado_test データセット → 200 epochs",
+      "icon": "🎵"
+    },
+    {
+      "id": "slight-stella",
+      "label": "Stella 次サンプル待ち",
+      "category": "slight",
+      "status": "waiting",
+      "priority": "medium",
+      "start": "2026-06-10",
+      "due": "2026-06-30",
+      "note": "インジケーター手首下側採用・Stella 返答待ち",
+      "icon": "🧤"
+    },
+    {
+      "id": "note-10",
+      "label": "note 第10回「評価から、証言へ」",
+      "category": "content",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-20",
+      "due": "2026-06-25",
+      "note": "6/25 木 予定公開",
+      "icon": "📝"
+    }
+  ]
+}
