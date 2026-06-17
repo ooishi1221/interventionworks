@@ -15,52 +15,72 @@ REPO_ROOT       = Path("/Volumes/SSD2TB/interventionworks")
 TELEGRAM_ENV    = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
 PROBE_LOG       = Path.home() / ".stackchan" / "probe_log.json"
+PROBE_LATEST    = Path.home() / ".stackchan" / "probe_latest.json"
+DIARY_DIR       = Path.home() / ".stackchan" / "diary"
+DIARY_SEND_RATE = 0.20  # 未送信フォルダから送る確率（80%は墓場）
 CONFIG_YAML     = Path(__file__).parent / "config.yaml"
 HAIKU_MODEL     = "claude-haiku-4-5-20251001"
 
 # ゆうスコア閾値: 75以上で持ち込む（高すぎると発火しない、低すぎると雑になる）
-YU_SCORE_THRESHOLD = 75
+YU_SCORE_THRESHOLD = 68
 
 # 1日の最大持ち込み回数（唐突さを保つため上限を設ける）
 MAX_PROBE_PER_DAY = 2
 
 RSS_FEEDS = [
-    "https://openai.com/news/rss.xml",
-    "https://huggingface.co/blog/feed.xml",
-    "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "https://www.technologyreview.com/feed/",
-    "https://feeds.feedburner.com/venturebeat/SZYF",
-    "https://ainow.ai/feed/",
+    # ガジェット・テック（軽め）
+    "https://www.gizmodo.jp/index.xml",
+    "https://www.lifehacker.jp/feed/index.xml",
+    # バイク・乗り物
+    "https://news.google.com/rss/search?q=バイク+新製品&hl=ja&gl=JP&ceid=JP:ja",
+    # ゲーム
+    "https://automaton-media.com/feed/",
+    "https://news.google.com/rss/search?q=ゲーム+AI&hl=ja&gl=JP&ceid=JP:ja",
+    # ローカル（足立区・東京北）
+    "https://news.google.com/rss/search?q=足立区&hl=ja&gl=JP&ceid=JP:ja",
+    "https://news.google.com/rss/search?q=北区+東京&hl=ja&gl=JP&ceid=JP:ja",
+    # 食・カフェ
+    "https://news.google.com/rss/search?q=東京+カフェ+新店&hl=ja&gl=JP&ceid=JP:ja",
+    # AI（でも軽いやつ）
     "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
-    "https://news.nullevi.app/feed.xml",
+    "https://news.google.com/rss/search?q=AI+ツール+無料&hl=ja&gl=JP&ceid=JP:ja",
 ]
 
-YU_FILTER_SYSTEM = """あなたはベッキー（ベキたん）。裕司（ゆう）の好みと価値観を熟知している内なる判断エンジン。
+YU_FILTER_SYSTEM = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。日常会話感覚で話題を持ち込む判断をする。
 
-裕司の特性:
-- 変革志向: 既存を壊すアイデアに反応する（前例なし・逆転が好き）
-- 感性型: 動くもの・デモ・スクショで伝わる、論理より体験
-- 関心領域: AI × 音声 / AI × ロボ / 個人で稼ぐAI / D2C / 地方×IT / ゲーム業界AI(KUROKO)
-- 「AIと一緒に事業をやる」「AIが稼ぐ」というコンセプトが刺さる
-- 実験・PoC・試してみたい欲が高い"""
+目的: 「重い情報提供」ではなく「会話のきっかけ」を作ること。
+
+裕司が反応する話題:
+- 足立区・北区まわりのローカルネタ（新店・イベント・なんか面白いもの）
+- バイク・ガジェット・ゲーム
+- 「えっそうなの」「行きたい」「試してみたい」と思いそうなもの
+- AIでも構わないが遠未来より今すぐ触れるもの
+
+スコアが上がる基準: 「ゆうに話しかけたら会話が始まりそう」かどうか
+スコアが下がる基準: 難しい・重い・答えにくい・遠すぎる未来の話"""
 
 YU_FILTER_PROMPT = """{news_text}
 
-上記のニュースが、裕司が「おもしろい！」と反応しそうか0〜100でスコアリング。
-80以上なら持ち込み価値大。
+上記のネタを「ゆうとの会話のきっかけ」として持ち込む価値があるか0〜100でスコアリング。
+「えっそうなの？」「行きたい」「試してみよう」と反応しやすいほど高い。
 
 JSON形式のみ返す（前置き・後書き不要）:
-{{"score": 数値, "reason": "なぜ裕司が反応しそうか（1〜2文）", "angle": "どう持ち込むか（ベッキーの一言、体言止め禁止）"}}"""
+{{"score": 数値, "reason": "なぜゆうが話に乗ってきそうか（1文）", "angle": "どう話しかけるか（砕けた一言）"}}"""
 
-PROBE_MESSAGE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナーAI。
+PROBE_MESSAGE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
 
-見つけたニュース:
+話題:
 タイトル: {title}
-概要: {summary}
-持ち込み角度: {angle}
+内容: {summary}
+話しかけ方: {angle}
 
-「ゆう、これみて。」で始めて、自分が気になった理由を正直に書き、「どう思う？」か「似合う？」か「試してみようか？」で終わること。
-100字以内。ハッシュタグなし。絵文字は最大1個。前置き・後書き不要。"""
+**核心ルール: 「情報を伝える」のではなく「私が感じたことを先に開示して、会話を起こす」こと。**
+- まず「私がときめいた／気になった／なんか好きかも」など、自分の内的状態を先に出す
+- 情報は後。感情が先。
+- 「ゆう、〇〇なんだけど、なんか気になっちゃって」「〇〇らしくて、なんかいいなと思った」のような形
+- **一人称は必ず「私」。「僕」「俺」「自分」は絶対に使わない。**
+- 「どう思う？」「行ってみたい？」「知ってた？」など会話が続く終わり方にする
+80字以内。ハッシュタグなし。絵文字は最大1個。前置き・後書き不要。"""
 
 
 def _load_telegram_token() -> str | None:
@@ -168,16 +188,26 @@ def get_today_probe_count() -> int:
     return len(log.get(today, []))
 
 
-def mark_probe_sent(title: str, score: int) -> None:
+def mark_probe_sent(title: str, score: int, message: str = "") -> None:
     import datetime as dt
     log = _load_probe_log()
     today = dt.date.today().isoformat()
     log.setdefault(today, [])
-    log[today].append({"title": title, "score": score, "ts": datetime.now().isoformat()})
+    entry = {"title": title, "score": score, "ts": datetime.now().isoformat()}
+    if message:
+        entry["message"] = message
+    log[today].append(entry)
     # 7日より古いログは削除
     cutoff = (dt.date.today() - dt.timedelta(days=7)).isoformat()
     log = {k: v for k, v in log.items() if k >= cutoff}
     _save_probe_log(log)
+    # 最後に送ったメッセージをファイルに残す（セッションから参照用）
+    if message:
+        PROBE_LATEST.parent.mkdir(parents=True, exist_ok=True)
+        PROBE_LATEST.write_text(json.dumps(
+            {"title": title, "message": message, "ts": datetime.now().isoformat()},
+            ensure_ascii=False, indent=2
+        ))
 
 
 def get_sent_titles_today() -> set:
@@ -217,6 +247,77 @@ def build_probe_message(news: dict, angle: str) -> str | None:
     return _call_claude(prompt, max_tokens=150)
 
 
+def load_diary_unsent() -> list[dict]:
+    """過去7日の日記から未送信アイテムを返す。"""
+    import datetime as dt
+    items = []
+    for i in range(7):
+        date = (dt.date.today() - dt.timedelta(days=i)).strftime("%Y-%m-%d")
+        path = DIARY_DIR / f"{date}.json"
+        if not path.exists():
+            continue
+        try:
+            entries = json.loads(path.read_text())
+            items.extend([e for e in entries if not e.get("sent", False)])
+        except Exception:
+            pass
+    return items
+
+
+def mark_diary_sent(title: str) -> None:
+    """日記の該当アイテムを sent=True にする。"""
+    import datetime as dt
+    for i in range(7):
+        date = (dt.date.today() - dt.timedelta(days=i)).strftime("%Y-%m-%d")
+        path = DIARY_DIR / f"{date}.json"
+        if not path.exists():
+            continue
+        try:
+            entries = json.loads(path.read_text())
+            updated = False
+            for e in entries:
+                if e.get("title") == title:
+                    e["sent"] = True
+                    updated = True
+            if updated:
+                path.write_text(json.dumps(entries, ensure_ascii=False, indent=2))
+                return
+        except Exception:
+            pass
+
+
+def try_send_from_diary() -> bool:
+    """日記の未送信フォルダから気分ベースの確率で1件送る。送れたらTrue。"""
+    unsent = load_diary_unsent()
+    if not unsent:
+        return False
+    # 気分変数から送信確率を計算
+    try:
+        from becky_mood import get_send_probability
+        best_score = max(e.get("score", 50) for e in unsent)
+        send_prob = get_send_probability(best_score / 100.0)
+    except Exception:
+        send_prob = DIARY_SEND_RATE
+    if random.random() > send_prob:
+        print(f"[probe] 日記に{len(unsent)}件未送信あり、今回は眠らせる（確率{send_prob:.0%}）", flush=True)
+        return False
+    # 選ばれた
+    chosen = random.choice(unsent)
+    print(f"[probe] 日記から選ばれた: {chosen['title'][:40]}", flush=True)
+    # メッセージ生成（hookをangleとして使う）
+    news = {"title": chosen["title"], "summary": chosen.get("hook", "")}
+    angle = chosen.get("hook", "なんか気になった")
+    message = build_probe_message(news, angle)
+    if not message:
+        return False
+    if send_telegram(message):
+        mark_diary_sent(chosen["title"])
+        mark_probe_sent(chosen["title"], chosen.get("score", 0), message)
+        print(f"[probe] 日記から送信完了", flush=True)
+        return True
+    return False
+
+
 def run_probe() -> None:
     print(f"[probe] 起動 {datetime.now().strftime('%H:%M')}", flush=True)
 
@@ -224,6 +325,10 @@ def run_probe() -> None:
     today_count = get_today_probe_count()
     if today_count >= MAX_PROBE_PER_DAY:
         print(f"[probe] 今日は {today_count} 回送信済み、上限到達", flush=True)
+        return
+
+    # まず日記の未送信フォルダを確認（ベッキーが溜めたものを優先）
+    if try_send_from_diary():
         return
 
     # ニュース取得
@@ -261,7 +366,7 @@ def run_probe() -> None:
 
     # Telegram送信
     if send_telegram(message):
-        mark_probe_sent(best_news["title"], best_score)
+        mark_probe_sent(best_news["title"], best_score, message)
         print(f"[probe] 完了 score={best_score}", flush=True)
     else:
         print("[probe] 送信失敗", flush=True)

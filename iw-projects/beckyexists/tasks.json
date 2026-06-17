@@ -182,6 +182,32 @@
       "due": "2026-06-16",
       "note": "spotify_upload.py + morning_cast.py 統合完了 Show ID 033zkQpBjC82y0KNpg6hhk",
       "icon": "✅"
+    },
+    {
+      "id": "becky-emotion-system",
+      "scope": "iw",
+      "label": "感情変数アーキテクチャ完成",
+      "category": "voice",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-17",
+      "note": "becky_diary.py + becky_mood.py(6変数) + probe未送信フォルダ + sigmoid送信確率。チャッピー+ゆうのコミュニケーション心理学3×4モデルから設計",
+      "icon": "✅"
+    },
+    {
+      "id": "iw-local-gmaps",
+      "scope": "iw",
+      "label": "Google Maps Scraper テスト（IW営業リスト）",
+      "category": "iw-local",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-21",
+      "note": "omkarcloud/google-maps-scraper Mac DMG ダウンロード→足立区・北区で試す。月200件無料",
+      "icon": "🗺️"
     }
   ]
 }
