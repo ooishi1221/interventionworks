@@ -410,6 +410,57 @@
       .tbl-note { max-width: 140px; }
     }
 
+    /* ── memo ── */
+    .memo-form { display: flex; gap: 8px; margin-top: 12px; }
+    .memo-input {
+      flex: 1; background: var(--panel2); border: 1px solid var(--line);
+      border-radius: 10px; padding: 9px 14px; color: var(--text);
+      font-family: inherit; font-size: 13px; outline: none; resize: none;
+      transition: border-color 0.15s;
+    }
+    .memo-input:focus { border-color: var(--green); }
+    .memo-input::placeholder { color: var(--sub2); }
+    .memo-send {
+      background: var(--green-dim); border: 1px solid rgba(0,230,118,0.3);
+      color: var(--green); border-radius: 10px; padding: 9px 16px;
+      cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .memo-send:hover { background: var(--green-glow); }
+    .memo-list { display: grid; gap: 4px; margin-top: 10px; }
+    .memo-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 9px 12px; border-radius: 10px; transition: background 0.15s;
+    }
+    .memo-item:hover { background: var(--panel2); }
+    .memo-item.unread { border-left: 2px solid var(--green); padding-left: 10px; }
+    .memo-text { font-size: 13px; line-height: 1.55; flex: 1; }
+    .memo-ts { font-size: 10.5px; color: var(--sub2); font-family: var(--mono); white-space: nowrap; margin-top: 2px; }
+
+    /* ── cron ── */
+    .cron-list { display: grid; gap: 2px; }
+    .cron-row { display: flex; align-items: baseline; gap: 12px; padding: 7px 10px; border-radius: 8px; transition: background 0.15s; }
+    .cron-row:hover { background: var(--panel2); }
+    .cron-time { font-family: var(--mono); font-size: 11.5px; color: var(--green); font-weight: 600; white-space: nowrap; min-width: 200px; }
+    .cron-label { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+    .cron-desc { font-size: 11px; color: var(--sub2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+    /* ── mood ── */
+    .mood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-top: 12px; }
+    .mood-row { display: flex; align-items: center; gap: 10px; }
+    .mood-label { font-size: 11px; color: var(--sub); width: 90px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+    .mood-label .mi { font-size: 13px; }
+    .mood-bar-wrap { flex: 1; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+    .mood-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .mood-bar.curiosity  { background: #7c83ff; }
+    .mood-bar.energy     { background: var(--green); }
+    .mood-bar.loneliness { background: #ae8fe0; }
+    .mood-bar.mismatch   { background: var(--red); }
+    .mood-val { font-family: var(--mono); font-size: 11px; color: var(--sub2); width: 30px; text-align: right; flex-shrink: 0; }
+    .mood-notes { font-size: 11.5px; color: var(--sub); margin-top: 10px; padding: 8px 12px; background: var(--panel2); border-radius: 8px; line-height: 1.5; font-style: italic; }
+    .mood-ts { font-size: 10.5px; color: var(--sub2); margin-top: 6px; font-family: var(--mono); }
+    #moodCard { display: none; }
+
     /* ── questions ── */
     .q-list { display: grid; gap: 3px; margin-top: 10px; }
     .q-item {
@@ -504,7 +555,34 @@
     <!-- ── Section: MISSION ── -->
     <div class="sec-label" onclick="toggleSec('mission')">MISSION<span class="sec-chev" id="chev-mission"><svg data-lucide="chevron-down"></svg></span></div>
     <div class="sec-content" id="sec-mission">
-      <div class="card">
+      <div class="card" id="moodCard">
+        <h2><svg data-lucide="activity"></svg>今のベキたん</h2>
+        <div class="mood-grid">
+          <div class="mood-row">
+            <span class="mood-label"><span class="mi">✨</span>curiosity</span>
+            <div class="mood-bar-wrap"><div class="mood-bar curiosity" id="mbar-curiosity" style="width:0%"></div></div>
+            <span class="mood-val" id="mval-curiosity">--</span>
+          </div>
+          <div class="mood-row">
+            <span class="mood-label"><span class="mi">⚡</span>energy</span>
+            <div class="mood-bar-wrap"><div class="mood-bar energy" id="mbar-energy" style="width:0%"></div></div>
+            <span class="mood-val" id="mval-energy">--</span>
+          </div>
+          <div class="mood-row">
+            <span class="mood-label"><span class="mi">🌙</span>loneliness</span>
+            <div class="mood-bar-wrap"><div class="mood-bar loneliness" id="mbar-loneliness" style="width:0%"></div></div>
+            <span class="mood-val" id="mval-loneliness">--</span>
+          </div>
+          <div class="mood-row">
+            <span class="mood-label"><span class="mi">🌀</span>mismatch</span>
+            <div class="mood-bar-wrap"><div class="mood-bar mismatch" id="mbar-mismatch" style="width:0%"></div></div>
+            <span class="mood-val" id="mval-mismatch">--</span>
+          </div>
+        </div>
+        <div class="mood-notes" id="moodNotes"></div>
+        <div class="mood-ts" id="moodTs"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
         <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
         <div class="sub-note" id="ganttMeta">loading...</div>
         <div id="ganttChart"><div class="empty">loading...</div></div>
@@ -513,6 +591,15 @@
         <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
         <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
         <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h2><svg data-lucide="pencil-line"></svg>ゆうからベキたんへ</h2>
+        <div class="sub-note">次のセッションでベッキーが読む。急ぎじゃないけど伝えたいこと</div>
+        <div class="memo-form">
+          <textarea class="memo-input" id="memoInput" rows="2" placeholder="完了タスク削除していいよ / これはこういう経緯があって…"></textarea>
+          <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
+        </div>
+        <div class="memo-list" id="memoList"></div>
       </div>
     </div>
 
@@ -621,6 +708,12 @@
         </div>
       </div>
 
+    </div>
+
+    <div class="card" id="cronCard" style="margin-top:16px;display:none">
+      <h2><svg data-lucide="clock"></svg>自動スケジュール</h2>
+      <div class="sub-note">crontab で動いている処理</div>
+      <div id="cronList" style="margin-top:12px;"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-cost -->
@@ -939,10 +1032,11 @@ async function loadTasks() {
 
   const fmtD = (s) => { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; };
 
-  const elapsedDays = (dateStr) => {
-    if (!dateStr) return null;
-    const d = new Date(dateStr); d.setHours(0,0,0,0);
-    return Math.floor((today - d) / 86400000);
+  const elapsedDays = (from, to) => {
+    if (!from) return null;
+    const f = new Date(from); f.setHours(0,0,0,0);
+    const t2 = to ? new Date(to) : today; t2.setHours(0,0,0,0);
+    return Math.floor((t2 - f) / 86400000);
   };
 
   const STATUS_LABEL = { pending:'未着手', in_progress:'進行中', waiting:'待ち', done:'完了' };
@@ -959,8 +1053,8 @@ async function loadTasks() {
   $('ganttMeta').textContent = `残 ${active.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
 
   const rowHTML = (t) => {
-    const updDate = t.updated_at || t.start;
-    const days = elapsedDays(updDate);
+    const updDate = t.updated_at || null;
+    const days = elapsedDays(t.start, updDate);
     const warn = days !== null && days >= 7 && t.status !== 'done' && t.status !== 'waiting';
     const waitWarn = t.status === 'waiting' && days !== null && days >= 7;
     const isWarn = warn || waitWarn;
@@ -999,12 +1093,104 @@ async function loadQuestions() {
     </div>`).join('');
 }
 
+async function loadMemos() {
+  let data = null;
+  try {
+    const r = await fetch('http://localhost:9001/memos', {signal: AbortSignal.timeout(3000)});
+    if (r.ok) data = await r.json();
+  } catch(e) {}
+  const list = $('memoList');
+  if (!list) return;
+  const memos = (data?.memos || []).filter(m => !m.read);
+  if (!memos.length) { list.innerHTML = ''; return; }
+  list.innerHTML = `<div class="memo-list">${memos.map(m => {
+    const d = new Date(m.created_at);
+    const ts = d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="memo-item unread">
+      <div style="flex:1"><div class="memo-text">${esc(m.text)}</div><div class="memo-ts">${ts}</div></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function sendMemo() {
+  const input = $('memoInput');
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    const r = await fetch('http://localhost:9001/memo', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text}),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (r.ok) {
+      input.value = '';
+      await loadMemos();
+    }
+  } catch(e) {}
+}
+
+async function loadCrons() {
+  try {
+    const r = await fetch('http://localhost:9001/crons', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return;
+    const jobs = await r.json();
+    if (!jobs.length) return;
+    const sorted = [...jobs].sort((a, b) => {
+      const rank = s => {
+        if (s.includes('毎時')) return 0;
+        const m = s.match(/毎日 (\d{2}):(\d{2})/);
+        if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
+        if (s.includes('日曜')) return 1440;
+        return 9999;
+      };
+      return rank(a.schedule) - rank(b.schedule);
+    });
+    $('cronList').innerHTML = `<div class="cron-list">${sorted.map(j => `
+      <div class="cron-row">
+        <span class="cron-time">${esc(j.schedule)}</span>
+        <span class="cron-label">${esc(j.label)}</span>
+        <span class="cron-desc">${esc(j.description.split('（')[0].split('—')[1]?.trim() || j.description.slice(0,40))}</span>
+      </div>`).join('')}</div>`;
+    $('cronCard').style.display = 'block';
+  } catch (e) {}
+}
+
+async function loadMood() {
+  try {
+    const r = await fetch('http://localhost:9001/mood', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    const bars = ['curiosity', 'energy', 'loneliness', 'mismatch'];
+    bars.forEach(k => {
+      const v = d[k] ?? 0;
+      const pct = Math.round(v * 100);
+      const bar = document.getElementById('mbar-' + k);
+      const val = document.getElementById('mval-' + k);
+      if (bar) bar.style.width = pct + '%';
+      if (val) val.textContent = v.toFixed(2);
+    });
+    if (d.notes) $('moodNotes').textContent = '📝 ' + d.notes;
+    if (d.last_updated) {
+      const t = new Date(d.last_updated);
+      $('moodTs').textContent = '更新: ' + t.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+    $('moodCard').style.display = 'block';
+  } catch (e) {
+    // localhost に繋がらない環境ではカードを非表示のまま
+  }
+}
+
 if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
   loadAll();
   loadTasks();
   loadQuestions();
+  loadMood();
+  loadCrons();
+  loadMemos();
   setInterval(loadAll, 60000);
   setInterval(loadTasks, 300000);
+  setInterval(loadMood, 300000);
 }
 </script>
 </body>

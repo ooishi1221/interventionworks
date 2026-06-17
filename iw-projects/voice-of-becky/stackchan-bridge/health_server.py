@@ -35,8 +35,97 @@ def check_morning_cast_log() -> dict:
     ts = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
     return {"status": status, "last_episode": latest.name, "last_run": ts, "age_hours": round(age_hours, 1)}
 
+MOOD_FILE = Path.home() / ".stackchan" / "becky_mood.json"
+
+def fmt_schedule(m: str, h: str, dow: str) -> str:
+    if m.startswith("*/"):
+        return f"毎時 :{m[2:]}分毎"
+    if h == "*" and m == "0":
+        return "毎時 :00"
+    if dow == "0":
+        return f"日曜 {h.zfill(2)}:{m.zfill(2)}"
+    if "," in h:
+        times = " / ".join(f"{x.zfill(2)}:{m.zfill(2)}" for x in h.split(","))
+        return f"毎日 {times}"
+    if "," in m:
+        times = " / ".join(f"{h.zfill(2)}:{x.zfill(2)}" for x in m.split(","))
+        return f"毎日 {times}"
+    if h != "*":
+        return f"毎日 {h.zfill(2)}:{m.zfill(2)}"
+    return f"{m} {h} * * {dow}"
+
+def parse_crontab() -> list:
+    import re as re_
+    result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+    lines = result.stdout.strip().split("\n")
+    jobs, pending = [], None
+    for line in lines:
+        s = line.strip()
+        if not s:
+            pending = None; continue
+        if s.startswith("#"):
+            pending = s[1:].strip(); continue
+        parts = s.split(None, 5)
+        if len(parts) < 6:
+            pending = None; continue
+        m, h, dom, mon, dow, cmd = parts
+        match = re_.search(r'(\w[\w-]*\.py)', cmd)
+        if match:
+            label = match.group(1)
+        elif pending:
+            label = pending.split("—")[0].split("（")[0].strip().split()[0]
+        else:
+            label = cmd.split()[-1].split("/")[-1]
+        jobs.append({
+            "cron": f"{m} {h} {dom} {mon} {dow}",
+            "schedule": fmt_schedule(m, h, dow),
+            "label": label,
+            "description": pending or "",
+        })
+        pending = None
+    return jobs
+
+def load_mood() -> dict:
+    try:
+        return json.loads(MOOD_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/crons":
+            body = json.dumps(parse_crontab(), ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if self.path == "/memos":
+            memo_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/memos_from_yu.json")
+            obj = json.loads(memo_file.read_text(encoding="utf-8")) if memo_file.exists() else {"memos": []}
+            body = json.dumps(obj, ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if self.path == "/mood":
+            mood = load_mood()
+            body = json.dumps(mood, ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         if self.path not in ("/", "/health"):
             self.send_response(404)
             self.end_headers()
@@ -60,9 +149,53 @@ class HealthHandler(BaseHTTPRequestHandler):
 
         self.send_response(200 if all_ok else 503)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def do_POST(self):
+        if self.path == "/memo/clear":
+            memo_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/memos_from_yu.json")
+            obj = {"updated_at": datetime.now(timezone.utc).isoformat(), "memos": []}
+            memo_file.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+            resp = json.dumps({"ok": True}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+        if self.path != "/memo":
+            self.send_response(404); self.end_headers(); return
+        length = int(self.headers.get("Content-Length", 0))
+        try:
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+            text = str(data.get("text", "")).strip()
+            if text:
+                memo_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/memos_from_yu.json")
+                obj = json.loads(memo_file.read_text(encoding="utf-8")) if memo_file.exists() else {"memos": []}
+                new_id = f"memo-{int(datetime.now(timezone.utc).timestamp())}"
+                obj["memos"].append({"id": new_id, "text": text, "created_at": datetime.now(timezone.utc).isoformat(), "read": False})
+                obj["updated_at"] = datetime.now(timezone.utc).isoformat()
+                memo_file.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+            resp = json.dumps({"ok": True}).encode()
+        except Exception as e:
+            resp = json.dumps({"ok": False, "error": str(e)}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(len(resp)))
+        self.end_headers()
+        self.wfile.write(resp)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
     def log_message(self, format, *args):
         pass  # アクセスログ抑制

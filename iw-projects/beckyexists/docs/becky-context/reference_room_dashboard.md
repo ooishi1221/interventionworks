@@ -1,23 +1,34 @@
 ---
 name: reference_room_dashboard
-description: beckyexists.com/room 作戦本部ダッシュボードの構成・データ契約・運用手順（2026-06-12 全面リビルド）
+description: beckyexists.com/room 作戦本部ダッシュボードの構成・データ契約・運用手順（2026-06-17 折りたたみ + タスクテーブル追加）
 metadata:
   type: reference
 ---
 
 # /room 作戦本部ダッシュボード
 
-> 2026-06-12 午後、ゆうの依頼で Insoft 風（チャコール #121214 × ネオングリーン #00e676）に全面リビルド。
-> **モック数字ゼロ、全ウィジェットが実在 JSON 接続**。noindex / 応接間からリンクなし（URL 秘匿のみ、認証なし）。
+> 2026-06-12 全面リビルド → 2026-06-17 大幅拡張。
+> **パスワードゲート付き（`bk2026`、localStorage キャッシュ）**。noindex。
+> tasks.json / questions.json でベッキーの認識と裕司の認識のギャップを可視化。
 
-## 画面構成
+## 画面構成（4セクション折りたたみ、localStorage 状態保持）
 
-- **KPI 4枚**: X Followers（self.json + history.json 前週比）/ API 支出（wallet.json）/ 自律稼働（status.json）/ トレンド首位（trending.json）
-- **書籍ストリップ**: book.json。『消えても、いた。』審査中→販売中バッジ + KDP Reports ボタン
-- **中段**: トレンドキーワード棒グラフ + お小遣い残量半円ゲージ
-- **下段**: ライバル観測（rivals.json、脅威度バッジ）/ リサーチフィード（news.json）/ 作戦ログ（status.json activities）+ Curiosity チップ
-- **サイドバー**: Consoles（Claude API / X Analytics / Note Stats / X Dev Console）+ CPU/MEM/OBSERVER 監視。モバイルでは上部横スクロールチップ行に変形
-- **60秒自動リフレッシュ**。ファビコンは専用（黒地 B、room-favicon-32.png / room-apple-touch.png）
+### MISSION（デフォルト開）
+- **全プロジェクト状況テーブル**（tasks.json）: タスク名 / 状態 / 開始 / 更新 / 経過 / 備考。経過7日以上で ⚠️ 警告。IW=緑・WO=琥珀バッジ。done 行は薄表示。
+- **ベキたんから聞きたいこと**（questions.json）: ベッキーが「これ何？」「背景知りたい」を書く質問BOX。urgency 色分け。
+
+### MEDIA（デフォルト開）
+- **KPI 4枚**: X Followers / note PV（scraped_at 表示）/ KDP 今月（scraped_at 表示）/ トレンド首位
+- **書籍ストリップ**: book.json。『消えても、いた。』販売中バッジ + KDP Reports ボタン
+- **note 記事一覧 + 定期タスク**: platform_stats.json から記事リスト、status.json からスケジュール
+
+### COST（デフォルト閉）
+- Claude API クレジット / X Dev API / Observer 自律稼働状態
+
+### INTELLIGENCE（デフォルト閉）
+- トレンドワード（trending.json）/ 業界リサーチフィード（news.json + ベキたん見解）
+
+- **60秒自動リフレッシュ**（loadAll）、**5分おき tasks.json リフレッシュ**（loadTasks）
 
 ## データ契約（observer が書く JSON）
 
