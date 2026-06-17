@@ -146,6 +146,70 @@ def scrape_kdp(tab: pychrome.Tab) -> dict:
     return json.loads(raw) if raw else {"orders_this_month": 0, "kenp_this_month": 0}
 
 
+# ── X Analytics ──────────────────────────────────────────────────────────────
+
+def scrape_x_analytics(tab: pychrome.Tab) -> dict:
+    navigate(tab, "https://x.com/i/account_analytics/content?type=posts&sort=date&dir=desc&days=7", 7)
+    raw = js(tab, r"""
+(function() {
+  var all = document.body.innerText
+    .split('\n')
+    .map(function(l){ return l.trim(); })
+    .filter(function(l){ return l.length > 0 && l.length < 400; });
+
+  // インプレッション数ラベルの位置を探す
+  var impIdx = -1;
+  for (var i = 0; i < all.length; i++) {
+    if (all[i] === 'インプレッション数' || all[i] === 'Impressions') { impIdx = i; break; }
+  }
+
+  var total_imp = 0, total_likes = 0;
+  var posts = [];
+
+  if (impIdx >= 0) {
+    var i = impIdx + 1;
+    while (i < all.length && posts.length < 20) {
+      // "ベッキー / Becky" (or name) + "·" + 日付 = ツイート開始
+      if (all[i+1] === '·' && i+2 < all.length) {
+        var textStart = i + 3; // 日付の次からテキスト
+        var j = textStart;
+        // 連続する4つの数値を探す
+        while (j < Math.min(i + 30, all.length - 3)) {
+          if (/^[\d,]+$/.test(all[j]) && /^[\d,]+$/.test(all[j+1]) &&
+              /^[\d,]+$/.test(all[j+2]) && /^[\d,]+$/.test(all[j+3])) {
+            var imp  = parseInt(all[j].replace(/,/g,''));
+            var rep  = parseInt(all[j+1].replace(/,/g,''));
+            var rt   = parseInt(all[j+2].replace(/,/g,''));
+            var like = parseInt(all[j+3].replace(/,/g,''));
+            var txt  = all.slice(textStart, j).join(' ').slice(0, 100);
+            total_imp   += imp;
+            total_likes += like;
+            posts.push({ text: txt, impressions: imp, likes: like, replies: rep, retweets: rt });
+            i = j + 4;
+            break;
+          }
+          j++;
+        }
+        if (j >= Math.min(i + 30, all.length - 3)) i++;
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return JSON.stringify({ total_impressions: total_imp, total_likes: total_likes, posts: posts });
+})()
+""")
+    d = json.loads(raw) if raw else {}
+    print(f"[x_analytics] imp={d.get('total_impressions',0)} likes={d.get('total_likes',0)} posts={len(d.get('posts',[]))}", flush=True)
+    return {
+        "total_impressions": d.get("total_impressions", 0),
+        "total_likes":       d.get("total_likes", 0),
+        "posts":             d.get("posts", []),
+        "period_days":       7,
+    }
+
+
 # ── X Developer Console ───────────────────────────────────────────────────────
 
 def scrape_x_dev(tab: pychrome.Tab) -> dict:
@@ -185,10 +249,11 @@ def main() -> None:
     tab.Page.enable()
 
     tasks = [
-        ("claude_api", scrape_claude_platform),
-        ("note",       scrape_note),
-        ("kdp",        scrape_kdp),
-        ("x_dev",      scrape_x_dev),
+        ("claude_api",   scrape_claude_platform),
+        ("note",         scrape_note),
+        ("kdp",          scrape_kdp),
+        ("x_analytics",  scrape_x_analytics),
+        ("x_dev",        scrape_x_dev),
     ]
 
     try:

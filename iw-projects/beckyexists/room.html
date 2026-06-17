@@ -610,9 +610,9 @@
     <!-- KPI 4枚 -->
     <div class="grid kpi-row">
       <div class="card kpi">
-        <div class="label"><svg data-lucide="users"></svg>X Followers</div>
-        <div class="value" id="kpiFollowers">--</div>
-        <span class="delta flat" id="kpiFollowersDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
+        <div class="label"><svg data-lucide="eye"></svg>X Imp 7d <span id="xAnalyticsScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
+        <div class="value" id="kpiXImp">--</div>
+        <span class="delta flat" id="kpiXImpSub"><svg data-lucide="mouse-pointer-click"></svg><span>-- eng</span></span>
       </div>
       <div class="card kpi">
         <div class="label"><svg data-lucide="eye"></svg>note PV <span id="noteScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
@@ -659,6 +659,13 @@
         <div class="sub-note" style="margin-bottom:0"></div>
         <div class="task-table" id="schedList"><div class="empty">loading...</div></div>
       </div>
+    </div>
+
+    <!-- X 直近投稿 -->
+    <div class="card" style="margin-top:16px;" id="xPostsCard">
+      <h2><svg data-lucide="twitter"></svg>X 直近投稿（7日）</h2>
+      <div class="sub-note">インプレッション降順 — <a href="https://x.com/i/account_analytics/content?type=posts&sort=impressions&dir=desc&days=7" target="_blank" rel="noopener" style="color:var(--green)">Analytics ↗</a></div>
+      <div class="article-list" id="xPostList"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-media -->
@@ -851,25 +858,6 @@ async function loadAll() {
     $('lastUpdated').textContent = 'SYNC: ' + fmtAgo(syncTs) + ' (' + new Date(syncTs).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ')';
   }
 
-  // ── KPI: X Followers ──
-  if (self) {
-    $('kpiFollowers').innerHTML = `${self.followers.toLocaleString()}<span class="unit">people</span>`;
-    const el = $('kpiFollowersDelta');
-    const snaps = history?.snapshots || [];
-    if (snaps.length >= 2) {
-      const latest = snaps[snaps.length - 1];
-      const baseIdx = Math.max(0, snaps.length - 8);
-      const base = snaps[baseIdx];
-      const diff = (latest.self_followers ?? 0) - (base.self_followers ?? 0);
-      const span = Math.max(1, Math.round((new Date(latest.date) - new Date(base.date)) / 86400000));
-      el.querySelector('span').textContent = `${diff >= 0 ? '+' : ''}${diff} / ${span}日`;
-      el.classList.remove('flat','down','up');
-      el.classList.add(diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
-    } else {
-      el.querySelector('span').textContent = `${self.tweets} posts`;
-    }
-  }
-
   // ── KPI: note PV ──
   if (platform?.note) {
     const n = platform.note;
@@ -966,6 +954,34 @@ async function loadAll() {
       ? (c.credit_remaining / c.monthly_cost_usd).toFixed(0)
       : '∞';
     $('claudeDetail').innerHTML = `クレジット残 <b>$${c.credit_remaining.toFixed(2)}</b> — 今月のペースで <b>${monthsLeft} ヶ月分</b>`;
+  }
+
+  // ── X Analytics ──
+  if (platform?.x_analytics) {
+    const xa = platform.x_analytics;
+    const imp = xa.total_impressions || 0;
+    $('kpiXImp').innerHTML = imp >= 1000
+      ? `${(imp/1000).toFixed(1)}<span class="unit">K</span>`
+      : `${imp}`;
+    $('kpiXImpSub').querySelector('span').textContent = `${(xa.total_likes||0).toLocaleString()} likes`;
+    if (xa.scraped_at) {
+      const d = new Date(xa.scraped_at);
+      $('xAnalyticsScrapedAt').textContent = d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    }
+    if (xa.posts?.length) {
+      const sorted = [...xa.posts].sort((a,b) => b.impressions - a.impressions).slice(0,7);
+      $('xPostList').innerHTML = sorted.map(p =>
+        `<div class="article-row">
+          <div class="article-title" style="min-width:0;font-size:12px;line-height:1.5;">${esc(p.text)}</div>
+          <div class="article-stats">
+            <span class="stat-imp">${p.impressions.toLocaleString()}</span>
+            <span class="stat-likes">${p.likes}</span>
+          </div>
+        </div>`
+      ).join('');
+    } else {
+      $('xPostList').innerHTML = '<div class="empty">データなし</div>';
+    }
   }
 
   // ── X Dev API ──
