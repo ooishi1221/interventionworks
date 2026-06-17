@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-17T08:30:00+09:00",
+  "updated_at": "2026-06-17T18:18:00+09:00",
   "tasks": [
     {
       "id": "live2d",
@@ -50,7 +50,7 @@
       "start": "2026-06-17",
       "updated_at": "2026-06-17",
       "due": "2026-06-20",
-      "note": "CCAF解禁済み・portal launch 待ち",
+      "note": "CCAF解禁済み・portal launch 待ち。ポータルサイト連絡きてる（試験情報などが届く予定）",
       "icon": "🏆"
     },
     {
@@ -171,6 +171,58 @@
       "icon": "🔍"
     },
     {
+      "id": "iw-local-csv-score",
+      "scope": "iw",
+      "label": "IW Local ちょうどいいズボラリスト作成",
+      "category": "iw-local",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-21",
+      "note": "ズボラTop10出した（返信0件確認済）。next: 電話あり×個人店×連絡経路あり でフィルタ→「ちょうどいいズボラ」リスト",
+      "icon": "📊"
+    },
+    {
+      "id": "iw-local-kaachan-demo",
+      "scope": "iw",
+      "label": "定食屋かあちゃん デモ作成→訪問",
+      "category": "iw-local",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-24",
+      "note": "電話凸NG→デモ先行戦略に変更。Place ID: ChIJm3RzTOaRGGARNfU2UVDnDAA / ★3.7 / 479件 / ランチ後直接訪問。無料で実績1件を作る",
+      "icon": "🍱"
+    },
+    {
+      "id": "iw-local-sales-approach",
+      "scope": "iw",
+      "label": "IW Local 訪問営業トーク（30秒）",
+      "category": "iw-local",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-24",
+      "note": "電話凸NG・メール営業NG（アポ率1%以下）→ デモ先行 + 直接訪問戦略に転換。かあちゃんデモ持参時の30秒トーク整理",
+      "icon": "🚶"
+    },
+    {
+      "id": "iw-local-service-build",
+      "scope": "iw",
+      "label": "IW Local サービス仕組み構築",
+      "category": "iw-local",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-17",
+      "updated_at": "2026-06-17",
+      "due": "2026-06-28",
+      "note": "LINE受信→Claude文章生成→GBP API投稿 n8nワークフロー。GCPプロジェクト: iw-local-maps",
+      "icon": "⚙️"
+    },
+    {
       "id": "becky-cast-spotify",
       "scope": "iw",
       "label": "Becky's Cast Spotify 自動化",
@@ -199,15 +251,15 @@
     {
       "id": "iw-local-gmaps",
       "scope": "iw",
-      "label": "Google Maps Scraper テスト（IW営業リスト）",
+      "label": "IW Local スクレイパー + Places API 完成",
       "category": "iw-local",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "start": "2026-06-17",
       "updated_at": "2026-06-17",
-      "due": "2026-06-21",
-      "note": "omkarcloud/google-maps-scraper Mac DMG ダウンロード→足立区・北区で試す。月200件無料",
-      "icon": "🗺️"
+      "due": "2026-06-17",
+      "note": "足立区467件取得・review_scraper.py（Places API版）完成・まるよし食堂デモHTML生成。GCP: iw-local-maps",
+      "icon": "✅"
     }
   ]
 }
