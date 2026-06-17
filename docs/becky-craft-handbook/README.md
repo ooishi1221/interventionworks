@@ -18,6 +18,10 @@ memory には常駐させず、必要時にここを開く。
 - `reference_nextjs16_dev_origin.md` — Next.js 16 dev origin 罠
 - `reference_prompt_caching_required.md` — Anthropic SDK の prompt caching 必須化 craft
 
+### iw-local 営業ツール
+
+- `reference_iw_local_demo_deploy.md` — 個人店デモサイト作成 → Formspree → VPS（demo.intervention.jp）デプロイまでの一連手順
+
 ### AI tool 運用
 
 - `reference_canva_mcp_image_director.md` — Canva MCP × image director craft（5/21）
