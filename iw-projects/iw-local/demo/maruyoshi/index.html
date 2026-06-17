@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まるよし食堂 | 北区豊島 定食・居酒屋</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:    #1c1c1c;
+    --sub:    #777;
+    --muted:  #aaa;
+    --border: #e6e2da;
+    --bg:     #faf9f7;
+    --warm:   #f3ede3;
+    --gold:   #b8954e;
+    --green:  #3a8c62;
+    --green-l:#ecf5ef;
+    --red:    #c94040;
+    --red-l:  #fdf2f2;
+    --max:    900px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 14px;
+  }
+
+  /* ── DEMO BANNER ── */
+  .demo-bar {
+    background: var(--ink);
+    color: var(--gold);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-align: center;
+    padding: 8px 16px;
+    position: relative;
+    z-index: 200;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(250,249,247,0.94);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 12.5px;
+    color: var(--sub);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+
+  .nav-tel {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    height: calc(100svh - 58px - 33px);
+    min-height: 520px;
+    max-height: 820px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .hero-img {
+    position: absolute;
+    inset: 0;
+    background: url('images/photo_1.jpg') center 30%/cover no-repeat;
+    transform: scale(1.04);
+    transition: transform 8s ease-out;
+  }
+  .hero-img.loaded { transform: scale(1); }
+
+  .hero-grad {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.1) 0%,
+      rgba(0,0,0,0.3) 40%,
+      rgba(0,0,0,0.65) 80%,
+      rgba(0,0,0,0.8) 100%
+    );
+  }
+
+  .hero-body {
+    position: relative;
+    z-index: 2;
+    padding: 48px 32px 56px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-en {
+    font-size: 10.5px;
+    letter-spacing: 0.26em;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .hero-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(48px, 11vw, 80px);
+    font-weight: 300;
+    color: white;
+    line-height: 1.05;
+    letter-spacing: 0.1em;
+    margin-bottom: 32px;
+  }
+
+  .hero-tel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 16px 36px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    transition: background 0.2s;
+  }
+
+  .hero-tel-btn:hover { background: #f0ece4; }
+
+  /* ── SECTION COMMON ── */
+  .sec {
+    padding: 80px 32px;
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+
+  .sec-label {
+    font-size: 9.5px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sec-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  .sec-desc {
+    font-size: 13.5px;
+    color: var(--sub);
+    line-height: 1.85;
+  }
+
+  .divider {
+    width: 36px;
+    height: 1px;
+    background: var(--gold);
+    margin: 20px 0 36px;
+  }
+
+  /* ── INFO SECTION ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .info-row {
+    display: contents;
+  }
+
+  .info-row > div {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+
+  .info-row:last-child > div { border-bottom: none; }
+
+  .info-key {
+    color: var(--sub);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    border-right: 1px solid var(--border);
+    background: var(--warm);
+  }
+
+  .info-val { color: var(--ink); }
+
+  .hours-grid {
+    display: grid;
+    gap: 4px;
+    font-size: 12.5px;
+  }
+
+  .hours-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .hours-day {
+    width: 50px;
+    color: var(--sub);
+    flex-shrink: 0;
+  }
+
+  .hours-closed { color: var(--red); }
+
+  /* ── REVIEW SECTION ── */
+  .review-bg {
+    background: var(--warm);
+    padding: 80px 32px;
+  }
+
+  .review-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+
+  .review-intro {
+    margin-bottom: 48px;
+  }
+
+  .review-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .review-card {
+    background: white;
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .review-card-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 3px;
+  }
+
+  .label-good { background: var(--green); color: white; }
+  .label-bad  { background: var(--red); color: white; }
+
+  .review-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .review-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+  .review-author { font-size: 13px; font-weight: 700; }
+  .review-stars  { font-size: 12px; margin-top: 2px; }
+  .review-date   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .good-stars    { color: #f5a623; }
+  .bad-stars     { color: var(--red); }
+  .review-text   { font-size: 12.5px; line-height: 1.8; color: #555; margin-bottom: 16px; }
+  .review-text.muted { color: #aaa; }
+
+  .reply-box {
+    border-radius: 4px;
+    padding: 14px 16px;
+    border-left: 3px solid;
+  }
+
+  .reply-good { background: var(--green-l); border-color: var(--green); }
+  .reply-bad  { background: var(--red-l);   border-color: var(--red); }
+
+  .reply-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .reply-label-good { color: var(--green); }
+  .reply-label-bad  { color: var(--red); }
+
+  .reply-text { font-size: 12.5px; line-height: 1.8; }
+  .reply-text-good { color: #2a5c42; }
+  .reply-text-bad  { color: #8b2020; }
+
+  .insight-box {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    padding: 20px 24px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .insight-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .insight-text { font-size: 13px; color: #555; line-height: 1.8; }
+
+  /* ── SERVICE SECTION ── */
+  .pitch-box {
+    background: var(--ink);
+    color: white;
+    padding: 32px 36px;
+    border-radius: 4px;
+    margin-bottom: 40px;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  .pitch-left {
+    flex: 1;
+  }
+
+  .pitch-right {
+    width: 200px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .pitch-eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .pitch-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .pitch-body {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.85;
+  }
+
+  .pitch-price {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .pitch-price-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  .pitch-limit {
+    font-size: 10.5px;
+    background: rgba(184,149,78,0.15);
+    border: 1px solid rgba(184,149,78,0.35);
+    color: var(--gold);
+    padding: 8px 10px;
+    border-radius: 3px;
+    line-height: 1.6;
+    font-weight: 700;
+  }
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+  }
+
+  .service-card {
+    background: white;
+    padding: 32px 24px;
+  }
+
+  .service-icon {
+    font-size: 26px;
+    margin-bottom: 14px;
+  }
+
+  .service-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 16px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+
+  .service-items {
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--sub);
+    line-height: 2;
+  }
+
+  .service-items li::before {
+    content: '— ';
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .service-note {
+    margin-top: 12px;
+    font-size: 11.5px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    line-height: 1.7;
+  }
+
+  /* ── CTA ── */
+  .cta-bg {
+    background: var(--ink);
+    padding: 80px 32px;
+    text-align: center;
+  }
+
+  .cta-inner { max-width: 600px; margin: 0 auto; }
+
+  .cta-label {
+    font-size: 9.5px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .cta-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: white;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .cta-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 40px;
+    line-height: 1.85;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--gold);
+    color: var(--ink);
+    text-decoration: none;
+    padding: 18px 48px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    transition: filter 0.2s;
+  }
+
+  .cta-btn:hover { filter: brightness(1.1); }
+
+  .cta-trial {
+    margin-top: 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.06em;
+  }
+
+  .cta-credit {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    line-height: 1.8;
+  }
+
+  .cta-credit a { color: var(--gold); text-decoration: none; }
+
+  /* ── CONTACT FORM ── */
+  .contact-form {
+    margin: 0 auto 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 3px;
+    padding: 14px 16px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    color: white;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder {
+    color: rgba(255,255,255,0.35);
+  }
+
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    border-color: var(--gold);
+  }
+
+  .contact-form textarea {
+    resize: vertical;
+    min-height: 110px;
+    line-height: 1.7;
+  }
+
+  .form-submit {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: filter 0.2s;
+    border-radius: 3px;
+    margin-top: 4px;
+  }
+
+  .form-submit:hover { filter: brightness(1.1); }
+  .form-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .form-note {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 32px;
+    background: rgba(58,140,98,0.15);
+    border: 1px solid rgba(58,140,98,0.4);
+    border-radius: 4px;
+    color: #7ecba0;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 700px) {
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .hero-body { padding: 28px 20px 36px; }
+    .sec { padding: 56px 16px; }
+    .review-bg { padding: 56px 16px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .info-key { border-right: none; border-bottom: 1px solid var(--border); }
+    .review-cols { grid-template-columns: 1fr; }
+    .service-grid { grid-template-columns: 1fr; }
+    .cta-bg { padding: 56px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- デモバナー -->
+<div class="demo-bar">
+  ⚡ これはサービス提案用のサンプルページです — Intervention Works / iw-local
+</div>
+
+<!-- ナビ -->
+<nav>
+  <a href="#" class="nav-logo">まるよし食堂</a>
+  <ul class="nav-links">
+    <li><a href="#info">基本情報</a></li>
+    <li><a href="#review">口コミ改善</a></li>
+    <li><a href="#service">サービス</a></li>
+  </ul>
+  <a href="#contact" class="nav-tel">お問い合わせ →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-img" id="heroImg"></div>
+  <div class="hero-grad"></div>
+  <div class="hero-body">
+    <div class="hero-en">MARUYOSHI SHOKUDO · KITA-KU TOSHIMA</div>
+    <h1 class="hero-name">まるよし<br>食堂</h1>
+    <a href="#contact" class="hero-tel-btn">
+      このサービスについて問い合わせる →
+    </a>
+  </div>
+</section>
+
+<!-- 基本情報 -->
+<section id="info">
+  <div class="sec">
+    <div class="sec-label">Shop Info</div>
+    <h2 class="sec-title">基本情報</h2>
+    <div class="divider"></div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-key">電話</div>
+        <div class="info-val"><a href="tel:03-5933-6541" style="color:inherit;text-decoration:none;font-weight:700;">03-5933-6541</a></div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">住所</div>
+        <div class="info-val">東京都北区豊島６丁目７−１０ 二葉マンション</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">営業時間</div>
+        <div class="info-val">
+          <div class="hours-grid">
+            <div class="hours-row"><span class="hours-day">月水木金</span><span>12:00〜14:00 / 16:30〜22:30</span></div>
+            <div class="hours-row"><span class="hours-day">土曜</span><span>12:00〜14:00 / 16:30〜22:30</span></div>
+            <div class="hours-row"><span class="hours-day">日曜</span><span>12:00〜14:00 / 16:30〜21:30</span></div>
+            <div class="hours-row"><span class="hours-day">火曜</span><span class="hours-closed">定休日</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Googleの評価</div>
+        <div class="info-val" style="font-weight:700;">★ 4.2 <span style="font-weight:400;color:var(--sub)">（39件）</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 口コミ改善 -->
+<div id="review" class="review-bg">
+  <div class="review-inner">
+
+    <div class="review-intro">
+      <div class="sec-label">Review Management</div>
+      <h2 class="sec-title">口コミ管理サービスのイメージ</h2>
+      <div class="divider"></div>
+      <p class="sec-desc">
+        Googleの口コミに返信するとマップの表示順位が上がります。<br>
+        AIが文章を自動生成——オーナー様は確認するだけ。<br>
+        ネガティブな口コミも、適切に対応することでマイナス印象を覆せます。
+      </p>
+    </div>
+
+    <div class="review-cols">
+
+      <!-- 良い口コミ -->
+      <div class="review-card">
+        <span class="review-card-label label-good">★ 良い口コミ — 返信することで常連化</span>
+        <div class="review-meta">
+          <div class="review-avatar" style="background:#3a8c62;">
+            <img class="avatar-img" src="https://lh3.googleusercontent.com/a-/ALV-UjXcJwZVTYhYB2bQTXb6_4BSp4cwjhVYZ5ncgwUyZA2VLvlL_3KeyA=s128-c0x00000000-cc-rp-mo-ba3" alt="Ken" onerror="this.style.display='none'">
+          </div>
+          <div>
+            <div class="review-author">Ken "r2sk" さん</div>
+            <div class="review-stars good-stars">★★★★★</div>
+            <div class="review-date">10ヶ月前</div>
+          </div>
+        </div>
+        <p class="review-text">前からあるの知ってたけど、ドアが閉まってて中が見れず定食屋といえどなかなか入る勇気が持てなかった。たまたまドアが開いてて入りました。アジフライ2匹の定食を頼んで、ご飯も味噌汁含め大満足の味と量でした。また行きます！</p>
+        <div class="reply-box reply-good">
+          <div class="reply-label reply-label-good">▷ オーナーより返信（AI自動生成）</div>
+          <p class="reply-text reply-text-good">Ken様、ドアを開けて入ってきてくださってありがとうございます！アジフライ定食を気に入っていただけて嬉しいです。「また行きます」のお言葉、励みになります。またお腹を空かせてお越しください。お待ちしております！</p>
+        </div>
+      </div>
+
+      <!-- 悪い口コミ -->
+      <div class="review-card">
+        <span class="review-card-label label-bad">★ 悪い口コミ — 放置で信頼を失う</span>
+        <div class="review-meta">
+          <div class="review-avatar" style="background:#c94040;">
+            <span>半</span>
+          </div>
+          <div>
+            <div class="review-author">半村愛子 さん<span style="font-size:10px;color:var(--muted);margin-left:6px;">ローカルガイド · 24件</span></div>
+            <div class="review-stars bad-stars">★☆☆☆☆</div>
+            <div class="review-date">1日前</div>
+          </div>
+        </div>
+        <p class="review-text" style="color:#555;">アプリ信じて昼間に行ったらまさかの休店！評価のしようがないのだが星をつけないといけない仕組みらしいので一つだけ付けておく。アプリ信じた自分が愚かだった。</p>
+        <div class="reply-box reply-good" style="border-color:#b8954e;background:#fdf8ee;">
+          <div class="reply-label" style="color:#b8954e;">▷ AIが生成する返信例（送信まで2営業日以内）</div>
+          <p class="reply-text" style="color:#6b5020;">半村様、この度はご不便をおかけし、大変申し訳ございませんでした。アプリに誤った営業時間が表示されたままになっており、せっかくお越しいただいたにもかかわらず来店できない状況をつくってしまいました。情報は至急修正いたします。次回はお電話（03-5933-6541）でご確認の上お越しいただけますと幸いです。またの機会をいただけるなら、精一杯おもてなしさせていただきます。</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="insight-box">
+      <div class="insight-title">💡 INSIGHT — なぜこうなったのか、どう防ぐか</div>
+      <p class="insight-text">半村愛子さんのケースは典型的なパターンです。<strong style="color:#1c1c1c;">Googleマップの営業時間が古いまま放置 → 来店 → 休店でがっかり → ★1レビュー。</strong><br><br>
+      Googleビジネスプロフィールを定期更新していれば、そもそもこの来店は起きなかったケース。それでも書かれてしまった場合も、<strong style="color:#1c1c1c;">2営業日以内に誠実な返信</strong>を入れることで、読んだ人への印象を大きく変えられます。Intervention Worksが更新も返信も代行します。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- サービス -->
+<section id="service">
+  <div class="sec">
+    <div class="sec-label">What We Can Do</div>
+    <h2 class="sec-title">グルメサイトへの<br>「掛け捨て」をやめませんか</h2>
+    <div class="divider"></div>
+    <p class="sec-desc">
+      食べログ・ぐるなびに毎月払う広告費——支払いを止めれば順位が落ちる、手数料は1人200円取られる。<br>
+      Googleマップの良い口コミやSNSのフォロワーは、払い続けなくてもお店に残る<strong>財産</strong>です。
+    </p>
+
+    <!-- ピッチボックス -->
+    <div class="pitch-box">
+      <div class="pitch-left">
+        <div class="pitch-eyebrow">THE SHIFT</div>
+        <h3 class="pitch-title">グルメサイトの予算を<br>そのままここへ移してください</h3>
+        <p class="pitch-body">
+          成果の出ていないグルメサイトのプランを下げて、その浮いたお金をそのままサービス費用に回す。<br>
+          オーナーの手出しは実質0円——むしろ手数料が浮いた分、利益は今より増えます。<br><br>
+          LINEで写真を送るだけで、AIが文章を生成してGoogleマップとInstagramに同時投稿。<br>
+          口コミへの返信は24時間以内に私たちが代行します。
+        </p>
+      </div>
+      <div class="pitch-right">
+        <div class="pitch-price">¥35,000</div>
+        <div class="pitch-price-sub">月額 / 税別<br>グルメサイトを削れば<br>実質 <strong style="color:white;">0円</strong></div>
+        <div class="pitch-limit">⚠️ 足立区・北区で<br>同時サポートは<br><strong>3店舗限定</strong>です</div>
+      </div>
+    </div>
+
+    <div class="service-grid">
+
+      <div class="service-card">
+        <div class="service-icon">📍</div>
+        <h3 class="service-name">Googleマップ<br>MEO対策</h3>
+        <ul class="service-items">
+          <li>口コミへの返信（24時間以内）</li>
+          <li>営業時間・情報の定期更新</li>
+          <li>写真の整理・追加</li>
+          <li>検索順位の改善レポート</li>
+          <li>半村愛子さんのようなケース防止</li>
+        </ul>
+        <p class="service-note">情報を最新に保つだけで★1リスクを大幅に減らせます。</p>
+      </div>
+
+      <div class="service-card">
+        <div class="service-icon">📸</div>
+        <h3 class="service-name">Instagram・X<br>自動投稿</h3>
+        <ul class="service-items">
+          <li>LINEで写真を送るだけでOK</li>
+          <li>AIがMEO最適な文章を自動生成</li>
+          <li>GoogleマップとInstagramに同時投稿</li>
+          <li>フォロワーはお店のファン資産に</li>
+          <li>ハッシュタグ・タイミング最適化</li>
+        </ul>
+        <p class="service-note">スマホが苦手なオーナー様でもLINEで完結します。</p>
+      </div>
+
+      <div class="service-card">
+        <div class="service-icon">🌐</div>
+        <h3 class="service-name">Webサイト・<br>予約システム</h3>
+        <ul class="service-items">
+          <li>このページのようなサイトを自動生成</li>
+          <li>手数料0円の予約導線設置</li>
+          <li>LINE公式アカウントの設定</li>
+          <li>問い合わせフォームの導入</li>
+          <li>既存サイトのリニューアル</li>
+        </ul>
+        <p class="service-note">Googleのデータから自動生成するので、制作費を大幅に抑えられます。</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA / CONTACT -->
+<div class="cta-bg" id="contact">
+  <div class="cta-inner">
+    <div class="cta-label">Intervention Works — iw-local</div>
+    <h2 class="cta-title">なんでもご相談ください</h2>
+    <p class="cta-sub">
+      「とりあえず話だけ」でも大歓迎です。<br>
+      このサンプルページも、Googleの公開データから自動生成しています。<br>
+      トライアルプランは月1万円から。まずは1ヶ月試してみてください。
+    </p>
+
+    <form action="https://formspree.io/f/xgobbevd" method="POST" class="contact-form" id="contactForm">
+      <div class="form-row">
+        <input type="text" name="name" placeholder="お名前" required>
+        <input type="text" name="shop" placeholder="お店名">
+      </div>
+      <input type="text" name="contact" placeholder="ご連絡先（電話番号 or メールアドレス）" required>
+      <textarea name="message" placeholder="ご相談内容（任意）" rows="4"></textarea>
+      <button type="submit" class="form-submit">送信する →</button>
+      <p class="form-note">2営業日以内にご連絡いたします</p>
+    </form>
+
+    <div class="form-success" id="formSuccess">
+      ありがとうございます。<br>
+      内容を確認のうえ、2営業日以内にご連絡いたします。
+    </div>
+
+    <div class="cta-credit">
+      このページは <a href="https://intervention.jp" target="_blank" rel="noopener">Intervention Works</a> が提案用に作成したサンプルです。<br>
+      掲載情報はGoogle Maps公開データを使用しています。
+    </div>
+  </div>
+</div>
+
+<script>
+  // ヒーロー画像のKenburn効果
+  const heroImg = document.getElementById('heroImg');
+  setTimeout(() => heroImg.classList.add('loaded'), 100);
+
+  // Formspree送信後の成功ハンドリング
+  const form = document.getElementById('contactForm');
+  const successMsg = document.getElementById('formSuccess');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('.form-submit');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+    const data = new FormData(form);
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        form.style.display = 'none';
+        successMsg.style.display = 'block';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '送信する →';
+        alert('送信に失敗しました。時間をおいて再度お試しください。');
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = '送信する →';
+      alert('通信エラーが発生しました。');
+    }
+  });
+</script>
+</body>
+</html>
