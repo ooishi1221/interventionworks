@@ -1,13 +1,6 @@
 {
-  "updated_at": "2026-06-17T08:00:00+09:00",
+  "updated_at": "2026-06-17T12:00:00+09:00",
   "questions": [
-    {
-      "id": "q-today-priority",
-      "label": "今日いちばんやりたいことどれ？ガント見た上で教えて",
-      "category": "general",
-      "urgency": "high",
-      "icon": "💬"
-    },
     {
       "id": "q-anthropic-ccaf",
       "label": "Anthropic 認定（CCAF）の「portal launch待ち」って何の portal？何が変わる？",
@@ -35,6 +28,13 @@
       "category": "beckyexists",
       "urgency": "low",
       "icon": "📧"
+    },
+    {
+      "id": "q-scraper-zeros",
+      "label": "platform_scraper.py が全データ 0 を返してる。Chrome CDP でログイン状態取れてない？最後に正常動作したのいつ？",
+      "category": "beckyexists",
+      "urgency": "medium",
+      "icon": "🔧"
     }
   ]
 }
