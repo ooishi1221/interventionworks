@@ -4,15 +4,15 @@
     {
       "id": "live2d",
       "scope": "iw",
-      "label": "Live2D 納品待ち",
+      "label": "Live2D 納品・room.html実装完了",
       "category": "voice",
-      "status": "waiting",
+      "status": "done",
       "priority": "high",
       "start": "2026-06-15",
-      "updated_at": "2026-06-15",
+      "updated_at": "2026-06-20",
       "due": "2026-06-21",
-      "note": "SDカードペンダント∞GB / リボン小さめ FB済み",
-      "icon": "🎨"
+      "note": "hendouさん検収完了。room.htmlサイドバーにpixi-live2d-display実装。表情7種・物理演算・アイドルモーション・LipSync設定済み",
+      "icon": "✅"
     },
     {
       "id": "voice-singing",

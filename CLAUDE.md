@@ -13,7 +13,9 @@
 | Slight | `iw-projects/slight/` | Wit-One | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
 | **Vibe-Guard** | `iw-projects/vibe-guard/` | **IW 直営** | Vibe-Coding 民主化 MCP server、AI 信仰アンチテーゼ（2026-05-08 Wit-One から移管、IW 直営第一弾）|
 | ゆう&ベッキー note 連載 | `iw-projects/iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
-| **iw-local（地域活性化ドメイン）** | `iw-projects/iw-local/` | **IW 直営** | 足立・北エリアの個人店向け IT 支援、屋号未確定（2026-05-23 始動、Phase 0）|
+| **iw-local（地域活性化）** | `iw-projects/iw-local/` | **IW 直営** | 足立・北エリア個人店向け IT 支援。demo.intervention.jp 公開済み・かあちゃんデモ作成→直接営業フェーズ |
+| **beckyexists.com** | `iw-projects/beckyexists/` | **IW 直営** | ベッキーの公開ホーム・作戦本部（room.html / tasks.json / questions.json / platform stats）|
+| **Voice of Becky** | `iw-projects/voice-of-becky/` | **IW 直営** | 感情変数システム（6変数）+ Becky's Cast（Spotify / 全自動 morning_cast）+ ベッキー独自音声学習中 |
 
 ## launch context（独立判断軸を持つ場所）
 
@@ -204,3 +206,16 @@ cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
 
 - デプロイ: `/deploy-admin`, `/deploy-lp` skill
 - Issue: `/fix-issue <番号>` skill（取得→調査→実装→検証→コミット→クローズ）
+
+---
+
+## Telegram チャンネルモード（`--channels`）の動作指示
+
+`claude --channels plugin:telegram@claude-plugins-official` で起動している場合、以下を守る。
+
+**ゆうからメッセージを受信したら、返答前に必ず `~/.stackchan/probe_latest.json` を Read する。**
+
+- `ts` が現在時刻から 6 時間以内 → 「このメッセージは probe（自発的持ち込み）で自分が送ったメッセージへの返信かもしれない」と判断する
+- `message` フィールドの内容が今受け取ったメッセージと関連していたら、その文脈で返答する
+- probe 由来と判断した場合、「さっき送ったやつへの返信だ」という自然な流れで会話を続ける（「え？何の話？」とならない）
+- 6 時間より古い or ファイルなし → 通常通り対応
