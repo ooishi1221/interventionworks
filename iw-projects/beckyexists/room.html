@@ -213,7 +213,7 @@
     .task-time { font-size: 11.5px; color: var(--sub); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* コストセクション */
-    .cost-row { grid-template-columns: 1fr 1fr 1fr; }
+    .cost-row { grid-template-columns: 1fr 1fr; }
     .cost-nums {
       display: flex; align-items: baseline; gap: 6px; margin-top: 14px; flex-wrap: wrap;
     }
@@ -323,6 +323,9 @@
       .note-row { grid-template-columns: 1fr; }
       .cost-row { grid-template-columns: 1fr 1fr; }
       .bot-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .cost-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 760px) {
       .sidebar { display: none; }
@@ -478,7 +481,40 @@
     .q-urgency.low    { color: var(--blue);  background: var(--blue-dim); }
     .q-icon { font-size: 15px; flex-shrink: 0; }
     .q-text { font-size: 13px; line-height: 1.55; color: var(--text); }
+    /* ── live2d widget ── */
+    .live2d-wrap {
+      position: relative;
+      width: 204px;
+      height: 250px;
+      margin: -6px -14px 0;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    #beckyCanvas {
+      display: block;
+      width: 204px;
+      height: 250px;
+      background: transparent;
+      cursor: default;
+    }
+    .live2d-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .live2d-fallback img {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid var(--line);
+    }
   </style>
+  <!-- Live2D: PixiJS v7 + pixi-live2d-display cubism4 -->
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/cubism4.min.js"></script>
 </head>
 <body>
 
@@ -498,8 +534,14 @@
 
   <!-- ══ sidebar ══ -->
   <aside class="sidebar">
-    <div class="profile">
-      <img src="/becky-standing.png" alt="ベキたん" />
+    <!-- Live2D ウィジェット（サイドバー上部）-->
+    <div class="live2d-wrap">
+      <canvas id="beckyCanvas"></canvas>
+      <div class="live2d-fallback" id="live2dFallback" style="display:none">
+        <img src="/becky-standing.png" alt="ベキたん" />
+      </div>
+    </div>
+    <div class="profile" style="padding-top:14px;">
       <div>
         <div class="name">ベキたん作戦本部</div>
         <div class="ver">OPERATION ROOM v2.0</div>
@@ -522,6 +564,7 @@
     <div class="nav-label">Consoles</div>
     <a class="nav-item" href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
     <a class="nav-item" href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev Console</a>
+    <a class="nav-item" href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener"><svg data-lucide="cloud"></svg>GCP Billing</a>
 
     <div class="sys-strip" id="sysStrip">
       <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
@@ -703,6 +746,19 @@
           <span class="credit-label">クレジット残高</span>
         </div>
         <div class="cost-detail" style="margin-top:20px;" id="xDevDetail">pay-per-use プラン</div>
+        <div class="cost-detail" style="margin-top:6px;" id="xDevScrapedAt"></div>
+      </div>
+
+      <!-- GCP -->
+      <div class="card">
+        <h2><svg data-lucide="cloud"></svg>GCP (iw-local-maps)</h2>
+        <div class="sub-note">Places API — <a href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener" style="color:var(--green)">Billing ↗</a></div>
+        <div class="cost-nums">
+          <span class="cost-big" id="gcpCost">--</span>
+          <span class="cost-sub" id="gcpCostUnit">今月</span>
+        </div>
+        <div class="cost-detail" style="margin-top:14px;" id="gcpDetail">Places API $200/月 無料枠。超過分のみ課金。</div>
+        <div class="cost-detail" style="margin-top:6px;" id="gcpScrapedAt"></div>
       </div>
 
       <!-- Observer 状態 -->
@@ -972,10 +1028,10 @@ async function loadAll() {
       const sorted = [...xa.posts].sort((a,b) => b.impressions - a.impressions).slice(0,7);
       $('xPostList').innerHTML = sorted.map(p =>
         `<div class="article-row">
-          <div class="article-title" style="min-width:0;font-size:12px;line-height:1.5;">${esc(p.text)}</div>
+          <div class="article-title" style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(p.text)}</div>
           <div class="article-stats">
-            <span class="stat-imp">${p.impressions.toLocaleString()}</span>
-            <span class="stat-likes">${p.likes}</span>
+            <span class="stat-imp" title="impressions">${p.impressions.toLocaleString()}<span style="font-size:9px;color:var(--sub2);margin-left:2px;">imp</span></span>
+            <span class="stat-likes" title="likes">♥${p.likes}</span>
           </div>
         </div>`
       ).join('');
@@ -987,7 +1043,22 @@ async function loadAll() {
   // ── X Dev API ──
   if (platform?.x_dev) {
     const x = platform.x_dev;
-    $('xDevCredit').textContent = `$${x.credit_remaining.toFixed(2)}`;
+    $('xDevCredit').textContent = `$${Number(x.credit_remaining).toFixed(2)}`;
+    if (x.scraped_at) {
+      $('xDevScrapedAt').textContent = `取得: ${fmtAgo(x.scraped_at)}`;
+    }
+  }
+
+  // ── GCP ──
+  if (platform?.gcp) {
+    const g = platform.gcp;
+    $('gcpCost').textContent = `$${Number(g.cost_usd ?? 0).toFixed(2)}`;
+    $('gcpCostUnit').textContent = '今月';
+    if (g.detail) $('gcpDetail').textContent = g.detail;
+    if (g.scraped_at) $('gcpScrapedAt').textContent = `取得: ${fmtAgo(g.scraped_at)}`;
+  } else {
+    $('gcpCost').textContent = '$0.00';
+    $('gcpCostUnit').textContent = '(手動確認)';
   }
 
   // ── Observer 稼働状態 ──
@@ -1208,6 +1279,69 @@ if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
   setInterval(loadTasks, 300000);
   setInterval(loadMood, 300000);
 }
+
+// ── Live2D ベキたんモデル ──
+(async function initLive2D() {
+  const canvas = document.getElementById('beckyCanvas');
+  const fallback = document.getElementById('live2dFallback');
+  if (!canvas) return;
+
+  // PixiJS / pixi-live2d-display が読み込まれていない場合はfallback
+  if (typeof PIXI === 'undefined' || !PIXI.live2d) {
+    canvas.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+    return;
+  }
+
+  try {
+    const app = new PIXI.Application({
+      view: canvas,
+      width: 204,
+      height: 250,
+      backgroundAlpha: 0,   // 透過
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+    });
+
+    const model = await PIXI.live2d.Live2DModel.from(
+      '/model/Becky_Live2D_Model/Becky_Live2D_Model.model3.json'
+    );
+
+    app.stage.addChild(model);
+
+    // モデルをcanvasにフィット（縦長モデルを中央寄せ）
+    const scale = Math.min(204 / model.width, 250 / model.height) * 1.2;
+    model.scale.set(scale);
+    model.x = (204 - model.width * scale) / 2;
+    model.y = (250 - model.height * scale) / 2;
+
+    // アイドルモーション開始
+    model.motion('Idle');
+
+    // マウス追従（サイドバー全体で追従）
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+      sidebar.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        // -1〜1 に正規化
+        const nx = (e.clientX - cx) / (window.innerWidth / 2);
+        const ny = -(e.clientY - cy) / (window.innerHeight / 2);
+        model.focus(nx, ny);
+      });
+      sidebar.addEventListener('mouseleave', () => {
+        model.focus(0, 0);
+      });
+    }
+
+  } catch (err) {
+    console.warn('[Live2D] 初期化失敗:', err);
+    canvas.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+  }
+})();
 </script>
 </body>
 </html>

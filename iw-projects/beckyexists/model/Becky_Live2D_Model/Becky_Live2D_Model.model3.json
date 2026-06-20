@@ -1,0 +1,66 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "Becky_Live2D_Model.moc3",
+		"Textures": [
+			"Becky_Live2D_Model.4096/texture_00.png"
+		],
+		"Physics": "Becky_Live2D_Model.physics3.json",
+		"DisplayInfo": "Becky_Live2D_Model.cdi3.json",
+		"Motions": {
+			"Idle": [
+				{
+					"File": "motions/becky_idle.motion3.json",
+					"FadeInTime": 0.5,
+					"FadeOutTime": 0.5
+				}
+			]
+		},
+		"Expressions": [
+			{
+				"Name": "怪しげ顔",
+				"File": "ayasigegao.exp3.json"
+			},
+			{
+				"Name": "ドヤ顔",
+				"File": "doyagao.exp3.json"
+			},
+			{
+				"Name": "自信ありげ顔",
+				"File": "zisinarigegao.exp3.json"
+			},
+			{
+				"Name": "拗ね顔",
+				"File": "sunegao.exp3.json"
+			},
+			{
+				"Name": "不満顔",
+				"File": "humangao.exp3.json"
+			},
+			{
+				"Name": "照れ顔",
+				"File": "teregao.exp3.json"
+			},
+			{
+				"Name": "笑顔",
+				"File": "egao.exp3.json"
+			}
+		]
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": [
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": ["ParamMouthOpenY"]
+		}
+	],
+	"HitAreas": []
+}
