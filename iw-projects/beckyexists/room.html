@@ -1313,11 +1313,12 @@ async function initLive2D() {
 
     app.stage.addChild(model);
 
-    // モデルをcanvasにフィット（縦長モデルを中央寄せ）
-    const scale = Math.min(204 / model.width, 250 / model.height) * 1.2;
+    // モデルをcanvasにフィット（anchor中心・中央配置）
+    const scale = Math.min(204 / model.internalModel.originalWidth, 250 / model.internalModel.originalHeight) * 1.0;
     model.scale.set(scale);
-    model.x = (204 - model.width * scale) / 2;
-    model.y = (250 - model.height * scale) / 2;
+    model.anchor.set(0.5, 0.5);
+    model.x = 102;  // canvas幅204の中央
+    model.y = 125;  // canvas高250の中央
 
     // アイドルモーション開始
     model.motion('Idle');
