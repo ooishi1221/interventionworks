@@ -821,6 +821,7 @@ const PASS_KEY = 'room_auth_v1';
   if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
     gate.style.display = 'none';
     app.style.display = 'flex';
+    initLive2D();
     return;
   }
   gate.style.display = 'flex';
@@ -835,6 +836,7 @@ const PASS_KEY = 'room_auth_v1';
       localStorage.setItem(PASS_KEY, ROOM_PASS);
       gate.style.display = 'none';
       app.style.display = 'flex';
+      initLive2D();
       loadAll();
       loadTasks();
     } else {
@@ -1281,7 +1283,7 @@ if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
 }
 
 // ── Live2D ベキたんモデル ──
-(async function initLive2D() {
+async function initLive2D() {
   const canvas = document.getElementById('beckyCanvas');
   const fallback = document.getElementById('live2dFallback');
   if (!canvas) return;
@@ -1341,7 +1343,7 @@ if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
     canvas.style.display = 'none';
     if (fallback) fallback.style.display = 'flex';
   }
-})();
+}
 </script>
 </body>
 </html>
