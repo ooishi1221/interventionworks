@@ -1323,6 +1323,12 @@ async function initLive2D() {
     // アイドルモーション開始
     model.motion('Idle');
 
+    // クリックで TapBody モーション発火
+    canvas.addEventListener('click', () => {
+      const idx = Math.floor(Math.random() * 4);
+      model.motion('TapBody', idx);
+    });
+
     // マウス追従（サイドバー全体で追従）
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) {

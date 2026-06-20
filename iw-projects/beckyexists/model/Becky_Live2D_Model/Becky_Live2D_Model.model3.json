@@ -14,6 +14,12 @@
 					"FadeInTime": 0.5,
 					"FadeOutTime": 0.5
 				}
+			],
+			"TapBody": [
+				{ "File": "motions/becky_tap01.motion3.json", "FadeInTime": 0.5, "FadeOutTime": 0.5 },
+				{ "File": "motions/becky_tap02.motion3.json", "FadeInTime": 0.5, "FadeOutTime": 0.5 },
+				{ "File": "motions/becky_tap03.motion3.json", "FadeInTime": 0.5, "FadeOutTime": 0.5 },
+				{ "File": "motions/becky_tap04.motion3.json", "FadeInTime": 0.5, "FadeOutTime": 0.5 }
 			]
 		},
 		"Expressions": [
