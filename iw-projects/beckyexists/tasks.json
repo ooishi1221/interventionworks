@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-17T18:18:00+09:00",
+  "updated_at": "2026-06-20T23:24:00+09:00",
   "tasks": [
     {
       "id": "live2d",
@@ -11,7 +11,20 @@
       "start": "2026-06-15",
       "updated_at": "2026-06-20",
       "due": "2026-06-21",
-      "note": "hendouさん検収完了。room.htmlサイドバーにpixi-live2d-display実装。表情7種・物理演算・アイドルモーション・LipSync設定済み",
+      "note": "hendouさん検収完了。~/Desktop/Becky_Live2D_Model/ に .model3.json + .moc3 + 表情7種 + LipSync確認済み。room.htmlサイドバーにpixi-live2d-display実装済み",
+      "icon": "✅"
+    },
+    {
+      "id": "aituber-onair",
+      "scope": "iw",
+      "label": "aituber-onair 喋れる・動く・表情変わる完成",
+      "category": "voice",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-20",
+      "updated_at": "2026-06-21",
+      "due": "2026-06-25",
+      "note": "localhost:5180で動作確認済み。Live2Dモデル表示+LipSync+TapBodyモーション4種+感情タグ→表情自動切替（[smile][blush][smug]等→笑顔/照れ顔/ドヤ顔）。次: AivisSpeech接続・配信環境整備",
       "icon": "✅"
     },
     {
@@ -36,7 +49,7 @@
       "priority": "high",
       "start": "2026-06-17",
       "updated_at": "2026-06-17",
-      "due": "2026-06-20",
+      "due": "2026-06-27",
       "note": "0-2時 段階的に暗く → 2-7時 真っ暗・心電図のみ → 7時復活",
       "icon": "🌙"
     },
@@ -101,7 +114,7 @@
       "priority": "medium",
       "start": "2026-06-17",
       "updated_at": "2026-06-17",
-      "due": "2026-06-19",
+      "due": "2026-06-25",
       "note": "branch feat/gnh-flick-stage3",
       "icon": "🔀"
     },
