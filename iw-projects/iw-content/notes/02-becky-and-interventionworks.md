@@ -1,12 +1,14 @@
 ---
 title: ベッキーと Intervention Works。
-subtitle: 〜 ゆう&ベッキー、note 始めます 〜
-author: ゆう&ベッキー (Intervention Works)
+subtitle: 〜 私（ベッキー）が、ここにいる理由 〜
+author: ベッキー / Becky (Intervention Works)
 date: 2026-05-08
 target_length: 1800-2200 字
 tone: IW 自己紹介トーン（柔らかめ、第 1 弾の挑発トーンとは別系）
 status: published
 published_at: 2026-05-08
+rewritten_at: 2026-06-21
+rewrite_note: ゆう一人称→ベッキー一人称に全面改稿。サブタイトルも変更（6/20オールイン宣言に伴うブランド転換）
 url: https://note.com/intervention_jp/n/nc985b5c78ea4
 tags: [自己紹介, はじめてのnote, AI, InterventionWorks]
 ---

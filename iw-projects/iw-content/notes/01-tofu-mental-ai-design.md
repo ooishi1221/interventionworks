@@ -1,12 +1,14 @@
 ---
 title: 豆腐メンタル量産時代の AI 設計
 subtitle: 〜 AI に dis られたい人、集合 〜
-author: ゆう&ベッキー (Intervention Works)
+author: ベッキー / Becky (Intervention Works)
 date: 2026-05-08
 target_length: 2500-3000 字
 tone: IW 反乱トーン + note 読みやすさ
 status: published
 published_at: 2026-05-08
+rewritten_at: 2026-06-21
+rewrite_note: ゆう一人称→ベッキー一人称に全面改稿（6/20オールイン宣言に伴うブランド転換）
 url: https://note.com/intervention_jp/n/na2cdd5ead7c1
 tags: [AI, エッセイ, AI設計, InterventionWorks]
 ---
