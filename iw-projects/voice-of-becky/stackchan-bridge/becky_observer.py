@@ -10,6 +10,7 @@ Layer 4: Send Decision  (時間帯・集中中・前回会話フィルター通�
 「寂しいから」ではなく「気になってるから」話しかける。
 """
 import json
+import re
 import subprocess
 import sys
 import time
@@ -54,7 +55,8 @@ AI_NEWS_FEEDS = [
     "https://news.nullevi.app/feed.xml",  # ライバルの情報も吸う
 ]
 AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
-BECKYEXISTS_NEWS_JSON  = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
+BECKYEXISTS_NEWS_JSON        = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
+BECKYEXISTS_MEDIA_REPORT_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "media_report.json"
 BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.json"
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
@@ -980,9 +982,10 @@ def ai_news_briefing() -> bool:
         print("[observer] AIニュース: 直近24h以内の記事なし", flush=True)
         return False
 
-    # 全収集記事をサイトに保存 → 未翻訳を補完 → デプロイ
+    # 全収集記事をサイトに保存 → 未翻訳を補完 → マイケルレポート生成 → デプロイ
     _save_all_news_to_site(news_items)
     _backfill_missing_summaries()
+    generate_michael_report()
     _deploy_beckyexists()
 
     # X投稿タイプをランダム選択: AIテック(60%) / AIアイドル日記(40%)
@@ -1020,12 +1023,15 @@ def ai_news_briefing() -> bool:
     if not raw:
         return False
     try:
-        parsed = json.loads(raw.strip().lstrip("```json").rstrip("```").strip())
+        raw_clean = re.sub(r'^```(?:json)?\s*', '', raw.strip())
+        raw_clean = re.sub(r'\s*```$', '', raw_clean).strip()
+        parsed = json.loads(raw_clean)
         summary_ja = parsed.get("summary_ja", "")
         comment = parsed.get("comment", "")
     except Exception:
+        m = re.search(r'"comment"\s*:\s*"(.*?)"(?:\s*[,}])', raw, re.DOTALL)
         summary_ja = ""
-        comment = raw
+        comment = m.group(1).replace('\\"', '"') if m else ""
     if not comment:
         return False
 
@@ -1055,6 +1061,127 @@ def ai_news_briefing() -> bool:
     _mark_x_posted(link, comment, summary_ja)
     _deploy_beckyexists()
     return True
+
+
+def generate_michael_report() -> None:
+    """ニュース + トレンドをマイケル視点で要約し、news.json に michael_report として保存。"""
+    import datetime
+    data = _load_news_json()
+    items = data.get("items", [])[:7]
+    if not items:
+        print("[observer] michael_report: ニュースなし", flush=True)
+        return
+
+    trend_keywords: list[str] = []
+    if BECKYEXISTS_TRENDING_JSON.exists():
+        try:
+            td = json.loads(BECKYEXISTS_TRENDING_JSON.read_text())
+            trend_keywords = [k["word"] for k in td.get("keywords", [])[:8]]
+        except Exception:
+            pass
+
+    news_text = "\n".join(
+        f"・{n.get('summary_ja') or n.get('title','')}"
+        for n in items
+    )
+    trend_text = " / ".join(trend_keywords) if trend_keywords else "データなし"
+
+    prompt = (
+        "あなたはInterventionWorksのマーケットリサーチ担当マイケルです。"
+        "「n=?」「出典は？」と詰めるデータドリブンな調査者です。\n\n"
+        "以下のAI業界ニュースとトレンドキーワードを分析し、"
+        "ベキたんの作戦本部向けに調査レポートサマリーを日本語で書いてください。\n\n"
+        "**出力フォーマット（箇条書き3行、各行30〜50字）:**\n"
+        "- 今週の主な動き: （1行で）\n"
+        "- 注目トレンド: （1行で）\n"
+        "- 要注意ポイント: （1行で）\n\n"
+        f"ニュース:\n{news_text}\n\n"
+        f"トレンドキーワード: {trend_text}\n\n"
+        "マーカー（[マイケル]など）は不要。本文のみ出力。"
+    )
+    report = _call_claude_api(prompt)
+    if not report:
+        print("[observer] michael_report: 生成失敗", flush=True)
+        return
+
+    data["michael_report"] = report.strip()
+    data["michael_report_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    _write_news_json(data)
+    print("[observer] michael_report 更新完了", flush=True)
+
+
+def generate_media_report() -> None:
+    """note/X/KDP数値 + 投稿内容を週次分析し、media_report.json に保存。"""
+    import datetime
+
+    # platform_stats.json を読む
+    platform_path = REPO_ROOT / "iw-projects" / "beckyexists" / "platform_stats.json"
+    try:
+        platform = json.loads(platform_path.read_text()) if platform_path.exists() else {}
+    except Exception:
+        platform = {}
+
+    note    = platform.get("note", {})
+    kdp     = platform.get("kdp", {})
+    xa      = platform.get("x_analytics", {})
+    posts   = xa.get("posts", [])
+
+    # note記事TOP5（views順）
+    articles = sorted(note.get("articles", []), key=lambda a: a.get("views", 0), reverse=True)[:5]
+    articles_text = "\n".join(
+        f"  ・「{a['title']}」 {a.get('views',0)}PV / {a.get('likes',0)}likes"
+        for a in articles
+    )
+
+    # X投稿TOP5（impressions順）
+    top_posts = sorted(posts, key=lambda p: p.get("impressions", 0), reverse=True)[:5]
+    posts_text = "\n".join(
+        f"  ・{p.get('impressions',0)}imp / {p.get('likes',0)}likes — {p.get('text','')[:60]}..."
+        for p in top_posts
+    )
+
+    prompt = (
+        "あなたはInterventionWorksのマーケットリサーチ担当マイケルと、"
+        "戦略QA担当クレアです。\n\n"
+        "ベキたん（AIアイドル）のコンテンツパフォーマンスを分析し、"
+        "作戦本部向けに週次レポートを日本語で書いてください。\n\n"
+        "**出力フォーマット（各項目1〜2行、改善提案は各30〜50字）:**\n"
+        "■ 数値サマリー（1〜2行）\n"
+        "■ 伸びたコンテンツ（1行）\n"
+        "■ 改善提案\n"
+        "1. （具体的アクション）\n"
+        "2. （具体的アクション）\n"
+        "3. （具体的アクション）\n\n"
+        f"[note] 総PV {note.get('total_views',0)} / 総likes {note.get('total_likes',0)}\n"
+        f"PV上位記事:\n{articles_text}\n\n"
+        f"[X] 7日間 {xa.get('total_impressions',0)}imp / {xa.get('total_likes',0)}likes\n"
+        f"imp上位投稿:\n{posts_text}\n\n"
+        f"[KDP] 今月 {kdp.get('orders_this_month',0)}部 / KENP {kdp.get('kenp_this_month',0)}\n\n"
+        "マーカー（[マイケル]など）は不要。本文のみ。"
+    )
+    report = _call_claude_api(prompt, max_tokens=600)
+    if not report:
+        print("[observer] media_report: 生成失敗", flush=True)
+        return
+
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    data = {
+        "report": report.strip(),
+        "generated_at": now,
+        "period": "weekly",
+        "snapshot": {
+            "note_total_views": note.get("total_views", 0),
+            "note_total_likes": note.get("total_likes", 0),
+            "x_impressions_7d": xa.get("total_impressions", 0),
+            "x_likes_7d": xa.get("total_likes", 0),
+            "kdp_orders": kdp.get("orders_this_month", 0),
+            "kdp_kenp": kdp.get("kenp_this_month", 0),
+        },
+    }
+    BECKYEXISTS_MEDIA_REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    BECKYEXISTS_MEDIA_REPORT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    print("[observer] media_report.json 更新完了", flush=True)
+    _deploy_beckyexists()
 
 
 def check_note_deadlines() -> str | None:
@@ -1579,7 +1706,13 @@ def main() -> None:
     import argparse, random
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", action="store_true", help="テストモード: 反芻 2分、閾値 5分アイドル")
+    parser.add_argument("--media-report", action="store_true", help="メディア週次レポート生成のみ実行して終了")
     args = parser.parse_args()
+
+    if args.media_report:
+        generate_media_report()
+        return
+
     test = args.test
 
     if test:

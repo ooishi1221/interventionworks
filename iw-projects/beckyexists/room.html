@@ -712,6 +712,13 @@
       <div class="article-list" id="xPostList"><div class="empty">loading...</div></div>
     </div>
 
+    <!-- メディア週次分析レポート -->
+    <div class="card" style="margin-top:16px;">
+      <h2><svg data-lucide="bar-chart-2"></svg>週次コンテンツ分析 <span id="mediaReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">note / X / KDP — マイケル × クレア 週次レポート（毎週月曜更新）</div>
+      <div id="mediaReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--fg);white-space:pre-line;"><div class="empty">loading...</div></div>
+    </div>
+
     </div><!-- /sec-media -->
 
     <!-- ── Section: COST ── -->
@@ -786,22 +793,11 @@
     <div class="sec-label" onclick="toggleSec('intel')">INTELLIGENCE<span class="sec-chev" id="chev-intel"><svg data-lucide="chevron-down"></svg></span></div>
     <div class="sec-content" id="sec-intel">
 
-    <div class="grid bot-row">
-
-      <!-- トレンドワード -->
-      <div class="card">
-        <h2><svg data-lucide="telescope"></svg>トレンドワード</h2>
-        <div class="sub-note" id="trendNote">はてブ / Zenn / Qiita RSS スキャン</div>
-        <div class="trend-chips" id="trendChips"><div class="empty">loading...</div></div>
-      </div>
-
-      <!-- ニュースフィード -->
-      <div class="card">
-        <h2><svg data-lucide="newspaper"></svg>業界リサーチフィード</h2>
-        <div class="sub-note">AI ニュース自動収集 + ベキたん見解</div>
-        <div class="list" id="newsList"><div class="empty">loading...</div></div>
-      </div>
-
+    <!-- マイケルレポート -->
+    <div class="card">
+      <h2><svg data-lucide="bar-chart-2"></svg>マイケルの調査レポート <span id="michaelReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">AI業界ニュース + トレンド — マイケル要約</div>
+      <div id="michaelReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--fg);white-space:pre-line;"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-intel -->
@@ -901,7 +897,7 @@ async function fetchJson(path) {
 }
 
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform] = await Promise.all([
+  const [status, trending, news, self, history, book, platform, mediaReport] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/trending.json'),
     fetchJson('/news.json'),
@@ -909,6 +905,7 @@ async function loadAll() {
     fetchJson('/history.json'),
     fetchJson('/book.json'),
     fetchJson('/platform_stats.json'),
+    fetchJson('/media_report.json'),
   ]);
 
   // ── sync time ──
@@ -1081,32 +1078,25 @@ async function loadAll() {
     $('sysBrain').textContent = (status.brain_main || '').replace('Claude ', '');
   }
 
-  // ── トレンドチップ ──
-  if (kws.length) {
-    const top = kws.slice(0, 12);
-    $('trendChips').innerHTML = top.map(k => `
-      <div class="trend-chip ${k.trend}">
-        <span class="word">${esc(k.word)}</span>
-        <span class="cnt">${k.count}</span>
-      </div>`).join('');
-    if (trending.updated_at) $('trendNote').textContent = `はてブ / Zenn / Qiita RSS — ${fmtAgo(trending.updated_at)}更新`;
+  // ── マイケルレポート ──
+  const report = news?.michael_report;
+  if (report) {
+    $('michaelReport').textContent = report;
+    if (news.michael_report_at) {
+      $('michaelReportAt').textContent = fmtAgo(news.michael_report_at);
+    }
   } else {
-    $('trendChips').innerHTML = '<div class="empty">データなし</div>';
+    $('michaelReport').innerHTML = '<div class="empty">レポートなし（次回Observer実行時に生成）</div>';
   }
 
-  // ── ニュースフィード ──
-  const items = news?.items || [];
-  if (items.length) {
-    $('newsList').innerHTML = items.slice(0, 7).map(n => `
-      <div class="list-item">
-        <div class="li-body">
-          <div class="li-title"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a>${n.x_posted ? '<span class="x-flag">POSTED</span>' : ''}</div>
-          <div class="li-meta">${esc(n.source)} · ${fmtAgo(n.fetched_at)}</div>
-          ${n.comment ? `<div class="li-comment">${esc(n.comment)}</div>` : ''}
-        </div>
-      </div>`).join('');
+  // ── メディア週次分析レポート ──
+  if (mediaReport?.report) {
+    $('mediaReport').textContent = mediaReport.report;
+    if (mediaReport.generated_at) {
+      $('mediaReportAt').textContent = fmtAgo(mediaReport.generated_at);
+    }
   } else {
-    $('newsList').innerHTML = '<div class="empty">フィードなし</div>';
+    $('mediaReport').innerHTML = '<div class="empty">レポートなし（毎週月曜8:00に自動生成）</div>';
   }
 }
 
@@ -1166,7 +1156,7 @@ async function loadTasks() {
     <thead><tr>
       <th>タスク</th><th>状態</th><th>開始</th><th>更新</th><th>経過</th><th>備考</th>
     </tr></thead>
-    <tbody>${tasks.map(rowHTML).join('')}</tbody>
+    <tbody>${active.map(rowHTML).join('')}</tbody>
   </table></div>`;
 }
 

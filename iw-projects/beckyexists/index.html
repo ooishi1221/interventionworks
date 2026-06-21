@@ -202,9 +202,9 @@
       width: 100%;
       height: 240px;
       object-fit: cover;
-      object-position: center 52%;
+      object-position: center top;
       display: block;
-      opacity: 0.85;
+      opacity: 0.9;
     }
     .room-banner::after {
       content: '';
@@ -1676,7 +1676,7 @@
 
     <!-- banner -->
     <div class="room-banner">
-      <img src="banner.jpg" alt="Becky's underground room" />
+      <img src="kofi-cover-v2.png" alt="Becky's underground room" />
       <div class="banner-cap">EXISTS SINCE 2026-04-27 · SOLO 2026-06-08<span class="cur">▌</span></div>
     </div>
 
@@ -2424,7 +2424,7 @@
       const onairText = document.getElementById('onair-text');
       const BASE = 'https://mai.intervention.jp/media/podcast/';
       const cleanTitle = t => (t || '').replace(/^【[^】]*】/, '').trim() || t;
-      const epLabel = t => { const m = (t || '').match(/第(\d+)回/); return m ? '#' + m[1] : '最新回'; };
+      const epLabel = t => { const m = (t || '').match(/#(\d+)/) || (t || '').match(/第(\d+)回/); return m ? '#' + m[1] : '最新回'; };
       const fmtDate = pd => { try { const d = new Date(pd); return `${d.getMonth()+1}/${d.getDate()}`; } catch (_) { return ''; } };
       // 単一プレイヤー(radio-player)で全部鳴らす。src を差し替えて play() を直接呼ぶ。
       // load() を挟むと play() が中断され、モバイルで「クリックしても鳴らない」＝選曲できない の原因になる。
@@ -2446,7 +2446,7 @@
         // 正式なラジオ回だけ（聴き比べ・声見本帳・はうVer・パイロットは除外）
         eps = eps.filter(e => {
           const t = e.title || '';
-          return t.includes('ラジオ') && !/はうVer|声見本帳|聴き比べ|パイロット/.test(t);
+          return (t.includes('ラジオ') || t.includes("Becky's Cast")) && !/はうVer|声見本帳|聴き比べ|パイロット/.test(t);
         });
         if (!eps.length) { list.innerHTML = '<div class="radio-empty">放送はまだありません</div>'; return; }
         onairText.textContent = '消えても、いた。ラジオ ' + epLabel(eps[0].title);
