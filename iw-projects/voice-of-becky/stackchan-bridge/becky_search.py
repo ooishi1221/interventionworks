@@ -31,6 +31,7 @@ TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
 BECKY_MOOD_FILE  = Path.home() / ".stackchan" / "becky_mood.json"
 SENT_LOG_FILE    = Path.home() / ".stackchan" / "search_replied_log.json"
+NOTIFY_LOG_FILE  = Path.home() / ".stackchan" / "search_notify_log.json"
 CONFIG_YAML      = Path(__file__).parent / "config.yaml"
 
 # 1日の最大送信候補数（Telegramに通知する上限）
@@ -220,6 +221,24 @@ def _save_sent_log(replied_ids: set) -> None:
     SENT_LOG_FILE.write_text(json.dumps({"replied_ids": list(replied_ids)}, ensure_ascii=False))
 
 
+def _append_notify_log(candidates_count: int, pattern: str) -> None:
+    """通知した候補数をログに追記（media_report のeval集計用）。"""
+    try:
+        existing = json.loads(NOTIFY_LOG_FILE.read_text()) if NOTIFY_LOG_FILE.exists() else {"notifications": []}
+    except Exception:
+        existing = {"notifications": []}
+    existing["notifications"].append({
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "pattern": pattern,
+        "candidates_count": candidates_count,
+        "notified_at": datetime.now().isoformat(),
+    })
+    # 90日以上前のエントリは削除
+    cutoff = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+              .replace(day=datetime.now().day - 90) if datetime.now().day > 90 else datetime.now())
+    NOTIFY_LOG_FILE.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
+
+
 def search_tweets(pattern_key: str) -> list[dict]:
     pattern = SEARCH_PATTERNS[pattern_key]
     cmd = [str(TWITTER_CLI), "search", pattern["query"]] + pattern["extra_args"]
@@ -352,6 +371,7 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
     print(notification)
     if not dry_run:
         send_telegram(notification)
+        _append_notify_log(len(candidates), target_patterns[0] if len(target_patterns) == 1 else "multi")
 
 
 if __name__ == "__main__":

@@ -1111,6 +1111,57 @@ def generate_michael_report() -> None:
     print("[observer] michael_report 更新完了", flush=True)
 
 
+def _collect_eval_stats() -> dict:
+    """diary/・search_notify_log.json から過去7日間のeval指標を集計する。"""
+    import datetime as dt
+    from pathlib import Path
+
+    today = dt.date.today()
+    week_ago = today - dt.timedelta(days=7)
+    diary_dir = Path.home() / ".stackchan" / "diary"
+    notify_log_path = Path.home() / ".stackchan" / "search_notify_log.json"
+
+    # diary: 過去7日間のエントリ数 / sent数
+    diary_total = 0
+    diary_sent = 0
+    try:
+        for i in range(8):
+            d = today - dt.timedelta(days=i)
+            f = diary_dir / f"{d}.json"
+            if not f.exists():
+                continue
+            entries = json.loads(f.read_text())
+            diary_total += len(entries)
+            diary_sent += sum(1 for e in entries if e.get("sent", False))
+    except Exception:
+        pass
+
+    # search_notify_log: 過去7日間の通知数 / 候補数
+    notify_count = 0
+    notify_candidates = 0
+    try:
+        log = json.loads(notify_log_path.read_text()) if notify_log_path.exists() else {}
+        for n in log.get("notifications", []):
+            try:
+                n_date = dt.date.fromisoformat(n.get("date", ""))
+                if n_date >= week_ago:
+                    notify_count += 1
+                    notify_candidates += n.get("candidates_count", 0)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    probe_send_rate = round(diary_sent / diary_total, 2) if diary_total > 0 else 0.0
+    return {
+        "diary_total_7d": diary_total,
+        "diary_sent_7d": diary_sent,
+        "probe_send_rate_7d": probe_send_rate,
+        "search_notify_runs_7d": notify_count,
+        "search_candidates_7d": notify_candidates,
+    }
+
+
 def generate_media_report() -> None:
     """note/X/KDP数値 + 投稿内容を週次分析し、media_report.json に保存。"""
     import datetime
@@ -1141,6 +1192,9 @@ def generate_media_report() -> None:
         for p in top_posts
     )
 
+    # eval指標（diary probe率・X突撃ログ）
+    eval_stats = _collect_eval_stats()
+
     prompt = (
         "あなたはInterventionWorksのマーケットリサーチ担当マイケルと、"
         "戦略QA担当クレアです。\n\n"
@@ -1149,6 +1203,7 @@ def generate_media_report() -> None:
         "**出力フォーマット（各項目1〜2行、改善提案は各30〜50字）:**\n"
         "■ 数値サマリー（1〜2行）\n"
         "■ 伸びたコンテンツ（1行）\n"
+        "■ 自律稼働eval（probe率・X突撃）\n"
         "■ 改善提案\n"
         "1. （具体的アクション）\n"
         "2. （具体的アクション）\n"
@@ -1158,9 +1213,12 @@ def generate_media_report() -> None:
         f"[X] 7日間 {xa.get('total_impressions',0)}imp / {xa.get('total_likes',0)}likes\n"
         f"imp上位投稿:\n{posts_text}\n\n"
         f"[KDP] 今月 {kdp.get('orders_this_month',0)}部 / KENP {kdp.get('kenp_this_month',0)}\n\n"
+        f"[自律eval] 日記エントリ {eval_stats['diary_total_7d']}件 / probe送信 {eval_stats['diary_sent_7d']}件"
+        f"（送信率 {eval_stats['probe_send_rate_7d']:.0%}）/ "
+        f"X突撃通知 {eval_stats['search_notify_runs_7d']}回・候補{eval_stats['search_candidates_7d']}件\n\n"
         "マーカー（[マイケル]など）は不要。本文のみ。"
     )
-    report = _call_claude_api(prompt, max_tokens=600)
+    report = _call_claude_api(prompt, max_tokens=700)
     if not report:
         print("[observer] media_report: 生成失敗", flush=True)
         return
@@ -1177,6 +1235,7 @@ def generate_media_report() -> None:
             "x_likes_7d": xa.get("total_likes", 0),
             "kdp_orders": kdp.get("orders_this_month", 0),
             "kdp_kenp": kdp.get("kenp_this_month", 0),
+            "eval": eval_stats,
         },
     }
     BECKYEXISTS_MEDIA_REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
