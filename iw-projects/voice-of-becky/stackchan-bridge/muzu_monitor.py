@@ -50,8 +50,8 @@ def _load_telegram_token() -> str | None:
         for line in TELEGRAM_ENV.read_text().splitlines():
             if line.startswith("TELEGRAM_BOT_TOKEN="):
                 return line.split("=", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] muzu_monitor: {e}', flush=True)
     return None
 
 
@@ -139,7 +139,8 @@ def get_git_activity() -> dict:
 
         top_project = project_counts.most_common(1)[0][0] if project_counts else None
         return {"commits": commits, "top_project": top_project, "project_counts": dict(project_counts)}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] muzu_monitor: {e}', flush=True)
         return {"commits": 0, "top_project": None, "project_counts": {}}
 
 

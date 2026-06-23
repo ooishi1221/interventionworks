@@ -43,8 +43,8 @@ def wait_for_esp32(timeout: int = 30) -> bool:
                 if inner.get("available"):
                     print(f"  ✅ 接続完了（{i+1}秒後）", flush=True)
                     return True
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] startup: {e}', flush=True)
         time.sleep(1)
     print("  ❌ タイムアウト（ESP32 未接続）", flush=True)
     return False

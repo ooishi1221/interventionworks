@@ -45,15 +45,16 @@ def _save_last_conversation_timestamp() -> None:
     try:
         LAST_CONV_FILE.parent.mkdir(parents=True, exist_ok=True)
         LAST_CONV_FILE.write_text(str(time.time()))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] stop_hook_tts: {e}', flush=True)
 
 
 def load_config() -> dict:
     try:
         with open(CONFIG_PATH, "r") as f:
             return yaml.safe_load(f)
-    except Exception:
+    except Exception as e:
+        print(f'[warn] stop_hook_tts: {e}', flush=True)
         return {}
 
 
@@ -183,13 +184,16 @@ def speak(text: str, voice: str, rate: int, speaker_id: int = 8, voicevox_params
     """
     try:
         _speak_stackchan(text, speaker_id)
-    except Exception:
+    except Exception as e:
+        print(f'[warn] stop_hook_tts: {e}', flush=True)
         try:
             _speak_irodori_tts(text)
-        except Exception:
+        except Exception as e:
+            print(f'[warn] stop_hook_tts: {e}', flush=True)
             try:
                 _speak_voicevox(text, speaker_id, voicevox_params or {})
-            except Exception:
+            except Exception as e:
+                print(f'[warn] stop_hook_tts: {e}', flush=True)
                 _speak_say(text, voice, rate)
 
 
@@ -197,8 +201,8 @@ def _write_pid(pid: int) -> None:
     """TTS プロセスの pid を /tmp/becky_tts_pid に書き込む（MUTE コマンド対応）。"""
     try:
         TTS_PID_FILE.write_text(str(pid))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] stop_hook_tts: {e}', flush=True)
 
 
 def _clear_pid() -> None:

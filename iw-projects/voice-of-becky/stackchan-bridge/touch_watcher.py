@@ -53,7 +53,8 @@ def get_touch_state() -> dict | None:
             text = outer["content"][0]["text"]
             return json.loads(text)
         return outer
-    except Exception:
+    except Exception as e:
+        print(f'[warn] touch_watcher: {e}', flush=True)
         return None
 
 
@@ -68,8 +69,8 @@ def set_brightness(level: int) -> None:
     try:
         with urllib.request.urlopen(req, timeout=5):
             pass
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] touch_watcher: {e}', flush=True)
 
 
 def say(text: str, speaker_id: int = 8) -> None:

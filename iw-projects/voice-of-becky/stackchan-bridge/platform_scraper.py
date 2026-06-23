@@ -213,7 +213,8 @@ def scrape_x_analytics(tab: pychrome.Tab) -> dict:
 # ── X Developer Console ───────────────────────────────────────────────────────
 
 def scrape_x_dev(tab: pychrome.Tab) -> dict:
-    navigate(tab, "https://console.x.com/accounts/2053290251490340864", 9)
+    # X Dev Consoleはページ読み込みが重いため長めに待つ
+    navigate(tab, "https://console.x.com/accounts/2053290251490340864", 20)
     raw = js(tab, r"""
 (function() {
   var lines = document.body.innerText
@@ -222,19 +223,37 @@ def scrape_x_dev(tab: pychrome.Tab) -> dict:
     .filter(function(l){ return l.length > 0 && l.length < 100; });
 
   var credit = 0;
-  for (var i = 0; i < lines.length; i++) {
-    if (lines[i].indexOf('残りのクレジット') >= 0) {
-      for (var j = i; j < Math.min(i+6, lines.length); j++) {
-        var m = lines[j].match(/^\$([0-9.]+)$/);
-        if (m) { credit = parseFloat(m[1]); break; }
+
+  // キーワード候補（日本語・英語両対応）
+  var triggers = ['残りのクレジット', 'Credit remaining', '合計残高', 'Total balance'];
+
+  for (var ti = 0; ti < triggers.length; ti++) {
+    var found = false;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf(triggers[ti]) >= 0) {
+        // 同行に $xx.xx が含まれるケース
+        var inLine = lines[i].match(/\$([0-9]+\.[0-9]+)/);
+        if (inLine) { credit = parseFloat(inLine[1]); found = true; break; }
+        // 後続8行以内で $xx.xx を探す
+        for (var j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+          var m = lines[j].match(/^\$([0-9]+(?:\.[0-9]+)?)$/);
+          if (m) { credit = parseFloat(m[1]); found = true; break; }
+        }
+        if (found) break;
       }
-      break;
     }
+    if (found && credit > 0) break;
   }
-  return JSON.stringify({ credit_remaining: credit });
+
+  return JSON.stringify({ credit_remaining: credit, lines_count: lines.length });
 })()
 """)
-    return json.loads(raw) if raw else {"credit_remaining": 0.0}
+    try:
+        result = json.loads(raw) if raw else {}
+        return {"credit_remaining": result.get("credit_remaining", 0.0)}
+    except Exception as e:
+        print(f'[warn] platform_scraper: {e}', flush=True)
+        return {"credit_remaining": 0.0}
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -274,8 +293,8 @@ def main() -> None:
             time.sleep(0.5)
             tab.stop()
             browser.close_tab(tab)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] platform_scraper: {e}', flush=True)
 
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
     print(f"[scraper] 完了: {OUTPUT}", flush=True)

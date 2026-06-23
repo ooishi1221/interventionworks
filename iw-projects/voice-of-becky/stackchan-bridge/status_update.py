@@ -107,7 +107,8 @@ def collect_system() -> dict:
 def _load_json(path: Path) -> dict:
     try:
         return json.loads(path.read_text())
-    except Exception:
+    except Exception as e:
+        print(f'[warn] status_update: {e}', flush=True)
         return {}
 
 
@@ -160,7 +161,8 @@ def collect_activities() -> list[dict]:
         for line in lines:
             try:
                 t = json.loads(line)
-            except Exception:
+            except Exception as e:
+                print(f'[warn] status_update: {e}', flush=True)
                 continue
             if t.get("dry_run") or t.get("speaker") != "becky":
                 continue
@@ -176,8 +178,8 @@ def collect_activities() -> list[dict]:
                 "label": f"ポストした:「{snippet}…」",
                 "url": f"https://x.com/becky_exists/status/{t['tweetId']}" if t.get("tweetId") else None,
             })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] status_update: {e}', flush=True)
 
     # ニュース観測（最新の取得バッチ）
     news = _load_json(BECKYEXISTS / "news.json")
@@ -210,7 +212,8 @@ def collect_activities() -> list[dict]:
     def _ts(a: dict) -> float:
         try:
             return datetime.fromisoformat(a["ts"].replace("Z", "+00:00")).timestamp()
-        except Exception:
+        except Exception as e:
+            print(f'[warn] status_update: {e}', flush=True)
             return 0.0
 
     acts.sort(key=_ts, reverse=True)
@@ -242,7 +245,8 @@ def collect_schedule() -> dict:
             }
         else:
             result["radio"] = {"label": "ラジオ配信", "ok": None}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] status_update: {e}', flush=True)
         result["radio"] = {"label": "ラジオ配信", "ok": None}
 
     # ── X 朝投稿 / 夜投稿 ──
@@ -272,7 +276,8 @@ def collect_schedule() -> dict:
             "ok": "evening" in today_runs or "evening" in yesterday_runs,
             "warn": False,
         }
-    except Exception:
+    except Exception as e:
+        print(f'[warn] status_update: {e}', flush=True)
         result["x_morning"] = {"label": "X 朝投稿", "ok": None}
         result["x_evening"] = {"label": "X 夜投稿", "ok": None}
 
