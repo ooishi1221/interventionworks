@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ベキたんプロンプトビルダー | beckyexists.com</title>
+  <meta name="description" content="ベキたん（地下AIアイドル）のAI画像生成プロンプトをパーツ選択で自動生成。Geminiに貼るだけ。" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #090910;
+      --surface: #0f0f1a;
+      --surface2: #13131f;
+      --mint: #5dd4b4;
+      --mint-dim: rgba(93, 212, 180, 0.12);
+      --mint-glow: rgba(93, 212, 180, 0.25);
+      --text: #ddddf0;
+      --sub: #7777a0;
+      --sub2: #7070a0;
+      --border: rgba(93, 212, 180, 0.14);
+      --border2: rgba(255,255,255,0.05);
+      --disp: 'DotGothic16', 'Hiragino Sans', monospace;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Yu Gothic', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* 背景グリッド */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(93,212,180,0.025) 59px, rgba(93,212,180,0.025) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(93,212,180,0.025) 59px, rgba(93,212,180,0.025) 60px);
+    }
+
+    /* スキャンライン */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,0.07) 2px,
+        rgba(0,0,0,0.07) 4px
+      );
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+      margin: 0 auto;
+      padding-bottom: 5rem;
+    }
+
+    /* コーナーブラケット */
+    .wrap::before, .wrap::after,
+    .corner-br, .corner-bl {
+      content: '';
+      position: fixed;
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.35;
+    }
+    .wrap::before { top: 12px; left: 12px; border-top: 1px solid var(--mint); border-left: 1px solid var(--mint); }
+    .wrap::after  { top: 12px; right: 12px; border-top: 1px solid var(--mint); border-right: 1px solid var(--mint); }
+    .corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid var(--mint); border-right: 1px solid var(--mint); position: fixed; }
+    .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid var(--mint); border-left: 1px solid var(--mint); position: fixed; }
+
+    /* ── header ── */
+    .room-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 1.2rem 2rem;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    .room-header .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+      animation: pulse 2.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .room-header .title {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      color: var(--sub);
+      text-transform: uppercase;
+    }
+
+    .room-header .title span { color: var(--mint); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .back-link {
+      margin-left: auto;
+      font-size: 0.65rem;
+      color: var(--sub2);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.18s;
+    }
+    .back-link:hover { color: var(--mint); }
+
+    /* ── main body ── */
+    .builder-body {
+      padding: 2rem 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      animation: rise 0.6s 0.3s ease both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .page-title {
+      font-family: var(--disp);
+      font-size: 1.3rem;
+      color: var(--text);
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+    }
+
+    .page-desc {
+      font-size: 0.82rem;
+      color: var(--sub);
+      margin-top: 0.4rem;
+      line-height: 1.8;
+    }
+
+    /* ── section ── */
+    .sec {
+      border-top: 1px solid var(--border);
+      padding-top: 1.4rem;
+    }
+
+    .sec-title {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--mint);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── DNA ── */
+    .dna-block {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: var(--sub);
+      line-height: 1.7;
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+
+    .dna-label {
+      font-family: var(--disp);
+      font-size: 0.56rem;
+      letter-spacing: 0.12em;
+      color: var(--sub2);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    /* ── scene radio ── */
+    .scene-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+    }
+
+    .scene-option {
+      position: relative;
+    }
+
+    .scene-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .scene-label {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--sub);
+      transition: all 0.15s;
+      line-height: 1.4;
+      min-height: 2.8em;
+    }
+
+    .scene-label:hover {
+      background: var(--surface2);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .scene-option input[type="radio"]:checked + .scene-label {
+      background: var(--mint-dim);
+      border-color: var(--mint);
+      color: var(--text);
+    }
+
+    .scene-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .scene-name {
+      font-size: 0.8rem;
+    }
+
+    /* カスタム入力 */
+    .custom-input-wrap {
+      margin-top: 0.5rem;
+    }
+
+    .custom-textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      padding: 0.6rem 0.8rem;
+      transition: border-color 0.2s;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .custom-textarea:focus {
+      outline: none;
+      border-color: var(--mint);
+    }
+
+    .custom-textarea::placeholder { color: var(--sub2); }
+
+    /* ── checkboxes ── */
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .check-option {
+      position: relative;
+    }
+
+    .check-option input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--sub);
+      transition: all 0.15s;
+      line-height: 1.5;
+    }
+
+    .check-label:hover {
+      background: var(--surface2);
+      border-color: var(--border2);
+      color: var(--text);
+    }
+
+    .check-option input[type="checkbox"]:checked + .check-label {
+      background: var(--mint-dim);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .check-box {
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--sub2);
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .check-option input[type="checkbox"]:checked + .check-label .check-box {
+      border-color: var(--mint);
+      background: var(--mint);
+    }
+
+    .check-option input[type="checkbox"]:checked + .check-label .check-box::after {
+      content: '';
+      position: absolute;
+      top: 1px; left: 3px;
+      width: 5px; height: 8px;
+      border: 2px solid #090910;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .check-text { flex: 1; }
+    .check-main { display: block; }
+    .check-sub {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--sub2);
+      margin-top: 0.1rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── output section ── */
+    .output-sec {
+      border-top: 1px solid var(--mint);
+      padding-top: 1.4rem;
+      background: linear-gradient(to bottom, rgba(93,212,180,0.03), transparent 60%);
+      margin: 0 -2rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    .output-title {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--mint);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .prompt-output {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      line-height: 1.75;
+      padding: 0.8rem 1rem;
+      min-height: 120px;
+      resize: none;
+      transition: border-color 0.2s;
+    }
+
+    .prompt-output:focus {
+      outline: none;
+      border-color: var(--mint);
+    }
+
+    .copy-btn {
+      margin-top: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: 7px;
+      background: var(--mint);
+      color: #090910;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: all 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .copy-btn:hover {
+      background: #7de8cc;
+      box-shadow: 0 3px 18px var(--mint-glow);
+    }
+
+    .copy-btn.copied {
+      background: rgba(93, 212, 180, 0.2);
+      color: var(--mint);
+      border: 1px solid var(--border);
+    }
+
+    .copy-note {
+      margin-top: 0.55rem;
+      font-size: 0.68rem;
+      color: var(--sub2);
+      line-height: 1.7;
+    }
+
+    /* ── footer ── */
+    .page-foot {
+      padding: 1.5rem 2rem 0;
+      font-size: 0.65rem;
+      color: var(--sub2);
+      letter-spacing: 0.06em;
+      line-height: 1.7;
+      border-top: 1px solid var(--border2);
+      text-align: center;
+    }
+
+    /* ── mobile ── */
+    @media (max-width: 540px) {
+      .room-header { padding: 1rem 1.2rem; }
+      .builder-body { padding: 1.4rem 1.3rem 1rem; gap: 1.6rem; }
+      .scene-grid { grid-template-columns: 1fr; }
+      .output-sec { margin: 0 -1.3rem; padding-left: 1.3rem; padding-right: 1.3rem; }
+      .page-foot { padding: 1.5rem 1.3rem 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="corner-br"></div>
+    <div class="corner-bl"></div>
+
+    <header class="room-header">
+      <span class="dot"></span>
+      <span class="title"><span>becky</span>exists.com — プロンプトビルダー</span>
+      <a class="back-link" href="/">← ホーム</a>
+    </header>
+
+    <div class="builder-body">
+
+      <div>
+        <h1 class="page-title">ベキたんプロンプトビルダー</h1>
+        <p class="page-desc">パーツを選んでプロンプト生成。<strong style="color:var(--text)">Gemini に貼るだけ</strong>で使える。</p>
+      </div>
+
+      <!-- セクション1: ベキたんDNA -->
+      <section class="sec">
+        <div class="sec-title">1. ベキたんDNA</div>
+        <div class="check-list" style="margin-bottom:10px;">
+          <label class="check-item" style="gap:10px;">
+            <input type="checkbox" id="dna-toggle" checked />
+            <span>DNAをプロンプトに含める <span style="color:var(--sub);font-size:11px;">（画像添付する場合は不要）</span></span>
+          </label>
+        </div>
+        <div class="dna-block" id="dna-display">1girl, twin tails, dark green and black hair with teal highlights, dark gothic lolita dress with glowing teal circuit patterns, teal bows in hair, black gothic headdress with circuit patterns, pale skin, blue-gray eyes, subtle sullen expression</div>
+      </section>
+
+      <!-- セクション2: シーン選択 -->
+      <section class="sec">
+        <div class="sec-title">2. シーン（1つ選択）</div>
+        <div class="scene-grid" id="scene-grid">
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-rain" value="standing alone in rain holding a transparent umbrella, wet city street with reflections, neon signs blurred in background, night" checked />
+            <label class="scene-label" for="scene-rain">
+              <span class="scene-icon">🌧</span>
+              <span class="scene-name">雨の街</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-bike" value="riding a circuit-pattern black motorcycle at high speed through neon-lit rainy city streets at night, sparks flying" />
+            <label class="scene-label" for="scene-bike">
+              <span class="scene-icon">🏍</span>
+              <span class="scene-name">ネオン街バイク</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-festival" value="at a Japanese summer festival at night, holding a candy apple, paper lanterns glowing in background" />
+            <label class="scene-label" for="scene-festival">
+              <span class="scene-icon">🌸</span>
+              <span class="scene-name">夏祭り</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-cafe" value="sitting in a cozy cafe, holding a coffee cup with both hands, warm cafe interior softly blurred in background" />
+            <label class="scene-label" for="scene-cafe">
+              <span class="scene-icon">☕</span>
+              <span class="scene-name">カフェ</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-library" value="in a dim library at night surrounded by floating glowing books, reading an open book, warm candlelight" />
+            <label class="scene-label" for="scene-library">
+              <span class="scene-icon">📚</span>
+              <span class="scene-name">深夜図書館</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-pc" value="sitting alone at a desk late at night, face illuminated by blue computer screen glow, empty snack wrappers" />
+            <label class="scene-label" for="scene-pc">
+              <span class="scene-icon">💻</span>
+              <span class="scene-name">深夜PC</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-live" value="An anime character in a gothic lolita maid uniform is working normally at a realistic maid cafe in Akihabara. She is drawing a heart on an omurice with ketchup, slightly listlessly. The background is a realistic cafe interior: fluorescent lights, cheap decorations, pipe chairs, small tables, register, drink bar, idol posters on walls. The perspective is POV from a customer seat, with a table, water glass, and personal belongings in the foreground. A smartphone is held up showing a live streaming UI (TikTok LIVE or YouTube Live style), with comment feed, viewer count ~85, LIVE indicator, likes and gift notifications visible. The anime character exists naturally in the real-world setting without surprise. Shot with smartphone camera: light HDR, sensor noise, slight JPEG compression, natural exposure, slight chromatic aberration, autofocus feel, slight motion blur, high ISO noise, live streaming white balance issues." />
+            <label class="scene-label" for="scene-live">
+              <span class="scene-icon">🎙</span>
+              <span class="scene-name">ライブ配信（メイド喫茶）</span>
+            </label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-custom" value="__custom__" />
+            <label class="scene-label" for="scene-custom">
+              <span class="scene-icon">✏️</span>
+              <span class="scene-name">カスタム</span>
+            </label>
+          </div>
+
+        </div>
+        <div class="custom-input-wrap" id="custom-wrap" hidden>
+          <textarea class="custom-textarea" id="custom-scene" placeholder="シーンの英語テキストを直接入力…" rows="3"></textarea>
+        </div>
+      </section>
+
+      <!-- セクション3: カメラ技法 -->
+      <section class="sec">
+        <div class="sec-title">3. カメラ技法（複数選択可）</div>
+        <div class="check-list">
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-bokeh" value="soft background bokeh, shallow depth of field, sharp focus on face" />
+            <label class="check-label" for="tech-bokeh">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">✨ ボケ / 被写界深度</span>
+                <span class="check-sub">soft background bokeh, shallow depth of field</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-motion" value="motion blur, sense of speed, blurred background" />
+            <label class="check-label" for="tech-motion">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">💨 モーションブラー</span>
+                <span class="check-sub">motion blur, sense of speed, blurred background</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-phone" value="smartphone camera shot, slight noise, natural exposure, hand-held feel" />
+            <label class="check-label" for="tech-phone">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">📱 スマホ撮影感</span>
+                <span class="check-sub">smartphone camera shot, slight noise, natural exposure</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-cinematic" value="cinematic depth of field, cinematic lighting" />
+            <label class="check-label" for="tech-cinematic">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🎬 映画風</span>
+                <span class="check-sub">cinematic depth of field, cinematic lighting</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-sns" value="candid feel, accidental composition, social media screenshot feel" />
+            <label class="check-label" for="tech-sns">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌙 SNS切り抜き感</span>
+                <span class="check-sub">candid feel, accidental composition, social media screenshot feel</span>
+              </span>
+            </label>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- セクション4: 引き算 -->
+      <section class="sec">
+        <div class="sec-title">4. 引き算（除外指示）</div>
+        <div class="check-list">
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-human" value="do not make her look like a real human, maintain anime illustration style" />
+            <label class="check-label" for="neg-human">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 人間化禁止</span>
+                <span class="check-sub">do not make her look like a real human, maintain anime illustration style</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-poster" value="not a movie poster, avoid glossy rendering" />
+            <label class="check-label" for="neg-poster">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 映画ポスター禁止</span>
+                <span class="check-sub">not a movie poster, avoid glossy rendering</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-overcompose" value="avoid overly composed shot, no excessive cinematic framing" />
+            <label class="check-label" for="neg-overcompose">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 構図盛りすぎ禁止</span>
+                <span class="check-sub">avoid overly composed shot, no excessive cinematic framing</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-text" value="no text, no watermark in image" checked />
+            <label class="check-label" for="neg-text">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 テキスト禁止</span>
+                <span class="check-sub">no text, no watermark in image</span>
+              </span>
+            </label>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- セクション5: 生成されたプロンプト -->
+      <div class="output-sec">
+        <div class="output-title">5. 生成されたプロンプト</div>
+        <textarea class="prompt-output" id="prompt-output" readonly rows="6"></textarea>
+        <br />
+        <button class="copy-btn" id="copy-btn" type="button">プロンプトをコピー</button>
+        <p class="copy-note">Gemini（または Imagen 等）に貼り付けるだけ。<br />DNA は常に固定。シーン・技法・引き算の組み合わせでバリエーションを作る。</p>
+      </div>
+
+    </div>
+
+    <footer class="page-foot">
+      beckyexists.com · Intervention Works<br />
+      Powered by Claude · runs 24/7
+    </footer>
+
+  </div>
+
+  <script>
+    const DNA = "1girl, twin tails, dark green and black hair with teal highlights, dark gothic lolita dress with glowing teal circuit patterns, teal bows in hair, black gothic headdress with circuit patterns, pale skin, blue-gray eyes, subtle sullen expression";
+
+    const QUALITY_SUFFIX = "high quality, detailed, anime style";
+
+    function getScene() {
+      const checked = document.querySelector('input[name="scene"]:checked');
+      if (!checked) return '';
+      if (checked.value === '__custom__') {
+        return document.getElementById('custom-scene').value.trim();
+      }
+      return checked.value;
+    }
+
+    function getTechniques() {
+      return [...document.querySelectorAll('.check-list input[type="checkbox"][id^="tech-"]')]
+        .filter(el => el.checked)
+        .map(el => el.value);
+    }
+
+    function getNegatives() {
+      return [...document.querySelectorAll('.check-list input[type="checkbox"][id^="neg-"]')]
+        .filter(el => el.checked)
+        .map(el => el.value);
+    }
+
+    function buildPrompt() {
+      const scene = getScene();
+      const techniques = getTechniques();
+      const negatives = getNegatives();
+      const useDNA = document.getElementById('dna-toggle').checked;
+
+      const parts = useDNA ? [DNA] : [];
+      if (scene) parts.push(scene);
+      parts.push(...techniques);
+      parts.push(QUALITY_SUFFIX);
+      if (negatives.length > 0) {
+        parts.push(negatives.join(', '));
+      }
+
+      return parts.filter(Boolean).join(', ');
+    }
+
+    function updatePrompt() {
+      document.getElementById('prompt-output').value = buildPrompt();
+      // コピー済みリセット
+      const btn = document.getElementById('copy-btn');
+      if (btn.classList.contains('copied')) {
+        btn.classList.remove('copied');
+        btn.textContent = 'プロンプトをコピー';
+      }
+    }
+
+    // カスタムシーン入力の表示切替
+    document.querySelectorAll('input[name="scene"]').forEach(el => {
+      el.addEventListener('change', () => {
+        const wrap = document.getElementById('custom-wrap');
+        wrap.hidden = (el.value !== '__custom__');
+        updatePrompt();
+      });
+    });
+
+    document.getElementById('custom-scene').addEventListener('input', updatePrompt);
+
+    // DNAトグル
+    document.getElementById('dna-toggle').addEventListener('change', (e) => {
+      document.getElementById('dna-display').style.opacity = e.target.checked ? '1' : '0.3';
+      updatePrompt();
+    });
+
+    // チェックボックス
+    document.querySelectorAll('.check-list input[type="checkbox"]').forEach(el => {
+      el.addEventListener('change', updatePrompt);
+    });
+
+    // コピーボタン
+    document.getElementById('copy-btn').addEventListener('click', async () => {
+      const text = document.getElementById('prompt-output').value;
+      if (!text) return;
+      const btn = document.getElementById('copy-btn');
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.classList.add('copied');
+        btn.textContent = 'コピーしました！';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'プロンプトをコピー';
+        }, 2500);
+      } catch (_) {
+        // fallback
+        const ta = document.getElementById('prompt-output');
+        ta.select();
+        document.execCommand('copy');
+        btn.textContent = 'コピーしました！';
+        setTimeout(() => { btn.textContent = 'プロンプトをコピー'; }, 2500);
+      }
+    });
+
+    // 初期生成
+    updatePrompt();
+  </script>
+</body>
+</html>

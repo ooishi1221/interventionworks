@@ -7,7 +7,7 @@
  * Google にセッションを蹴られるため、Chrome 自体は「本物」として起動する。
  *
  * Usage:
- *   node gemini-thumb.js "画像生成プロンプト" [--out /tmp/bg.png]
+ *   node gemini-thumb.js "画像生成プロンプト" [--out /tmp/bg.png] [--ref /path/to/ref.jpg]
  *
  * 初回: ブラウザが開く → Google ログイン → 自動検知して続行
  * 2回目以降: 永続セッションで自動。Chrome は起動しっぱなしで再利用される
@@ -94,14 +94,113 @@ async function waitForLogin(page) {
   throw new Error('ログイン待ちがタイムアウトしました（5分）');
 }
 
+/**
+ * 画像ファイルを Gemini の入力欄に添付する。
+ * Gemini Web UI のセレクタは変わりやすいため、失敗してもエラーにせず warning で続行する。
+ */
+async function attachRefImage(page, refPath) {
+  if (!refPath || !fs.existsSync(refPath)) {
+    if (refPath) console.warn(`⚠️ 画像添付スキップ: ファイルが見つかりません: ${refPath}`);
+    return;
+  }
+
+  try {
+    // Strategy 1: 直接 file input を探す
+    const fileInput = await page.$('input[type="file"]');
+    if (fileInput) {
+      await fileInput.setInputFiles(refPath);
+      await page.waitForTimeout(2000);
+      console.log(`📎 参照画像を添付しました（file input）: ${path.basename(refPath)}`);
+      return;
+    }
+
+    // Strategy 2: ファイルチューザーイベントを待ちながらアップロードボタンをクリック
+    const uploadSelectors = [
+      'button[aria-label*="Upload"]',
+      'button[aria-label*="ファイル"]',
+      'button[aria-label*="Attach"]',
+      'button[aria-label*="attach"]',
+      '[data-testid*="upload"]',
+      'button[aria-label*="add"]',
+      'button[aria-label*="Add"]',
+      // Gemini の + ボタン系
+      'button[aria-label*="More"]',
+      'button[aria-label*="plus"]',
+    ];
+
+    let attached = false;
+    for (const selector of uploadSelectors) {
+      const btn = await page.$(selector);
+      if (!btn) continue;
+      try {
+        const [fileChooser] = await Promise.all([
+          page.waitForEvent('filechooser', { timeout: 3000 }),
+          btn.click(),
+        ]);
+        await fileChooser.setFiles(refPath);
+        await page.waitForTimeout(2000);
+        console.log(`📎 参照画像を添付しました（${selector}）: ${path.basename(refPath)}`);
+        attached = true;
+        break;
+      } catch (_) {
+        // このセレクタでは失敗、次を試す
+      }
+    }
+
+    if (!attached) {
+      // Strategy 3: チャット窓への drag & drop（ゆうが手動でやってる方法）
+      try {
+        const dropTarget = await page.$('div[contenteditable="true"], rich-textarea div[contenteditable]');
+        if (dropTarget) {
+          const buffer = fs.readFileSync(refPath);
+          const dataTransfer = await page.evaluateHandle((data) => {
+            const dt = new DataTransfer();
+            const file = new File([new Uint8Array(data)], 'becky_ref.jpg', { type: 'image/jpeg' });
+            dt.items.add(file);
+            return dt;
+          }, Array.from(buffer));
+
+          await dropTarget.dispatchEvent('dragenter', { dataTransfer });
+          await page.waitForTimeout(200);
+          await dropTarget.dispatchEvent('dragover', { dataTransfer });
+          await page.waitForTimeout(200);
+          await dropTarget.dispatchEvent('drop', { dataTransfer });
+          await page.waitForTimeout(2000);
+          console.log(`📎 参照画像を添付しました（drag & drop）: ${path.basename(refPath)}`);
+          attached = true;
+        }
+      } catch (e2) {
+        // drag & drop も失敗
+      }
+    }
+
+    if (!attached) {
+      console.warn('⚠️ 画像添付スキップ: 全 Strategy 失敗。テキストプロンプトのみで続行します。');
+    }
+  } catch (e) {
+    console.warn(`⚠️ 画像添付スキップ: ${e.message}`);
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
+
+  // --out オプション解析
   const outIdx = args.indexOf('--out');
   const outPath = outIdx >= 0 ? args[outIdx + 1] : `/tmp/gemini_bg_${Date.now()}.png`;
-  const prompt = args.filter((_, i) => i !== outIdx && i !== outIdx + 1).join(' ');
+
+  // --ref オプション解析
+  const refIdx = args.indexOf('--ref');
+  const refPath = refIdx >= 0 ? args[refIdx + 1] : null;
+
+  // --out と --ref のフラグ+値を除いた残りがプロンプト
+  const skipIndices = new Set();
+  if (outIdx >= 0) { skipIndices.add(outIdx); skipIndices.add(outIdx + 1); }
+  if (refIdx >= 0) { skipIndices.add(refIdx); skipIndices.add(refIdx + 1); }
+  const prompt = args.filter((_, i) => !skipIndices.has(i)).join(' ');
 
   if (!prompt) {
-    console.error('Usage: node gemini-thumb.js "プロンプト" [--out path.png]');
+    console.error('Usage: node gemini-thumb.js "プロンプト" [--out path.png] [--ref ref.jpg]');
     process.exit(1);
   }
 
@@ -123,6 +222,11 @@ async function main() {
     }
   }
   console.log(`📷 送信前の既存画像: ${existingSrcs.size}件`);
+
+  // 参照画像を添付（失敗してもテキストプロンプトだけで続行）
+  if (refPath) {
+    await attachRefImage(page, refPath);
+  }
 
   console.log('🎨 Gemini に画像生成を依頼中...');
   const fullPrompt = `次の指示で画像を生成してください（テキスト・文字は画像に入れない）: ${prompt}`;

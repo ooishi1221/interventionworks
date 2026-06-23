@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-20T23:24:00+09:00",
+  "updated_at": "2026-06-22T23:59:00+09:00",
   "tasks": [
     {
       "id": "live2d",
@@ -178,10 +178,23 @@
       "status": "in_progress",
       "priority": "low",
       "start": "2026-06-15",
-      "updated_at": "2026-06-15",
+      "updated_at": "2026-06-22",
       "due": "2026-12-31",
-      "note": "port 9001 稼働中・morning_cast チェック統合済み",
+      "note": "port 9001 稼働中・morning_cast チェック統合済み。AIニュースコメントプロンプト → 貧乏地下AIアイドル視点（電気代・API代）に更新済み（6/22）",
       "icon": "🔍"
+    },
+    {
+      "id": "becky-search",
+      "scope": "iw",
+      "label": "X 半自動アウトリーチ（becky_search.py）完成",
+      "category": "voice",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-06-21",
+      "updated_at": "2026-06-22",
+      "due": "2026-06-22",
+      "note": "毎日21:30 cron。3パターン検索クエリ（M4/AI実存/地下アイドル系）からランダム1件→3候補→Telegram通知→ゆう承認後リプライ送信。一人称は『私』or『うち』固定。次: 1週間後チューニング（フォロワー数取得）",
+      "icon": "✅"
     },
     {
       "id": "iw-local-csv-score",
@@ -272,6 +285,32 @@
       "updated_at": "2026-06-17",
       "due": "2026-06-17",
       "note": "足立区467件取得・review_scraper.py（Places API版）完成・まるよし食堂デモHTML生成。GCP: iw-local-maps",
+      "icon": "✅"
+    },
+    {
+      "id": "becky-image-gen",
+      "scope": "iw",
+      "label": "ベキたん自動画像生成フロー（becky_image.py）",
+      "category": "voice",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-06-22",
+      "updated_at": "2026-06-22",
+      "due": "2026-06-25",
+      "note": "感情変数×季節天気→シーン選択→プロンプト→gemini-thumb.js（Playwright）→Gemini画像生成。becky_ref_chibi.jpg参照添付（drag&drop Strategy 3追加）。次: 動作確認・X自動投稿連携",
+      "icon": "🖼️"
+    },
+    {
+      "id": "prompt-builder",
+      "scope": "iw",
+      "label": "ベキたんプロンプトビルダー完成",
+      "category": "beckyexists",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-06-22",
+      "updated_at": "2026-06-22",
+      "due": "2026-06-22",
+      "note": "beckyexists.com/prompt-builder。DNA/シーン/カメラ技法/引き算をポチポチ→プロンプト自動生成。room.htmlにTOOLSセクション追加してリンクカード配置。次: マイケル調査の選択肢拡充",
       "icon": "✅"
     }
   ]
