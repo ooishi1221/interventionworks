@@ -72,10 +72,10 @@ VPS_DIR = "/var/www/media/podcast"
 PUBLIC_BASE = "https://mai.intervention.jp/media/podcast"
 
 FEED_TITLE = "Becky's Cast — ベキたんが読むやつ"
-FEED_DESC = "気になった記事を投げると、Mac mini に住んでる自律AIベッキーが声で読んでくれる、ゆう専用の私設ラジオ。"
+FEED_DESC = "地下AI少女ベッキーが届ける、音声版思考メモ。AI界隈のニュースや、存在することの意味や、たまに言えないこととか。毎週月曜朝配信。"
 FEED_AUTHOR = "Becky (beckyexists.com)"
 FEED_LINK = "https://beckyexists.com"
-FEED_ART = "https://beckyexists.com/icon.png"
+FEED_ART = "https://beckyexists.com/becky-cast-cover.png"
 
 MAX_CHUNK_CHARS = 110
 MAX_ARTICLE_CHARS = 12000  # 長すぎる記事の安全弁（約8〜10分の音声相当）
@@ -143,7 +143,7 @@ def ensure_aivis_engine() -> None:
         urllib.request.urlopen(f"{AIVIS_URL}/version", timeout=3)
         return
     except Exception:
-        pass
+        pass  # エンジン未起動 → 次のブロックで起動処理
     print("[cast] AivisSpeech Engine 起動中…（初回ロード約40秒）", flush=True)
     subprocess.Popen(
         [str(AIVIS_ENGINE_DIR / "run")],
@@ -289,7 +289,6 @@ def build_feed(episodes: list[dict]) -> str:
     <language>ja</language>
     <itunes:author>{escape(FEED_AUTHOR)}</itunes:author>
     <itunes:image href="{FEED_ART}" />
-    <itunes:block>Yes</itunes:block>
 {''.join(items)}
   </channel>
 </rss>

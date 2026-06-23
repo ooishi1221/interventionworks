@@ -52,7 +52,7 @@ def login_flow() -> None:
         try:
             page.wait_for_url("**/home/**", timeout=300_000)
         except Exception:
-            pass
+            pass  # タイムアウト許容 → セッション保存に進む
         _save_session(ctx)
         print(f"[spotify_upload] ✅ セッション保存: {SESSION_FILE}", flush=True)
         browser.close()
