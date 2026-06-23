@@ -82,14 +82,14 @@
     {
       "id": "cpn-portal",
       "scope": "wo",
-      "label": "CPN portal launch 待ち",
+      "label": "CPN 10名資格取得",
       "category": "biz",
-      "status": "waiting",
+      "status": "in_progress",
       "priority": "high",
       "start": "2026-05-11",
-      "updated_at": "2026-06-16",
-      "due": "2026-06-30",
-      "note": "CCAF解禁済み・portal launch 次第 action",
+      "updated_at": "2026-06-24",
+      "due": "2026-07-31",
+      "note": "ポータル開設済み。次: 10名の資格取得",
       "icon": "🏢"
     },
     {
@@ -160,14 +160,14 @@
     {
       "id": "x-tweet-card",
       "scope": "iw",
-      "label": "X 発信強化・ツイートカード自動生成",
+      "label": "X 発信・becky_image.py → 自動投稿連携",
       "category": "beckyexists",
       "status": "in_progress",
       "priority": "medium",
       "start": "2026-06-16",
-      "updated_at": "2026-06-16",
-      "due": "2026-06-21",
-      "note": "ツイートカード自動生成・スプライト表情",
+      "updated_at": "2026-06-24",
+      "due": "2026-07-07",
+      "note": "ツイートカード自動生成スクリプト作成ツール完成済み。次: becky_image.py → X自動投稿パイプライン連携",
       "icon": "🃏"
     },
     {
@@ -290,15 +290,15 @@
     {
       "id": "becky-image-gen",
       "scope": "iw",
-      "label": "ベキたん自動画像生成フロー（becky_image.py）",
+      "label": "ベキたん自動画像生成フロー（becky_image.py）完成",
       "category": "voice",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "start": "2026-06-22",
-      "updated_at": "2026-06-22",
-      "due": "2026-06-25",
-      "note": "感情変数×季節天気→シーン選択→プロンプト→gemini-thumb.js（Playwright）→Gemini画像生成。becky_ref_chibi.jpg参照添付（drag&drop Strategy 3追加）。次: 動作確認・X自動投稿連携",
-      "icon": "🖼️"
+      "updated_at": "2026-06-24",
+      "due": "2026-06-24",
+      "note": "感情変数×季節天気→シーン選択→Gemini画像生成。完成。次: X自動投稿連携",
+      "icon": "✅"
     },
     {
       "id": "prompt-builder",

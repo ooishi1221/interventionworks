@@ -195,6 +195,14 @@
     }
     .article-likes { font-family: var(--mono); font-size: 12px; color: var(--green); text-align: right; }
 
+    /* X 投稿リスト */
+    .article-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; transition: background 0.15s; }
+    .article-row:hover { background: var(--panel2); }
+    .article-row .article-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; font-weight: 500; }
+    .article-stats { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .stat-imp { font-family: var(--mono); font-size: 12px; color: var(--sub); white-space: nowrap; }
+    .stat-likes { font-family: var(--mono); font-size: 12px; color: var(--green); white-space: nowrap; }
+
     /* タスクリスト */
     .task-table { display: grid; gap: 2px; margin-top: 8px; }
     .task-row {
@@ -392,7 +400,8 @@
     }
     .task-tbl tr:hover td { background: var(--panel2); }
     .task-tbl tr.done td { opacity: 0.35; }
-    .tbl-name { display: flex; align-items: center; gap: 7px; font-weight: 600; min-width: 180px; }
+    .tbl-name { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 220px; }
+    .tbl-name > span:not([class]) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tbl-icon { font-size: 14px; flex-shrink: 0; }
     .tbl-scope { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; flex-shrink: 0; font-family: var(--mono); }
     .tbl-scope.iw { color: var(--green); background: var(--green-dim); }
@@ -402,7 +411,20 @@
     .tbl-elapsed.warn { color: var(--red); }
     .tbl-elapsed.ok { color: var(--sub); }
     .tbl-note { font-size: 11.5px; color: var(--sub); max-width: 260px; line-height: 1.45; }
+    .tbl-cat-tag { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; font-family: var(--mono); color: var(--sub2); background: var(--panel2); border: 1px solid var(--line); flex-shrink: 0; letter-spacing: 0.02em; }
+    .tbl-cat-tag.cat-voice { color: #7c83ff; background: rgba(124,131,255,0.12); border-color: rgba(124,131,255,0.25); }
+    .tbl-cat-tag.cat-vg    { color: var(--amber); background: var(--amber-dim); border-color: rgba(255,179,0,0.25); }
+    .tbl-cat-tag.cat-be    { color: var(--green); background: var(--green-dim); border-color: rgba(0,230,118,0.25); }
+    .tbl-cat-tag.cat-note  { color: #ae8fe0; background: rgba(174,143,224,0.12); border-color: rgba(174,143,224,0.25); }
+    .tbl-cat-tag.cat-slight{ color: var(--blue); background: var(--blue-dim); border-color: rgba(68,138,255,0.25); }
+    .tbl-cat-tag.cat-local { color: var(--green); background: rgba(0,230,118,0.08); border-color: rgba(0,230,118,0.18); }
+    .tbl-cat-tag.cat-biz   { color: var(--red); background: var(--red-dim); border-color: rgba(255,82,82,0.25); }
     .tbl-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; font-family: var(--mono); display: inline-block; }
+    .task-tbl th.sortable { cursor: pointer; user-select: none; }
+    .task-tbl th.sortable:hover { color: var(--text); }
+    .sort-ind::after { content: '⇅'; font-size: 9px; margin-left: 3px; opacity: 0.55; }
+    .sort-ind.asc::after { content: '▲'; font-size: 9px; margin-left: 3px; color: var(--green); }
+    .sort-ind.desc::after { content: '▼'; font-size: 9px; margin-left: 3px; color: var(--green); }
     .tbl-status-badge.pending    { color: var(--sub);   background: var(--panel2); border: 1px solid var(--line); }
     .tbl-status-badge.in_progress{ color: var(--green); background: var(--green-dim); }
     .tbl-status-badge.waiting    { color: var(--amber); background: var(--amber-dim); }
@@ -716,7 +738,7 @@
     <div class="card" style="margin-top:16px;">
       <h2><svg data-lucide="bar-chart-2"></svg>週次コンテンツ分析 <span id="mediaReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">note / X / KDP — マイケル × クレア 週次レポート（毎週月曜更新）</div>
-      <div id="mediaReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--fg);white-space:pre-line;"><div class="empty">loading...</div></div>
+      <div id="mediaReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--text);white-space:pre-line;"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-media -->
@@ -797,7 +819,7 @@
     <div class="card">
       <h2><svg data-lucide="bar-chart-2"></svg>マイケルの調査レポート <span id="michaelReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">AI業界ニュース + トレンド — マイケル要約</div>
-      <div id="michaelReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--fg);white-space:pre-line;"><div class="empty">loading...</div></div>
+      <div id="michaelReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--text);white-space:pre-line;"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-intel -->
@@ -1113,52 +1135,88 @@ async function loadAll() {
 }
 
 // ── task table ──
-async function loadTasks() {
-  const data = await fetchJson('/tasks.json');
-  if (!data?.tasks?.length) {
-    $('ganttChart').innerHTML = '<div class="empty">タスクなし</div>';
-    return;
+const CAT_TAG = {
+  voice: 'vob',
+  'vibe-guard': 'vg',
+  beckyexists: 'be',
+  biz: 'biz',
+  'iw-local': 'local',
+  content: 'note',
+  slight: 'slight'
+};
+
+let _taskActive = [];
+let _sortCol  = null;
+let _sortDir  = 1;   // 1=asc, -1=desc
+
+const _today = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+const _fmtD  = (s) => { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+const _elapsedDays = (from, to) => {
+  if (!from) return null;
+  const f = new Date(from); f.setHours(0,0,0,0);
+  const t2 = to ? new Date(to) : _today; t2.setHours(0,0,0,0);
+  return Math.floor((t2 - f) / 86400000);
+};
+const STATUS_LABEL = { pending:'未着手', in_progress:'進行中', waiting:'待ち', done:'完了' };
+const STATUS_ORDER = { in_progress:0, pending:1, waiting:2, done:3 };
+const PRIORITY_ORDER = { high:0, medium:1, low:2 };
+
+function sortTaskList(tasks) {
+  if (!_sortCol) {
+    return [...tasks].sort((a,b) => {
+      if (a.status==='done' && b.status!=='done') return 1;
+      if (a.status!=='done' && b.status==='done') return -1;
+      return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
+    });
   }
-
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  const fmtD = (s) => { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; };
-
-  const elapsedDays = (from, to) => {
-    if (!from) return null;
-    const f = new Date(from); f.setHours(0,0,0,0);
-    const t2 = to ? new Date(to) : today; t2.setHours(0,0,0,0);
-    return Math.floor((t2 - f) / 86400000);
-  };
-
-  const STATUS_LABEL = { pending:'未着手', in_progress:'進行中', waiting:'待ち', done:'完了' };
-  const PRIORITY_ORDER = { high:0, medium:1, low:2 };
-
-  const tasks = [...data.tasks].sort((a,b) => {
-    if (a.status==='done' && b.status!=='done') return 1;
-    if (a.status!=='done' && b.status==='done') return -1;
-    return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
+  return [...tasks].sort((a,b) => {
+    let va, vb;
+    if (_sortCol === 'label') { va = a.label||''; vb = b.label||''; return _sortDir * va.localeCompare(vb,'ja'); }
+    if (_sortCol === 'status') { va = STATUS_ORDER[a.status]??9; vb = STATUS_ORDER[b.status]??9; return _sortDir * (va - vb); }
+    if (_sortCol === 'start')  { va = a.start||''; vb = b.start||''; return _sortDir * va.localeCompare(vb); }
+    if (_sortCol === 'updated'){ va = a.updated_at||''; vb = b.updated_at||''; return _sortDir * va.localeCompare(vb); }
+    if (_sortCol === 'elapsed'){
+      va = _elapsedDays(a.updated_at, null) ?? -1;
+      vb = _elapsedDays(b.updated_at, null) ?? -1;
+      return _sortDir * (va - vb);
+    }
+    return 0;
   });
+}
 
-  const active = tasks.filter(t => t.status !== 'done');
-  const upd = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-  $('ganttMeta').textContent = `残 ${active.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
+function doSort(col) {
+  if (_sortCol === col) { _sortDir = -_sortDir; }
+  else { _sortCol = col; _sortDir = 1; }
+  renderTaskTable();
+}
+
+function renderTaskTable() {
+  const sorted = sortTaskList(_taskActive);
+
+  const indCls = (col) => {
+    if (_sortCol !== col) return '';
+    return _sortDir === 1 ? ' asc' : ' desc';
+  };
 
   const rowHTML = (t) => {
     const updDate = t.updated_at || null;
-    const days = elapsedDays(updDate, null);
+    const days = _elapsedDays(updDate, null);
     const warn = days !== null && days >= 7 && t.status !== 'done' && t.status !== 'waiting';
     const waitWarn = t.status === 'waiting' && days !== null && days >= 7;
     const isWarn = warn || waitWarn;
+    const tag = CAT_TAG[t.category] || '';
+    const catCls = t.category ? 'cat-' + t.category.replace('vibe-guard','vg').replace('beckyexists','be').replace('iw-local','local').replace('content','note').replace('voice','voice').replace('slight','slight').replace('biz','biz') : '';
+    const tagHtml = tag ? `<span class="tbl-cat-tag ${catCls}">[${tag}]</span>` : '';
     return `<tr class="${t.status==='done'?'done':''}">
       <td><div class="tbl-name">
         <span class="tbl-icon">${t.icon||'○'}</span>
+        ${tagHtml}
         <span>${esc(t.label)}</span>
         <span class="tbl-scope ${t.scope||'iw'}">${(t.scope||'iw').toUpperCase()}</span>
       </div></td>
       <td><span class="tbl-status-badge ${t.status}">${STATUS_LABEL[t.status]||t.status}</span></td>
-      <td class="tbl-date">${fmtD(t.start)}</td>
-      <td class="tbl-date">${updDate?fmtD(updDate):'--'}</td>
+      <td class="tbl-date">${_fmtD(t.start)}</td>
+      <td class="tbl-date">${updDate?_fmtD(updDate):'--'}</td>
       <td class="tbl-elapsed ${isWarn?'warn':'ok'}">${days!==null?days+'日'+(isWarn?' ⚠️':''):'--'}</td>
       <td class="tbl-note">${esc(t.note||'')}</td>
     </tr>`;
@@ -1166,10 +1224,35 @@ async function loadTasks() {
 
   $('ganttChart').innerHTML = `<div style="overflow-x:auto"><table class="task-tbl">
     <thead><tr>
-      <th>タスク</th><th>状態</th><th>開始</th><th>更新</th><th>経過</th><th>備考</th>
+      <th class="sortable" onclick="doSort('label')">タスク<span class="sort-ind${indCls('label')}"></span></th>
+      <th class="sortable" onclick="doSort('status')">状態<span class="sort-ind${indCls('status')}"></span></th>
+      <th class="sortable" onclick="doSort('start')">開始<span class="sort-ind${indCls('start')}"></span></th>
+      <th class="sortable" onclick="doSort('updated')">更新<span class="sort-ind${indCls('updated')}"></span></th>
+      <th class="sortable" onclick="doSort('elapsed')">経過<span class="sort-ind${indCls('elapsed')}"></span></th>
+      <th>備考</th>
     </tr></thead>
-    <tbody>${active.map(rowHTML).join('')}</tbody>
+    <tbody>${sorted.map(rowHTML).join('')}</tbody>
   </table></div>`;
+}
+
+async function loadTasks() {
+  const data = await fetchJson('/tasks.json');
+  if (!data?.tasks?.length) {
+    $('ganttChart').innerHTML = '<div class="empty">タスクなし</div>';
+    return;
+  }
+
+  const tasks = [...data.tasks].sort((a,b) => {
+    if (a.status==='done' && b.status!=='done') return 1;
+    if (a.status!=='done' && b.status==='done') return -1;
+    return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
+  });
+
+  _taskActive = tasks.filter(t => t.status !== 'done');
+  const upd = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  $('ganttMeta').textContent = `残 ${_taskActive.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
+
+  renderTaskTable();
 }
 
 async function loadQuestions() {
