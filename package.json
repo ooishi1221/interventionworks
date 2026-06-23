@@ -9,11 +9,11 @@
     "secretlint": "secretlint --secretlintignore .gitignore \"**/*\""
   },
   "devDependencies": {
-    "@secretlint/secretlint-rule-pattern": "^9.3.4",
-    "@secretlint/secretlint-rule-preset-recommend": "^9.3.4",
+    "@secretlint/secretlint-rule-pattern": "^13.0.2",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
-    "secretlint": "^9.3.4"
+    "secretlint": "^13.0.2"
   },
   "lint-staged": {
     "*": "secretlint --maskSecrets"

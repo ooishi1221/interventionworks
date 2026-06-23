@@ -1,0 +1,10 @@
+# vibe-guard スキャン除外設定
+# .gitignore と同じ感覚で書ける。「自分のコード」だけのスコアを出すために使う。
+
+# サードパーティ・外部ライブラリ
+managed_components/
+aituber-onair/
+let-me-out/
+
+# スキルスクリプト（Claude Code 公式スキル、自前コードではない）
+skills/
