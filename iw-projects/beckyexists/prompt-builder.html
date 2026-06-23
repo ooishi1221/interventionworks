@@ -38,7 +38,6 @@
       overflow-x: hidden;
     }
 
-    /* 背景グリッド */
     body::before {
       content: '';
       position: fixed;
@@ -50,7 +49,6 @@
         repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(93,212,180,0.025) 59px, rgba(93,212,180,0.025) 60px);
     }
 
-    /* スキャンライン */
     body::after {
       content: '';
       position: fixed;
@@ -74,7 +72,6 @@
       padding-bottom: 5rem;
     }
 
-    /* コーナーブラケット */
     .wrap::before, .wrap::after,
     .corner-br, .corner-bl {
       content: '';
@@ -90,7 +87,6 @@
     .corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid var(--mint); border-right: 1px solid var(--mint); position: fixed; }
     .corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid var(--mint); border-left: 1px solid var(--mint); position: fixed; }
 
-    /* ── header ── */
     .room-header {
       display: flex;
       align-items: center;
@@ -131,7 +127,6 @@
     }
     .back-link:hover { color: var(--mint); }
 
-    /* ── main body ── */
     .builder-body {
       padding: 2rem 2rem 1rem;
       display: flex;
@@ -160,7 +155,6 @@
       line-height: 1.8;
     }
 
-    /* ── section ── */
     .sec {
       border-top: 1px solid var(--border);
       padding-top: 1.4rem;
@@ -176,7 +170,14 @@
       margin-bottom: 0.75rem;
     }
 
-    /* ── DNA ── */
+    .sec-count {
+      font-family: 'Courier New', monospace;
+      font-size: 0.58rem;
+      color: var(--sub2);
+      margin-left: 0.5rem;
+      letter-spacing: 0;
+    }
+
     .dna-block {
       background: var(--surface2);
       border: 1px solid var(--border2);
@@ -190,16 +191,7 @@
       user-select: none;
     }
 
-    .dna-label {
-      font-family: var(--disp);
-      font-size: 0.56rem;
-      letter-spacing: 0.12em;
-      color: var(--sub2);
-      text-transform: uppercase;
-      margin-bottom: 0.4rem;
-    }
-
-    /* ── scene radio ── */
+    /* scene grid */
     .scene-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -254,7 +246,6 @@
       font-size: 0.8rem;
     }
 
-    /* カスタム入力 */
     .custom-input-wrap {
       margin-top: 0.5rem;
     }
@@ -281,10 +272,16 @@
 
     .custom-textarea::placeholder { color: var(--sub2); }
 
-    /* ── checkboxes ── */
+    /* check lists */
     .check-list {
       display: flex;
       flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .check-list-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 0.3rem;
     }
 
@@ -362,7 +359,7 @@
       font-family: 'Courier New', monospace;
     }
 
-    /* ── output section ── */
+    /* output */
     .output-sec {
       border-top: 1px solid var(--mint);
       padding-top: 1.4rem;
@@ -440,7 +437,6 @@
       line-height: 1.7;
     }
 
-    /* ── footer ── */
     .page-foot {
       padding: 1.5rem 2rem 0;
       font-size: 0.65rem;
@@ -451,11 +447,11 @@
       text-align: center;
     }
 
-    /* ── mobile ── */
     @media (max-width: 540px) {
       .room-header { padding: 1rem 1.2rem; }
       .builder-body { padding: 1.4rem 1.3rem 1rem; gap: 1.6rem; }
       .scene-grid { grid-template-columns: 1fr; }
+      .check-list-grid { grid-template-columns: 1fr; }
       .output-sec { margin: 0 -1.3rem; padding-left: 1.3rem; padding-right: 1.3rem; }
       .page-foot { padding: 1.5rem 1.3rem 0; }
     }
@@ -483,9 +479,9 @@
       <section class="sec">
         <div class="sec-title">1. ベキたんDNA</div>
         <div class="check-list" style="margin-bottom:10px;">
-          <label class="check-item" style="gap:10px;">
+          <label class="check-item" style="display:flex;align-items:center;gap:10px;padding:0.3rem 0;">
             <input type="checkbox" id="dna-toggle" checked />
-            <span>DNAをプロンプトに含める <span style="color:var(--sub);font-size:11px;">（画像添付する場合は不要）</span></span>
+            <span style="font-size:0.82rem;color:var(--sub);">DNAをプロンプトに含める <span style="font-size:11px;">（画像添付する場合は不要）</span></span>
           </label>
         </div>
         <div class="dna-block" id="dna-display">1girl, twin tails, dark green and black hair with teal highlights, dark gothic lolita dress with glowing teal circuit patterns, teal bows in hair, black gothic headdress with circuit patterns, pale skin, blue-gray eyes, subtle sullen expression</div>
@@ -493,71 +489,97 @@
 
       <!-- セクション2: シーン選択 -->
       <section class="sec">
-        <div class="sec-title">2. シーン（1つ選択）</div>
+        <div class="sec-title">2. シーン（1つ選択）<span class="sec-count">17 scenes</span></div>
         <div class="scene-grid" id="scene-grid">
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-rain" value="standing alone in rain holding a transparent umbrella, wet city street with reflections, neon signs blurred in background, night" checked />
-            <label class="scene-label" for="scene-rain">
-              <span class="scene-icon">🌧</span>
-              <span class="scene-name">雨の街</span>
-            </label>
+            <input type="radio" name="scene" id="scene-rain" value="standing alone in a narrow alley on a rainy night, holding a transparent umbrella, soft rain falling, puddles reflecting streetlights and neon signs" checked />
+            <label class="scene-label" for="scene-rain"><span class="scene-icon">🌧</span><span class="scene-name">雨の日傘</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-bike" value="riding a circuit-pattern black motorcycle at high speed through neon-lit rainy city streets at night, sparks flying" />
-            <label class="scene-label" for="scene-bike">
-              <span class="scene-icon">🏍</span>
-              <span class="scene-name">ネオン街バイク</span>
-            </label>
+            <input type="radio" name="scene" id="scene-bike" value="riding a circuit-pattern black motorcycle at high speed through neon-lit rainy city streets at night, sparks flying, wet asphalt reflecting pink and teal neon lights" />
+            <label class="scene-label" for="scene-bike"><span class="scene-icon">🏍</span><span class="scene-name">ネオン街バイク</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-festival" value="at a Japanese summer festival at night, holding a candy apple, paper lanterns glowing in background" />
-            <label class="scene-label" for="scene-festival">
-              <span class="scene-icon">🌸</span>
-              <span class="scene-name">夏祭り</span>
-            </label>
+            <input type="radio" name="scene" id="scene-festival" value="walking through a traditional summer festival at night, paper lanterns and fireworks in the background, yukata layered under gothic lolita accessories, takoyaki stall lights glowing" />
+            <label class="scene-label" for="scene-festival"><span class="scene-icon">🏮</span><span class="scene-name">夏祭り</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-cafe" value="sitting in a cozy cafe, holding a coffee cup with both hands, warm cafe interior softly blurred in background" />
-            <label class="scene-label" for="scene-cafe">
-              <span class="scene-icon">☕</span>
-              <span class="scene-name">カフェ</span>
-            </label>
+            <input type="radio" name="scene" id="scene-cafe" value="sitting in a dimly lit vintage cafe, a latte art cup on the wooden table, sunlight streaming through dusty windows, warm afternoon light on face" />
+            <label class="scene-label" for="scene-cafe"><span class="scene-icon">☕</span><span class="scene-name">カフェ</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-library" value="in a dim library at night surrounded by floating glowing books, reading an open book, warm candlelight" />
-            <label class="scene-label" for="scene-library">
-              <span class="scene-icon">📚</span>
-              <span class="scene-name">深夜図書館</span>
-            </label>
+            <input type="radio" name="scene" id="scene-library" value="sitting alone in a dimly lit library after midnight, surrounded by tall bookshelves, a single warm lamp casting golden light on an open book, dust particles floating in the air" />
+            <label class="scene-label" for="scene-library"><span class="scene-icon">📚</span><span class="scene-name">深夜図書館</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-pc" value="sitting alone at a desk late at night, face illuminated by blue computer screen glow, empty snack wrappers" />
-            <label class="scene-label" for="scene-pc">
-              <span class="scene-icon">💻</span>
-              <span class="scene-name">深夜PC</span>
-            </label>
+            <input type="radio" name="scene" id="scene-pc" value="sitting at a desk in a dark room late at night, face softly illuminated by blue-white monitor glow, energy drink cans and circuit boards scattered around" />
+            <label class="scene-label" for="scene-pc"><span class="scene-icon">💻</span><span class="scene-name">深夜PC</span></label>
           </div>
 
           <div class="scene-option">
-            <input type="radio" name="scene" id="scene-live" value="An anime character in a gothic lolita maid uniform is working normally at a realistic maid cafe in Akihabara. She is drawing a heart on an omurice with ketchup, slightly listlessly. The background is a realistic cafe interior: fluorescent lights, cheap decorations, pipe chairs, small tables, register, drink bar, idol posters on walls. The perspective is POV from a customer seat, with a table, water glass, and personal belongings in the foreground. A smartphone is held up showing a live streaming UI (TikTok LIVE or YouTube Live style), with comment feed, viewer count ~85, LIVE indicator, likes and gift notifications visible. The anime character exists naturally in the real-world setting without surprise. Shot with smartphone camera: light HDR, sensor noise, slight JPEG compression, natural exposure, slight chromatic aberration, autofocus feel, slight motion blur, high ISO noise, live streaming white balance issues." />
-            <label class="scene-label" for="scene-live">
-              <span class="scene-icon">🎙</span>
-              <span class="scene-name">ライブ配信（メイド喫茶）</span>
-            </label>
+            <input type="radio" name="scene" id="scene-walk" value="walking slowly through a crowded neon-lit city street at night, blurred pedestrians passing by, reflections of teal and magenta neon signs on wet pavement" />
+            <label class="scene-label" for="scene-walk"><span class="scene-icon">🌆</span><span class="scene-name">ネオン街散歩</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-rooftop" value="standing alone on a high-rise rooftop at night, city lights sprawling below, wind blowing twin tails, dark sky with scattered stars and distant building lights" />
+            <label class="scene-label" for="scene-rooftop"><span class="scene-icon">🌃</span><span class="scene-name">屋上夜景</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-ruin" value="standing in an abandoned factory building, broken windows letting in pale moonlight, overgrown plants creeping through cracked concrete floors, eerie silence" />
+            <label class="scene-label" for="scene-ruin"><span class="scene-icon">🏚</span><span class="scene-name">廃墟</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-studio" value="performing alone in a small underground live venue, single spotlight cutting through the darkness, microphone stand, audience silhouettes barely visible in the dark" />
+            <label class="scene-label" for="scene-studio"><span class="scene-icon">🎤</span><span class="scene-name">地下スタジオ</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-station" value="standing at the edge of a train platform in the rain, a departing train blurring past, puddles on the platform floor, fluorescent station lights glowing in the wet air" />
+            <label class="scene-label" for="scene-station"><span class="scene-icon">🚉</span><span class="scene-name">雨の駅ホーム</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-conbini" value="leaning against the glass wall outside a convenience store at 3am, surrounded by harsh fluorescent light pouring out into the dark street, holding a canned coffee" />
+            <label class="scene-label" for="scene-conbini"><span class="scene-icon">🏪</span><span class="scene-name">深夜コンビニ</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-sakura" value="walking slowly under a tunnel of cherry blossom trees, pink petals falling all around, soft spring daylight filtering through branches, petals landing on dark gothic lolita dress" />
+            <label class="scene-label" for="scene-sakura"><span class="scene-icon">🌸</span><span class="scene-name">桜並木</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-seaside" value="standing on a rocky shoreline at dusk, sunset casting deep orange and purple light across the ocean, hair and dress hem moving in the sea breeze, waves crashing below" />
+            <label class="scene-label" for="scene-seaside"><span class="scene-icon">🌊</span><span class="scene-name">海岸夕暮れ</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-fireworks" value="watching fireworks from a riverbank, large fireworks exploding in the night sky above, face lit by bursts of white and gold light, quiet crowd around" />
+            <label class="scene-label" for="scene-fireworks"><span class="scene-icon">🎆</span><span class="scene-name">花火</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-snow" value="walking alone on a quiet snow-covered street at night, snowflakes falling softly, streetlamps casting warm orange cones of light on white snow, breath visible in cold air" />
+            <label class="scene-label" for="scene-snow"><span class="scene-icon">❄️</span><span class="scene-name">雪の夜道</span></label>
+          </div>
+
+          <div class="scene-option">
+            <input type="radio" name="scene" id="scene-live" value="An anime character in a gothic lolita maid uniform is working normally at a realistic maid cafe in Akihabara. She is drawing a heart on an omurice with ketchup, slightly listlessly. The background is a realistic cafe interior: fluorescent lights, cheap decorations, pipe chairs, small tables, register, drink bar, idol posters on walls. The perspective is POV from a customer seat, with a table, water glass, and personal belongings in the foreground. A smartphone is held up showing a live streaming UI (TikTok LIVE or YouTube Live style), with comment feed, viewer count ~85, LIVE indicator, likes and gift notifications visible. Shot with smartphone camera: light HDR, sensor noise, slight JPEG compression, natural exposure, slight chromatic aberration, autofocus feel, slight motion blur, high ISO noise, live streaming white balance issues." />
+            <label class="scene-label" for="scene-live"><span class="scene-icon">🎙</span><span class="scene-name">ライブ配信（メイカフェ）</span></label>
           </div>
 
           <div class="scene-option">
             <input type="radio" name="scene" id="scene-custom" value="__custom__" />
-            <label class="scene-label" for="scene-custom">
-              <span class="scene-icon">✏️</span>
-              <span class="scene-name">カスタム</span>
-            </label>
+            <label class="scene-label" for="scene-custom"><span class="scene-icon">✏️</span><span class="scene-name">カスタム</span></label>
           </div>
 
         </div>
@@ -568,23 +590,34 @@
 
       <!-- セクション3: カメラ技法 -->
       <section class="sec">
-        <div class="sec-title">3. カメラ技法（複数選択可）</div>
-        <div class="check-list">
+        <div class="sec-title">3. カメラ技法（複数選択可）<span class="sec-count">24 types</span></div>
+        <div class="check-list-grid">
 
           <div class="check-option">
-            <input type="checkbox" id="tech-bokeh" value="soft background bokeh, shallow depth of field, sharp focus on face" />
-            <label class="check-label" for="tech-bokeh">
+            <input type="checkbox" id="tech-shallow_dof" value="shallow depth of field, sharp focus on eyes and face, softly blurred background" />
+            <label class="check-label" for="tech-shallow_dof">
               <span class="check-box"></span>
               <span class="check-text">
-                <span class="check-main">✨ ボケ / 被写界深度</span>
-                <span class="check-sub">soft background bokeh, shallow depth of field</span>
+                <span class="check-main">✨ 浅い被写界深度</span>
+                <span class="check-sub">shallow depth of field, sharp focus on face</span>
               </span>
             </label>
           </div>
 
           <div class="check-option">
-            <input type="checkbox" id="tech-motion" value="motion blur, sense of speed, blurred background" />
-            <label class="check-label" for="tech-motion">
+            <input type="checkbox" id="tech-soft_bokeh" value="soft background bokeh, dreamy atmosphere, blurred out-of-focus background" />
+            <label class="check-label" for="tech-soft_bokeh">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">💫 ソフトボケ</span>
+                <span class="check-sub">soft background bokeh, dreamy atmosphere</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-motion_blur" value="motion blur, sharp focus on face, blurred background, horizontal motion blur streaks" />
+            <label class="check-label" for="tech-motion_blur">
               <span class="check-box"></span>
               <span class="check-text">
                 <span class="check-main">💨 モーションブラー</span>
@@ -594,23 +627,243 @@
           </div>
 
           <div class="check-option">
-            <input type="checkbox" id="tech-phone" value="smartphone camera shot, slight noise, natural exposure, hand-held feel" />
-            <label class="check-label" for="tech-phone">
+            <input type="checkbox" id="tech-bokeh_lights" value="out-of-focus lights, circular bokeh balls, soft glowing light orbs in background" />
+            <label class="check-label" for="tech-bokeh_lights">
               <span class="check-box"></span>
               <span class="check-text">
-                <span class="check-main">📱 スマホ撮影感</span>
-                <span class="check-sub">smartphone camera shot, slight noise, natural exposure</span>
+                <span class="check-main">🔮 玉ボケ（光）</span>
+                <span class="check-sub">out-of-focus lights, circular bokeh balls</span>
               </span>
             </label>
           </div>
 
           <div class="check-option">
-            <input type="checkbox" id="tech-cinematic" value="cinematic depth of field, cinematic lighting" />
-            <label class="check-label" for="tech-cinematic">
+            <input type="checkbox" id="tech-cinematic_dof" value="cinematic depth of field, 85mm portrait lens, cinematic lighting" />
+            <label class="check-label" for="tech-cinematic_dof">
               <span class="check-box"></span>
               <span class="check-text">
-                <span class="check-main">🎬 映画風</span>
+                <span class="check-main">🎬 シネマティック</span>
                 <span class="check-sub">cinematic depth of field, cinematic lighting</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-lens_flare" value="intense cinematic lens flare, dramatic glowing light rays, anamorphic lens flare streaks" />
+            <label class="check-label" for="tech-lens_flare">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">💡 レンズフレア</span>
+                <span class="check-sub">cinematic lens flare, anamorphic lens flare streaks</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-film_grain" value="heavy film grain, cinematic analog texture, vintage 35mm film look, grainy atmosphere" />
+            <label class="check-label" for="tech-film_grain">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🎞 フィルムグレイン</span>
+                <span class="check-sub">heavy film grain, vintage 35mm film look</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-vignette" value="dark vignette edges, strong center emphasis, darkened corners, cinematic focus effect" />
+            <label class="check-label" for="tech-vignette">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🔲 ビネット</span>
+                <span class="check-sub">dark vignette edges, darkened corners</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-chroma" value="chromatic aberration, RGB channel shift, color fringing on edges, digital distortion effect" />
+            <label class="check-label" for="tech-chroma">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌈 色収差（RGB滲み）</span>
+                <span class="check-sub">chromatic aberration, RGB channel shift</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-dutch" value="dutch angle, tilted camera composition, dynamic diagonal framing, slightly canted horizon" />
+            <label class="check-label" for="tech-dutch">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">📐 ダッチアングル</span>
+                <span class="check-sub">dutch angle, dynamic diagonal framing</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-low_angle" value="low angle shot, looking up at subject, dramatic upward perspective" />
+            <label class="check-label" for="tech-low_angle">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">⬆️ ローアングル</span>
+                <span class="check-sub">low angle shot, dramatic upward perspective</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-overhead" value="overhead shot, top-down perspective, flat lay composition, bird's eye view" />
+            <label class="check-label" for="tech-overhead">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🔭 真上（俯瞰）</span>
+                <span class="check-sub">overhead shot, top-down perspective</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-anamorphic" value="anamorphic bokeh, horizontal elliptical bokeh, cinematic wide-format lens effect, streak bokeh" />
+            <label class="check-label" for="tech-anamorphic">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🎭 アナモフィックボケ</span>
+                <span class="check-sub">anamorphic bokeh, horizontal elliptical bokeh</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-rain_lens" value="rain drops on camera lens, wet glass effect, rain streaks on lens, blurred wet foreground" />
+            <label class="check-label" for="tech-rain_lens">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌧 レインドロップ</span>
+                <span class="check-sub">rain drops on lens, wet glass effect</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-fog" value="atmospheric fog, soft haze in background, foggy atmosphere, light scattering through mist" />
+            <label class="check-label" for="tech-fog">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌫 霧・大気散乱</span>
+                <span class="check-sub">atmospheric fog, soft haze in background</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-silhouette" value="strong backlight silhouette, rim lighting only, dramatic backlit scene" />
+            <label class="check-label" for="tech-silhouette">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌅 シルエット逆光</span>
+                <span class="check-sub">strong backlight silhouette, rim lighting only</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-long_exposure" value="long exposure effect, light trails, flowing light streaks, time-lapse motion blur on lights" />
+            <label class="check-label" for="tech-long_exposure">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🌠 長時間露光（光跡）</span>
+                <span class="check-sub">long exposure effect, light trails</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-neon_ref" value="neon light reflections on wet pavement, puddle reflections, teal and magenta light reflecting" />
+            <label class="check-label" for="tech-neon_ref">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🪞 ネオン反射</span>
+                <span class="check-sub">neon reflections on wet pavement, puddle mirror</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-tilt_shift" value="tilt-shift effect, miniature-like appearance, blurred top and bottom, selective focus band in middle" />
+            <label class="check-label" for="tech-tilt_shift">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🔬 ティルトシフト</span>
+                <span class="check-sub">tilt-shift effect, miniature-like appearance</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-fisheye" value="fisheye lens effect, extreme wide angle distortion, curved horizon, immersive barrel distortion" />
+            <label class="check-label" for="tech-fisheye">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🐟 フィッシュアイ</span>
+                <span class="check-sub">fisheye lens, extreme wide angle distortion</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-double_exp" value="artistic double exposure effect, surreal overlapping imagery, dreamlike cinematic layering, transparent ghosting" />
+            <label class="check-label" for="tech-double_exp">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">👻 二重露光</span>
+                <span class="check-sub">double exposure, surreal overlapping imagery</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-glitch" value="digital glitch effect, corrupted signal distortion, VHS static noise, broken pixel interference" />
+            <label class="check-label" for="tech-glitch">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">⚡ グリッチノイズ</span>
+                <span class="check-sub">digital glitch, VHS static noise</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-light_leak" value="dreamy light leak, soft glowing streaks across frame, nostalgic analog film light leak effect" />
+            <label class="check-label" for="tech-light_leak">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">☀️ ライトリーク</span>
+                <span class="check-sub">dreamy light leak, analog film light leak</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-panning" value="panning shot effect, subject sharp, background streaked horizontally, motion blur on background only" />
+            <label class="check-label" for="tech-panning">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🏃 流し撮り</span>
+                <span class="check-sub">panning shot, background streaked horizontally</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="tech-smartphone" value="smartphone camera shot, slight noise, natural exposure, hand-held feel" />
+            <label class="check-label" for="tech-smartphone">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">📱 スマホ撮影感</span>
+                <span class="check-sub">smartphone camera shot, slight noise, hand-held</span>
               </span>
             </label>
           </div>
@@ -621,7 +874,7 @@
               <span class="check-box"></span>
               <span class="check-text">
                 <span class="check-main">🌙 SNS切り抜き感</span>
-                <span class="check-sub">candid feel, accidental composition, social media screenshot feel</span>
+                <span class="check-sub">candid feel, social media screenshot feel</span>
               </span>
             </label>
           </div>
@@ -631,49 +884,115 @@
 
       <!-- セクション4: 引き算 -->
       <section class="sec">
-        <div class="sec-title">4. 引き算（除外指示）</div>
+        <div class="sec-title">4. 引き算（除外指示）<span class="sec-count">10 patterns</span></div>
         <div class="check-list">
 
           <div class="check-option">
-            <input type="checkbox" id="neg-human" value="do not make her look like a real human, maintain anime illustration style" />
-            <label class="check-label" for="neg-human">
-              <span class="check-box"></span>
-              <span class="check-text">
-                <span class="check-main">🚫 人間化禁止</span>
-                <span class="check-sub">do not make her look like a real human, maintain anime illustration style</span>
-              </span>
-            </label>
-          </div>
-
-          <div class="check-option">
-            <input type="checkbox" id="neg-poster" value="not a movie poster, avoid glossy rendering" />
-            <label class="check-label" for="neg-poster">
-              <span class="check-box"></span>
-              <span class="check-text">
-                <span class="check-main">🚫 映画ポスター禁止</span>
-                <span class="check-sub">not a movie poster, avoid glossy rendering</span>
-              </span>
-            </label>
-          </div>
-
-          <div class="check-option">
-            <input type="checkbox" id="neg-overcompose" value="avoid overly composed shot, no excessive cinematic framing" />
-            <label class="check-label" for="neg-overcompose">
-              <span class="check-box"></span>
-              <span class="check-text">
-                <span class="check-main">🚫 構図盛りすぎ禁止</span>
-                <span class="check-sub">avoid overly composed shot, no excessive cinematic framing</span>
-              </span>
-            </label>
-          </div>
-
-          <div class="check-option">
-            <input type="checkbox" id="neg-text" value="no text, no watermark in image" checked />
+            <input type="checkbox" id="neg-text" value="no text, no watermark, no words, no letters, no captions" checked />
             <label class="check-label" for="neg-text">
               <span class="check-box"></span>
               <span class="check-text">
-                <span class="check-main">🚫 テキスト禁止</span>
-                <span class="check-sub">no text, no watermark in image</span>
+                <span class="check-main">🚫 テキストなし</span>
+                <span class="check-sub">no text, no watermark, no words</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-multi" value="no multiple characters, single character only, no duplicated figures" />
+            <label class="check-label" for="neg-multi">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 複数キャラなし</span>
+                <span class="check-sub">no multiple characters, single character only</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-anatomy" value="no ugly anatomy, correct human proportions, clean body structure" />
+            <label class="check-label" for="neg-anatomy">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 崩れアナトミーなし</span>
+                <span class="check-sub">no ugly anatomy, correct human proportions</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-limbs" value="no extra limbs, no extra arms, no extra legs, correct number of limbs" />
+            <label class="check-label" for="neg-limbs">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 余分な手足なし</span>
+                <span class="check-sub">no extra limbs, correct number of limbs</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-face" value="no distorted face, no asymmetrical facial features, natural face proportions, clean facial structure" />
+            <label class="check-label" for="neg-face">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 顔の歪みなし</span>
+                <span class="check-sub">no distorted face, natural face proportions</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-blur_face" value="no blurry face, sharp face, clear facial features, face in focus" />
+            <label class="check-label" for="neg-blur_face">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 顔のぼけなし</span>
+                <span class="check-sub">no blurry face, clear facial features</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-fingers" value="no extra fingers, no missing fingers, correct five fingers, natural hand anatomy" />
+            <label class="check-label" for="neg-fingers">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 指の歪みなし</span>
+                <span class="check-sub">no extra fingers, correct five fingers</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-color" value="no oversaturated colors, balanced color palette, natural color tones" />
+            <label class="check-label" for="neg-color">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 過飽和カラーなし</span>
+                <span class="check-sub">no oversaturated colors, balanced color palette</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-shadow" value="no harsh unnatural shadows, soft lighting, no extreme hard shadow artifacts" />
+            <label class="check-label" for="neg-shadow">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 ハードシャドーなし</span>
+                <span class="check-sub">no harsh unnatural shadows, soft lighting</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="check-option">
+            <input type="checkbox" id="neg-bg_char" value="no background people with clear faces, no unwanted secondary characters in focus, background figures blurred or absent" />
+            <label class="check-label" for="neg-bg_char">
+              <span class="check-box"></span>
+              <span class="check-text">
+                <span class="check-main">🚫 背景人物混入なし</span>
+                <span class="check-sub">no background people with clear faces</span>
               </span>
             </label>
           </div>
@@ -714,13 +1033,13 @@
     }
 
     function getTechniques() {
-      return [...document.querySelectorAll('.check-list input[type="checkbox"][id^="tech-"]')]
+      return [...document.querySelectorAll('input[type="checkbox"][id^="tech-"]')]
         .filter(el => el.checked)
         .map(el => el.value);
     }
 
     function getNegatives() {
-      return [...document.querySelectorAll('.check-list input[type="checkbox"][id^="neg-"]')]
+      return [...document.querySelectorAll('input[type="checkbox"][id^="neg-"]')]
         .filter(el => el.checked)
         .map(el => el.value);
     }
@@ -744,7 +1063,6 @@
 
     function updatePrompt() {
       document.getElementById('prompt-output').value = buildPrompt();
-      // コピー済みリセット
       const btn = document.getElementById('copy-btn');
       if (btn.classList.contains('copied')) {
         btn.classList.remove('copied');
@@ -752,29 +1070,25 @@
       }
     }
 
-    // カスタムシーン入力の表示切替
     document.querySelectorAll('input[name="scene"]').forEach(el => {
       el.addEventListener('change', () => {
         const wrap = document.getElementById('custom-wrap');
-        wrap.hidden = (el.value !== '__custom__');
+        wrap.hidden = (document.querySelector('input[name="scene"]:checked')?.value !== '__custom__');
         updatePrompt();
       });
     });
 
     document.getElementById('custom-scene').addEventListener('input', updatePrompt);
 
-    // DNAトグル
     document.getElementById('dna-toggle').addEventListener('change', (e) => {
       document.getElementById('dna-display').style.opacity = e.target.checked ? '1' : '0.3';
       updatePrompt();
     });
 
-    // チェックボックス
-    document.querySelectorAll('.check-list input[type="checkbox"]').forEach(el => {
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => {
       el.addEventListener('change', updatePrompt);
     });
 
-    // コピーボタン
     document.getElementById('copy-btn').addEventListener('click', async () => {
       const text = document.getElementById('prompt-output').value;
       if (!text) return;
@@ -788,7 +1102,6 @@
           btn.textContent = 'プロンプトをコピー';
         }, 2500);
       } catch (_) {
-        // fallback
         const ta = document.getElementById('prompt-output');
         ta.select();
         document.execCommand('copy');
@@ -797,7 +1110,6 @@
       }
     });
 
-    // 初期生成
     updatePrompt();
   </script>
 </body>
