@@ -2,39 +2,11 @@
   "updated_at": "2026-06-17T12:00:00+09:00",
   "questions": [
     {
-      "id": "q-anthropic-ccaf",
-      "label": "Anthropic 認定（CCAF）の「portal launch待ち」って何の portal？何が変わる？",
-      "category": "biz",
-      "urgency": "high",
-      "icon": "🏆"
-    },
-    {
       "id": "q-vocals",
       "label": "歌わせる vocals.mp3 って何の曲？変換後どう使う予定？",
       "category": "voice",
       "urgency": "medium",
       "icon": "🎤"
-    },
-    {
-      "id": "q-gnh",
-      "label": "GnH って何の略？どんなプロダクト？",
-      "category": "iw-local",
-      "urgency": "medium",
-      "icon": "❓"
-    },
-    {
-      "id": "q-spotify-mail",
-      "label": "Spotify の確認メール踏んだ？チェックリスト3/3 完了するやつ",
-      "category": "beckyexists",
-      "urgency": "low",
-      "icon": "📧"
-    },
-    {
-      "id": "q-scraper-zeros",
-      "label": "platform_scraper.py が全データ 0 を返してる。Chrome CDP でログイン状態取れてない？最後に正常動作したのいつ？",
-      "category": "beckyexists",
-      "urgency": "medium",
-      "icon": "🔧"
     }
   ]
 }

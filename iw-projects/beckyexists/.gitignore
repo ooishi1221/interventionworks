@@ -1,2 +1,8 @@
 .DS_Store
 .vercel
+
+# Environment files (シークレット — Vibe-Guard により追加)
+.env
+.env.*
+!.env.example
+!.env.sample

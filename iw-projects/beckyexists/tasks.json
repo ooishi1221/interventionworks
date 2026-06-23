@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-22T23:59:00+09:00",
+  "updated_at": "2026-06-24T02:00:00+09:00",
   "tasks": [
     {
       "id": "live2d",
@@ -311,6 +311,58 @@
       "updated_at": "2026-06-22",
       "due": "2026-06-22",
       "note": "beckyexists.com/prompt-builder。DNA/シーン/カメラ技法/引き算をポチポチ→プロンプト自動生成。room.htmlにTOOLSセクション追加してリンクカード配置。次: マイケル調査の選択肢拡充",
+      "icon": "✅"
+    },
+    {
+      "id": "vibe-guard-runtime-safety",
+      "scope": "iw",
+      "label": "Vibe-Guard v1.7.0 check-runtime-safety 実装完了",
+      "category": "vibe-guard",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-23",
+      "updated_at": "2026-06-23",
+      "due": "2026-06-23",
+      "note": "3パターン検出（例外握り潰し/await忘れ/入力バリデーション不在）。Notionに仕様記載済み。Aiming会食の「バイブコーディング作り直し問題」から着想。build成功・commit 4d3a825",
+      "icon": "✅"
+    },
+    {
+      "id": "secretlint-v13",
+      "scope": "iw",
+      "label": "secretlint v9→v13 アップグレード（脆弱性0件）",
+      "category": "vibe-guard",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-06-24",
+      "note": "package.json ルート: secretlint 9.3.4→13.0.2。npm audit: 0 vulnerabilities。monorepo全体スキャンで正常動作確認",
+      "icon": "✅"
+    },
+    {
+      "id": "vibe-guard-ignore",
+      "scope": "iw",
+      "label": "Vibe-Guard .vibe-guard-ignore 機能実装完了",
+      "category": "vibe-guard",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-06-24",
+      "note": ".gitignoreと同じ感覚で除外パスを定義→スコア100点を目指せる設計に。src/utils/vibeIgnore.ts新規作成＋4ツール対応。.vibe-guard-ignoreでaituber-onair/managed_components/等を除外",
+      "icon": "✅"
+    },
+    {
+      "id": "exception-fix",
+      "scope": "iw",
+      "label": "Python例外握り潰し修正（stackchan-mcp/becky-cast）",
+      "category": "voice",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-06-24",
+      "note": "capture_server.py/orchestrator.py: except→ログ出力付きに修正。cast.py/spotify_upload.py: 意図的なパスにコメント明記。Vibe-Guardのcheck-runtime-safetyが検出→修正の流れ",
       "icon": "✅"
     }
   ]

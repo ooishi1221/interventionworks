@@ -429,6 +429,7 @@ export async function getReviews(
   sortBy: 'date' | 'score' = 'date'
 ): Promise<Review[]> {
   const db = getDatabase();
+  // sortBy は 'date' | 'score' の型制約で許可リスト済み、ORDER BY への直接挿入は安全
   const order = sortBy === 'score' ? 'score DESC, createdAt DESC' : 'createdAt DESC';
   return db.getAllAsync<Review>(
     `SELECT * FROM reviews WHERE spotId = ? AND source = ? ORDER BY ${order};`,

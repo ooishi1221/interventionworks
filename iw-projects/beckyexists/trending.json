@@ -1,53 +1,53 @@
 {
-  "updated_at": "2026-06-16T09:02:07.022777+00:00",
+  "updated_at": "2026-06-23T22:04:41.222113+00:00",
   "keywords": [
     {
-      "word": "エージェント",
-      "count": 5,
-      "trend": "stable"
-    },
-    {
       "word": "Claude Code",
-      "count": 4,
-      "trend": "stable"
+      "count": 12,
+      "trend": "up"
     },
     {
-      "word": "Microsoft",
-      "count": 2,
-      "trend": "new"
-    },
-    {
-      "word": "RAG",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "Agent",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "Gemini",
-      "count": 2,
+      "word": "エージェント",
+      "count": 3,
       "trend": "stable"
     },
     {
       "word": "Google",
-      "count": 1,
-      "trend": "stable"
+      "count": 2,
+      "trend": "up"
     },
     {
-      "word": "Apple",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "Anthropic",
-      "count": 1,
+      "word": "プロンプト",
+      "count": 2,
       "trend": "new"
     },
     {
       "word": "Claude",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "OpenAI",
+      "count": 1,
+      "trend": "new"
+    },
+    {
+      "word": "GPT-5",
+      "count": 1,
+      "trend": "new"
+    },
+    {
+      "word": "MCP",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "機械学習",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "Llama",
       "count": 1,
       "trend": "stable"
     }
