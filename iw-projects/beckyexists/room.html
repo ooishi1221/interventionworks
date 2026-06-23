@@ -1146,7 +1146,7 @@ async function loadTasks() {
 
   const rowHTML = (t) => {
     const updDate = t.updated_at || null;
-    const days = elapsedDays(t.start, updDate);
+    const days = elapsedDays(updDate, null);
     const warn = days !== null && days >= 7 && t.status !== 'done' && t.status !== 'waiting';
     const waitWarn = t.status === 'waiting' && days !== null && days >= 7;
     const isWarn = warn || waitWarn;
