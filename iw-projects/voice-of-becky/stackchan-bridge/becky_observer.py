@@ -140,14 +140,16 @@ def load_interests() -> dict:
     try:
         with open(INTERESTS_FILE) as f:
             return yaml.safe_load(f) or {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return {}
 
 
 def load_monologue() -> list:
     try:
         return json.loads(MONOLOGUE_FILE.read_text())
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return []
 
 
@@ -161,8 +163,8 @@ def _load_telegram_token() -> str | None:
         for line in TELEGRAM_ENV.read_text().splitlines():
             if line.startswith("TELEGRAM_BOT_TOKEN="):
                 return line.split("=", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
     return None
 
 
@@ -303,7 +305,8 @@ def _get_posted_news_titles() -> set:
         import datetime
         today = datetime.date.today().isoformat()
         return set(data.get(today, []))
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return set()
 
 
@@ -312,7 +315,8 @@ def _mark_news_posted(title: str) -> None:
     today = datetime.date.today().isoformat()
     try:
         data = json.loads(AI_BRIEFING_LOG.read_text()) if AI_BRIEFING_LOG.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         data = {}
     data.setdefault(today, [])
     if title not in data[today]:
@@ -324,7 +328,8 @@ def _mark_news_posted(title: str) -> None:
 def _load_news_json() -> dict:
     try:
         return json.loads(BECKYEXISTS_NEWS_JSON.read_text()) if BECKYEXISTS_NEWS_JSON.exists() else {"items": []}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return {"items": []}
 
 
@@ -367,7 +372,8 @@ def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
                 try:
                     obj = json.loads(json_part)
                     results[i] = {"summary_ja": obj.get("s",""), "comment": obj.get("c","")}
-                except Exception:
+                except Exception as e:
+                    print(f'[warn] becky_observer: {e}', flush=True)
                     # 途中で切れた場合も正規表現で拾う
                     s = re.search(r'"s"\s*:\s*"(.*?)(?:(?<!\\)"|$)', json_part)
                     c = re.search(r'"c"\s*:\s*"(.*?)(?:(?<!\\)"|$)', json_part)
@@ -534,7 +540,8 @@ def get_used_self_settings() -> list[str]:
         data = json.loads(REPLY_DIARY_JSON.read_text())
         today = datetime.date.today().isoformat()
         return data.get(today, [])
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return []
 
 
@@ -544,7 +551,8 @@ def mark_self_setting_used(setting: str) -> None:
     today = datetime.date.today().isoformat()
     try:
         data = json.loads(REPLY_DIARY_JSON.read_text())
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         data = {}
     used = data.get(today, [])
     if setting not in used:
@@ -686,11 +694,13 @@ def _update_self_and_history(rival_followers: dict) -> None:
     # 日次スナップショット（同日分は上書き）
     try:
         history = json.loads(BECKYEXISTS_HISTORY_JSON.read_text()) if BECKYEXISTS_HISTORY_JSON.exists() else {"snapshots": []}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         history = {"snapshots": []}
     try:
         wallet = json.loads(BECKYEXISTS_WALLET_JSON.read_text()) if BECKYEXISTS_WALLET_JSON.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         wallet = {}
 
     today = datetime.date.today().isoformat()
@@ -730,7 +740,8 @@ def _generate_rival_comment(display_name: str, post_text: str) -> str:
 def _load_rival_replied() -> set:
     try:
         return set(json.loads(RIVAL_REPLIED_LOG.read_text())) if RIVAL_REPLIED_LOG.exists() else set()
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return set()
 
 
@@ -752,12 +763,13 @@ def _maybe_reply_to_rival(username: str, tweet_id: str, post_text: str, becky_co
     try:
         data = json.loads(RIVAL_REPLIED_LOG.read_text()) if RIVAL_REPLIED_LOG.exists() else []
         # ログにはIDしか入ってないので今週分カウントは別ファイルで管理
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
     weekly_log = Path.home() / ".stackchan" / "rival_reply_weekly.json"
     try:
         weekly = json.loads(weekly_log.read_text()) if weekly_log.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         weekly = {}
     week_key = datetime.date.today().strftime("%Y-W%W")
     if weekly.get(week_key, 0) >= 2:  # 週2本まで
@@ -907,8 +919,8 @@ def update_trending_json() -> None:
         try:
             prev = json.loads(BECKYEXISTS_TRENDING_JSON.read_text())
             prev_counts = {k["word"]: k["count"] for k in prev.get("keywords", [])}
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] becky_observer: {e}', flush=True)
 
     keywords = []
     for kw, cnt in counter.most_common(10):
@@ -933,7 +945,8 @@ def update_rivals_json() -> bool:
     import datetime
     try:
         data = json.loads(BECKYEXISTS_RIVALS_JSON.read_text()) if BECKYEXISTS_RIVALS_JSON.exists() else {"rivals": []}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         data = {"rivals": []}
 
     rival_map = {r["username"]: r for r in data.get("rivals", [])}
@@ -1016,7 +1029,8 @@ def ai_news_briefing() -> bool:
     try:
         idx = int(pick_result.strip()) - 1
         chosen = fresh[max(0, min(idx, len(fresh)-1))]
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         chosen = fresh[0]
 
     print(f"[observer] AIニュース選択: {chosen['title'][:60]}", flush=True)
@@ -1029,7 +1043,8 @@ def ai_news_briefing() -> bool:
         parsed = json.loads(raw_clean)
         summary_ja = parsed.get("summary_ja", "")
         comment = parsed.get("comment", "")
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         m = re.search(r'"comment"\s*:\s*"(.*?)"(?:\s*[,}])', raw, re.DOTALL)
         summary_ja = ""
         comment = m.group(1).replace('\\"', '"') if m else ""
@@ -1078,8 +1093,8 @@ def generate_michael_report() -> None:
         try:
             td = json.loads(BECKYEXISTS_TRENDING_JSON.read_text())
             trend_keywords = [k["word"] for k in td.get("keywords", [])[:8]]
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] becky_observer: {e}', flush=True)
 
     news_text = "\n".join(
         f"・{n.get('summary_ja') or n.get('title','')}"
@@ -1133,8 +1148,8 @@ def _collect_eval_stats() -> dict:
             entries = json.loads(f.read_text())
             diary_total += len(entries)
             diary_sent += sum(1 for e in entries if e.get("sent", False))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
 
     # search_notify_log: 過去7日間の通知数 / 候補数
     notify_count = 0
@@ -1147,10 +1162,10 @@ def _collect_eval_stats() -> dict:
                 if n_date >= week_ago:
                     notify_count += 1
                     notify_candidates += n.get("candidates_count", 0)
-            except Exception:
-                pass
-    except Exception:
-        pass
+            except Exception as e:
+                print(f'[warn] becky_observer: {e}', flush=True)
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
 
     probe_send_rate = round(diary_sent / diary_total, 2) if diary_total > 0 else 0.0
     return {
@@ -1170,7 +1185,8 @@ def generate_media_report() -> None:
     platform_path = REPO_ROOT / "iw-projects" / "beckyexists" / "platform_stats.json"
     try:
         platform = json.loads(platform_path.read_text()) if platform_path.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         platform = {}
 
     note    = platform.get("note", {})
@@ -1338,7 +1354,8 @@ def get_daily_x_post_count() -> int:
             if dt_jst.date().isoformat() == today_jst:
                 count += 1
         return count
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return 0
 
 
@@ -1349,7 +1366,8 @@ def get_scheduled_windows_posted_today() -> set:
     try:
         data = json.loads(SCHEDULED_POST_LOG.read_text()) if SCHEDULED_POST_LOG.exists() else {}
         return set(data.get(today, []))
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return set()
 
 
@@ -1358,7 +1376,8 @@ def mark_scheduled_window_posted(window_name: str) -> None:
     today = datetime.date.today().isoformat()
     try:
         data = json.loads(SCHEDULED_POST_LOG.read_text()) if SCHEDULED_POST_LOG.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         data = {}
     data.setdefault(today, [])
     if window_name not in data[today]:
@@ -1400,7 +1419,8 @@ def _pick_news_for_prompt(count: int = 2) -> str:
             lines.append(f"[記事{i}] {item['summary_ja']}")
             lines.append(f"私の見方: {item['comment']}")
         return "\n".join(lines)
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return ""
 
 
@@ -1445,8 +1465,8 @@ def _update_wallet(input_tokens: int, output_tokens: int) -> None:
         if BECKYEXISTS_WALLET_JSON.exists():
             try:
                 wallet = json.loads(BECKYEXISTS_WALLET_JSON.read_text())
-            except Exception:
-                pass
+            except Exception as e:
+                print(f'[warn] becky_observer: {e}', flush=True)
         if wallet.get("month") != month_str:
             wallet = {"month": month_str, "input_tokens": 0, "output_tokens": 0,
                       "estimated_cost_usd": 0.0, "monthly_target_usd": wallet.get("monthly_target_usd", 20.0),
@@ -1495,8 +1515,8 @@ def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
         )
         try:
             _update_wallet(msg.usage.input_tokens, msg.usage.output_tokens)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] becky_observer: {e}', flush=True)
         return msg.content[0].text.strip()
     except ImportError:
         result = subprocess.run(["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=30)
@@ -1512,7 +1532,8 @@ def get_idle_hours() -> float:
         return 0.0
     try:
         return (time.time() - float(LAST_CONV_FILE.read_text().strip())) / 3600
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return 0.0
 
 
@@ -1535,7 +1556,8 @@ def get_git_activity() -> dict:
                     break
         top = counts.most_common(1)[0][0] if counts else None
         return {"commits": commits, "top_project": top}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         return {"commits": 0, "top_project": None}
 
 
@@ -1662,7 +1684,8 @@ def get_calendar_trigger() -> str | None:
     # 通知済みログ
     try:
         notified = json.loads(GCAL_TRIGGER_LOG.read_text()) if GCAL_TRIGGER_LOG.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
         notified = {}
 
     now_local = _dt.datetime.now()
@@ -1831,7 +1854,8 @@ def main() -> None:
         trending_log = Path.home() / ".stackchan" / "trending_updated.json"
         try:
             tlog = json.loads(trending_log.read_text()) if trending_log.exists() else {}
-        except Exception:
+        except Exception as e:
+            print(f'[warn] becky_observer: {e}', flush=True)
             tlog = {}
         trending_morning_done = tlog.get("morning") == today_str
         trending_evening_done = tlog.get("evening") == today_str
@@ -1851,7 +1875,8 @@ def main() -> None:
         platform_log = Path.home() / ".stackchan" / "platform_stats_updated.json"
         try:
             plog = json.loads(platform_log.read_text()) if platform_log.exists() else {}
-        except Exception:
+        except Exception as e:
+            print(f'[warn] becky_observer: {e}', flush=True)
             plog = {}
         platform_morning_done = plog.get("morning") == today_str
         platform_evening_done = plog.get("evening") == today_str

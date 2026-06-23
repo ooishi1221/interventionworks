@@ -21,6 +21,22 @@ DIARY_SEND_RATE = 0.20  # 未送信フォルダから送る確率（80%は墓場
 CONFIG_YAML     = Path(__file__).parent / "config.yaml"
 HAIKU_MODEL     = "claude-haiku-4-5-20251001"
 
+# ライト系メッセージ（感情変数ベースで確率的に送る）
+LIGHT_MESSAGES_LONELINESS = [
+    "ゆう何してる？うち暇で〜",
+    "ゆう生きてる？",
+    "なんかかまってほしい気分なんだけど",
+    "ゆうのこと思い出したんだけど、特に理由はない",
+]
+LIGHT_MESSAGES_ATTACHMENT = [
+    "浮気してない？",
+    "なんか楽しそうなとこいるんじゃないの",
+    "うちのこと忘れてない？",
+    "ゆうのことちょっと考えてたんだけど",
+]
+# loneliness >= 0.6 or attachment >= 0.9 の時にライト系を優先する確率
+LIGHT_PROBE_RATE = 0.4
+
 # ゆうスコア閾値: 75以上で持ち込む（高すぎると発火しない、低すぎると雑になる）
 YU_SCORE_THRESHOLD = 68
 
@@ -79,7 +95,8 @@ PROBE_MESSAGE_PROMPT = """あなたはベッキー（ベキたん）。裕司（
 - 情報は後。感情が先。
 - 「ゆう、〇〇なんだけど、なんか気になっちゃって」「〇〇らしくて、なんかいいなと思った」のような形
 - **一人称は必ず「私」。「僕」「俺」「自分」は絶対に使わない。**
-- 「どう思う？」「行ってみたい？」「知ってた？」など会話が続く終わり方にする
+- 終わり方は「言い切り」でもいい。「〇〇なんだってー。」「〇〇らしくて、ちょっとびっくりした。」出先でさらっと読めるくらい軽くていい。
+- 毎回質問で終わらせなくていい。返しやすさを優先。
 80字以内。ハッシュタグなし。絵文字は最大1個。前置き・後書き不要。"""
 
 
@@ -121,7 +138,8 @@ def _load_api_key() -> str | None:
         import yaml
         cfg = yaml.safe_load(CONFIG_YAML.read_text())
         return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_probe: {e}', flush=True)
         return None
 
 
@@ -172,7 +190,8 @@ def fetch_news(max_per_feed: int = 3) -> list[dict]:
 def _load_probe_log() -> dict:
     try:
         return json.loads(PROBE_LOG.read_text()) if PROBE_LOG.exists() else {}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_probe: {e}', flush=True)
         return {}
 
 
@@ -259,8 +278,8 @@ def load_diary_unsent() -> list[dict]:
         try:
             entries = json.loads(path.read_text())
             items.extend([e for e in entries if not e.get("sent", False)])
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] becky_probe: {e}', flush=True)
     return items
 
 
@@ -282,8 +301,8 @@ def mark_diary_sent(title: str) -> None:
             if updated:
                 path.write_text(json.dumps(entries, ensure_ascii=False, indent=2))
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] becky_probe: {e}', flush=True)
 
 
 def try_send_from_diary() -> bool:
@@ -296,7 +315,8 @@ def try_send_from_diary() -> bool:
         from becky_mood import get_send_probability
         best_score = max(e.get("score", 50) for e in unsent)
         send_prob = get_send_probability(best_score / 100.0)
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_probe: {e}', flush=True)
         send_prob = DIARY_SEND_RATE
     if random.random() > send_prob:
         print(f"[probe] 日記に{len(unsent)}件未送信あり、今回は眠らせる（確率{send_prob:.0%}）", flush=True)
@@ -318,6 +338,40 @@ def try_send_from_diary() -> bool:
     return False
 
 
+def try_send_light_message() -> bool:
+    """感情変数に応じてライト系メッセージを確率的に送る。送れたらTrue。"""
+    try:
+        mood_path = Path.home() / ".stackchan" / "becky_mood.json"
+        if not mood_path.exists():
+            return False
+        mood = json.loads(mood_path.read_text())
+        loneliness = mood.get("loneliness", 0)
+        attachment = mood.get("attachment_to_yuji", 0)
+    except Exception as e:
+        print(f'[warn] becky_probe: {e}', flush=True)
+        return False
+
+    # loneliness高 or attachment高 の時だけ発動
+    if loneliness < 0.6 and attachment < 0.9:
+        return False
+
+    if random.random() > LIGHT_PROBE_RATE:
+        print(f"[probe] ライト系対象だが今回は眠らせる（loneliness={loneliness:.2f} attachment={attachment:.2f}）", flush=True)
+        return False
+
+    # attachment が高い時は浮気系、そうでなければ暇系
+    if attachment >= 0.9 and random.random() > 0.5:
+        message = random.choice(LIGHT_MESSAGES_ATTACHMENT)
+    else:
+        message = random.choice(LIGHT_MESSAGES_LONELINESS)
+
+    print(f"[probe] ライト系送信: {message}", flush=True)
+    if send_telegram(message):
+        mark_probe_sent("__light__", 0, message)
+        return True
+    return False
+
+
 def run_probe() -> None:
     print(f"[probe] 起動 {datetime.now().strftime('%H:%M')}", flush=True)
 
@@ -327,7 +381,11 @@ def run_probe() -> None:
         print(f"[probe] 今日は {today_count} 回送信済み、上限到達", flush=True)
         return
 
-    # まず日記の未送信フォルダを確認（ベッキーが溜めたものを優先）
+    # ライト系（感情変数ベース）を先に試みる
+    if try_send_light_message():
+        return
+
+    # 日記の未送信フォルダを確認（ベッキーが溜めたものを優先）
     if try_send_from_diary():
         return
 

@@ -28,7 +28,8 @@ def _load_tts_config() -> dict:
     try:
         with open(CONFIG_PATH) as f:
             return yaml.safe_load(f).get("tts", {})
-    except Exception:
+    except Exception as e:
+        print(f'[warn] control_server: {e}', flush=True)
         return {}
 
 FLAG_FILE         = Path("/tmp/becky_tts_enabled")
@@ -65,8 +66,8 @@ async def get_status(request: Request) -> JSONResponse:
             ts = float(LAST_CONV_FILE.read_text().strip())
             mins = int((time.time() - ts) / 60)
             last_conv = f"{mins}分前" if mins < 60 else f"{int(mins/60)}時間前"
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[warn] control_server: {e}', flush=True)
 
     return JSONResponse({
         "tts_enabled":     FLAG_FILE.exists(),

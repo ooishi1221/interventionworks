@@ -14,7 +14,7 @@ MOOD_FILE       = Path.home() / ".stackchan" / "becky_mood.json"
 PROBE_LOG       = Path.home() / ".stackchan" / "probe_log.json"
 PROBE_LATEST    = Path.home() / ".stackchan" / "probe_latest.json"
 DIARY_DIR       = Path.home() / ".stackchan" / "diary"
-YU_LAST_MSG_PATH_PATH = Path.home() / ".stackchan" / "last_yu_message.json"
+YU_LAST_MSG_PATH = Path.home() / ".stackchan" / "last_yu_message.json"
 
 DEFAULT_MOOD = {
     "curiosity": 0.70,       # 知的好奇心。高いと日記に多く反応する
@@ -37,8 +37,8 @@ def load_mood() -> dict:
     try:
         if MOOD_FILE.exists():
             return json.loads(MOOD_FILE.read_text())
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_mood: {e}', flush=True)
     return DEFAULT_MOOD.copy()
 
 def save_mood(mood: dict) -> None:
@@ -58,8 +58,8 @@ def _hours_since_last_yu_message() -> float:
                     ts = ts.replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
                 return (now - ts).total_seconds() / 3600
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_mood: {e}', flush=True)
     return 12.0  # 不明なら12時間として扱う
 
 def _today_diary_count() -> int:
@@ -68,7 +68,8 @@ def _today_diary_count() -> int:
     try:
         entries = json.loads(path.read_text()) if path.exists() else []
         return len(entries)
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_mood: {e}', flush=True)
         return 0
 
 def _last_probe_was_recent() -> bool:
@@ -83,8 +84,8 @@ def _last_probe_was_recent() -> bool:
                     ts = ts.replace(tzinfo=timezone.utc)
                 hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
                 return hours < 6
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_mood: {e}', flush=True)
     return False
 
 

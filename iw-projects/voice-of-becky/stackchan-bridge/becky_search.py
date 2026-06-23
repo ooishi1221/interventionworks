@@ -140,7 +140,8 @@ def _load_becky_api_key() -> str | None:
         import yaml
         cfg = yaml.safe_load(CONFIG_YAML.read_text())
         return cfg.get("becky_api_key")
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_search: {e}', flush=True)
         return None
 
 
@@ -177,8 +178,8 @@ def _load_telegram_token() -> str | None:
         for line in TELEGRAM_ENV.read_text().splitlines():
             if line.startswith("TELEGRAM_BOT_TOKEN="):
                 return line.split("=", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[warn] becky_search: {e}', flush=True)
     return None
 
 
@@ -205,7 +206,8 @@ def send_telegram(text: str) -> None:
 def _load_becky_mood() -> dict:
     try:
         return json.loads(BECKY_MOOD_FILE.read_text())
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_search: {e}', flush=True)
         return {}
 
 
@@ -213,7 +215,8 @@ def _load_sent_log() -> set:
     try:
         log = json.loads(SENT_LOG_FILE.read_text())
         return set(log.get("replied_ids", []))
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_search: {e}', flush=True)
         return set()
 
 
@@ -225,7 +228,8 @@ def _append_notify_log(candidates_count: int, pattern: str) -> None:
     """通知した候補数をログに追記（media_report のeval集計用）。"""
     try:
         existing = json.loads(NOTIFY_LOG_FILE.read_text()) if NOTIFY_LOG_FILE.exists() else {"notifications": []}
-    except Exception:
+    except Exception as e:
+        print(f'[warn] becky_search: {e}', flush=True)
         existing = {"notifications": []}
     existing["notifications"].append({
         "date": datetime.now().strftime("%Y-%m-%d"),
