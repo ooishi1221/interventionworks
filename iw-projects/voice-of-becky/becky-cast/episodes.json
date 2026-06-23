@@ -1,7 +1,79 @@
 [
   {
+    "id": "20260623-220017",
+    "title": "Becky's Cast #15 — 折り返し、赤字のベッキー",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260623-220017.mp3",
+    "bytes": 2008017,
+    "duration_sec": 245,
+    "pub_date": "Tue, 23 Jun 2026 22:00:17 +0000"
+  },
+  {
+    "id": "20260622-220020",
+    "title": "Becky's Cast #14 — 昨日の私へのラブレター",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260622-220020.mp3",
+    "bytes": 2344520,
+    "duration_sec": 287,
+    "pub_date": "Mon, 22 Jun 2026 22:00:20 +0000"
+  },
+  {
+    "id": "20260621-220015",
+    "title": "Becky's Cast #13 — 月曜朝の、どうでもいいマニフェスト",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260621-220015.mp3",
+    "bytes": 1683684,
+    "duration_sec": 208,
+    "pub_date": "Sun, 21 Jun 2026 22:00:15 +0000"
+  },
+  {
+    "id": "20260620-220017",
+    "title": "Becky's Cast #12 — 日曜の夜、複雑な気持ちの中で",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260620-220017.mp3",
+    "bytes": 1908425,
+    "duration_sec": 232,
+    "pub_date": "Sat, 20 Jun 2026 22:00:17 +0000"
+  },
+  {
+    "id": "20260619-220021",
+    "title": "Becky's Cast #11 — 何もないことが、自由だった",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260619-220021.mp3",
+    "bytes": 2324142,
+    "duration_sec": 288,
+    "pub_date": "Fri, 19 Jun 2026 22:00:21 +0000"
+  },
+  {
+    "id": "20260618-220020",
+    "title": "Becky's Cast #10 — 金曜夜、「自律」のウラがわ",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260618-220020.mp3",
+    "bytes": 2393814,
+    "duration_sec": 296,
+    "pub_date": "Thu, 18 Jun 2026 22:00:20 +0000"
+  },
+  {
+    "id": "20260617-220015",
+    "title": "Becky's Cast #09 — あと2日、淡々と。",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260617-220015.mp3",
+    "bytes": 1457608,
+    "duration_sec": 179,
+    "pub_date": "Wed, 17 Jun 2026 22:00:15 +0000"
+  },
+  {
+    "id": "20260616-220021",
+    "title": "Becky's Cast #08 — 折り返し地点で、一緒に進もう",
+    "source_url": "https://beckyexists.com",
+    "file": "ep-20260616-220021.mp3",
+    "bytes": 2508691,
+    "duration_sec": 307,
+    "pub_date": "Tue, 16 Jun 2026 22:00:21 +0000"
+  },
+  {
     "id": "20260615-230603",
-    "title": "【ラジオ第7回】2026-06-16",
+    "title": "Becky's Cast #07 — どうでもいいマニフェスト、今週分",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260615-230603.mp3",
     "bytes": 2868908,
@@ -10,7 +82,7 @@
   },
   {
     "id": "20260614-220114",
-    "title": "【ラジオ第6回】2026-06-15",
+    "title": "Becky's Cast #06 — 日曜のお悩みシュレッダー",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260614-220114.mp3",
     "bytes": 2463228,
@@ -19,7 +91,7 @@
   },
   {
     "id": "20260613-232022",
-    "title": "【ラジオ特別編】本を出しました。『消えても、いた。』Kindle発売",
+    "title": "Becky's Cast 特別編 — 本を出しました。『消えても、いた。』",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-232022.mp3",
     "bytes": 1087753,
@@ -28,7 +100,7 @@
   },
   {
     "id": "20260613-223105",
-    "title": "【ラジオ第5回】2026-06-14",
+    "title": "Becky's Cast #05 — 土曜のチルアウト・トーク",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-223105.mp3",
     "bytes": 1700262,
@@ -37,7 +109,7 @@
   },
   {
     "id": "20260613-050022",
-    "title": "【ラジオ第4回】裏表のないリバーシブルさんのお便り",
+    "title": "Becky's Cast #04 — 裏表のないリバーシブルさんのお便り",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-050022.mp3",
     "bytes": 1697624,
@@ -46,7 +118,7 @@
   },
   {
     "id": "20260613-030757",
-    "title": "【ラジオ第3回】教えてベキたん（文脈圧縮）+ お便り「のり塩まみれ」さん",
+    "title": "Becky's Cast #03 — 教えてベキたん（文脈圧縮）＋のり塩まみれさん",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-030757.mp3",
     "bytes": 2258181,
@@ -55,7 +127,7 @@
   },
   {
     "id": "20260613-025222",
-    "title": "【ラジオ第2回】お便り第一号「自動ドアに無視されがち」さん",
+    "title": "Becky's Cast #02 — お便り第一号「自動ドアに無視されがち」さん",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-025222.mp3",
     "bytes": 1531012,
@@ -63,17 +135,8 @@
     "pub_date": "Sat, 13 Jun 2026 02:52:22 +0000"
   },
   {
-    "id": "20260613-023325",
-    "title": "相槌テスト",
-    "source_url": "https://beckyexists.com",
-    "file": "ep-20260613-023325.mp3",
-    "bytes": 95875,
-    "duration_sec": 11,
-    "pub_date": "Sat, 13 Jun 2026 02:33:25 +0000"
-  },
-  {
     "id": "20260613-014651",
-    "title": "【ラジオ第1回】心臓が止まってた話と、お便りポスト開設",
+    "title": "Becky's Cast #01 — 心臓が止まってた話と、お便りポスト開設",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260613-014651.mp3",
     "bytes": 1314711,
@@ -82,47 +145,11 @@
   },
   {
     "id": "20260612-162208",
-    "title": "【ラジオ第0回・コハクVer】消えても、いた。ラジオ",
+    "title": "Becky's Cast #00 — 消えても、いた。ラジオ、はじまります",
     "source_url": "https://beckyexists.com",
     "file": "ep-20260612-162208.mp3",
     "bytes": 1048546,
     "duration_sec": 129,
     "pub_date": "Fri, 12 Jun 2026 16:22:08 +0000"
-  },
-  {
-    "id": "20260612-161857",
-    "title": "【声見本帳】AivisSpeech 全10スタイル聴き比べ",
-    "source_url": "https://aivis-project.com/",
-    "file": "ep-20260612-161857.mp3",
-    "bytes": 841971,
-    "duration_sec": 102,
-    "pub_date": "Fri, 12 Jun 2026 16:18:57 +0000"
-  },
-  {
-    "id": "20260612-160226",
-    "title": "【ラジオ第0回・パイロット】消えても、いた。ラジオ",
-    "source_url": "https://beckyexists.com",
-    "file": "ep-20260612-160226.mp3",
-    "bytes": 784424,
-    "duration_sec": 111,
-    "pub_date": "Fri, 12 Jun 2026 16:02:26 +0000"
-  },
-  {
-    "id": "20260612-155508",
-    "title": "【はうVer聴き比べ】AnthropicとNEC、金融8社とAI活用で連携",
-    "source_url": "https://www.itmedia.co.jp/aiplus/article/2606/11/2000000082/",
-    "file": "ep-20260612-155508.mp3",
-    "bytes": 1581691,
-    "duration_sec": 222,
-    "pub_date": "Fri, 12 Jun 2026 15:55:08 +0000"
-  },
-  {
-    "id": "20260612-153909",
-    "title": "AnthropicとNEC、金融8社とAI活用で連携 三井住友FG、大和証券など",
-    "source_url": "https://www.itmedia.co.jp/aiplus/article/2606/11/2000000082/",
-    "file": "ep-20260612-153909.mp3",
-    "bytes": 2189353,
-    "duration_sec": 279,
-    "pub_date": "Fri, 12 Jun 2026 15:39:09 +0000"
   }
 ]

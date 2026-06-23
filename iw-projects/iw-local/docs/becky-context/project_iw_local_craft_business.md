@@ -45,7 +45,25 @@ originSessionId: 78def58c-e09f-4ba3-b08d-1338093dd8df
 
 価格レンジは未確定。クレア提案: hook 商品「LINE 自動予約 5 万円から」みたいな入り口が必要（個人店オーナーは「いくらかかるか分からない」が一番怖い）。
 
-## 現在のステータス（2026-05-23 11:18 JST）
+## 現在のステータス（更新: 2026-06-17）
+
+### 2026-06-17 — 営業ツール完成（Phase 1 準備完了）
+
+- ✅ **Google Maps Scraper（omkarcloud）**: 足立区飲食店467件取得。電話あり407件・Web無し203件が攻めどころ
+- ✅ **`review_scraper.py`（Places API版）**: 店名・評価・電話・住所・口コミ5件をPythonで自動取得。`python3 review_scraper.py --query "店名 エリア"` で動く
+- ✅ **まるよし食堂デモHTML**: `iw-projects/iw-local/demo/maruyoshi/index.html`。「もうできてますよ」営業武器
+- ✅ **GCPプロジェクト `iw-local-maps`**: Places API有効化・Billing登録済み。APIキー: `AIzaSyBq7FH5ysNMIrojL614BpLI9_Snf1ijzDk`（環境変数 `GOOGLE_PLACES_API_KEY`）
+- ✅ **サービス設計確定**: MEO（Googleマップ最適化）+ SNS（Instagram/X）運用代行。月3万円〜トライアル設計
+
+**next（手が動いてない）:**
+- CSVスコアリング: 467件から「電話あり・Web無し・口コミ少」でトップ20自動抽出
+- 電話営業トークスクリプト（1分で伝えるテンプレ）
+- トライアル提案書1枚
+- n8nワークフロー: LINE受信 → Claude文章生成 → GBP API口コミ返信投稿
+
+---
+
+## 旧ステータス（2026-05-23 11:18 JST）
 
 - ✅ Google Business Profile 申請完了
 - ✅ ビジネス説明文 543 文字 GBP 登録済

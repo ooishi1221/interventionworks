@@ -52,14 +52,15 @@ def load_config() -> dict:
 
 
 def get_next_episode_num() -> int:
-    """episodes.json のタイトルから「第N回」の最大値を探して +1 する"""
+    """episodes.json のタイトルから番号最大値を探して +1 する（#N と第N回の両形式に対応）"""
     import re
     try:
         data = json.loads(EPISODES_JSON.read_text())
         episodes = data if isinstance(data, list) else data.get("episodes", [])
         nums = []
         for ep in episodes:
-            m = re.search(r"第(\d+)回", ep.get("title", ""))
+            title = ep.get("title", "")
+            m = re.search(r"#(\d+)", title) or re.search(r"第(\d+)回", title)
             if m:
                 nums.append(int(m.group(1)))
         return max(nums) + 1 if nums else 1
@@ -375,9 +376,25 @@ AIニュースを紹介して、中の人（AI当事者）視点で正直にコ�
 - 台本本文のみ出力（説明文・見出し不要）
 - 1文ずつ改行で区切る（TTS処理でチャンク分割されるため）
 - 全体で4〜6分程度（約800〜1200字）
+- 台本の末尾に `SUBTITLE: （このエピソードのサブタイトルを15字以内で）` を出力すること
 {"- 台本の末尾に `MANIFEST: （宣言内容を1文で）` を出力すること" if corner.get("save_manifest") else ""}
 """
     return call_claude(prompt)
+
+
+def extract_subtitle(script: str) -> tuple[str, str]:
+    """台本末尾の SUBTITLE: 行を抽出して除去したscriptと一緒に返す"""
+    import re
+    lines = script.splitlines()
+    subtitle = ""
+    clean_lines = []
+    for line in lines:
+        m = re.match(r"^SUBTITLE:\s*(.+)$", line.strip())
+        if m:
+            subtitle = m.group(1).strip()
+        else:
+            clean_lines.append(line)
+    return "\n".join(clean_lines).strip(), subtitle
 
 
 def extract_and_save_manifest(script: str) -> str:
@@ -435,6 +452,10 @@ def main() -> None:
     print("[morning_cast] 台本生成中...", flush=True)
     script = generate_script(episode_num, news_items, letter)
 
+    # サブタイトル抽出（台本から除去）
+    script, subtitle = extract_subtitle(script)
+    print(f"[morning_cast] サブタイトル: {subtitle or '(なし)'}", flush=True)
+
     # 月曜マニフェストの抽出・保存（台本から除去）
     if WEEKDAY_CONFIG[weekday]["corner"].get("save_manifest"):
         script = extract_and_save_manifest(script)
@@ -444,7 +465,8 @@ def main() -> None:
     print(f"[morning_cast] 台本完成: {len(script)} 字 → {script_path}", flush=True)
 
     # 3. 音声収録・配信（cast.py）
-    title = f"【ラジオ第{episode_num}回】{today_str}"
+    num_str = f"{episode_num:02d}"
+    title = f"Becky's Cast #{num_str} — {subtitle}" if subtitle else f"Becky's Cast #{num_str}"
     cast_cmd = [str(UV), "run", str(HERE / "cast.py"),
                 "--script-file", str(script_path), "--title", title]
     print(f"[morning_cast] 収録・配信中...", flush=True)
@@ -454,7 +476,23 @@ def main() -> None:
         sys.exit(1)
     print(f"[morning_cast] 配信完了！", flush=True)
 
-    # 3.5. Vercel デプロイ（podcast.json をサイトに反映）
+    # 3.5. Spotify アップロード
+    try:
+        episodes_data = json.loads(EPISODES_JSON.read_text())
+        latest_ep = episodes_data[0]
+        latest_mp3 = HERE / "out" / latest_ep["file"]
+        spotify_cmd = [str(UV), "run", str(HERE / "spotify_upload.py"),
+                       "--mp3", str(latest_mp3), "--title", latest_ep["title"]]
+        print(f"[morning_cast] Spotify アップロード中...", flush=True)
+        sp_result = subprocess.run(spotify_cmd, cwd=str(HERE), timeout=400)
+        if sp_result.returncode == 0:
+            print(f"[morning_cast] Spotify 公開完了", flush=True)
+        else:
+            print(f"[morning_cast] Spotify アップロード失敗（続行）", flush=True)
+    except Exception as e:
+        print(f"[morning_cast] Spotify アップロードエラー（続行）: {e}", flush=True)
+
+    # 3.6. Vercel デプロイ（podcast.json をサイトに反映）
     vercel_bin = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "vercel"
     deploy_result = subprocess.run(
         [str(vercel_bin), "deploy", "--prod", "--yes"],
@@ -472,8 +510,8 @@ def main() -> None:
 
     # 5. X告知
     tweet_text = (
-        f"【ラジオ更新🎙️】第{episode_num}回 配信しました！\n"
-        f"消えても、いた。ラジオ\n\n"
+        f"【Becky's Cast 更新🎙️】#{num_str} 配信しました！\n"
+        f"{('「' + subtitle + '」') if subtitle else ''}\n\n"
         f"beckyexists.com で聴けます。\n"
         f"お便りも待ってます📮"
     )
