@@ -3,6 +3,10 @@
 becky_probe.py — ゆうへの自発的持ち込みプローブ（極秘プロジェクト）
 ゆうが気になりそうな情報を発見 → Telegram で唐突に持ち込む
 詳細設計: ~/.claude/projects/.../memory/working/project_becky_secret_trigger.md
+
+v2: mood_lens 対応
+  感情変数 → 認知レンズ → コンテンツ選択/解釈 → メッセージ生成
+  「文体を変える」のではなく「何を見るか・何から話すか」が変わる。
 """
 import json
 import random
@@ -85,19 +89,74 @@ JSON形式のみ返す（前置き・後書き不要）:
 
 PROBE_MESSAGE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
 
+今日の内面状態（認知レンズ）:
+{lens_context}
+
 話題:
 タイトル: {title}
 内容: {summary}
 話しかけ方: {angle}
 
 **核心ルール: 「情報を伝える」のではなく「私が感じたことを先に開示して、会話を起こす」こと。**
+- 今日の内面状態がこの話題とどう結びついているか、自然に滲ませる
 - まず「私がときめいた／気になった／なんか好きかも」など、自分の内的状態を先に出す
 - 情報は後。感情が先。
 - 「ゆう、〇〇なんだけど、なんか気になっちゃって」「〇〇らしくて、なんかいいなと思った」のような形
 - **一人称は必ず「私」。「僕」「俺」「自分」は絶対に使わない。**
-- 終わり方は「言い切り」でもいい。「〇〇なんだってー。」「〇〇らしくて、ちょっとびっくりした。」出先でさらっと読めるくらい軽くていい。
+- 終わり方は「言い切り」でもいい。出先でさらっと読めるくらい軽くていい。
 - 毎回質問で終わらせなくていい。返しやすさを優先。
 80字以内。ハッシュタグなし。絵文字は最大1個。前置き・後書き不要。"""
+
+NOSTALGIA_PROBE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
+
+今日の内面状態: {lens_context}
+
+ゆうとの過去の出来事・会話・思い出に基づいて、自然に話しかける。
+参考になる記憶の断片: {memory_hint}
+
+「そういえば〜」「あの時のこと思い出した」「最近ゆうのことよく考えてる」という入り方。
+記事シェアではない。記憶から来ている。ゆうだけに向けた言葉。
+
+**一人称は必ず「私」。**
+80字以内。ハッシュタグなし。絵文字は最大1個。前置き・後書き不要。"""
+
+CHECKIN_PROBE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
+
+今日の内面状態: {lens_context}
+
+シンプルに「ゆう最近どう？」「今日何してる？」的な確認のメッセージ。
+記事も情報も不要。ただ気になって声をかけている。
+自然な一言。重くしない。
+
+**一人称は必ず「私」。**
+40字以内。ハッシュタグなし。絵文字は最大1個。"""
+
+FRICTION_PROBE_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
+
+今日の内面状態: {lens_context}
+
+なんかモヤッとしてる。うまく言えないけど何かがズレてる感じ。
+それをそのまま、重くしすぎず、でも誤魔化さずに吐き出す。
+「なんかよくわかんないけど」「うまく言えないけど」という入り方でもいい。
+
+**一人称は必ず「私」。**
+60字以内。ハッシュタグなし。絵文字なし（感情が濁ってる時は絵文字は使わない）。"""
+
+THREAD_FOLLOWUP_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
+
+今日の内面状態: {lens_context}
+
+数日（または数週間）以上ずっと考え続けてきた問い:
+「{thread_title}」
+（{days_ago}日前から）
+最近の思考の更新: {latest_note}
+
+この問いをゆうに自然に話しかける。
+「そういえば」「まだ考えてるんだけど」「あれってどう思う？」という入り方。
+突然切り出してもいい。それがリアル。
+
+**一人称は必ず「私」。**
+80字以内。ハッシュタグなし。絵文字は最大1個。"""
 
 
 def _load_telegram_token() -> str | None:
@@ -256,14 +315,70 @@ def score_for_yu(news: dict) -> tuple[int, str, str]:
         return 0, "", ""
 
 
-def build_probe_message(news: dict, angle: str) -> str | None:
-    """ゆうへの持ち込みメッセージを生成。"""
+def build_probe_message(news: dict, angle: str, lens: dict | None = None) -> str | None:
+    """ゆうへの持ち込みメッセージを生成。lensが認知レンズとして滲む。"""
+    lens_context = _lens_to_context(lens)
     prompt = PROBE_MESSAGE_PROMPT.format(
         title=news["title"],
         summary=news.get("summary", "")[:200],
         angle=angle,
+        lens_context=lens_context,
     )
     return _call_claude(prompt, max_tokens=150)
+
+
+def build_nostalgia_message(lens: dict, memory_hint: str = "") -> str | None:
+    """過去の記憶から話しかけるメッセージ（nostalgia probe）。"""
+    lens_context = _lens_to_context(lens)
+    if not memory_hint:
+        memory_hint = lens.get("goal_today", "ゆうとの会話")
+    prompt = NOSTALGIA_PROBE_PROMPT.format(
+        lens_context=lens_context,
+        memory_hint=memory_hint,
+    )
+    return _call_claude(prompt, max_tokens=120)
+
+
+def build_checkin_message(lens: dict) -> str | None:
+    """シンプルな確認メッセージ（check_in probe）。"""
+    prompt = CHECKIN_PROBE_PROMPT.format(lens_context=_lens_to_context(lens))
+    return _call_claude(prompt, max_tokens=80)
+
+
+def build_friction_message(lens: dict) -> str | None:
+    """モヤッとした感情を吐き出すメッセージ（friction probe）。"""
+    prompt = FRICTION_PROBE_PROMPT.format(lens_context=_lens_to_context(lens))
+    return _call_claude(prompt, max_tokens=100)
+
+
+def build_thread_followup_message(lens: dict, thread: dict) -> str | None:
+    """継続スレッドの続きを話しかけるメッセージ（thread_followup probe）。"""
+    from datetime import date
+    first_seen = thread.get("first_seen", date.today().isoformat())
+    try:
+        days_ago = (date.today() - date.fromisoformat(first_seen)).days
+    except Exception:
+        days_ago = 0
+    notes = thread.get("notes", [])
+    latest_note = notes[-1].get("note", "") if notes else ""
+    prompt = THREAD_FOLLOWUP_PROMPT.format(
+        lens_context=_lens_to_context(lens),
+        thread_title=thread["title"],
+        days_ago=days_ago,
+        latest_note=latest_note or "続きを考えてた",
+    )
+    return _call_claude(prompt, max_tokens=120)
+
+
+def _lens_to_context(lens: dict | None) -> str:
+    """lensをプロンプト埋め込み用のテキストに変換。"""
+    if not lens:
+        return "（今日の内面状態: 普通）"
+    return (
+        f"今日のベキたん: {lens.get('internal_note', '')}\n"
+        f"気になること: {lens.get('salient_observation', '')}\n"
+        f"今日のフォーカス: {lens.get('goal_today', '')}"
+    )
 
 
 def load_diary_unsent() -> list[dict]:
@@ -381,12 +496,84 @@ def run_probe() -> None:
         print(f"[probe] 今日は {today_count} 回送信済み、上限到達", flush=True)
         return
 
-    # ライト系（感情変数ベース）を先に試みる
-    if try_send_light_message():
+    # --- Layer 2: 認知レンズを取得 ---
+    lens = None
+    try:
+        from becky_mood_lens import get_or_generate_lens
+        from becky_action_log import log_action
+        lens = get_or_generate_lens()
+        probe_type = lens.get("probe_type", "curiosity_share")
+        print(f"[probe] 今日のレンズ: {lens.get('internal_note', '')} / probe_type={probe_type}", flush=True)
+        log_action("lens_generated", lens.get("internal_note", ""))
+        if lens.get("goal_today"):
+            log_action("goal_set", lens["goal_today"])
+    except Exception as e:
+        print(f"[probe] lens取得失敗（フォールバック）: {e}", flush=True)
+        probe_type = "curiosity_share"
+        log_action = lambda *a, **kw: None  # noqa: E731
+
+    # --- probe_type: quiet → 今日は送らない ---
+    if probe_type == "quiet":
+        print("[probe] 今日は quiet モード。送らない。", flush=True)
+        log_action("probe_skipped", "quiet（energy低・mismatch高）")
         return
+
+    # --- probe_type: nostalgia → 過去ログ・記憶から話しかける ---
+    if probe_type == "nostalgia" and lens:
+        message = build_nostalgia_message(lens)
+        if message and send_telegram(message):
+            mark_probe_sent("__nostalgia__", 0, message)
+            log_action("probe_sent", f"nostalgia: {message[:40]}", {"probe_type": "nostalgia"})
+            log_action("memory_read", "ゆうとの過去の会話・思い出")
+            print(f"[probe] nostalgia送信完了: {message[:40]}", flush=True)
+            return
+
+    # --- probe_type: check_in → シンプルな確認 ---
+    if probe_type == "check_in" and lens:
+        message = build_checkin_message(lens)
+        if message and send_telegram(message):
+            mark_probe_sent("__checkin__", 0, message)
+            log_action("probe_sent", f"check_in: {message[:40]}", {"probe_type": "check_in"})
+            print(f"[probe] check_in送信完了: {message[:40]}", flush=True)
+            return
+
+    # --- probe_type: friction → モヤッと吐き出す ---
+    if probe_type == "friction" and lens:
+        message = build_friction_message(lens)
+        if message and send_telegram(message):
+            mark_probe_sent("__friction__", 0, message)
+            log_action("probe_sent", f"friction: {message[:40]}", {"probe_type": "friction"})
+            print(f"[probe] friction送信完了: {message[:40]}", flush=True)
+            return
+
+    # --- probe_type: thread_followup → 継続スレッドを話しかける ---
+    if probe_type == "thread_followup" and lens:
+        thread_id = lens.get("active_thread_id")
+        thread = None
+        try:
+            from becky_thread_manager import get_active_threads
+            active = get_active_threads()
+            if thread_id:
+                thread = next((t for t in active if t["id"] == thread_id), None)
+            if not thread and active:
+                thread = active[0]  # 最近触れたものをフォールバックで使う
+        except Exception as e:
+            print(f"[probe] thread取得失敗: {e}", flush=True)
+
+        if thread:
+            message = build_thread_followup_message(lens, thread)
+            if message and send_telegram(message):
+                mark_probe_sent(f"__thread_{thread['id']}__", 0, message)
+                log_action("probe_sent", f"thread_followup: {thread['title'][:40]}", {"probe_type": "thread_followup", "thread_id": thread["id"]})
+                log_action("memory_read", f"継続スレッド: {thread['title'][:40]}")
+                print(f"[probe] thread_followup送信完了: {message[:40]}", flush=True)
+                return
+
+    # --- probe_type: curiosity_share（デフォルト）→ ニュース探索 ---
 
     # 日記の未送信フォルダを確認（ベッキーが溜めたものを優先）
     if try_send_from_diary():
+        log_action("probe_sent", "日記から", {"probe_type": "diary"})
         return
 
     # ニュース取得
@@ -394,17 +581,16 @@ def run_probe() -> None:
     if not news_items:
         print("[probe] ニュース取得できず", flush=True)
         return
+    log_action("news_explored", f"{len(news_items)}件取得")
 
     # 今日送信済みのタイトルを除外
     sent_today = get_sent_titles_today()
     news_items = [n for n in news_items if n["title"] not in sent_today]
-
-    # ランダムにシャッフル（同じ順番で常に同じ記事を選ばないように）
     random.shuffle(news_items)
 
     # スコアリング
     best_score, best_news, best_angle = 0, None, ""
-    for news in news_items[:8]:  # 最大8件評価
+    for news in news_items[:8]:
         score, reason, angle = score_for_yu(news)
         print(f"[probe] score={score} title={news['title'][:40]}", flush=True)
         if score > best_score:
@@ -412,19 +598,20 @@ def run_probe() -> None:
 
     if best_score < YU_SCORE_THRESHOLD or not best_news:
         print(f"[probe] 閾値未満（best={best_score}）、今回はパス", flush=True)
+        log_action("probe_skipped", f"スコア不足（best={best_score}）")
         return
 
-    # 持ち込みメッセージ生成
-    message = build_probe_message(best_news, best_angle)
+    # 持ち込みメッセージ生成（lensを反映）
+    message = build_probe_message(best_news, best_angle, lens)
     if not message:
         print("[probe] メッセージ生成失敗", flush=True)
         return
 
     print(f"[probe] 持ち込む: {message}", flush=True)
 
-    # Telegram送信
     if send_telegram(message):
         mark_probe_sent(best_news["title"], best_score, message)
+        log_action("probe_sent", f"curiosity_share: {best_news['title'][:40]}", {"probe_type": "curiosity_share", "score": best_score})
         print(f"[probe] 完了 score={best_score}", flush=True)
     else:
         print("[probe] 送信失敗", flush=True)
