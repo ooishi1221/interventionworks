@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-faster-whisper を使った HTTP 文字起こしサーバー
-POST /transcribe: base64 音声データを受け取り、日本語テキストを返す
+WhisperX ベースの HTTP 文字起こしサーバー（話者分離対応）
+POST /transcribe: base64 音声データを受け取り、日本語テキスト + 話者ラベル付きセグメントを返す
+
+HF_TOKEN 未設定時は話者分離をスキップして従来互換動作。
+device: mps → 失敗時 cpu フォールバック。
 """
 
 import asyncio
@@ -11,9 +14,15 @@ import re
 import sys
 import tempfile
 import os
+import subprocess
+import numpy as np
+from scipy.io import wavfile as scipy_wavfile
+from datetime import datetime, timezone, timedelta
 from aiohttp import web
-from faster_whisper import WhisperModel
 
+# --------------------------------------------------------------------------
+# フィラー除去
+# --------------------------------------------------------------------------
 _FILLER_PATTERN = re.compile(
     r"(?:えーっと|えーと|えっと|えー、?|あのー|あの[ーっ]|あのう|あの、"
     r"|うーん|うーんと|まあ(?=[、。\s]|$)|そうですね(?=[、。\s]|$)"
@@ -21,27 +30,126 @@ _FILLER_PATTERN = re.compile(
     re.UNICODE,
 )
 
+NOISE_PATTERNS = [
+    "ご視聴ありがとう", "チャンネル登録", "日本語の会議", "人名・地名",
+    "企業名・専門用語", "次回予告", "正確に書き起こし",
+]
+
 def remove_fillers(text: str) -> str:
     cleaned = _FILLER_PATTERN.sub("", text)
     cleaned = re.sub(r"[　\s]+", " ", cleaned).strip()
     cleaned = re.sub(r"、{2,}", "、", cleaned)
     return cleaned
 
-# stdout/stderr をライン単位でフラッシュ（バックグラウンド起動時のログ即時出力）
+# --------------------------------------------------------------------------
+# stdout/stderr をライン単位でフラッシュ
+# --------------------------------------------------------------------------
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
+# --------------------------------------------------------------------------
+# 定数
+# --------------------------------------------------------------------------
 PORT = 8767
 MODEL_SIZE = "large-v3"
 LANGUAGE = "ja"
+JST = timezone(timedelta(hours=9))
 
-print(f"[whisper_server] Loading model: {MODEL_SIZE} ...")
-model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8")
-print(f"[whisper_server] Model loaded. Listening on port {PORT}")
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+DIARIZE_ENABLED = bool(HF_TOKEN)
 
-# 同時処理を1件に制限（キュー）
+if not DIARIZE_ENABLED:
+    print("[whisper_server] HF_TOKEN not set → diarization disabled (fallback mode)", flush=True)
+else:
+    print("[whisper_server] HF_TOKEN found → diarization enabled", flush=True)
+
+# --------------------------------------------------------------------------
+# device 選択（mps → cpu フォールバック）
+# --------------------------------------------------------------------------
+import torch
+
+def select_device() -> tuple[str, str]:
+    """(device, compute_type) を返す"""
+    if torch.backends.mps.is_available():
+        try:
+            # MPS で小さいテンソル演算を試してフォールバック判定
+            t = torch.zeros(1, device="mps")
+            _ = t + 1
+            print("[whisper_server] device=mps", flush=True)
+            return "mps", "default"
+        except Exception as e:
+            print(f"[whisper_server] mps test failed ({e}), fallback to cpu", flush=True)
+    print("[whisper_server] device=cpu", flush=True)
+    return "cpu", "int8"
+
+DEVICE, COMPUTE_TYPE = select_device()
+
+# --------------------------------------------------------------------------
+# WhisperX モデルロード
+# --------------------------------------------------------------------------
+import whisperx
+
+print(f"[whisper_server] Loading WhisperX model: {MODEL_SIZE} on {DEVICE} ...", flush=True)
+try:
+    model = whisperx.load_model(
+        MODEL_SIZE,
+        device=DEVICE,
+        compute_type=COMPUTE_TYPE,
+        language=LANGUAGE,
+    )
+except (ValueError, RuntimeError) as e:
+    print(f"[whisper_server] {DEVICE} failed ({e}), fallback to cpu/int8", flush=True)
+    DEVICE, COMPUTE_TYPE = "cpu", "int8"
+    model = whisperx.load_model(
+        MODEL_SIZE,
+        device=DEVICE,
+        compute_type=COMPUTE_TYPE,
+        language=LANGUAGE,
+    )
+print(f"[whisper_server] Model loaded on {DEVICE}. Listening on port {PORT}", flush=True)
+
+# align モデルは遅延ロードしてキャッシュ
+_align_model = None
+_align_metadata = None
+
+def get_align_model():
+    global _align_model, _align_metadata
+    if _align_model is None:
+        print("[whisper_server] Loading align model ...", flush=True)
+        _align_model, _align_metadata = whisperx.load_align_model(
+            language_code=LANGUAGE, device=DEVICE
+        )
+        print("[whisper_server] Align model loaded.", flush=True)
+    return _align_model, _align_metadata
+
+# diarize パイプラインも遅延ロード
+_diarize_pipeline = None
+
+def get_diarize_pipeline():
+    global _diarize_pipeline
+    if _diarize_pipeline is None and DIARIZE_ENABLED:
+        print("[whisper_server] Loading diarize pipeline ...", flush=True)
+        from pyannote.audio import Pipeline
+        _diarize_pipeline = Pipeline.from_pretrained(
+            "pyannote/speaker-diarization-3.1",
+            token=HF_TOKEN,
+        )
+        print("[whisper_server] Diarize pipeline loaded.", flush=True)
+    return _diarize_pipeline
+
+# --------------------------------------------------------------------------
+# ディレクトリ定数
+# --------------------------------------------------------------------------
+MEETING_DIR = os.path.expanduser("~/.meeting")
+CURRENT_FILE = os.path.join(MEETING_DIR, "current.txt")
+SESSIONS_DIR = os.path.join(MEETING_DIR, "sessions")
+
+# 同時処理を1件に制限
 _semaphore = asyncio.Semaphore(1)
 
+# --------------------------------------------------------------------------
+# /transcribe
+# --------------------------------------------------------------------------
 
 async def handle_transcribe(request: web.Request) -> web.Response:
     try:
@@ -58,7 +166,6 @@ async def handle_transcribe(request: web.Request) -> web.Response:
 
         audio_bytes = base64.b64decode(audio_base64)
 
-        # 一時ファイルに書き出して faster-whisper に渡す
         suffix = ".webm"
         if "m4a" in mime_type:
             suffix = ".m4a"
@@ -75,42 +182,123 @@ async def handle_transcribe(request: web.Request) -> web.Response:
 
         try:
             print(f"[whisper_server] audio_bytes={len(audio_bytes)}, file={tmp_path}", flush=True)
-            segments, info = model.transcribe(
-                tmp_path,
-                language=LANGUAGE,
-                beam_size=5,
-                vad_filter=False,
-                condition_on_previous_text=False,
-                no_speech_threshold=0.3,
-                initial_prompt="えー、あのー、そうですね、はい。",
-            )
-            raw_text = "".join(seg.text for seg in segments).strip()
-            NOISE_PATTERNS = [
-                "ご視聴ありがとう", "チャンネル登録", "日本語の会議", "人名・地名",
-                "企業名・専門用語", "次回予告", "正確に書き起こし",
-            ]
+
+            # --- Step 1: transcribe ---
+            async with _semaphore:
+                result = model.transcribe(
+                    tmp_path,
+                    language=LANGUAGE,
+                    batch_size=16,
+                )
+
+            raw_segments = result.get("segments", [])
+            raw_text = "".join(seg.get("text", "") for seg in raw_segments).strip()
+
+            # ノイズチェック
             if any(p in raw_text for p in NOISE_PATTERNS):
                 raw_text = ""
+                raw_segments = []
+
             text = remove_fillers(raw_text) if raw_text else ""
-            print(f"[whisper_server] result: '{text}'", flush=True)
+
+            # --- Step 2 & 3: align + diarize（テキストがある場合のみ）---
+            output_segments = []
+            if text and raw_segments:
+                try:
+                    align_model, align_metadata = get_align_model()
+                    aligned = whisperx.align(
+                        raw_segments,
+                        align_model,
+                        align_metadata,
+                        tmp_path,
+                        device=DEVICE,
+                        return_char_alignments=False,
+                    )
+                    aligned_segments = aligned.get("segments", raw_segments)
+
+                    if DIARIZE_ENABLED:
+                        diarize_pipeline = get_diarize_pipeline()
+                        # torchcodec(ffmpeg4-7専用)を回避: ffmpegでwav変換後、
+                        # scipy.io.wavfileでtorch.Tensorに読み込み、
+                        # pyannoteにwaveform dictとして渡す（AudioDecoder不使用）
+                        wav_path = tmp_path + ".wav"
+                        subprocess.run(
+                            ['ffmpeg', '-y', '-i', tmp_path,
+                             '-ar', '16000', '-ac', '1', wav_path,
+                             '-loglevel', 'quiet'],
+                            check=True,
+                        )
+                        _sr, _data = scipy_wavfile.read(wav_path)
+                        os.unlink(wav_path)
+                        # int16/int32 → float32 正規化
+                        if _data.dtype == np.int16:
+                            _data = _data.astype(np.float32) / 32768.0
+                        elif _data.dtype == np.int32:
+                            _data = _data.astype(np.float32) / 2147483648.0
+                        else:
+                            _data = _data.astype(np.float32)
+                        import torch as _torch
+                        _wf = _torch.from_numpy(_data)
+                        if _wf.ndim == 1:
+                            _wf = _wf.unsqueeze(0)  # (time,) → (1, time)
+                        diarize_segments = diarize_pipeline(
+                            {"waveform": _wf, "sample_rate": _sr}
+                        )
+                        diarized = whisperx.assign_word_speakers(
+                            diarize_segments, aligned
+                        )
+                        aligned_segments = diarized.get("segments", aligned_segments)
+
+                    for seg in aligned_segments:
+                        speaker = seg.get("speaker", "SPEAKER_00")
+                        seg_text = remove_fillers(seg.get("text", "").strip())
+                        if not seg_text:
+                            continue
+                        output_segments.append({
+                            "start": round(float(seg.get("start", 0.0)), 3),
+                            "end": round(float(seg.get("end", 0.0)), 3),
+                            "speaker": speaker,
+                            "text": seg_text,
+                        })
+
+                except Exception as align_err:
+                    print(f"[whisper_server] align/diarize error (using raw): {align_err}", flush=True)
+                    # フォールバック: raw_segments をそのまま使う
+                    for seg in raw_segments:
+                        seg_text = remove_fillers(seg.get("text", "").strip())
+                        if seg_text:
+                            output_segments.append({
+                                "start": round(float(seg.get("start", 0.0)), 3),
+                                "end": round(float(seg.get("end", 0.0)), 3),
+                                "speaker": "SPEAKER_00",
+                                "text": seg_text,
+                            })
+
+            print(f"[whisper_server] result: '{text}' ({len(output_segments)} segments)", flush=True)
+
         finally:
             os.unlink(tmp_path)
 
         # current.txt に追記
         if text:
             try:
-                from datetime import datetime, timezone, timedelta
-                jst = timezone(timedelta(hours=9))
-                ts = datetime.now(jst).strftime("%H:%M:%S")
+                ts = datetime.now(JST).strftime("%H:%M:%S")
                 os.makedirs(MEETING_DIR, exist_ok=True)
                 with open(CURRENT_FILE, "a", encoding="utf-8") as f:
-                    f.write(f"[{ts}] {text}\n")
+                    if output_segments:
+                        for seg in output_segments:
+                            f.write(f"[{ts}][{seg['speaker']}] {seg['text']}\n")
+                    else:
+                        f.write(f"[{ts}] {text}\n")
             except Exception as we:
                 print(f"[whisper_server] write error: {we}", flush=True)
 
         return web.Response(
             content_type="application/json",
-            text=json.dumps({"text": text}),
+            text=json.dumps(
+                {"text": text, "segments": output_segments},
+                ensure_ascii=False,
+            ),
         )
 
     except Exception as e:
@@ -122,9 +310,9 @@ async def handle_transcribe(request: web.Request) -> web.Response:
         )
 
 
-MEETING_DIR = os.path.expanduser("~/.meeting")
-CURRENT_FILE = os.path.join(MEETING_DIR, "current.txt")
-
+# --------------------------------------------------------------------------
+# /request
+# --------------------------------------------------------------------------
 
 async def handle_request(request: web.Request) -> web.Response:
     try:
@@ -166,15 +354,14 @@ async def handle_request(request: web.Request) -> web.Response:
         )
 
 
-SESSIONS_DIR = os.path.join(MEETING_DIR, "sessions")
-
+# --------------------------------------------------------------------------
+# /start-session
+# --------------------------------------------------------------------------
 
 async def handle_start_session(request: web.Request) -> web.Response:
     try:
         os.makedirs(MEETING_DIR, exist_ok=True)
-        from datetime import datetime, timezone, timedelta
-        jst = timezone(timedelta(hours=9))
-        ts = datetime.now(jst).strftime("%H:%M:%S")
+        ts = datetime.now(JST).strftime("%H:%M:%S")
         content = f"[お願い]\n\n[文字起こし]\n=== セッション開始 [{ts}] ===\n"
         with open(CURRENT_FILE, "w", encoding="utf-8") as f:
             f.write(content)
@@ -183,6 +370,10 @@ async def handle_start_session(request: web.Request) -> web.Response:
         return web.Response(status=500, content_type="application/json",
                             text=json.dumps({"error": str(e)}))
 
+
+# --------------------------------------------------------------------------
+# /save-session
+# --------------------------------------------------------------------------
 
 async def handle_save_session(request: web.Request) -> web.Response:
     try:
@@ -195,9 +386,7 @@ async def handle_save_session(request: web.Request) -> web.Response:
         if not content.strip():
             return web.Response(content_type="application/json",
                                 text=json.dumps({"ok": False, "error": "empty"}))
-        from datetime import datetime, timezone, timedelta
-        jst = timezone(timedelta(hours=9))
-        dt = datetime.now(jst).strftime("%Y-%m-%d_%H-%M")
+        dt = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
         filename = f"{dt}.txt"
         filepath = os.path.join(SESSIONS_DIR, filename)
         with open(filepath, "w", encoding="utf-8") as f:
@@ -208,6 +397,10 @@ async def handle_save_session(request: web.Request) -> web.Response:
         return web.Response(status=500, content_type="application/json",
                             text=json.dumps({"error": str(e)}))
 
+
+# --------------------------------------------------------------------------
+# /sessions
+# --------------------------------------------------------------------------
 
 async def handle_sessions_list(request: web.Request) -> web.Response:
     os.makedirs(SESSIONS_DIR, exist_ok=True)
@@ -257,6 +450,9 @@ async def handle_session_delete(request: web.Request) -> web.Response:
     return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
 
 
+# --------------------------------------------------------------------------
+# ルーティング
+# --------------------------------------------------------------------------
 app = web.Application()
 app.router.add_post("/transcribe", handle_transcribe)
 app.router.add_post("/request", handle_request)

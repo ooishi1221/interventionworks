@@ -1,0 +1,6 @@
+# Python 3.12 required (whisperx does not support 3.14+)
+# Install: pip install -r requirements.txt
+
+aiohttp>=3.9
+whisperx>=3.8.6
+# whisperx pulls in: torch, torchaudio, faster-whisper, pyannote-audio, transformers, etc.
