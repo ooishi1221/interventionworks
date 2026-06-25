@@ -20,6 +20,7 @@ export interface SkillInfo {
   name: string;
   source: 'user' | 'project';
   firstLine: string;
+  description: string | null;
 }
 
 export interface ClaudeMdStructure {
@@ -258,7 +259,9 @@ function collectSkills(cwd: string): SkillInfo[] {
     for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.md'))) {
       const content = readFileSafe(path.join(dir, file));
       const firstLine = content.split('\n').find((l) => l.trim()) ?? '';
-      skills.push({ name: file.replace('.md', ''), source, firstLine: firstLine.slice(0, 80) });
+      const fm = parseFrontmatter(content);
+      const description = fm.description ?? null;
+      skills.push({ name: file.replace('.md', ''), source, firstLine: firstLine.slice(0, 80), description });
     }
   }
   return skills;
