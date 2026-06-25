@@ -138,10 +138,26 @@ function parseFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
+// Claude Code のパスエンコーディング:
+//   Mac/Linux: /Volumes/SSD2TB/foo → -Volumes-SSD2TB-foo (/ → -)
+//   Windows:   C:\Users\foo.bar\gsd → c--Users-foo-bar-gsd (/\:. → - + 小文字化)
+function cwdToEncoded(cwd: string): string {
+  if (/^[A-Za-z]:[/\\]/.test(cwd)) {
+    // Windows: コロン・バックスラッシュ・スラッシュ・ドットを全てハイフンに、小文字化
+    return cwd.replace(/[/\\:.]/g, '-').toLowerCase();
+  }
+  // Mac/Linux: スラッシュをハイフンに（先頭スラッシュ → 先頭ハイフン）
+  return cwd.replace(/\//g, '-');
+}
+
 function decodeProjectPath(encoded: string): string {
-  // Windows: C:-Users-foo-... → C:\Users\foo\...
+  // Windows encoded: c--Users-foo-bar-gsd
+  if (/^[a-z]--/.test(encoded)) {
+    return encoded[0].toUpperCase() + ':\\' + encoded.slice(3).replace(/-/g, '\\');
+  }
+  // 旧形式 Windows: c:-Users-foo-...（後方互換）
   if (/^[A-Za-z]:-/.test(encoded)) {
-    return encoded[0] + ':\\' + encoded.slice(3).replace(/-/g, '\\');
+    return encoded[0].toUpperCase() + ':\\' + encoded.slice(3).replace(/-/g, '\\');
   }
   // Mac/Linux: -Volumes-SSD2TB-... → /Volumes/SSD2TB/...
   return '/' + encoded.replace(/^-/, '').replace(/-/g, '/');
@@ -270,9 +286,7 @@ function collectSkills(cwd: string): SkillInfo[] {
 // ─── memory ───────────────────────────────────────────────────
 
 function collectMemory(cwd: string): MemoryInfo {
-  // Mac: /Volumes/... → -Volumes-... (先頭の / も - に変換、leading dash を保持)
-  // Windows: C:\Users\... → C:-Users-... (no leading dash)
-  const encoded = cwd.replace(/[/\\]/g, '-');
+  const encoded = cwdToEncoded(cwd);
   const memoryDir = path.join(CLAUDE_DIR, 'projects', encoded, 'memory');
 
   const empty: MemoryTypeBreakdown = { user: 0, feedback: 0, project: 0, reference: 0, unknown: 0 };
@@ -337,7 +351,7 @@ function collectProjects(cwd: string): ProjectEntry[] {
   const projectsDir = path.join(CLAUDE_DIR, 'projects');
   if (!fs.existsSync(projectsDir)) return [];
 
-  const currentEncoded = cwd.replace(/[/\\]/g, '-');
+  const currentEncoded = cwdToEncoded(cwd);
 
   return fs.readdirSync(projectsDir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
@@ -444,8 +458,9 @@ function detectGaps(snapshot: Omit<ConfigSnapshot, 'gaps' | 'diagnostics'>): str
     gaps.push('Hooks が未設定 — 自動化トリガーが使えない状態');
   if (!snapshot.claudeMds.find((m) => m.source === 'user'))
     gaps.push('ユーザーレベル CLAUDE.md がない — 全プロジェクト共通の指示が設定できていない');
-  if (!snapshot.claudeMds.find((m) => m.source === 'project'))
-    gaps.push('プロジェクト CLAUDE.md がない');
+  if (!snapshot.claudeMds.find((m) => m.source === 'project') &&
+      !snapshot.claudeMds.find((m) => m.source === 'user'))
+    gaps.push('CLAUDE.md がない — ユーザーレベルまたはプロジェクトレベルに設定してください');
   if (snapshot.skills.length === 0)
     gaps.push('Skills がない — カスタム /コマンド が使えない状態');
   if (!snapshot.memory.exists)
