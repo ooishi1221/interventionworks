@@ -1,6 +1,19 @@
 {
-  "updated_at": "2026-06-24T02:00:00+09:00",
+  "updated_at": "2026-06-24T12:00:00+09:00",
   "tasks": [
+    {
+      "id": "metameta-poc",
+      "scope": "wo",
+      "label": "metameta POC — 池田さんフィードバック待ち",
+      "category": "biz",
+      "status": "waiting",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-07-07",
+      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf。池田さんに共有して実際の1on1で使ってもらう",
+      "icon": "🧠"
+    },
     {
       "id": "live2d",
       "scope": "iw",
@@ -13,6 +26,32 @@
       "due": "2026-06-21",
       "note": "hendouさん検収完了。~/Desktop/Becky_Live2D_Model/ に .model3.json + .moc3 + 表情7種 + LipSync確認済み。room.htmlサイドバーにpixi-live2d-display実装済み",
       "icon": "✅"
+    },
+    {
+      "id": "aituber-kit",
+      "scope": "iw",
+      "label": "aituber-kit + OBS クロマキー配信環境構築完了",
+      "category": "voice",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-06-24",
+      "note": "aituber-kit v2.50.0 移行完了。AivisSpeech+Claude Haiku+Live2D+OBS接続済み。緑背景（bg-green.png）クロマキーでベキたんだけ切り出し可能。ウィンドウキャプチャ→クロマキーフィルター→背景レイヤー追加まで確認済み。port 3001稼働中",
+      "icon": "✅"
+    },
+    {
+      "id": "live2d-arm-rig",
+      "scope": "iw",
+      "label": "Live2Dモデル 腕リグ+表情2種+モーション4種 発注済み",
+      "category": "voice",
+      "status": "waiting",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-07-07",
+      "note": "hendouさんへ発注完了。¥49,000。①腕リグ（ParamArmLA/RA等ひよりVTS名に統一）+表情2種（驚き・困り）¥35,000 ②モーション4種（お辞儀/手振る/驚く/喜ぶ）¥14,000。届いたらaituber-kitに組み込み",
+      "icon": "⏳"
     },
     {
       "id": "aituber-onair",
@@ -364,6 +403,19 @@
       "due": "2026-06-24",
       "note": "capture_server.py/orchestrator.py: except→ログ出力付きに修正。cast.py/spotify_upload.py: 意図的なパスにコメント明記。Vibe-Guardのcheck-runtime-safetyが検出→修正の流れ",
       "icon": "✅"
+    },
+    {
+      "id": "mai-whisperx",
+      "scope": "wo",
+      "label": "MAI WhisperX乗り換え（話者分離）",
+      "category": "biz",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "due": "2026-06-25",
+      "note": "faster_whisper→whisperx 3.8.6に乗り換え。HuggingFace token取得済み・pyannote speaker-diarization-3.1接続済み・torchcodecアンインストール済み。次: サーバー再起動して話者分離の実動確認",
+      "icon": "🎙️"
     }
   ]
 }

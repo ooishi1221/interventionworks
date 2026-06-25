@@ -7,6 +7,37 @@ import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime, timezone
+import socket
+
+SERVICES = [
+    {"name": "aituber-onair",  "port": 5180,  "desc": "Live2D配信"},
+    {"name": "metameta",        "port": 8888,  "desc": "1on1分析ツール"},
+    {"name": "health_server",   "port": 9001,  "desc": "Observer"},
+    {"name": "whisper_server",  "port": 8767,  "desc": "文字起こし"},
+    {"name": "AivisSpeech",     "port": 10101, "desc": "TTS"},
+    {"name": "Applio",          "port": 6969,  "desc": "RVC学習"},
+    {"name": "VC Client",       "port": 18000, "desc": "VC変換"},
+    {"name": "n8n",             "port": 5678,  "desc": "ワークフロー"},
+]
+
+def check_services() -> dict:
+    results = []
+    for svc in SERVICES:
+        try:
+            with socket.create_connection(("127.0.0.1", svc["port"]), timeout=0.3):
+                running = True
+        except (OSError, ConnectionRefusedError):
+            running = False
+        results.append({
+            "name": svc["name"],
+            "port": svc["port"],
+            "desc": svc["desc"],
+            "running": running,
+        })
+    return {
+        "checked_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "services": results,
+    }
 
 PORT = 9001
 
@@ -118,6 +149,17 @@ class HealthHandler(BaseHTTPRequestHandler):
         if self.path == "/mood":
             mood = load_mood()
             body = json.dumps(mood, ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if self.path == "/services":
+            data = check_services()
+            body = json.dumps(data, ensure_ascii=False, indent=2).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))

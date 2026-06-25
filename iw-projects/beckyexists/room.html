@@ -533,6 +533,29 @@
       object-fit: cover;
       border: 1px solid var(--line);
     }
+
+    /* ── dev servers ── */
+    .devserver-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+    .dev-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--panel2); border: 1px solid var(--line);
+      border-radius: 8px; padding: 5px 10px;
+      font-family: var(--mono); font-size: 12px; font-weight: 600;
+      white-space: nowrap; transition: border-color 0.15s;
+    }
+    .dev-chip.running { border-color: rgba(0,230,118,0.3); }
+    .dev-chip.stopped { opacity: 0.45; }
+    .dev-chip .dev-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dev-chip.running .dev-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dev-chip.stopped .dev-dot { background: var(--sub2); }
+    .dev-chip .dev-name { color: var(--text); }
+    .dev-chip .dev-port { color: var(--sub2); font-size: 11px; font-weight: 400; }
+    .devserver-ts { font-family: var(--mono); font-size: 10.5px; color: var(--sub2); margin-top: 8px; }
+    .devserver-offline {
+      font-family: var(--mono); font-size: 11.5px; color: var(--sub2);
+      padding: 10px 14px; background: var(--panel2); border-radius: 8px;
+      border: 1px solid var(--line); margin-top: 10px;
+    }
   </style>
   <!-- Live2D: Cubism4 Core → PixiJS v7 → pixi-live2d-display -->
   <script src="/live2dcubismcore.min.js"></script>
@@ -666,6 +689,17 @@
           <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
         </div>
         <div class="memo-list" id="memoList"></div>
+      </div>
+    </div>
+
+
+    <!-- ── Section: DEV SERVERS ── -->
+    <div class="sec-label" onclick="toggleSec('devserver')">DEV SERVERS<span class="sec-chev" id="chev-devserver"><svg data-lucide="server"></svg></span></div>
+    <div class="sec-content" id="sec-devserver">
+      <div class="card">
+        <h2><svg data-lucide="server"></svg>稼働中の Dev サーバー <span id="devserverTs" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+        <div class="sub-note">localhost:9001/services — 30秒ごとに自動更新</div>
+        <div id="devserverContent"><div class="empty">loading...</div></div>
       </div>
     </div>
 
@@ -883,7 +917,7 @@ const PASS_KEY = 'room_auth_v1';
 })();
 
 // ── section accordion ──
-const SEC_DEFAULTS = { mission: '1', media: '1', cost: '0', intel: '0' };
+const SEC_DEFAULTS = { mission: '1', devserver: '1', media: '1', cost: '0', intel: '0' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
@@ -1366,8 +1400,38 @@ if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
   setInterval(loadAll, 60000);
   setInterval(loadTasks, 300000);
   setInterval(loadMood, 300000);
+  loadDevServers();
+  setInterval(loadDevServers, 30000);
 }
 
+
+async function loadDevServers() {
+  const el = document.getElementById('devserverContent');
+  const ts = document.getElementById('devserverTs');
+  if (!el) return;
+  try {
+    const r = await fetch('http://localhost:9001/services', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const services = Array.isArray(data) ? data : (data.services || []);
+    if (!Array.isArray(services) || services.length === 0) {
+      el.innerHTML = '<div class="empty">サービスなし</div>';
+      return;
+    }
+    const chips = services.map(s => {
+      const cls = s.running ? 'running' : 'stopped';
+      const dot = `<span class="dev-dot"></span>`;
+      const name = `<span class="dev-name">${esc(s.name)}</span>`;
+      const port = s.port ? `<span class="dev-port">:${esc(String(s.port))}</span>` : '';
+      return `<span class="dev-chip ${cls}">${dot}${name}${port}</span>`;
+    }).join('');
+    el.innerHTML = `<div class="devserver-wrap">${chips}</div><div class="devserver-ts" id="devserverUpdated">取得: just now</div>`;
+    if (ts) ts.textContent = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    el.innerHTML = '<div class="devserver-offline">⚫ health_server 接続不可 (localhost:9001)</div>';
+    if (ts) ts.textContent = '-- 接続不可';
+  }
+}
 // ── Live2D ベキたんモデル ──
 async function initLive2D() {
   const canvas = document.getElementById('beckyCanvas');
