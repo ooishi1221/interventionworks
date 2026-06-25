@@ -42,7 +42,7 @@ function gapColor(i: number): string {
 }
 
 export function generateHtml(snapshot: ConfigSnapshot): string {
-  const score = Math.max(0, 100 - snapshot.gaps.length * 13);
+  const score = snapshot.diagnostics.score;
   const scoreColor = score >= 80 ? '#4ade80' : score >= 50 ? '#facc15' : '#f87171';
 
   // Settings
@@ -129,6 +129,27 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
   const gapsSection = snapshot.gaps.length
     ? snapshot.gaps.map((g, i) => `<div class="gap-item ${gapColor(i)}">${g}</div>`).join('')
     : '<div class="gap-item gap-ok">✅ 設定は充実しています</div>';
+
+  // Diagnostics
+  const diagItems = snapshot.diagnostics.items;
+  const diagSection = diagItems.length === 0
+    ? '<div class="diag-item diag-ok">✅ 診断上の問題はありません</div>'
+    : diagItems.map((item) => {
+        const icon = item.severity === 'error' ? '🔴' : item.severity === 'warn' ? '🟡' : '🔵';
+        const cls = item.severity === 'error' ? 'diag-error' : item.severity === 'warn' ? 'diag-warn' : 'diag-info';
+        const suggestion = item.suggestion
+          ? `<div class="diag-suggestion">→ ${item.suggestion}</div>`
+          : '';
+        return `<div class="diag-item ${cls}">
+          <div class="diag-header">
+            <span class="diag-icon">${icon}</span>
+            <span class="diag-cat">${item.category}</span>
+            <span class="diag-title">${item.title}</span>
+          </div>
+          <div class="diag-detail">${item.detail}</div>
+          ${suggestion}
+        </div>`;
+      }).join('');
 
   // Folder tree
   const folderSections = snapshot.folderTree.map(root => `
@@ -227,6 +248,19 @@ ul.tree-children{padding-left:18px}
 .tree-note{color:#4a5568;font-size:10px}
 .tree-children.collapsed{display:none}
 
+/* diagnostics */
+.diag-item{padding:9px 13px;border-radius:8px;margin-bottom:7px;font-size:12px}
+.diag-error{background:#2d1b1b;border-left:3px solid #f87171}
+.diag-warn{background:#2d2510;border-left:3px solid #facc15}
+.diag-info{background:#1b243d;border-left:3px solid #60a5fa}
+.diag-ok{background:#1b2d1b;border-left:3px solid #4ade80;color:#86efac}
+.diag-header{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.diag-icon{font-size:13px;flex-shrink:0}
+.diag-cat{display:inline-block;padding:1px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:#1a2030;color:#94a3b8}
+.diag-title{font-weight:600;color:#e2e8f0}
+.diag-detail{color:#94a3b8;font-size:11px;padding-left:22px}
+.diag-suggestion{color:#64748b;font-size:11px;padding-left:22px;margin-top:2px}
+
 footer{margin-top:40px;text-align:center;color:#334155;font-size:11px}
 </style>
 </head>
@@ -304,6 +338,11 @@ footer{margin-top:40px;text-align:center;color:#334155;font-size:11px}
         <tr><th>パス</th><th>memory件数</th><th>memory</th></tr>
         ${projectRows}
       </table>
+    </div>
+
+    <div class="card grid-full">
+      <h2>DIAGNOSTICS (${diagItems.length}件) — Score: <span style="color:${scoreColor}">${score}</span></h2>
+      ${diagSection}
     </div>
 
     <div class="card grid-full">

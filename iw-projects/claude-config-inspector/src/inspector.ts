@@ -84,6 +84,19 @@ export interface FolderNode {
   note?: string;
 }
 
+export interface DiagnosticItem {
+  severity: 'error' | 'warn' | 'info';
+  category: 'context' | 'mcp' | 'hooks' | 'memory' | 'skills';
+  title: string;
+  detail: string;
+  suggestion?: string;
+}
+
+export interface DiagnosticReport {
+  items: DiagnosticItem[];
+  score: number;
+}
+
 export interface ConfigSnapshot {
   cwd: string;
   settings: SettingsSnapshot;
@@ -93,6 +106,7 @@ export interface ConfigSnapshot {
   projects: ProjectEntry[];
   folderTree: FolderNode[];
   gaps: string[];
+  diagnostics: DiagnosticReport;
 }
 
 // ─── helpers ──────────────────────────────────────────────────
@@ -416,7 +430,7 @@ export function renderTree(nodes: FolderNode[], prefix = ''): string[] {
 
 // ─── gaps ─────────────────────────────────────────────────────
 
-function detectGaps(snapshot: Omit<ConfigSnapshot, 'gaps'>): string[] {
+function detectGaps(snapshot: Omit<ConfigSnapshot, 'gaps' | 'diagnostics'>): string[] {
   const gaps: string[] = [];
 
   if (snapshot.settings.model === '(not set)')
@@ -441,6 +455,144 @@ function detectGaps(snapshot: Omit<ConfigSnapshot, 'gaps'>): string[] {
   return gaps;
 }
 
+// ─── diagnostics ──────────────────────────────────────────────
+
+function runDiagnostics(snapshot: Omit<ConfigSnapshot, 'gaps' | 'diagnostics'>): DiagnosticReport {
+  const items: DiagnosticItem[] = [];
+
+  // context カテゴリ
+  const totalLines = snapshot.claudeMds.reduce((sum, m) => sum + m.lineCount, 0);
+  if (totalLines > 500) {
+    items.push({
+      severity: 'error',
+      category: 'context',
+      title: 'Context が重大に肥大化しています',
+      detail: `CLAUDE.md の合計行数: ${totalLines}行（上限目安: 500行）`,
+      suggestion: 'セクションを分割し、都度呼び出しの参照ファイルに移してください',
+    });
+  } else if (totalLines > 300) {
+    items.push({
+      severity: 'warn',
+      category: 'context',
+      title: 'Context がやや大きくなっています',
+      detail: `CLAUDE.md の合計行数: ${totalLines}行（推奨: 300行以内）`,
+      suggestion: '不要なセクションを別ファイルに移す、または削除を検討してください',
+    });
+  }
+
+  const totalImportant = snapshot.claudeMds.reduce((sum, m) => sum + m.structure.importantCount, 0);
+  if (totalImportant >= 5) {
+    items.push({
+      severity: 'warn',
+      category: 'context',
+      title: '<important> の多用は Context 負荷になります',
+      detail: `<important> タグが合計 ${totalImportant} 個あります`,
+      suggestion: '本当に重要な箇所だけに絞り込んでください',
+    });
+  }
+
+  // mcp カテゴリ
+  const stdioMcps = snapshot.settings.mcpServers.filter((s) => s.type === 'stdio');
+  const npxMcps = stdioMcps.filter((s) => s.command === 'npx');
+  if (npxMcps.length >= 3) {
+    items.push({
+      severity: 'warn',
+      category: 'mcp',
+      title: 'npx 系 MCP が多い',
+      detail: `npx で起動する MCP が ${npxMcps.length} 個あります`,
+      suggestion: 'グローバルインストール済みのコマンドに切り替えると起動コストを削減できます',
+    });
+  }
+  if (stdioMcps.length >= 5) {
+    items.push({
+      severity: 'warn',
+      category: 'mcp',
+      title: 'stdio プロセスが多い',
+      detail: `stdio 型 MCP が ${stdioMcps.length} 個あります`,
+      suggestion: '使用頻度の低い MCP は無効化を検討してください',
+    });
+  }
+
+  // hooks カテゴリ
+  const preToolUseHooks = snapshot.settings.hooks.filter((h) => h.event === 'PreToolUse');
+  if (preToolUseHooks.length >= 3) {
+    items.push({
+      severity: 'warn',
+      category: 'hooks',
+      title: 'PreToolUse Hook が多い',
+      detail: `PreToolUse Hook が ${preToolUseHooks.length} 個あります`,
+      suggestion: 'ツール実行前の待機時間が蓄積します。統合できるものはまとめてください',
+    });
+  }
+  const userPromptHooks = snapshot.settings.hooks.filter((h) => h.event === 'UserPromptSubmit');
+  if (userPromptHooks.length > 0) {
+    items.push({
+      severity: 'info',
+      category: 'hooks',
+      title: 'UserPromptSubmit Hook が設定されています',
+      detail: `すべての送信前に ${userPromptHooks.length} 個の Hook が実行されます`,
+    });
+  }
+
+  // memory カテゴリ
+  if (snapshot.memory.exists && snapshot.memory.dir) {
+    try {
+      const memFiles = fs.readdirSync(snapshot.memory.dir)
+        .filter((f) => f.endsWith('.md') && f !== 'MEMORY.md' && f !== 'README.md');
+      if (memFiles.length > 0) {
+        let oldestMtime = Date.now();
+        for (const file of memFiles) {
+          try {
+            const stat = fs.statSync(path.join(snapshot.memory.dir!, file));
+            if (stat.mtimeMs < oldestMtime) oldestMtime = stat.mtimeMs;
+          } catch { /* skip */ }
+        }
+        const daysSince = Math.floor((Date.now() - oldestMtime) / (1000 * 60 * 60 * 24));
+        if (daysSince >= 90) {
+          items.push({
+            severity: 'warn',
+            category: 'memory',
+            title: 'Memory が長期間更新されていない可能性があります',
+            detail: `最も古い更新から ${daysSince} 日経過しています`,
+            suggestion: '不要になった Memory を整理し、新しい情報を追記してください',
+          });
+        }
+      }
+    } catch { /* directory read failed, skip */ }
+
+    if (snapshot.memory.typeBreakdown.feedback === 0 && snapshot.memory.fileCount >= 10) {
+      items.push({
+        severity: 'warn',
+        category: 'memory',
+        title: 'feedback type の Memory がありません',
+        detail: `Memory は ${snapshot.memory.fileCount} 件ありますが feedback 型が 0 件です`,
+        suggestion: '過去の指摘・修正を feedback type の Memory として記録してください',
+      });
+    }
+  }
+
+  // skills カテゴリ
+  if (snapshot.skills.length >= 10) {
+    items.push({
+      severity: 'info',
+      category: 'skills',
+      title: '多くの Skills が登録されています',
+      detail: `Skills が ${snapshot.skills.length} 個あります`,
+      suggestion: '使っていないものは整理を検討してください',
+    });
+  }
+
+  const score = Math.max(
+    0,
+    100
+      - items.filter((i) => i.severity === 'error').length * 20
+      - items.filter((i) => i.severity === 'warn').length * 8
+      - items.filter((i) => i.severity === 'info').length * 2
+  );
+
+  return { items, score };
+}
+
 // ─── main export ──────────────────────────────────────────────
 
 export function inspect(cwd?: string): ConfigSnapshot {
@@ -463,7 +615,9 @@ export function inspect(cwd?: string): ConfigSnapshot {
   const projects = collectProjects(resolvedCwd);
   const folderTree = collectFolderTree(resolvedCwd);
   const partial = { cwd: resolvedCwd, settings, claudeMds, skills, memory, projects, folderTree };
-  return { ...partial, gaps: detectGaps(partial) };
+  const gaps = detectGaps(partial);
+  const diagnostics = runDiagnostics(partial);
+  return { ...partial, gaps, diagnostics };
 }
 
 export function formatSnapshot(snapshot: ConfigSnapshot): string {
@@ -508,6 +662,20 @@ export function formatSnapshot(snapshot: ConfigSnapshot): string {
   lines.push('## 改善できる箇所');
   if (!snapshot.gaps.length) lines.push('✅ 設定は充実しています');
   else snapshot.gaps.forEach((g) => lines.push(`- ⚠️ ${g}`));
+  lines.push('');
+
+  const { diagnostics } = snapshot;
+  lines.push(`## Diagnostics (${diagnostics.items.length}件) — Score: ${diagnostics.score}`);
+  if (!diagnostics.items.length) {
+    lines.push('✅ 診断上の問題はありません');
+  } else {
+    for (const item of diagnostics.items) {
+      const icon = item.severity === 'error' ? '🔴' : item.severity === 'warn' ? '🟡' : '🔵';
+      lines.push(`${icon} [${item.category}] ${item.title}`);
+      lines.push(`  ${item.detail}`);
+      if (item.suggestion) lines.push(`  → ${item.suggestion}`);
+    }
+  }
   lines.push('');
 
   return lines.join('\n');
