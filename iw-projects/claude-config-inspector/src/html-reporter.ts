@@ -219,11 +219,10 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
 
   // Skills
   const skillRows = snapshot.skills.length
-    ? snapshot.skills.map(s => {
-        const desc = s.description ?? s.firstLine;
-        return `<tr><td><span class="badge badge-${s.source}">${s.source}</span></td><td><strong>/${s.name}</strong></td><td class="dim">${desc}</td></tr>`;
-      }).join('')
-    : '<tr><td colspan="3" class="empty">なし</td></tr>';
+    ? snapshot.skills.map(s =>
+        `<tr><td><span class="badge badge-${s.source}">${s.source}</span></td><td><strong>/${s.name}</strong></td></tr>`
+      ).join('')
+    : '<tr><td colspan="2" class="empty">なし</td></tr>';
 
   // Memory
   const { memory } = snapshot;
@@ -581,7 +580,7 @@ footer{margin-top:32px;text-align:center;color:#1e2a3a;font-size:11px;padding-bo
     <div class="card grid-full" id="skills">
       <h2>Skills (${snapshot.skills.length}個)</h2>
       <table>
-        <tr><th>種別</th><th>コマンド</th><th>説明</th></tr>
+        <tr><th>種別</th><th>コマンド</th></tr>
         ${skillRows}
       </table>
     </div>
