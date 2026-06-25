@@ -856,6 +856,13 @@
       <div id="michaelReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--text);white-space:pre-line;"><div class="empty">loading...</div></div>
     </div>
 
+    <!-- grok 突撃候補 -->
+    <div class="card">
+      <h2><svg data-lucide="twitter"></svg>grok 突撃候補 <span id="grokTweetsAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">becky_search.py が grok で拾ったリプ候補</div>
+      <div id="grokTweetsList" style="margin-top:14px;"><div class="empty">loading...</div></div>
+    </div>
+
     </div><!-- /sec-intel -->
 
     <!-- ── Section: TOOLS ── -->
@@ -872,6 +879,12 @@
       <h2><svg data-lucide="scan-search"></svg>Claude Config Inspector</h2>
       <div class="sub-note">Claude の構成（MCP・Memory・Skills・Hooks）を可視化して診断するツール</div>
       <code style="display:block;margin-top:12px;background:#111;color:#4ade80;padding:10px 14px;border-radius:4px;font-size:12px;font-family:var(--mono);user-select:all;">npx github:ooishi1221/claude-config-inspector --html</code>
+    </div>
+
+    <div class="card">
+      <h2><svg data-lucide="zap"></svg>xAI Console</h2>
+      <div class="sub-note">Grok API — Billing & Usage</div>
+      <a href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:10px 20px;background:var(--green);color:#000;font-size:12px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-decoration:none;border-radius:4px;">OPEN CONSOLE →</a>
     </div>
 
     </div><!-- /sec-tools -->
@@ -971,7 +984,7 @@ async function fetchJson(path) {
 }
 
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform, mediaReport] = await Promise.all([
+  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/trending.json'),
     fetchJson('/news.json'),
@@ -980,6 +993,7 @@ async function loadAll() {
     fetchJson('/book.json'),
     fetchJson('/platform_stats.json'),
     fetchJson('/media_report.json'),
+    fetchJson('/grok_tweets.json'),
   ]);
 
   // ── sync time ──
@@ -1161,6 +1175,25 @@ async function loadAll() {
     }
   } else {
     $('michaelReport').innerHTML = '<div class="empty">レポートなし（次回Observer実行時に生成）</div>';
+  }
+
+  // ── grok 突撃候補 ──
+  if (grokTweets?.candidates?.length) {
+    const items = grokTweets.candidates;
+    $('grokTweetsAt').textContent = fmtAgo(grokTweets.updated_at);
+    $('grokTweetsList').innerHTML = items.map(c => `
+      <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--green);font-weight:700;">@${c.screen_name}</span>
+          <span style="font-size:10px;color:var(--sub2);font-family:var(--mono);">[${c.pattern}] ${c.pattern_label}</span>
+          <span style="font-size:10px;color:var(--sub2);margin-left:auto;">❤️${c.likes} 👁${c.views}</span>
+        </div>
+        <div style="font-size:12px;color:var(--sub1);margin-bottom:8px;line-height:1.6;">"${c.tweet_text}..."</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.6;border-left:2px solid var(--green);padding-left:10px;">${c.reply_text}</div>
+      </div>
+    `).join('');
+  } else {
+    $('grokTweetsList').innerHTML = '<div class="empty">候補なし（次回 becky_search.py 実行時に更新）</div>';
   }
 
   // ── メディア週次分析レポート ──

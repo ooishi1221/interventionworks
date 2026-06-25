@@ -14,8 +14,11 @@ becky_search.py — 見ず知らずへの半自動突撃システム
 
 import argparse
 import json
+import os
+import re
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from datetime import datetime, date
@@ -27,12 +30,17 @@ except ImportError:
     _HAS_PSUTIL = False
 
 TWITTER_CLI      = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
+GROK_BIN         = Path.home() / ".grok" / "bin" / "grok"
+AGMSG_SCRIPTS    = Path.home() / ".agents" / "skills" / "agmsg" / "scripts"
+GROK_TMUX        = "grok"  # tmux セッション名
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
 BECKY_MOOD_FILE  = Path.home() / ".stackchan" / "becky_mood.json"
 SENT_LOG_FILE    = Path.home() / ".stackchan" / "search_replied_log.json"
 NOTIFY_LOG_FILE  = Path.home() / ".stackchan" / "search_notify_log.json"
 CONFIG_YAML      = Path(__file__).parent / "config.yaml"
+REPO_ROOT        = Path(__file__).resolve().parents[4]  # interventionworks/
+GROK_TWEETS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "grok_tweets.json"
 
 # 1日の最大送信候補数（Telegramに通知する上限）
 MAX_CANDIDATES_PER_RUN = 3
@@ -215,6 +223,8 @@ def _load_sent_log() -> set:
     try:
         log = json.loads(SENT_LOG_FILE.read_text())
         return set(log.get("replied_ids", []))
+    except FileNotFoundError:
+        return set()
     except Exception as e:
         print(f'[warn] becky_search: {e}', flush=True)
         return set()
@@ -263,6 +273,146 @@ def search_tweets(pattern_key: str) -> list[dict]:
         return []
     except Exception as e:
         print(f"[search] 検索エラー ({pattern_key}): {e}", flush=True)
+        return []
+
+
+def _parse_grok_tweets(text: str) -> list[dict]:
+    """grok の TWEET|... 形式レスポンスをパース（\\n エスケープ対応）"""
+    text = text.replace("\\n", "\n")
+    tweets = []
+    for line in text.splitlines():
+        line = line.strip()
+        # メッセージヘッダ内の TWEET| も拾う（"[time] grok: TWEET|..."形式）
+        if "TWEET|" in line:
+            line = line[line.index("TWEET|"):]
+        if not line.startswith("TWEET|"):
+            continue
+        parts = line.split("|", 5)
+        if len(parts) < 6:
+            continue
+        _, tweet_id, screen_name, likes, views, body = parts
+        try:
+            tweets.append({
+                "id": tweet_id.strip(),
+                "author": {"screen_name": screen_name.strip()},
+                "text": body.strip(),
+                "metrics": {
+                    "likes": int(re.sub(r"[^\d]", "", likes) or "0"),
+                    "views": int(re.sub(r"[^\d]", "", views) or "0"),
+                },
+            })
+        except Exception:
+            continue
+    return tweets
+
+
+def search_tweets_grok(pattern_key: str) -> list[dict]:
+    """agmsg + tmux 経由で grok に X 検索を依頼（X Premium OAuth・API 制限なし）
+    前提: tmux セッション 'grok' で grok が起動していること
+    """
+    # grok tmux セッション確認 → なければ spawn で自動起動
+    tmux_check = subprocess.run(
+        ["tmux", "has-session", "-t", GROK_TMUX], capture_output=True
+    )
+    if tmux_check.returncode != 0:
+        print(f"[search] grok セッションなし。spawn で起動中...", flush=True)
+        spawn = subprocess.run(
+            [str(AGMSG_SCRIPTS / "spawn.sh"), "grok-build", "grok",
+             "--project", str(Path.cwd()), "--no-wait"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if spawn.returncode != 0:
+            print(f"[search] grok spawn 失敗: {spawn.stderr[:100]}", flush=True)
+            return []
+        time.sleep(8)  # grok 起動待ち
+
+    pattern = SEARCH_PATTERNS[pattern_key]
+    message = (
+        f'X を以下のクエリで検索して最新投稿を最大8件取得してください。\n'
+        f'クエリ: {pattern["query"]}\n'
+        f'条件: リツイート除外・広告除外・日本語優先・最新順\n'
+        f'結果を以下の形式で1件1行（他のテキスト不要）:\n'
+        f'TWEET|ツイートID|スクリーンネーム|いいね数|閲覧数|ツイート本文'
+    )
+    def _grok_pane_state() -> str:
+        """grok TUI の状態を返す: 'idle' | 'typing' | 'processing' | 'unknown'"""
+        pane = subprocess.run(
+            ["tmux", "capture-pane", "-t", f"{GROK_TMUX}:0.0", "-p"],
+            capture_output=True, text=True, timeout=5,
+        )
+        content = pane.stdout
+        if "Ctrl+c:cancel" in content:
+            return "processing"
+        if "Enter:send" in content:
+            return "typing"   # 入力欄にテキストあり
+        if "Ctrl+x:shortcuts" in content:
+            return "idle"     # 空入力・プロンプト待ち
+        return "unknown"
+
+    def _wait_for_grok_idle(max_wait: int = 90) -> bool:
+        """grok が idle になるまで最大 max_wait 秒待つ。
+        'typing' 状態（未送信テキストが残留）はCRで流してから待つ。
+        """
+        state = _grok_pane_state()
+        if state == "typing":
+            # 残留テキストをCRで送信してクリア
+            subprocess.run(
+                ["bash", "-c", f"tmux send-keys -l -t {GROK_TMUX}:0.0 $'\\r'"],
+                capture_output=True, text=True, timeout=5,
+            )
+            time.sleep(2)
+        for _ in range(max_wait // 3):
+            if _grok_pane_state() == "idle":
+                return True
+            time.sleep(3)
+        return False
+
+    def _trigger_grok():
+        """grok が idle になってから /agmsg を入力して carriage return で送信する"""
+        _wait_for_grok_idle()
+        # テキスト入力
+        subprocess.run(
+            ["bash", "-c", f'tmux send-keys -t {GROK_TMUX}:0.0 "/agmsg"'],
+            capture_output=True, text=True, timeout=5,
+        )
+        time.sleep(1.0)  # TUI がテキストを認識するまで待つ
+        # CR 送信（tmux send-keys -l $'\r' = literal carriage return、動作確認済み）
+        subprocess.run(
+            ["bash", "-c", f"tmux send-keys -l -t {GROK_TMUX}:0.0 $'\\r'"],
+            capture_output=True, text=True, timeout=5,
+        )
+
+    try:
+        # agmsg 経由で grok に送信
+        subprocess.run(
+            [str(AGMSG_SCRIPTS / "send.sh"), "becky", "becky", "grok", message],
+            capture_output=True, text=True, timeout=10,
+        )
+        # grok が idle になってから /agmsg を叩く
+        _trigger_grok()
+        # 最大180秒ポーリング（5秒間隔）
+        # 120秒時点で grok が idle なら再トリガー（processing 中なら待つ）
+        for i in range(36):
+            time.sleep(5)
+            inbox = subprocess.run(
+                [str(AGMSG_SCRIPTS / "inbox.sh"), "becky", "becky"],
+                capture_output=True, text=True, timeout=10,
+            )
+            tweets = _parse_grok_tweets(inbox.stdout)
+            if tweets:
+                print(f"[search] grok パターン{pattern_key}: {len(tweets)}件取得", flush=True)
+                return tweets
+            if i == 23:  # 120秒経過
+                state = _grok_pane_state()
+                if state == "idle":
+                    print(f"[search] 120秒経過・grok idle → 再トリガー", flush=True)
+                    _trigger_grok()
+                else:
+                    print(f"[search] 120秒経過・grok {state} → 待機続行", flush=True)
+        print(f"[search] grok 応答タイムアウト ({pattern_key})", flush=True)
+        return []
+    except Exception as e:
+        print(f"[search] grok 検索エラー ({pattern_key}): {e}", flush=True)
         return []
 
 
@@ -321,8 +471,7 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
     candidates = []
     seen_users: set[str] = set()  # 同じユーザーへの重複リプ防止
     for pkey in target_patterns:
-        tweets = search_tweets(pkey)
-        print(f"[search] パターン{pkey}: {len(tweets)}件取得", flush=True)
+        tweets = search_tweets_grok(pkey)
         for tweet in tweets:
             tweet_id = str(tweet.get("id", ""))
             if not tweet_id or tweet_id in sent_log:
@@ -376,6 +525,27 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
     if not dry_run:
         send_telegram(notification)
         _append_notify_log(len(candidates), target_patterns[0] if len(target_patterns) == 1 else "multi")
+        # beckyexists/grok_tweets.json を更新（room.html Intelligence 表示用）
+        try:
+            grok_data = {
+                "updated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "candidates": [
+                    {
+                        "tweet_id": c["tweet_id"],
+                        "screen_name": c["screen_name"],
+                        "tweet_text": c["tweet_text"],
+                        "reply_text": c["reply_text"],
+                        "pattern": c["pattern"],
+                        "pattern_label": SEARCH_PATTERNS[c["pattern"]]["label"],
+                        "likes": c.get("likes", 0),
+                        "views": c.get("views", 0),
+                    }
+                    for c in candidates
+                ],
+            }
+            GROK_TWEETS_JSON.write_text(json.dumps(grok_data, ensure_ascii=False, indent=2))
+        except Exception as e:
+            print(f"[search] grok_tweets.json 保存失敗: {e}", flush=True)
 
 
 if __name__ == "__main__":

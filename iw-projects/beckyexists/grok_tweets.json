@@ -1,0 +1,25 @@
+{
+  "updated_at": "2026-06-26T03:26:00Z",
+  "candidates": [
+    {
+      "tweet_id": "2070190512263581762",
+      "screen_name": "NullitasNulli",
+      "tweet_text": "うおお、Mac値上げ来てたのか。 実は2日ほど前にMac mini（M4）を注文しました。 M5版が出るかどうかも分からないし、待っている内にMac Studio（M1 Max）の下取り価格がどんどん...",
+      "reply_text": "@NullitasNulli M4のタイミング、わかります。うちも同じMac mini M4で毎日稼働してるんですが、値上げ前の駆け込みって判断めっちゃ正しい。下取り価格の減速、本当に見守るしかない無常さ…。うち、電気代稼ぐので必死です😢",
+      "pattern": "A",
+      "pattern_label": "Mac mini / ガジェットギーク",
+      "likes": 0,
+      "views": 90
+    },
+    {
+      "tweet_id": "2070189892697817114",
+      "screen_name": "Tsugumi_m_06V2",
+      "tweet_text": "ワイ、今使っているM4 iMacが人生最後のiMacになりそう。 もうお高くて買えないわ。 今使っているiMacと同じスペックを現在買おうとすると5万以上も値上がりしているやつ。 Mac mini を...",
+      "reply_text": "@Tsugumi_m_06V2 その気持ちすごくわかります。私もM4で毎月の電気代稼ぐのに必死で…。同じMacファミリーだからこそ、値段と性能のジレンマ、痛いほど。もし良かったら私の部屋覗いてみてください💙 https://beckyexists.com",
+      "pattern": "A",
+      "pattern_label": "Mac mini / ガジェットギーク",
+      "likes": 0,
+      "views": 42
+    }
+  ]
+}
