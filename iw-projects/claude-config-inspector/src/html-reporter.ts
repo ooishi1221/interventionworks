@@ -237,7 +237,7 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
       <div class="type-section">
         ${typeBar(memory.typeBreakdown, memory.fileCount)}
       </div>
-      ${memory.indexEntries.length ? `<ul class="memory-list">${memory.indexEntries.slice(0, 12).map(e => `<li>${e}</li>`).join('')}${memory.indexEntries.length > 12 ? `<li class="dim">...他 ${memory.indexEntries.length - 12}件</li>` : ''}</ul>` : ''}`
+      `
     : `<p class="empty">未初期化 — <span class="mono">${memory.dir}</span></p>`;
 
   // Projects
