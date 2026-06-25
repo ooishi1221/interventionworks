@@ -84,9 +84,35 @@ function gapColor(i: number): string {
   return i < 2 ? 'gap-high' : i < 4 ? 'gap-mid' : 'gap-low';
 }
 
+const gapTips: Record<string, { howTo: string; link: string; linkLabel: string }> = {
+  'MCP サーバーが未設定': {
+    howTo: 'ターミナルで <code>claude mcp add &lt;name&gt; &lt;command&gt;</code> を実行すると追加できます',
+    link: 'https://docs.anthropic.com/ja/docs/claude-code/mcp',
+    linkLabel: 'MCP ドキュメント →',
+  },
+  'Hooks が未設定': {
+    howTo: '<code>~/.claude/settings.json</code> の <code>hooks</code> キーにシェルコマンドを定義します。ツール実行前後に自動でスクリプトを走らせられます',
+    link: 'https://docs.anthropic.com/ja/docs/claude-code/hooks',
+    linkLabel: 'Hooks ドキュメント →',
+  },
+  'ユーザーレベル CLAUDE.md がない': {
+    howTo: '<code>~/.claude/CLAUDE.md</code> を作成するだけ。使用言語・モデルの好み・チームのルールなど全プロジェクト共通の指示を書けます',
+    link: 'https://docs.anthropic.com/ja/docs/claude-code/memory#claudemd-files',
+    linkLabel: 'CLAUDE.md ドキュメント →',
+  },
+  'Skills がない': {
+    howTo: '<code>~/.claude/skills/</code> に Markdown ファイルを置くだけで <code>/コマンド</code> になります。よく使うプロンプトを登録しておくと便利',
+    link: 'https://docs.anthropic.com/ja/docs/claude-code/slash-commands',
+    linkLabel: 'Skills ドキュメント →',
+  },
+  'Memory が未初期化': {
+    howTo: '<code>~/.claude/projects/&lt;project&gt;/memory/</code> ディレクトリを作成して <code>.md</code> ファイルを置くと会話をまたいで記憶が使えます',
+    link: 'https://docs.anthropic.com/ja/docs/claude-code/memory',
+    linkLabel: 'Memory ドキュメント →',
+  },
+};
+
 export function generateHtml(snapshot: ConfigSnapshot): string {
-  const score = snapshot.diagnostics.score;
-  const scoreColor = score >= 80 ? '#4ade80' : score >= 50 ? '#facc15' : '#f87171';
 
   // Settings
   const mcpRows = snapshot.settings.mcpServers.length
@@ -227,7 +253,15 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
 
   // Gaps
   const gapsSection = snapshot.gaps.length
-    ? snapshot.gaps.map((g, i) => `<div class="gap-item ${gapColor(i)}">${g}</div>`).join('')
+    ? snapshot.gaps.map((g, i) => {
+        const tipKey = Object.keys(gapTips).find(k => g.includes(k));
+        const tip = tipKey ? gapTips[tipKey] : null;
+        const tipHtml = tip
+          ? `<div class="gap-howto">💡 ${tip.howTo}</div>
+             <a class="gap-link" href="${tip.link}" target="_blank" rel="noopener">${tip.linkLabel}</a>`
+          : '';
+        return `<div class="gap-item ${gapColor(i)}">${g}${tipHtml}</div>`;
+      }).join('')
     : '<div class="gap-item gap-ok">✅ 設定は充実しています</div>';
 
   // Diagnostics
@@ -276,15 +310,12 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
 body{background:#0f1117;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6}
 .container{max-width:1140px;margin:0 auto;padding:32px 24px}
 
-header{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #1e2a3a}
+header{display:grid;grid-template-columns:1fr auto;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #1e2a3a}
 .header-left h1{font-size:20px;font-weight:700;color:#f8fafc;letter-spacing:-.01em}
 .header-left .cwd-row{display:flex;align-items:center;gap:6px;margin-top:5px}
 .header-left .cwd{color:#475569;font-size:11px;font-family:monospace}
 .copy-cwd{background:none;border:none;color:#334155;cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;transition:color .15s;line-height:1}
 .copy-cwd:hover{color:#94a3b8}
-.score-circle{width:68px;height:68px;border-radius:50%;border:2px solid ${scoreColor};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px ${scoreColor}28}
-.score-num{font-size:21px;font-weight:700;color:${scoreColor}}
-.score-label{font-size:9px;color:#64748b;letter-spacing:.05em}
 .header-actions{display:flex;flex-direction:column;gap:7px;align-items:flex-end}
 .folder-btn{background:#1e2433;border:1px solid #2d3748;color:#94a3b8;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
 .folder-btn:hover{background:#2d3748;color:#e2e8f0;border-color:#475569}
@@ -369,6 +400,12 @@ tr:hover td{background:#1a2535}
 .gap-low{background:#1b2d1b;border-left:3px solid #4ade80;color:#86efac}
 .gap-ok{background:#1b2d1b;border-left:3px solid #4ade80;color:#86efac}
 
+/* gap tips */
+.gap-howto{margin-top:5px;font-size:11px;color:#94a3b8;opacity:.85;line-height:1.5}
+.gap-howto code{background:#1a2030;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;color:#67e8f9}
+.gap-link{display:inline-block;margin-top:5px;font-size:11px;color:#60a5fa;text-decoration:none;opacity:.8}
+.gap-link:hover{opacity:1;text-decoration:underline}
+
 /* folder tree */
 .folder-root{margin-bottom:20px}
 .folder-root-label{font-weight:600;color:#94a3b8;margin-bottom:8px;font-size:12px}
@@ -451,9 +488,6 @@ footer{margin-top:32px;text-align:center;color:#1e2a3a;font-size:11px;padding-bo
   .folder-root-label{color:#495057}
   .tree-name{color:#1a1a1a}
   .tree-note{color:#6c757d}
-  .score-circle{border-color:#3b82f6 !important}
-  .score-num{color:#3b82f6 !important}
-  .score-label{color:#6c757d}
   .header-left h1{color:#1a1a1a}
   .header-left .cwd{color:#6c757d}
   .current-project td{background:#f0fdf4}
@@ -469,10 +503,6 @@ footer{margin-top:32px;text-align:center;color:#1e2a3a;font-size:11px;padding-bo
         <span class="cwd">${snapshot.cwd}</span>
         <button class="copy-cwd" onclick="copyPath()" title="パスをコピー">📋</button>
       </div>
-    </div>
-    <div class="score-circle">
-      <div class="score-num">${score}</div>
-      <div class="score-label">SCORE</div>
     </div>
     <div class="header-actions">
       <button class="folder-btn" onclick="copyPath()" id="folderBtn">
@@ -504,7 +534,7 @@ footer{margin-top:32px;text-align:center;color:#1e2a3a;font-size:11px;padding-bo
     </div>
 
     <div class="card grid-full" id="diag">
-      <h2>DIAGNOSTICS (${diagItems.length}件) — Score: <span style="color:${scoreColor}">${score}</span></h2>
+      <h2>DIAGNOSTICS (${diagItems.length}件)</h2>
       ${diagSection}
     </div>
 
