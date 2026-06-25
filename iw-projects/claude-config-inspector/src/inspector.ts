@@ -234,10 +234,10 @@ function collectClaudeMds(cwd: string): ClaudeMdInfo[] {
 function collectSkills(cwd: string): SkillInfo[] {
   const skills: SkillInfo[] = [];
   const dirs: Array<{ dir: string; source: 'user' | 'project' }> = [
+    { dir: path.join(CLAUDE_DIR, 'skills'), source: 'user' },
     { dir: path.join(CLAUDE_DIR, 'commands'), source: 'user' },
-    { dir: path.join(CLAUDE_DIR, 'skills'), source: 'user' },   // skills/ も検索
-    { dir: path.join(cwd, '.claude', 'commands'), source: 'project' },
     { dir: path.join(cwd, '.claude', 'skills'), source: 'project' },
+    { dir: path.join(cwd, '.claude', 'commands'), source: 'project' },
   ];
   for (const { dir, source } of dirs) {
     if (!fs.existsSync(dir)) continue;
@@ -253,7 +253,8 @@ function collectSkills(cwd: string): SkillInfo[] {
 // ─── memory ───────────────────────────────────────────────────
 
 function collectMemory(cwd: string): MemoryInfo {
-  // macOS: /foo/bar → -foo-bar (先頭の / も - に変換、remove を削除)
+  // Mac: /Volumes/... → -Volumes-... (先頭の / も - に変換、leading dash を保持)
+  // Windows: C:\Users\... → C:-Users-... (no leading dash)
   const encoded = cwd.replace(/[/\\]/g, '-');
   const memoryDir = path.join(CLAUDE_DIR, 'projects', encoded, 'memory');
 
@@ -444,7 +445,17 @@ function detectGaps(snapshot: Omit<ConfigSnapshot, 'gaps'>): string[] {
 
 export function inspect(cwd?: string): ConfigSnapshot {
   const resolvedCwd = cwd ?? process.cwd();
-  const raw = readJsonSafe(path.join(CLAUDE_DIR, 'settings.json'));
+
+  // MCP はユーザー設定 + プロジェクト設定 + local 設定をマージ
+  const rawUser = readJsonSafe(path.join(CLAUDE_DIR, 'settings.json'));
+  const rawProject = readJsonSafe(path.join(resolvedCwd, '.claude', 'settings.json'));
+  const rawLocal = readJsonSafe(path.join(resolvedCwd, '.claude', 'settings.local.json'));
+  const mergedMcp = {
+    ...(rawUser.mcpServers as Record<string, unknown> ?? {}),
+    ...(rawProject.mcpServers as Record<string, unknown> ?? {}),
+    ...(rawLocal.mcpServers as Record<string, unknown> ?? {}),
+  };
+  const raw = { ...rawUser, ...rawProject, ...rawLocal, mcpServers: mergedMcp };
   const settings = parseSettings(raw);
   const claudeMds = collectClaudeMds(resolvedCwd);
   const skills = collectSkills(resolvedCwd);
