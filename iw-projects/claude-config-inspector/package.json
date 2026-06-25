@@ -1,0 +1,26 @@
+{
+  "name": "claude-config-inspector",
+  "version": "0.1.0",
+  "description": "Visualize your Claude Code configuration — memory, skills, MCP, hooks",
+  "type": "module",
+  "bin": {
+    "claude-inspect": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "inspect": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  },
+  "keywords": ["claude", "claude-code", "mcp", "config", "inspector"],
+  "license": "MIT"
+}
