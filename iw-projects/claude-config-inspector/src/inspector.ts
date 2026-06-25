@@ -135,13 +135,25 @@ function decodeProjectPath(encoded: string): string {
 // ─── settings ─────────────────────────────────────────────────
 
 function parseSettings(raw: Record<string, unknown>): SettingsSnapshot {
-  const mcpRaw = (raw.mcpServers ?? {}) as Record<string, Record<string, unknown>>;
+  // mcp.json を優先して読む（settings.json の mcpServers は空のことが多い）
+  const mcpJson = readJsonSafe(path.join(CLAUDE_DIR, 'mcp.json'));
+  const mcpRawBase = (raw.mcpServers ?? {}) as Record<string, Record<string, unknown>>;
+  const mcpRawFile = (mcpJson.mcpServers ?? {}) as Record<string, Record<string, unknown>>;
+  const mcpRaw = { ...mcpRawBase, ...mcpRawFile };
   const mcpServers: McpServer[] = Object.entries(mcpRaw).map(([name, cfg]) => ({
     name,
     type: String(cfg.type ?? 'stdio'),
     command: cfg.command as string | undefined,
     url: cfg.url as string | undefined,
   }));
+
+  // enabledPlugins をプラグイン型 MCP として追加
+  const enabledPlugins = (raw.enabledPlugins ?? {}) as Record<string, boolean>;
+  for (const [name, enabled] of Object.entries(enabledPlugins)) {
+    if (enabled) {
+      mcpServers.push({ name, type: 'plugin', command: undefined, url: undefined });
+    }
+  }
 
   const hooksRaw = (raw.hooks ?? {}) as Record<string, unknown[]>;
   const hooks: HookEntry[] = Object.entries(hooksRaw).map(([event, entries]) => ({
@@ -223,7 +235,9 @@ function collectSkills(cwd: string): SkillInfo[] {
   const skills: SkillInfo[] = [];
   const dirs: Array<{ dir: string; source: 'user' | 'project' }> = [
     { dir: path.join(CLAUDE_DIR, 'commands'), source: 'user' },
+    { dir: path.join(CLAUDE_DIR, 'skills'), source: 'user' },   // skills/ も検索
     { dir: path.join(cwd, '.claude', 'commands'), source: 'project' },
+    { dir: path.join(cwd, '.claude', 'skills'), source: 'project' },
   ];
   for (const { dir, source } of dirs) {
     if (!fs.existsSync(dir)) continue;
@@ -239,7 +253,8 @@ function collectSkills(cwd: string): SkillInfo[] {
 // ─── memory ───────────────────────────────────────────────────
 
 function collectMemory(cwd: string): MemoryInfo {
-  const encoded = cwd.replace(/[/\\]/g, '-').replace(/^-/, '');
+  // macOS: /foo/bar → -foo-bar (先頭の / も - に変換、remove を削除)
+  const encoded = cwd.replace(/[/\\]/g, '-');
   const memoryDir = path.join(CLAUDE_DIR, 'projects', encoded, 'memory');
 
   const empty: MemoryTypeBreakdown = { user: 0, feedback: 0, project: 0, reference: 0, unknown: 0 };
@@ -248,11 +263,27 @@ function collectMemory(cwd: string): MemoryInfo {
     return { dir: memoryDir, exists: false, fileCount: 0, indexExists: false, indexEntries: [], typeBreakdown: empty };
   }
 
-  const files = fs.readdirSync(memoryDir).filter((f) => f.endsWith('.md') && f !== 'MEMORY.md');
+  // サブディレクトリも含めて再帰的にファイルを収集
+  function collectMdFiles(dir: string): string[] {
+    const results: string[] = [];
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          results.push(...collectMdFiles(fullPath));
+        } else if (entry.isFile() && entry.name.endsWith('.md') && entry.name !== 'MEMORY.md' && entry.name !== 'README.md') {
+          results.push(fullPath);
+        }
+      }
+    } catch { /* skip unreadable dirs */ }
+    return results;
+  }
+
+  const files = collectMdFiles(memoryDir);
   const typeBreakdown = { ...empty };
 
-  for (const file of files) {
-    const content = readFileSafe(path.join(memoryDir, file));
+  for (const filePath of files) {
+    const content = readFileSafe(filePath);
     const fm = parseFrontmatter(content);
     const t = fm.type as keyof MemoryTypeBreakdown | undefined;
     if (t && t in typeBreakdown) {
@@ -288,7 +319,7 @@ function collectProjects(cwd: string): ProjectEntry[] {
   const projectsDir = path.join(CLAUDE_DIR, 'projects');
   if (!fs.existsSync(projectsDir)) return [];
 
-  const currentEncoded = cwd.replace(/[/\\]/g, '-').replace(/^-/, '');
+  const currentEncoded = cwd.replace(/[/\\]/g, '-');
 
   return fs.readdirSync(projectsDir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
