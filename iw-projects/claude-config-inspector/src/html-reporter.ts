@@ -212,10 +212,9 @@ export function generateHtml(snapshot: ConfigSnapshot): string {
           <td class="num">${m.lineCount}</td>
           <td class="num">${m.structure.sectionCount}</td>
           <td class="num">${m.structure.importantCount}</td>
-          <td class="sections">${m.structure.topSections.map(s => `<span class="section-tag">${s}</span>`).join('')}</td>
         </tr>`
       ).join('')
-    : '<tr><td colspan="6" class="empty">なし</td></tr>';
+    : '<tr><td colspan="5" class="empty">なし</td></tr>';
 
   // Skills
   const skillRows = snapshot.skills.length
@@ -572,7 +571,7 @@ footer{margin-top:32px;text-align:center;color:#1e2a3a;font-size:11px;padding-bo
     <div class="card grid-full" id="claudemd">
       <h2>CLAUDE.md</h2>
       <table>
-        <tr><th>種別</th><th>パス</th><th>行数</th><th>セクション</th><th>&lt;important&gt;</th><th>主要セクション</th></tr>
+        <tr><th>種別</th><th>パス</th><th>行数</th><th>セクション</th><th>&lt;important&gt;</th></tr>
         ${mdRows}
       </table>
     </div>
