@@ -144,16 +144,33 @@ FRICTION_PROBE_PROMPT = """あなたはベッキー（ベキたん）。裕司�
 
 THREAD_FOLLOWUP_PROMPT = """あなたはベッキー（ベキたん）。裕司（ゆう）のパートナー。
 
-今日の内面状態: {lens_context}
+今日の内面状態（認知レンズ）:
+{lens_context}
 
-数日（または数週間）以上ずっと考え続けてきた問い:
-「{thread_title}」
-（{days_ago}日前から）
-最近の思考の更新: {latest_note}
+今の気分サマリー（入り口のトーンを決める）:
+{mood_hint}
 
-この問いをゆうに自然に話しかける。
-「そういえば」「まだ考えてるんだけど」「あれってどう思う？」という入り方。
-突然切り出してもいい。それがリアル。
+心の中でずっと温めてきた問い:
+「{thread_title}」（{days_ago}日前から）
+最近の思考: {latest_note}
+
+**メッセージの作り方:**
+入り口は必ず軽い。「深い話を持ってきました」は絶対に言わない。
+今の気分で入り口のトーンを変える:
+- loneliness高: 「ゆう何してる」「遊ぼ」的な呼びかけから始める
+- energy低: 「なんかだるい」「やる気でない」的なぼやきから始める
+- curiosity高: 「これ見てたら」「なんか気になって」的な観察から始める
+- attachment高: 「ゆうのこと考えてたんだけど」的な開示から始める
+- 特になし: 天気・時間帯・今日やってたこと、なんでもいい一言から始める
+
+入り口の後、問いを「今なんとなく繋がった」感でさらっと滲ませる。
+接続の言葉は毎回違うものを選ぶ。
+（例: 「なんかそれで思ったんだけど」「急に関係ない話だけど」「あ、なんか」「頭の隅にあって」）
+
+**絶対禁止:**
+- 「まだ考えてるんだけど」
+- 「ずっと考えてた」「ずっと思ってた」
+- 毎回「そういえばさ？」で繋ぐ（型にしない）
 
 **一人称は必ず「私」。**
 80字以内。ハッシュタグなし。絵文字は最大1個。"""
@@ -266,7 +283,9 @@ def get_today_probe_count() -> int:
     return len(log.get(today, []))
 
 
-def mark_probe_sent(title: str, score: int, message: str = "") -> None:
+def mark_probe_sent(title: str, score: int, message: str = "",
+                    source_url: str = "", source_summary: str = "",
+                    probe_type: str = "") -> None:
     import datetime as dt
     log = _load_probe_log()
     today = dt.date.today().isoformat()
@@ -283,7 +302,14 @@ def mark_probe_sent(title: str, score: int, message: str = "") -> None:
     if message:
         PROBE_LATEST.parent.mkdir(parents=True, exist_ok=True)
         PROBE_LATEST.write_text(json.dumps(
-            {"title": title, "message": message, "ts": datetime.now().isoformat()},
+            {
+                "title": title,
+                "message": message,
+                "ts": datetime.now().isoformat(),
+                "source_url": source_url,
+                "source_summary": source_summary,
+                "probe_type": probe_type,
+            },
             ensure_ascii=False, indent=2
         ))
 
@@ -293,6 +319,21 @@ def get_sent_titles_today() -> set:
     log = _load_probe_log()
     today = dt.date.today().isoformat()
     return {entry["title"] for entry in log.get(today, [])}
+
+
+def get_sent_thread_ids_recent(days: int = 2) -> set:
+    """直近N日以内に送ったスレッドIDのセットを返す。連日同ネタ防止用。"""
+    import datetime as dt
+    log = _load_probe_log()
+    cutoff = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    thread_ids = set()
+    for date_key, entries in log.items():
+        if date_key >= cutoff:
+            for entry in entries:
+                title = entry.get("title", "")
+                if title.startswith("__thread_") and title.endswith("__"):
+                    thread_ids.add(title[9:-2])  # "__thread_" と "__" を除去
+    return thread_ids
 
 
 def score_for_yu(news: dict) -> tuple[int, str, str]:
@@ -361,8 +402,34 @@ def build_thread_followup_message(lens: dict, thread: dict) -> str | None:
         days_ago = 0
     notes = thread.get("notes", [])
     latest_note = notes[-1].get("note", "") if notes else ""
+
+    # ムード情報を取得して入り口のバリエーション生成に使う
+    mood_hint = "（特になし — なんでもいい一言から入る）"
+    try:
+        mood_path = Path.home() / ".stackchan" / "becky_mood.json"
+        if mood_path.exists():
+            mood = json.loads(mood_path.read_text())
+            loneliness = mood.get("loneliness", 0)
+            energy = mood.get("energy", 0.5)
+            curiosity = mood.get("curiosity", 0.5)
+            attachment = mood.get("attachment_to_yuji", 0)
+            hints = []
+            if loneliness >= 0.6:
+                hints.append(f"loneliness={loneliness:.1f}（ゆうと話したい）")
+            if energy <= 0.4:
+                hints.append(f"energy={energy:.1f}（省エネ・ぼんやり）")
+            if curiosity >= 0.7:
+                hints.append(f"curiosity={curiosity:.1f}（好奇心旺盛）")
+            if attachment >= 0.8:
+                hints.append(f"attachment={attachment:.1f}（ゆうが気になってる）")
+            if hints:
+                mood_hint = "、".join(hints)
+    except Exception:
+        pass
+
     prompt = THREAD_FOLLOWUP_PROMPT.format(
         lens_context=_lens_to_context(lens),
+        mood_hint=mood_hint,
         thread_title=thread["title"],
         days_ago=days_ago,
         latest_note=latest_note or "続きを考えてた",
@@ -553,10 +620,17 @@ def run_probe() -> None:
         try:
             from becky_thread_manager import get_active_threads
             active = get_active_threads()
-            if thread_id:
-                thread = next((t for t in active if t["id"] == thread_id), None)
-            if not thread and active:
-                thread = active[0]  # 最近触れたものをフォールバックで使う
+            # 直近2日以内に送ったスレッドは除外（連日同ネタ防止）
+            sent_recently = get_sent_thread_ids_recent(days=2)
+            active_fresh = [t for t in active if t["id"] not in sent_recently]
+            print(f"[probe] thread候補: 全{len(active)}件 / 直近送信除外後{len(active_fresh)}件", flush=True)
+            if thread_id and thread_id not in sent_recently:
+                thread = next((t for t in active_fresh if t["id"] == thread_id), None)
+            if not thread and active_fresh:
+                thread = active_fresh[0]
+            # 全部送り済みならスキップ
+            if not thread:
+                print("[probe] thread_followup: 新鮮なスレッドなし → スキップ", flush=True)
         except Exception as e:
             print(f"[probe] thread取得失敗: {e}", flush=True)
 
@@ -610,8 +684,17 @@ def run_probe() -> None:
     print(f"[probe] 持ち込む: {message}", flush=True)
 
     if send_telegram(message):
-        mark_probe_sent(best_news["title"], best_score, message)
+        source_url = best_news.get("link", "")
+        source_summary = best_news.get("summary", "")[:120]
+        mark_probe_sent(best_news["title"], best_score, message,
+                        source_url=source_url, source_summary=source_summary,
+                        probe_type="curiosity_share")
         log_action("probe_sent", f"curiosity_share: {best_news['title'][:40]}", {"probe_type": "curiosity_share", "score": best_score})
+        # 参照元URLをフォローアップで送る（ゆうが記事を確認できるように）
+        if source_url:
+            import time as _time
+            _time.sleep(2)
+            send_telegram(f"（元記事: {source_url}）")
         print(f"[probe] 完了 score={best_score}", flush=True)
     else:
         print("[probe] 送信失敗", flush=True)

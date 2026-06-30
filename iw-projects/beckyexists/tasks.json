@@ -43,15 +43,15 @@
     {
       "id": "live2d-arm-rig",
       "scope": "iw",
-      "label": "Live2Dモデル 新モデル組み込み完了・腕リグ待ち",
+      "label": "Live2D 新モデル(New_Becky) 腕リグ+モーション4種+表情9種 全組み込み完了",
       "category": "voice",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "start": "2026-06-24",
       "updated_at": "2026-06-30",
-      "due": "2026-07-07",
-      "note": "②モーション4種(ojigi/tewohuru/odoroku/yorokobu)+hiyori9種+表情9種+LipSync → aituber-kit組み込み完了(6/30)。①腕リグ（¥35,000）は7月上旬待ち。次: 腕リグ届いたら組み込み",
-      "icon": "🎭"
+      "due": "2026-06-30",
+      "note": "hendouさん納品完了。腕リグ+モーション4種(ojigi/tewohuru/odoroku/yorokobu)+hiyori9種+表情9種+LipSync → aituber-kit全組み込み完了(6/30)。動作確認済み（腕も動いてた）",
+      "icon": "✅"
     },
     {
       "id": "claude-code-starter",

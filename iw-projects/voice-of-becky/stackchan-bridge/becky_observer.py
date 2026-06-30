@@ -54,6 +54,16 @@ AI_NEWS_FEEDS = [
     "https://ainow.ai/feed/",
     "https://news.nullevi.app/feed.xml",  # ライバルの情報も吸う
 ]
+
+# Crawl4AI で補完するサイト（RSSなし or RSS貧弱）
+CRAWL4AI_SITES = [
+    {"url": "https://www.anthropic.com/news", "source": "Anthropic News",
+     "article_kws": ["/news/"]},
+    {"url": "https://zenn.dev/topics/ai", "source": "Zenn AI",
+     "article_kws": ["/articles/", "/books/"]},
+    {"url": "https://note.com/hashtag/AI", "source": "note AI",
+     "article_kws": ["/n/"]},
+]
 AI_BRIEFING_LOG = Path.home() / ".stackchan" / "ai_briefing_log.json"
 BECKYEXISTS_NEWS_JSON        = REPO_ROOT / "iw-projects" / "beckyexists" / "news.json"
 BECKYEXISTS_MEDIA_REPORT_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "media_report.json"
@@ -297,6 +307,48 @@ def fetch_ai_news(max_per_feed: int = 3) -> list[dict]:
         except Exception as e:
             print(f"[observer] RSS取得失敗 {url}: {e}", flush=True)
     return items
+
+
+def fetch_crawl4ai_news(max_per_site: int = 3) -> list[dict]:
+    """Crawl4AI で RSS のないサイトから記事を補完取得。失敗しても空リストで継続。"""
+    try:
+        import asyncio
+        import re
+        from crawl4ai import AsyncWebCrawler
+
+        async def _fetch_all():
+            items = []
+            async with AsyncWebCrawler(headless=True, verbose=False) as crawler:
+                for site in CRAWL4AI_SITES:
+                    try:
+                        result = await crawler.arun(url=site["url"])
+                        md = result.markdown or ""
+                        links = re.findall(r'\[([^\]]{10,120})\]\((https?://[^\)]+)\)', md)
+                        count = 0
+                        seen = set()
+                        for title, url in links:
+                            if count >= max_per_site:
+                                break
+                            if url in seen:
+                                continue
+                            if any(kw in url for kw in site["article_kws"]):
+                                seen.add(url)
+                                items.append({
+                                    "title": title.strip(),
+                                    "summary": "",
+                                    "link": url,
+                                    "source": site["source"],
+                                })
+                                count += 1
+                        print(f"[observer] crawl4ai {site['source']}: {count}件", flush=True)
+                    except Exception as e:
+                        print(f"[observer] crawl4ai 失敗 {site['url']}: {e}", flush=True)
+            return items
+
+        return asyncio.run(_fetch_all())
+    except Exception as e:
+        print(f"[observer] crawl4ai 全体失敗（無視）: {e}", flush=True)
+        return []
 
 
 def _get_posted_news_titles() -> set:
@@ -971,6 +1023,13 @@ def update_rivals_json() -> bool:
                     print(f"[observer] rivals寸評: {post['becky_comment'][:40]}", flush=True)
                     # 認める系ならリプする
                     _maybe_reply_to_rival(username, post["id"], post["text"], post["becky_comment"])
+                    # タネbox: ライバルに「くっ、認める」系の反応があればタネとして貯める
+                    try:
+                        from becky_seed_box import try_add_seed
+                        seed_content = f"@{username}: {post['text'][:200]}"
+                        try_add_seed("rival", seed_content, becky_comment=post["becky_comment"])
+                    except Exception as _seed_err:
+                        print(f"[observer] rival seed hook失敗（無視）: {_seed_err}", flush=True)
             rival_map[username]["posts"] = posts
             print(f"[observer] rivals: {username} {len(posts)}件取得", flush=True)
 
@@ -992,6 +1051,11 @@ def ai_news_briefing() -> bool:
     3. その記事を x_posted:True に更新して再デプロイ
     """
     news_items = fetch_ai_news()
+    # Crawl4AI で RSS のないサイトを補完
+    crawl4ai_items = fetch_crawl4ai_news()
+    if crawl4ai_items:
+        news_items = crawl4ai_items + news_items
+        print(f"[observer] Crawl4AI 補完: {len(crawl4ai_items)}件追加", flush=True)
     if not news_items:
         print("[observer] AIニュース: 直近24h以内の記事なし", flush=True)
         return False
@@ -1076,6 +1140,15 @@ def ai_news_briefing() -> bool:
     # x_posted:True に更新して再デプロイ
     _mark_x_posted(link, comment, summary_ja)
     _deploy_beckyexists()
+
+    # タネbox: このニュースに対する反応がアクションに繋がりそうなら貯める
+    try:
+        from becky_seed_box import try_add_seed
+        seed_content = f"{chosen.get('title', '')}\n{summary_ja}"
+        try_add_seed("news", seed_content, becky_comment=comment)
+    except Exception as _seed_err:
+        print(f"[observer] seed_box hook失敗（無視）: {_seed_err}", flush=True)
+
     return True
 
 

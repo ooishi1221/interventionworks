@@ -1,55 +1,55 @@
 {
-  "updated_at": "2026-06-24T22:05:12.690981+00:00",
+  "updated_at": "2026-06-27T22:01:54.076419+00:00",
   "keywords": [
     {
-      "word": "Claude Code",
-      "count": 8,
-      "trend": "stable"
+      "word": "エージェント",
+      "count": 7,
+      "trend": "up"
     },
     {
-      "word": "プロンプト",
+      "word": "Claude",
+      "count": 6,
+      "trend": "up"
+    },
+    {
+      "word": "Claude Code",
       "count": 5,
       "trend": "up"
     },
     {
-      "word": "LLM",
+      "word": "Copilot",
+      "count": 4,
+      "trend": "stable"
+    },
+    {
+      "word": "Agent",
       "count": 3,
+      "trend": "stable"
+    },
+    {
+      "word": "LLM",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "MCP",
+      "count": 1,
       "trend": "new"
     },
     {
       "word": "Gemini",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "Google",
-      "count": 2,
-      "trend": "up"
-    },
-    {
-      "word": "Copilot",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "ChatGPT",
       "count": 1,
       "trend": "new"
     },
     {
-      "word": "Agent",
+      "word": "ファインチューニング",
       "count": 1,
       "trend": "new"
     },
     {
-      "word": "OpenAI",
+      "word": "Cursor",
       "count": 1,
       "trend": "new"
-    },
-    {
-      "word": "生成AI",
-      "count": 1,
-      "trend": "stable"
     }
   ],
   "source_count": 80

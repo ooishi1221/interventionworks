@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-24T14:30:00+09:00",
+  "updated_at": "2026-06-25T09:00:00+09:00",
   "questions": [
     {
       "id": "q-vocals",
@@ -7,27 +7,6 @@
       "category": "voice",
       "urgency": "medium",
       "icon": "🎤"
-    },
-    {
-      "id": "q-live2d-rig",
-      "label": "Live2Dモデルの腕リグ追加、いつ頃依頼する？hendouさんに直接連絡でいい？",
-      "category": "voice",
-      "urgency": "medium",
-      "icon": "💪"
-    },
-    {
-      "id": "q-vocode-timing",
-      "label": "Vocode × AivisSpeech（コハクボイス）のリアルタイム音声、いつ試す？Live2D連携まで持っていく優先度は？",
-      "category": "voice",
-      "urgency": "medium",
-      "icon": "🎙️"
-    },
-    {
-      "id": "q-aituber-streaming",
-      "label": "aituber-kit → 実際に配信（OBSとか）まで持っていく予定ある？それともローカルで動いてればOK？",
-      "category": "voice",
-      "urgency": "low",
-      "icon": "📡"
     }
   ]
 }

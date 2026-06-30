@@ -211,6 +211,14 @@ def run_diary() -> None:
         }
         _save_diary_entry(entry)
         print(f"[diary] 記録: {article['title'][:50]} ({score}点 / {hook})", flush=True)
+        # タネbox: 特に刺さった記事（75点以上）はアクション候補として貯める
+        if score >= 75:
+            try:
+                from becky_seed_box import try_add_seed
+                seed_content = f"{article['title']}\n{article.get('summary', '')[:150]}"
+                try_add_seed("diary", seed_content, becky_comment=hook)
+            except Exception as _seed_err:
+                print(f"[diary] seed_box hook失敗（無視）: {_seed_err}", flush=True)
         saved += 1
 
     if saved == 0:
