@@ -1950,6 +1950,22 @@ def main() -> None:
         except Exception as e:
             print(f"[observer] check_telegram_memos 失敗: {e}", flush=True)
 
+        # 海外AIバズ引用RT（1時間に1回 / 鮮度命なので発見即発火）
+        _overseas_ts_file = Path.home() / ".stackchan" / "overseas_check_ts.txt"
+        _last_overseas = float(_overseas_ts_file.read_text().strip()) if _overseas_ts_file.exists() else 0
+        if now - _last_overseas >= 3600:
+            try:
+                _venv_py = Path(__file__).parent / ".venv" / "bin" / "python3"
+                subprocess.Popen(
+                    [str(_venv_py), str(Path(__file__).parent / "becky_search.py"), "--overseas"],
+                    stdout=open("/tmp/becky_overseas.log", "a"),
+                    stderr=subprocess.STDOUT,
+                )
+                _overseas_ts_file.write_text(str(now))
+                print("[observer] overseas buzz チェック起動", flush=True)
+            except Exception as e:
+                print(f"[observer] overseas check 失敗: {e}", flush=True)
+
         # note 締切番犬チェック（todo がない時だけ）
         if not todo:
             deadline_alert = check_note_deadlines()

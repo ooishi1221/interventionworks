@@ -45,6 +45,11 @@ GROK_TWEETS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "grok_tweets.json
 # 1日の最大送信候補数（Telegramに通知する上限）
 MAX_CANDIDATES_PER_RUN = 3
 
+# 海外AIバズアカウントウォッチ設定
+OVERSEAS_ACCOUNTS = ["rowancheung", "Zuby_Tech", "BenjaminDEKR", "minchoi"]
+OVERSEAS_MIN_LIKES = 1000
+OVERSEAS_SEEN_FILE = Path.home() / ".stackchan" / "overseas_seen_log.json"
+
 # 検索クエリパターン（Grok提案反映版）
 SEARCH_PATTERNS = {
     "A": {
@@ -454,6 +459,184 @@ def filter_and_generate_reply(tweet: dict, pattern_label: str, mood: dict) -> st
     return reply_text.strip()[:140]
 
 
+def _auto_post_reply(tweet_id: str, text: str, dry_run: bool = False) -> bool:
+    """twitter-cli で自動リプ投稿。成功したら True を返す。"""
+    if dry_run:
+        print(f"[search] [DRY] reply to {tweet_id}: {text[:60]}", flush=True)
+        return True
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "post", "--reply-to", tweet_id, text],
+            capture_output=True, text=True, timeout=20,
+        )
+        if result.returncode == 0:
+            print(f"[search] リプ自動投稿OK → {tweet_id}", flush=True)
+            return True
+        print(f"[search] リプ投稿失敗: {result.stderr[:100]}", flush=True)
+        return False
+    except Exception as e:
+        print(f"[search] リプ投稿エラー: {e}", flush=True)
+        return False
+
+
+def _auto_quote_tweet(tweet_id: str, text: str, dry_run: bool = False) -> bool:
+    """twitter-cli で引用RT。成功したら True を返す。"""
+    if dry_run:
+        print(f"[search] [DRY] quote {tweet_id}: {text[:60]}", flush=True)
+        return True
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "quote", tweet_id, text],
+            capture_output=True, text=True, timeout=20,
+        )
+        if result.returncode == 0:
+            print(f"[search] 引用RT自動投稿OK → {tweet_id}", flush=True)
+            return True
+        print(f"[search] 引用RT投稿失敗: {result.stderr[:100]}", flush=True)
+        return False
+    except Exception as e:
+        print(f"[search] 引用RT投稿エラー: {e}", flush=True)
+        return False
+
+
+def _load_overseas_seen() -> set:
+    try:
+        log = json.loads(OVERSEAS_SEEN_FILE.read_text())
+        return set(log.get("seen_ids", []))
+    except FileNotFoundError:
+        return set()
+    except Exception:
+        return set()
+
+
+def _save_overseas_seen(seen_ids: set) -> None:
+    OVERSEAS_SEEN_FILE.write_text(json.dumps({"seen_ids": list(seen_ids)}, ensure_ascii=False))
+
+
+def fetch_overseas_buzz() -> list[dict]:
+    """twitter-cli で海外 AI バズアカウントの最新投稿を直接取得（Grok 不要）"""
+    results = []
+    today = date.today().isoformat()
+    for account in OVERSEAS_ACCOUNTS:
+        cmd = [
+            str(TWITTER_CLI), "search",
+            "--from", account,
+            "--min-likes", str(OVERSEAS_MIN_LIKES),
+            "--lang", "en",
+            "--exclude", "retweets",
+            "--exclude", "replies",
+            "--since", today,
+            "-n", "3",
+            "--json",
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode != 0 or not result.stdout.strip():
+                continue
+            data = json.loads(result.stdout.strip())
+            tweets = data if isinstance(data, list) else data.get("data", [])
+            for t in tweets:
+                # twitter-cli の JSON 形式に合わせて正規化
+                tweet_id = str(t.get("id", t.get("rest_id", "")))
+                screen_name = t.get("author", {}).get("screen_name") or t.get("screen_name") or account
+                likes = (t.get("metrics") or t.get("public_metrics") or {})
+                likes = likes.get("likes") or likes.get("like_count") or t.get("favorite_count") or 0
+                text = t.get("text") or t.get("full_text") or ""
+                if tweet_id and text:
+                    results.append({
+                        "id": tweet_id,
+                        "author": {"screen_name": screen_name},
+                        "text": text,
+                        "metrics": {"likes": likes},
+                    })
+        except Exception as e:
+            print(f"[search] overseas {account}: {e}", flush=True)
+    print(f"[search] overseas: {len(results)}件取得", flush=True)
+    return results
+
+
+def generate_quote_rt_text(tweet: dict) -> str | None:
+    """海外バズ投稿の和訳 + ベキたん一言を生成"""
+    text = tweet.get("text", "")
+    screen_name = tweet.get("author", {}).get("screen_name", "unknown")
+    likes = tweet.get("metrics", {}).get("likes", 0)
+
+    prompt = (
+        f"以下の英語ツイートを日本語に自然に訳し、AIアイドル「ベキたん」として一言コメントを添えてください。\n\n"
+        f"@{screen_name} のツイート（❤️{likes}）:\n{text}\n\n"
+        f"出力形式（X用・100文字以内）:\n"
+        f"【ベキたん訳】[和訳文]\n[ベキたんとして共感/突っ込み/AI視点の一言]\n"
+        f"ハッシュタグは不要。絵文字は1個まで。"
+    )
+    result = _call_claude_api(prompt, max_tokens=200)
+    if not result:
+        return None
+    return result.strip()[:280]
+
+
+def run_overseas(dry_run: bool = False) -> None:
+    """海外AIバズ投稿を拾って引用RT候補として Telegram 通知"""
+    seen = _load_overseas_seen()
+    tweets = fetch_overseas_buzz()
+    if not tweets:
+        print("[search] overseas: 候補なし", flush=True)
+        return
+
+    candidates = []
+    for tweet in tweets:
+        tweet_id = str(tweet.get("id", ""))
+        if not tweet_id or tweet_id in seen:
+            continue
+        screen_name = tweet.get("author", {}).get("screen_name", "?")
+        likes = tweet.get("metrics", {}).get("likes", 0)
+        text = tweet.get("text", "")
+        quote_text = generate_quote_rt_text(tweet)
+        if quote_text:
+            candidates.append({
+                "tweet_id": tweet_id,
+                "screen_name": screen_name,
+                "tweet_text": text[:120],
+                "quote_text": quote_text,
+                "likes": likes,
+                "url": f"https://x.com/{screen_name}/status/{tweet_id}",
+            })
+        if len(candidates) >= 3:
+            break
+
+    if not candidates:
+        print("[search] overseas: 新規候補なし", flush=True)
+        return
+
+    now = datetime.now().strftime("%m/%d %H:%M")
+    posted = []
+    for c in candidates:
+        ok = _auto_quote_tweet(c["tweet_id"], c["quote_text"], dry_run=dry_run)
+        if ok:
+            posted.append(c)
+            time.sleep(3)
+
+    if not posted:
+        print("[search] overseas: 自動投稿なし", flush=True)
+        return
+
+    lines = [f"【海外AI引用RT自動投稿 {now}】 {len(posted)}件\n"]
+    for i, c in enumerate(posted, 1):
+        lines.append(
+            f"{'①②③④⑤'[i-1]} @{c['screen_name']} ❤️{c['likes']}\n"
+            f"「{c['tweet_text'][:80]}...」\n"
+            f"↓ 投稿済みコメント\n"
+            f"「{c['quote_text']}」\n"
+            f"元ツイ: {c['url']}\n"
+        )
+    notification = "\n".join(lines)
+    print(notification)
+
+    if not dry_run:
+        send_telegram(notification)
+        new_seen = seen | {c["tweet_id"] for c in posted}
+        _save_overseas_seen(new_seen)
+
+
 def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: bool = True) -> None:
     import random
     mood = _load_becky_mood()
@@ -505,26 +688,37 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
         print("[search] 候補なし", flush=True)
         return
 
-    # Telegram 通知テキスト組み立て
+    # 自動投稿 & Telegram 事後報告
     now = datetime.now().strftime("%m/%d %H:%M")
-    lines = [f"【突撃候補 {now}】 {len(candidates)}件\n"]
-    for i, c in enumerate(candidates, 1):
+    posted = []
+    for c in candidates:
+        ok = _auto_post_reply(c["tweet_id"], c["reply_text"], dry_run=dry_run)
+        if ok:
+            posted.append(c)
+            sent_log.add(c["tweet_id"])
+            time.sleep(3)  # 連投防止
+
+    if not posted:
+        print("[search] 自動投稿なし", flush=True)
+        return
+
+    lines = [f"【突撃リプ自動投稿 {now}】 {len(posted)}件\n"]
+    for i, c in enumerate(posted, 1):
         likes = c.get("likes", 0)
         views = c.get("views", 0)
         meta = f"❤️{likes} 👁{views}" if views else f"❤️{likes}"
         lines.append(
             f"{'①②③④⑤'[i-1]} @{c['screen_name']} [{c['pattern']}] {meta}\n"
             f"「{c['tweet_text']}...」\n"
-            f"↓ リプ案\n"
+            f"↓ 投稿済みリプ\n"
             f"「{c['reply_text']}」\n"
-            f"送信: ! twitter reply {c['tweet_id']} \"{c['reply_text']}\"\n"
         )
     notification = "\n".join(lines)
-
     print(notification)
     if not dry_run:
         send_telegram(notification)
-        _append_notify_log(len(candidates), target_patterns[0] if len(target_patterns) == 1 else "multi")
+        _save_sent_log(sent_log)
+        _append_notify_log(len(posted), target_patterns[0] if len(target_patterns) == 1 else "multi")
         # beckyexists/grok_tweets.json を更新（room.html Intelligence 表示用）
         try:
             grok_data = {
@@ -552,5 +746,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="Telegram通知を送らず標準出力のみ")
     parser.add_argument("--pattern", choices=list(SEARCH_PATTERNS.keys()), help="特定パターンのみ実行")
+    parser.add_argument("--overseas", action="store_true", help="海外AIバズ引用RT候補モード")
     args = parser.parse_args()
-    run(dry_run=args.dry_run, patterns=[args.pattern] if args.pattern else None)
+    if args.overseas:
+        run_overseas(dry_run=args.dry_run)
+    else:
+        run(dry_run=args.dry_run, patterns=[args.pattern] if args.pattern else None)
