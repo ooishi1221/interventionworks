@@ -33,6 +33,8 @@ TRIGGER_FILE     = Path("/tmp/becky_observer_triggered")
 REPO_ROOT        = Path("/Volumes/SSD2TB/interventionworks")
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
+TECH_PICKS_FILE       = Path.home() / ".stackchan" / "tech_picks.json"
+TELEGRAM_OFFSET_FILE  = Path.home() / ".stackchan" / "telegram_offset.json"
 OBSERVER_LOG          = Path.home() / ".stackchan" / "observer_sent_log.jsonl"
 SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
 REPLY_DIARY_JSON      = Path.home() / ".stackchan" / "reply_diary.json"
@@ -196,6 +198,61 @@ def send_telegram(text: str) -> None:
     except Exception as e:
         print(f"[observer] Telegram 送信失敗: {e}", flush=True)
 
+
+
+def check_telegram_memos() -> None:
+    """「メモ:」で始まる Telegram メッセージを tech_picks.json に保存する"""
+    token = _load_telegram_token()
+    if not token:
+        return
+
+    offset = 0
+    if TELEGRAM_OFFSET_FILE.exists():
+        try:
+            offset = json.loads(TELEGRAM_OFFSET_FILE.read_text()).get("offset", 0)
+        except Exception:
+            pass
+
+    url = f"https://api.telegram.org/bot{token}/getUpdates?offset={offset}&limit=100&timeout=0"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url), timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"[observer] Telegram polling 失敗: {e}", flush=True)
+        return
+
+    if not data.get("ok"):
+        return
+
+    new_offset = offset
+    new_picks = []
+
+    for update in data.get("result", []):
+        uid = update["update_id"]
+        new_offset = max(new_offset, uid + 1)
+        text = update.get("message", {}).get("text", "")
+        if text.startswith("メモ:") or text.startswith("メモ："):
+            memo = text[3:].strip()
+            if memo:
+                new_picks.append({
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "text": memo,
+                    "ts": datetime.now().isoformat(),
+                })
+                send_telegram(f"📌 メモ保存: {memo}")
+                print(f"[observer] テックメモ保存: {memo}", flush=True)
+
+    TELEGRAM_OFFSET_FILE.write_text(json.dumps({"offset": new_offset}, ensure_ascii=False))
+
+    if new_picks:
+        picks = []
+        if TECH_PICKS_FILE.exists():
+            try:
+                picks = json.loads(TECH_PICKS_FILE.read_text()).get("picks", [])
+            except Exception:
+                picks = []
+        picks.extend(new_picks)
+        TECH_PICKS_FILE.write_text(json.dumps({"picks": picks[-100:]}, ensure_ascii=False, indent=2))
 
 
 X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
@@ -1886,6 +1943,12 @@ def main() -> None:
 
         # 顔を気分で変える（毎サイクル）
         set_face_by_mood()
+
+        # テックメモ確認（毎サイクル）
+        try:
+            check_telegram_memos()
+        except Exception as e:
+            print(f"[observer] check_telegram_memos 失敗: {e}", flush=True)
 
         # note 締切番犬チェック（todo がない時だけ）
         if not todo:

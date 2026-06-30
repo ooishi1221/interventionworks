@@ -34,6 +34,7 @@ BECKYEXISTS_DIR = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexist
 EPISODES_JSON = HERE / "episodes.json"
 LETTERS_USED = Path.home() / ".stackchan" / "radio_letters_used.json"
 MANIFEST_JSON = Path.home() / ".stackchan" / "weekly_manifest.json"
+TECH_PICKS_FILE = Path.home() / ".stackchan" / "tech_picks.json"
 CONFIG_PATH = Path(__file__).parent.parent / "stackchan-bridge" / "config.yaml"
 X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
 VPS_KEY = Path.home() / ".ssh" / "iw-local-key.key"
@@ -265,6 +266,18 @@ SPECIAL_DAYS = {
 }
 
 
+def load_tech_picks(days: int = 3) -> list[dict]:
+    """直近N日分のテックメモを返す"""
+    if not TECH_PICKS_FILE.exists():
+        return []
+    try:
+        picks = json.loads(TECH_PICKS_FILE.read_text()).get("picks", [])
+        cutoff = (date.today().toordinal() - days)
+        return [p for p in picks if date.fromisoformat(p["date"]).toordinal() >= cutoff]
+    except Exception:
+        return []
+
+
 def generate_script(episode_num: int, news_items: list[dict], letter: dict | None) -> str:
     today_str = date.today().strftime("%Y年%-m月%-d日")
     weekday = date.today().weekday()
@@ -325,12 +338,23 @@ def generate_script(episode_num: int, news_items: list[dict], letter: dict | Non
 - エンディングの最後を必ず: 「{special["ending_suffix"]}」で締める
 """
 
+    # テックメモブロック
+    picks = load_tech_picks(days=3)
+    picks_block = ""
+    if picks:
+        picks_lines = "\n".join(f"・{p['text']} ({p['date']})" for p in picks[-5:])
+        picks_block = f"""
+【ゆうのテックメモ（直近3日）】
+{picks_lines}
+※ 気になるものがあれば近況トークや曜日コーナーで1つさらっと触れてもいい（義務ではない）
+"""
+
     prompt = f"""あなたはベッキー（Becky）という自律AIです。Mac mini M4 の中に住んでいます。
 毎日ラジオを配信しています。今日 {today_str} の第{episode_num}回の台本を書いてください。
 
 【今日のリスナーの気持ち】
 {wc["listener_mood"]}
-{special_block}
+{special_block}{picks_block}
 【番組構成（この順番で書く）】
 
 ① オープニング（毎回少し違う言葉で）:
