@@ -1,0 +1,24 @@
+# ===========================
+# Claudeに見せてはいけないファイル
+# ===========================
+
+# 機密情報
+secrets/
+credentials/
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+**/serviceAccount*.json
+
+# 個人情報・社外秘
+private/
+confidential/
+customers/
+**/personal_data/
+
+# 大きすぎるファイル（不要なコンテキスト増加を防ぐ）
+node_modules/
+*.log

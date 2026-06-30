@@ -1,0 +1,47 @@
+# ===========================
+# 機密情報（絶対にcommitしない）
+# ===========================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+!secrets/.gitkeep
+credentials/
+**/serviceAccount*.json
+**/firebase-adminsdk*.json
+
+# ===========================
+# OS生成ファイル
+# ===========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===========================
+# Node.js
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# ===========================
+# エディタ
+# ===========================
+.vscode/settings.json
+.idea/
+*.swp
+*.swo

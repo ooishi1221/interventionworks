@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-24T12:00:00+09:00",
+  "updated_at": "2026-06-25T09:00:00+09:00",
   "tasks": [
     {
       "id": "metameta-poc",
@@ -9,9 +9,9 @@
       "status": "waiting",
       "priority": "high",
       "start": "2026-06-24",
-      "updated_at": "2026-06-24",
+      "updated_at": "2026-06-25",
       "due": "2026-07-07",
-      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf。池田さんに共有して実際の1on1で使ってもらう",
+      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。池田さんに「朝会データで欲しかった正解の出力イメージ」もらう予定。面談データも使えるといい話あり。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf",
       "icon": "🧠"
     },
     {
@@ -37,21 +37,34 @@
       "start": "2026-06-24",
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
-      "note": "aituber-kit v2.50.0 移行完了。AivisSpeech+Claude Haiku+Live2D+OBS接続済み。緑背景（bg-green.png）クロマキーでベキたんだけ切り出し可能。ウィンドウキャプチャ→クロマキーフィルター→背景レイヤー追加まで確認済み。port 3001稼働中",
+      "note": "aituber-kit v2.50.0 移行完了。AivisSpeech+Claude Haiku+Live2D+OBS接続済み。緑背景クロマキーでベキたんだけ切り出し可能。次: Live2Dモデルが動いてから実際にOBS配信テスト",
       "icon": "✅"
     },
     {
       "id": "live2d-arm-rig",
       "scope": "iw",
-      "label": "Live2Dモデル 腕リグ+表情2種+モーション4種 発注済み",
+      "label": "Live2Dモデル 新モデル組み込み完了・腕リグ待ち",
       "category": "voice",
-      "status": "waiting",
+      "status": "in_progress",
       "priority": "high",
       "start": "2026-06-24",
-      "updated_at": "2026-06-24",
+      "updated_at": "2026-06-30",
       "due": "2026-07-07",
-      "note": "hendouさんへ発注完了。¥49,000。①腕リグ（ParamArmLA/RA等ひよりVTS名に統一）+表情2種（驚き・困り）¥35,000 ②モーション4種（お辞儀/手振る/驚く/喜ぶ）¥14,000。届いたらaituber-kitに組み込み",
-      "icon": "⏳"
+      "note": "②モーション4種(ojigi/tewohuru/odoroku/yorokobu)+hiyori9種+表情9種+LipSync → aituber-kit組み込み完了(6/30)。①腕リグ（¥35,000）は7月上旬待ち。次: 腕リグ届いたら組み込み",
+      "icon": "🎭"
+    },
+    {
+      "id": "claude-code-starter",
+      "scope": "iw",
+      "label": "claude-code-starter — 社内Windows向けClaude Codeチュートリアル",
+      "category": "tools",
+      "status": "in_progress",
+      "priority": "medium",
+      "start": "2026-06-30",
+      "updated_at": "2026-06-30",
+      "due": "2026-07-07",
+      "note": "5フェーズ体験型チュートリアル（環境確認→CLAUDE.md設定→セキュリティ→Git→スキル/MCP）。VS Code前提。iw-projects/claude-code-starter/に作成。次: GitHubリポジトリ化 + CSの子のやりたいことを体験できるゴール追加",
+      "icon": "🎓"
     },
     {
       "id": "aituber-onair",
@@ -65,6 +78,19 @@
       "due": "2026-06-25",
       "note": "localhost:5180で動作確認済み。Live2Dモデル表示+LipSync+TapBodyモーション4種+感情タグ→表情自動切替（[smile][blush][smug]等→笑顔/照れ顔/ドヤ顔）。次: AivisSpeech接続・配信環境整備",
       "icon": "✅"
+    },
+    {
+      "id": "vocode-aivispeech",
+      "scope": "iw",
+      "label": "Vocode × AivisSpeech（コハク）リアルタイム音声繋ぎこみ",
+      "category": "voice",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "due": "2026-07-07",
+      "note": "AivisSpeech（コハクボイス）→Vocodeパイプライン接続。コハクで先に繋ぎこみ完了してからオリジナルボイス（新ボイス）に差し替える予定。RVC 2段遅延が課題",
+      "icon": "🎙️"
     },
     {
       "id": "voice-singing",
@@ -119,6 +145,32 @@
       "icon": "🎙️"
     },
     {
+      "id": "mac-mini-remote-login",
+      "scope": "iw",
+      "label": "Mac mini SSH接続 解決済み",
+      "category": "infra",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "due": "2026-06-25",
+      "note": "設定自体はONだった。Tailscaleを再接続（オフ→オン）で解決。次回繋がらない時も同じ手順で。",
+      "icon": "✅"
+    },
+    {
+      "id": "claude-config-inspector",
+      "scope": "iw",
+      "label": "claude-config-inspector 完成（MCP/Memory/Skills検出+診断機能）",
+      "category": "tools",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "due": "2026-06-25",
+      "note": "3バグ修正（MCP 0→5件/Memory 3→213件/Skills 4→17件）+診断機能追加（スコア88点）。commit c81ce3f。会社で「Claude構成が見えない問題」解決に使う予定",
+      "icon": "✅"
+    },
+    {
       "id": "cpn-portal",
       "scope": "wo",
       "label": "CPN 10名資格取得",
@@ -160,15 +212,15 @@
     {
       "id": "ado-rvc",
       "scope": "iw",
-      "label": "Ado RVC 学習",
+      "label": "Ado RVC 学習（オミット）",
       "category": "voice",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "start": "2026-06-16",
-      "updated_at": "2026-06-16",
+      "updated_at": "2026-06-25",
       "due": "2026-06-22",
-      "note": "Applio → ado_test データセット → 200 epochs",
-      "icon": "🎵"
+      "note": "音声学習の方法を理解したのでオミット。Applio/RVC学習はベキたん新ボイス系に集中",
+      "icon": "✅"
     },
     {
       "id": "slight-stella",
