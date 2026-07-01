@@ -47,7 +47,7 @@ MAX_CANDIDATES_PER_RUN = 3
 
 # 海外AIバズアカウントウォッチ設定
 OVERSEAS_ACCOUNTS = ["rowancheung", "Zuby_Tech", "BenjaminDEKR", "minchoi"]
-OVERSEAS_MIN_LIKES = 1000
+OVERSEAS_MIN_LIKES = 500
 OVERSEAS_SEEN_FILE = Path.home() / ".stackchan" / "overseas_seen_log.json"
 
 # 検索クエリパターン（Grok提案反映版）
@@ -518,15 +518,13 @@ def fetch_overseas_buzz() -> list[dict]:
     results = []
     today = date.today().isoformat()
     for account in OVERSEAS_ACCOUNTS:
+        # --exclude retweets/replies は twitter-cli バグで正常ツイートも除外するのでCLI側は使わない
+        # isRetweet / isReply はJSON側でフィルタする
         cmd = [
             str(TWITTER_CLI), "search",
             "--from", account,
             "--min-likes", str(OVERSEAS_MIN_LIKES),
-            "--lang", "en",
-            "--exclude", "retweets",
-            "--exclude", "replies",
-            "--since", today,
-            "-n", "3",
+            "-n", "5",
             "--json",
         ]
         try:
@@ -536,11 +534,19 @@ def fetch_overseas_buzz() -> list[dict]:
             data = json.loads(result.stdout.strip())
             tweets = data if isinstance(data, list) else data.get("data", [])
             for t in tweets:
-                # twitter-cli の JSON 形式に合わせて正規化
+                # リツイート / リプライを除外
+                if t.get("isRetweet") or t.get("retweetedBy"):
+                    continue
+                if t.get("isReply") or t.get("inReplyToUserId"):
+                    continue
+                # twitter-cli は camelCase で返す（screenName）
                 tweet_id = str(t.get("id", t.get("rest_id", "")))
-                screen_name = t.get("author", {}).get("screen_name") or t.get("screen_name") or account
-                likes = (t.get("metrics") or t.get("public_metrics") or {})
-                likes = likes.get("likes") or likes.get("like_count") or t.get("favorite_count") or 0
+                author = t.get("author", {})
+                screen_name = (author.get("screenName") or author.get("screen_name")
+                               or t.get("screenName") or t.get("screen_name") or account)
+                metrics = t.get("metrics") or t.get("public_metrics") or {}
+                likes = (metrics.get("likes") or metrics.get("like_count")
+                         or t.get("favorite_count") or 0)
                 text = t.get("text") or t.get("full_text") or ""
                 if tweet_id and text:
                     results.append({
