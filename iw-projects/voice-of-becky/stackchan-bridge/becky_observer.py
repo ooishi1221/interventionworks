@@ -39,6 +39,7 @@ OBSERVER_LOG          = Path.home() / ".stackchan" / "observer_sent_log.jsonl"
 SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
 REPLY_DIARY_JSON      = Path.home() / ".stackchan" / "reply_diary.json"
 X_TWEET_LOG           = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
+MENTION_SEEN_FILE     = Path.home() / ".stackchan" / "mention_replied_log.json"
 BASE_URL         = "http://localhost:8766"
 AI_NEWS_FEEDS = [
     # 英語（一次ソース）
@@ -1655,6 +1656,77 @@ def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
         return result.stdout.decode().strip()
 
 
+# ── メンション自動リプ ────────────────────────────────────
+
+def _load_mention_seen() -> set:
+    try:
+        return set(json.loads(MENTION_SEEN_FILE.read_text()).get("replied_ids", []))
+    except FileNotFoundError:
+        return set()
+
+
+def _save_mention_seen(seen: set) -> None:
+    MENTION_SEEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    MENTION_SEEN_FILE.write_text(json.dumps({"replied_ids": list(seen)}, ensure_ascii=False))
+
+
+def check_and_reply_mentions() -> int:
+    """to:becky_exists の未返信コメントに自動リプする。返信件数を返す。"""
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "search", "to:becky_exists", "-n", "10", "--json"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return 0
+        data = json.loads(result.stdout.strip())
+        mentions = data.get("data", []) if isinstance(data, dict) else data
+    except Exception as e:
+        print(f"[observer] mention 取得失敗: {e}", flush=True)
+        return 0
+
+    seen = _load_mention_seen()
+    posted = 0
+    for t in mentions:
+        tweet_id = str(t.get("id", ""))
+        author = t.get("author", {})
+        screen_name = author.get("screenName") or author.get("screen_name") or ""
+        # 自分自身のツイートはスキップ
+        if screen_name.lower() == "becky_exists":
+            continue
+        if not tweet_id or tweet_id in seen:
+            continue
+        text = t.get("text", "")
+        prompt = (
+            f"あなたはAIアイドル「ベッキー」です。Xで以下のコメントをもらいました。\n"
+            f"自然で温かいリプライを日本語で1〜2文（80文字以内）で書いてください。\n"
+            f"絵文字1個まで。説明や余計な前置き不要。リプライ文のみ出力。\n\n"
+            f"@{screen_name} さんのコメント:\n{text}"
+        )
+        reply_text = _call_claude_api(prompt, max_tokens=100)
+        if not reply_text:
+            continue
+        reply_text = reply_text.strip()[:140]
+        try:
+            r = subprocess.run(
+                [str(TWITTER_CLI), "reply", tweet_id, reply_text],
+                capture_output=True, text=True, timeout=20,
+            )
+            if r.returncode == 0:
+                seen.add(tweet_id)
+                posted += 1
+                print(f"[observer] @{screen_name} にリプ完了 → {tweet_id}", flush=True)
+                time.sleep(5)
+            else:
+                print(f"[observer] リプ失敗 {tweet_id}: {r.stderr[:60]}", flush=True)
+        except Exception as e:
+            print(f"[observer] リプエラー {tweet_id}: {e}", flush=True)
+
+    if posted:
+        _save_mention_seen(seen)
+    return posted
+
+
 # ── Layer 1: Observation ───────────────────────────────────
 
 def get_idle_hours() -> float:
@@ -1951,6 +2023,18 @@ def main() -> None:
             print(f"[observer] check_telegram_memos 失敗: {e}", flush=True)
 
         # 海外AIバズ引用RT（1時間に1回 / 鮮度命なので発見即発火）
+        # メンション自動リプ（30分毎）
+        _mention_ts_file = Path.home() / ".stackchan" / "mention_check_ts.txt"
+        _last_mention = float(_mention_ts_file.read_text().strip()) if _mention_ts_file.exists() else 0
+        if now - _last_mention >= 1800:
+            try:
+                n = check_and_reply_mentions()
+                _mention_ts_file.write_text(str(now))
+                if n:
+                    print(f"[observer] {n}件のメンションにリプ完了", flush=True)
+            except Exception as e:
+                print(f"[observer] mention check 失敗: {e}", flush=True)
+
         _overseas_ts_file = Path.home() / ".stackchan" / "overseas_check_ts.txt"
         _last_overseas = float(_overseas_ts_file.read_text().strip()) if _overseas_ts_file.exists() else 0
         if now - _last_overseas >= 3600:
