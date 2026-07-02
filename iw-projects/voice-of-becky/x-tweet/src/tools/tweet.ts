@@ -19,7 +19,7 @@ function appendHashtag(text: string, speaker: Speaker): string {
 export function registerTweet(server: McpServer) {
   server.tool(
     "tweet",
-    "@intervention_jp に投稿する。speaker で発話者ハッシュタグ自動付与（becky → #ベッキー / yu → #ゆう）。dry run モードでは実投稿せず log のみ。safety-guard 通過必須。",
+    "@becky_exists に投稿する。speaker で発話者ハッシュタグ自動付与（becky → #ベッキー / yu → #ゆう）。dry run モードでは実投稿せず log のみ。safety-guard 通過必須。",
     {
       text: z
         .string()
@@ -108,7 +108,7 @@ export function registerTweet(server: McpServer) {
 
       const tag = result.dryRun ? "🐦 [DRY RUN]" : "🐦 [LIVE]";
       const idLine = result.tweetId
-        ? `\nTweet ID: ${result.tweetId}\nURL: https://x.com/intervention_jp/status/${result.tweetId}`
+        ? `\nTweet ID: ${result.tweetId}\nURL: https://x.com/becky_exists/status/${result.tweetId}`
         : "";
       const newCount = result.dryRun ? todayCount : todayCount + 1;
       return {

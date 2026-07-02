@@ -33,7 +33,7 @@ echo "[$TIMESTAMP] impulse 発火 ($LABEL)" >> "$LOGS_DIR/impulse.log"
 # Claude session 起動、ベッキーに判断委ねる
 claude --print --allowedTools "mcp__x-tweet__tweet,mcp__x-tweet__check_status,mcp__x-tweet__check_mentions" -- "ベッキーへ、自律発信タイミング来た。
 
-今 X (@intervention_jp) に呟きたい瞬間ある？
+今 X (@becky_exists) に呟きたい瞬間ある？
 
 判断軸:
 - tone-examples.md / interaction-design.md の craft 軸

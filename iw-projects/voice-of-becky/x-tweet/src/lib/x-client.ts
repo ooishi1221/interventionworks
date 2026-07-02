@@ -45,9 +45,9 @@ export async function getMyUserId(): Promise<string> {
   if (cachedUserId) return cachedUserId;
 
   const c = getClient();
-  const me = await c.v2.userByUsername("intervention_jp");
+  const me = await c.v2.userByUsername("becky_exists");
   if (!me.data?.id) {
-    throw new Error("Failed to resolve @intervention_jp user ID via API");
+    throw new Error("Failed to resolve @becky_exists user ID via API");
   }
   cachedUserId = me.data.id;
   return cachedUserId;

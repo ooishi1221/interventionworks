@@ -22,9 +22,9 @@ try {
   console.error("me() failed:", err instanceof Error ? err.message : err);
 }
 
-console.log("\n=== intervention_jp by username ===");
+console.log("\n=== becky_exists by username ===");
 try {
-  const u = await c.v2.userByUsername("intervention_jp");
+  const u = await c.v2.userByUsername("becky_exists");
   console.log(JSON.stringify(u.data, null, 2));
 } catch (err) {
   console.error(

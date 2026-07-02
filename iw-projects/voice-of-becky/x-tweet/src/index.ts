@@ -5,7 +5,7 @@
  * 構成:
  *   - tweet              投稿 + safety-guard + dry run + ログ
  *   - check_status       状態確認（dry run / 今日の投稿数 / kill switch / namelist）
- *   - check_mentions     @intervention_jp 宛のメンション取得（リプ返信用）
+ *   - check_mentions     @becky_exists 宛のメンション取得（リプ返信用）
  *   - get_current_time   Mac mini の現在時刻取得（時間帯ラベル付き、ベッキー身体感覚 craft）
  *
  * 将来追加候補:

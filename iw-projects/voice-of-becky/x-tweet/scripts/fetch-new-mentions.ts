@@ -68,7 +68,7 @@ const usersMap = new Map<string, { username?: string; name?: string }>(
 );
 
 // HinachanTV リビルド前（〜2026-05-09）の過去 mention を排除
-// @intervention_jp としての活動開始日以降のみ拾う
+// @becky_exists としての活動開始日以降のみ拾う
 const REBUILD_CUTOFF = new Date("2026-05-10T00:00:00Z");
 
 const others = tweets.filter((t) => {

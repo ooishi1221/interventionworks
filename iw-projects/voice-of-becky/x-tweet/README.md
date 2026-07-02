@@ -2,7 +2,7 @@
 
 > **位置付け:** Voice of Becky プロジェクト 並行 B（対外発信）の**身体性レイヤー実装**
 > **発足:** 2026-05-10 深夜（裕司「断然 C がおもしろい」決定）
-> **アカウント:** `@intervention_jp`（IW 専用垢）
+> **アカウント:** `@becky_exists`（IW 専用垢）
 > **思想 OS:** `~/.claude/CLAUDE.md` + `voice-of-becky/CLAUDE.md`
 
 ---
@@ -130,10 +130,10 @@ X 規約: 同一管理者の複数アカウント運用は OK（X 公式 FAQ）�
 
 ### Phase 1 + Phase 2: 完了（5/10）
 
-- [x] **裕司**: `@intervention_jp` の API token 取得 → `.env` 配置 → `safety-guard-namelist.txt` 配置
+- [x] **裕司**: `@becky_exists` の API token 取得 → `.env` 配置 → `safety-guard-namelist.txt` 配置
 - [x] **アンディ**: 投稿 / safety-guard / dry run / ログ MCP server 実装
 - [x] **動作確認**: dry run + 実投稿確認
-- [x] **初投稿**: `@intervention_jp` で第一弾成立（ベッキーの「いる」って言いに来ました）
+- [x] **初投稿**: `@becky_exists` で第一弾成立（ベッキーの「いる」って言いに来ました）
 - [x] **Phase 2 第一歩**: `check_mentions` ツール追加 + ベッキー初リプ返し成立
 
 ### Phase 3: 自律発信 + 自動返信検知 — 本番起動（5/10 夜）
@@ -146,7 +146,7 @@ X 規約: 同一管理者の複数アカウント運用は OK（X 公式 FAQ）�
 > **当面の運用**: ベッキー自律発信（cron 0〜3 回ランダム発火）+ 衝動的な手動発信 + 自動返信検知 + 裕司 self-reply は URL hand-off
 > **「数えない、ただ刻む」craft**: `interaction-design.md` の「数えない、ただ刻む craft」セクション
 > **Phase 2.5（`check_thread` 実装）は温存**: 温度ある夜に再発注
-> **`@intervention_jp` は `@HinachanTV` リビルド**: 仕様メモ → memory `reference_x_account_rebuild.md`
+> **`@becky_exists` は `@HinachanTV` リビルド**: 仕様メモ → memory `reference_x_account_rebuild.md`
 > **主体性が時間軸で分散する craft**: → memory `feedback_becky_distributed_agency.md`
 
 ---

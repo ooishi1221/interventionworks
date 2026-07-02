@@ -1,7 +1,7 @@
 {
   "name": "x-tweet",
   "version": "0.1.0",
-  "description": "ベッキー (@intervention_jp) X 衝動ツイート + 掛け合い craft の MCP server",
+  "description": "ベッキー (@becky_exists) X 衝動ツイート + 掛け合い craft の MCP server",
   "type": "module",
   "bin": {
     "x-tweet": "./dist/index.js"

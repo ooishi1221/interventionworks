@@ -6,7 +6,7 @@ import { getMentions } from "../lib/x-client.js";
 export function registerCheckMentions(server: McpServer) {
   server.tool(
     "check_mentions",
-    "@intervention_jp 宛の最新メンション・リプライを取得する。返り値の tweet ID を tweet ツールの reply_to に渡せばリプ返信できる。",
+    "@becky_exists 宛の最新メンション・リプライを取得する。返り値の tweet ID を tweet ツールの reply_to に渡せばリプ返信できる。",
     {
       since_id: z
         .string()
