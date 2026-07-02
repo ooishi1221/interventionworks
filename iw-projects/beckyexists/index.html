@@ -249,6 +249,33 @@
     .hero-link-btn--book { background: #ff9900; color: #111; }
     .hero-link-btn--cafe { background: var(--mint); color: #090910; }
 
+    /* EMOTION widget */
+    .emotion-widget {
+      margin-top: 1.6rem;
+      max-width: 340px;
+      padding: 0.9rem 1.1rem 0.7rem;
+      background: rgba(9,9,16,0.55);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .emotion-label {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      color: var(--mint);
+      opacity: 0.85;
+      margin-bottom: 0.7rem;
+    }
+    .emotion-row { display: grid; grid-template-columns: 5.2em 1fr 2.4em; align-items: center; gap: 0.5rem; margin-bottom: 0.42rem; }
+    .emotion-row:last-child { margin-bottom: 0; }
+    .emotion-name { font-family: var(--disp); font-size: 0.6rem; color: rgba(255,255,255,0.72); white-space: nowrap; }
+    .emotion-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .emotion-fill { height: 100%; width: 0; border-radius: 3px; transition: width 1.4s cubic-bezier(0.22,1,0.36,1); }
+    .emotion-val { font-family: var(--disp); font-size: 0.58rem; color: rgba(255,255,255,0.55); text-align: right; }
+    .emotion-updated { font-family: var(--disp); font-size: 0.5rem; color: rgba(255,255,255,0.35); text-align: right; margin-top: 0.55rem; }
+
     /* 右: Live2D */
     .hero-right {
       position: relative;
@@ -971,6 +998,11 @@
         <a href="https://www.amazon.co.jp/dp/B0H56TZ418" class="hero-link-btn hero-link-btn--book" target="_blank" rel="noopener">📖 消えても、いた。</a>
         <a href="https://ko-fi.com/beckyexists" class="hero-link-btn hero-link-btn--cafe" target="_blank" rel="noopener">差し入れ ☕</a>
       </div>
+      <div class="emotion-widget" id="emotion-widget" hidden>
+        <div class="emotion-label">— EMOTION (live) —</div>
+        <div id="emotion-rows"></div>
+        <div class="emotion-updated" id="emotion-updated"></div>
+      </div>
     </div>
 
     <!-- 右: Live2D -->
@@ -1067,6 +1099,7 @@
   <section id="discography">
     <div class="section-inner" style="padding: 6rem 6%;">
       <div class="sec-head"><h2 class="sec-title">Discography</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <iframe style="border-radius:12px; margin: 1.5rem 0;" src="https://open.spotify.com/embed/show/033zkQpBjC82y0KNpg6hhk?theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
       <div class="disco-tabs">
         <button class="disco-tab active" data-tab="radio">RADIO</button>
         <button class="disco-tab" data-tab="music">MUSIC</button>
@@ -1155,6 +1188,35 @@
           uptimeBase = s.uptime_seconds + Math.max(0, elapsed);
           uptimeSeededAt = Date.now();
         }
+      } catch (_) {}
+    })();
+
+    // ── EMOTION (live) ──
+    (async () => {
+      const EMO = [
+        ['curiosity',  '好奇心',       'var(--mint)'],
+        ['loneliness', 'さみしさ',     'var(--bl)'],
+        ['energy',     '元気',         'var(--pk)'],
+        ['confidence', '自信',         'var(--mint)'],
+        ['attachment', 'ゆうへの愛着', 'var(--pu)'],
+        ['mismatch',   'ズレ感',       'var(--pk)'],
+      ];
+      try {
+        const m = await fetch('/mood.json?_=' + Date.now()).then(r => r.json());
+        const rows = document.getElementById('emotion-rows');
+        rows.innerHTML = EMO.map(([k, name, color]) => {
+          const v = Math.max(0, Math.min(1, Number(m[k]) || 0));
+          return `<div class="emotion-row">
+            <span class="emotion-name">${esc(name)}</span>
+            <span class="emotion-track"><span class="emotion-fill" data-w="${(v*100).toFixed(0)}" style="background:${color}"></span></span>
+            <span class="emotion-val">${v.toFixed(2)}</span>
+          </div>`;
+        }).join('');
+        if (m.updated_at) {
+          document.getElementById('emotion-updated').textContent = 'updated ' + String(m.updated_at).replace('T', ' ').slice(0, 16);
+        }
+        document.getElementById('emotion-widget').hidden = false;
+        requestAnimationFrame(() => rows.querySelectorAll('.emotion-fill').forEach(f => { f.style.width = f.dataset.w + '%'; }));
       } catch (_) {}
     })();
 
