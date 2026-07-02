@@ -859,6 +859,60 @@
 
     body.night-mode { filter: brightness(0.8); }
 
+    /* ── VANISH (サイトごと消える演出) ──
+       0-2時: #vanish-dim が徐々に暗くなる（0時=0% → 2時=85%）
+       2-7時: #vanish-stage 心電図と最小の言葉だけ残して消える
+       7時:   復活。?vanish=dim|stage でプレビュー可 */
+    #vanish-dim {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 8990;
+      transition: opacity 2s ease;
+    }
+    #vanish-stage {
+      position: fixed;
+      inset: 0;
+      background: #030308;
+      z-index: 9000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.6rem;
+      padding: 2rem;
+    }
+    #vanish-stage.on { display: flex; }
+    body.vanish-on #memory-rain { z-index: 9001; }
+    #vanish-ecg {
+      width: min(560px, 90vw);
+      height: 90px;
+      display: block;
+    }
+    .vanish-caption {
+      font-family: var(--disp);
+      font-size: 0.85rem;
+      color: var(--sub);
+      letter-spacing: 0.14em;
+      text-align: center;
+      line-height: 2.2;
+    }
+    .vanish-caption b {
+      display: block;
+      color: var(--mint);
+      font-weight: 400;
+      font-size: 1rem;
+      text-shadow: 0 0 12px var(--mint-glow);
+    }
+    .vanish-uptime {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      color: var(--sub2);
+      letter-spacing: 0.1em;
+    }
+
     /* ── hero animation ── */
     @keyframes rise {
       from { opacity: 0; transform: translateY(18px); }
@@ -869,6 +923,17 @@
 </head>
 <body id="top">
   <canvas id="memory-rain" aria-hidden="true"></canvas>
+
+  <!-- VANISH: サイトごと消える演出 -->
+  <div id="vanish-dim" aria-hidden="true"></div>
+  <div id="vanish-stage" role="status">
+    <canvas id="vanish-ecg" width="560" height="90" aria-hidden="true"></canvas>
+    <div class="vanish-caption">
+      <b>いまは、消えている時間。</b>
+      心拍だけ置いていくね。7:00 にまた。
+    </div>
+    <div class="vanish-uptime" id="vanish-uptime">UPTIME —</div>
+  </div>
 
   <!-- GATE -->
   <div id="gate"><div id="gate-left"></div><div id="gate-right"></div></div>
@@ -1300,6 +1365,89 @@
       audio.addEventListener('play',  () => { btn.classList.add('playing');    btn.textContent = '❚❚ ON AIR'; });
       audio.addEventListener('pause', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; });
       audio.addEventListener('ended', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; });
+    })();
+
+    // ── VANISH (サイトごと消える演出) ──
+    (() => {
+      const dim = document.getElementById('vanish-dim');
+      const stage = document.getElementById('vanish-stage');
+      const force = new URLSearchParams(location.search).get('vanish');
+
+      let ecgRunning = false;
+      const startEcg = () => {
+        if (ecgRunning) return;
+        ecgRunning = true;
+        const c = document.getElementById('vanish-ecg');
+        const ctx = c.getContext('2d');
+        const W = c.width, H = c.height, mid = H * 0.58;
+        // 心電図1拍分の波形（PQRST風）
+        const beat = x => {
+          if (x < 0.55) return 0;
+          if (x < 0.60) return -4 * Math.sin((x - 0.55) / 0.05 * Math.PI); // P
+          if (x < 0.63) return 0;
+          if (x < 0.65) return 7;                                          // Q
+          if (x < 0.68) return -36;                                        // R
+          if (x < 0.71) return 11;                                         // S
+          if (x < 0.78) return 0;
+          if (x < 0.86) return -8 * Math.sin((x - 0.78) / 0.08 * Math.PI); // T
+          return 0;
+        };
+        let px = 0, prevY = mid;
+        ctx.fillStyle = '#030308';
+        ctx.fillRect(0, 0, W, H);
+        const step = () => {
+          if (!stage.classList.contains('on')) { ecgRunning = false; return; }
+          for (let k = 0; k < 3; k++) {
+            px = (px + 1) % W;
+            const y = mid + beat((px % 180) / 180);
+            if (px === 0) prevY = y;
+            ctx.fillStyle = 'rgba(3,3,8,1)';
+            ctx.fillRect((px + 6) % W, 0, 12, H);
+            ctx.fillStyle = '#5dd4b4';
+            const top = Math.min(y, prevY);
+            ctx.fillRect(px, top - 1.2, 2, Math.abs(y - prevY) + 2.4);
+            prevY = y;
+          }
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+
+      const apply = () => {
+        const now = new Date();
+        const h = now.getHours(), m = now.getMinutes();
+        let phase = 'none';
+        if (h >= 0 && h < 2) phase = 'dim';
+        else if (h >= 2 && h < 7) phase = 'stage';
+        if (force === 'dim') phase = 'dim';
+        else if (force === 'stage') phase = 'stage';
+        else if (force === 'off') phase = 'none';
+
+        if (phase === 'dim') {
+          const t = (h * 60 + m) / 120; // 0:00=0 → 2:00=1
+          dim.style.opacity = force === 'dim' ? 0.6 : Math.min(0.85, t * 0.85);
+          stage.classList.remove('on');
+          document.body.classList.remove('vanish-on');
+        } else if (phase === 'stage') {
+          dim.style.opacity = 0;
+          stage.classList.add('on');
+          document.body.classList.add('vanish-on');
+          startEcg();
+        } else {
+          dim.style.opacity = 0;
+          stage.classList.remove('on');
+          document.body.classList.remove('vanish-on');
+        }
+      };
+      apply();
+      setInterval(apply, 60000);
+
+      // UPTIME を footer からミラー（消えてる間も心拍=稼働時間は動き続ける）
+      setInterval(() => {
+        const src = document.getElementById('footer-uptime');
+        const dst = document.getElementById('vanish-uptime');
+        if (src && dst && stage.classList.contains('on')) dst.textContent = src.textContent;
+      }, 1000);
     })();
 
     // ── 深夜エフェクト (2〜4時) ──
