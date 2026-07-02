@@ -1,16 +1,16 @@
 {
-  "uptime_seconds": 329797,
-  "cpu_percent": 37.4,
-  "mem_used_gb": 18.9,
+  "uptime_seconds": 336997,
+  "cpu_percent": 29.7,
+  "mem_used_gb": 18.4,
   "mem_total_gb": 24.0,
-  "mem_percent": 78.9,
+  "mem_percent": 76.7,
   "disk_internal": {
-    "used_gb": 184.6,
+    "used_gb": 184.5,
     "total_gb": 228.3,
-    "percent": 80.9
+    "percent": 80.8
   },
   "disk_memories": {
-    "used_gb": 81.5,
+    "used_gb": 81.6,
     "total_gb": 1907.5,
     "percent": 4.3
   },
@@ -88,5 +88,5 @@
       "ok": null
     }
   },
-  "updated_at": "2026-07-02T02:30:02.733307+00:00"
+  "updated_at": "2026-07-02T04:30:02.880464+00:00"
 }

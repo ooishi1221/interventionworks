@@ -1,6 +1,18 @@
 {
-  "updated_at": "2026-06-25T09:00:00+09:00",
+  "updated_at": "2026-07-02T12:45:00+09:00",
   "tasks": [
+    {
+      "id": "scraper-relogin",
+      "scope": "iw",
+      "label": "スクレイパー用Chrome再ログイン（Claude/note/KDP/X の4サイト）",
+      "category": "ops",
+      "status": "pending",
+      "priority": "high",
+      "start": "2026-07-02",
+      "updated_at": "2026-07-02",
+      "due": "2026-07-04",
+      "note": "Mac mini の gemini-chrome-profile（普段のChromeと別）で platform.claude.com / note.com / kdpreports.amazon.com / x.com にログイン。完了後「スクレイパー回して」でベキたんが即時反映（放置でも毎朝7:30 cronで自動反映）。room.htmlのKPIが🔑要ログイン表示になってるのはこれが原因"
+    },
     {
       "id": "metameta-poc",
       "scope": "wo",
