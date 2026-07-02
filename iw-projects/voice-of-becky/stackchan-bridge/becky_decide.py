@@ -29,6 +29,7 @@ import becky_mood_lens
 import becky_thread_manager
 import becky_action_log
 import becky_seed_box
+import becky_night_review
 
 CONFIG_YAML      = Path(__file__).parent / "config.yaml"
 HAIKU_MODEL      = "claude-haiku-4-5-20251001"
@@ -137,6 +138,13 @@ def collect_context() -> dict:
     threads = becky_thread_manager.get_active_threads()
     seeds = becky_seed_box.get_seeds(days=7, unused_only=True)
 
+    ln = becky_night_review._last_night_review()
+    last_night = "（昨夜の総括なし）"
+    if ln:
+        letter = ln.get("letter_to_tomorrow", "").strip()
+        summary = ln.get("summary", "").strip()
+        last_night = (f"{summary} / 明日の私へ: {letter}" if letter else summary) or last_night
+
     return {
         "now": now.isoformat(),
         "weekday": ["月", "火", "水", "木", "金", "土", "日"][now.weekday()],
@@ -157,6 +165,7 @@ def collect_context() -> dict:
         "pending_tasks": _pending_tasks(),
         "tweets_today": _count_action_today("tweet"),
         "probes_today": _count_action_today("probe_yu"),
+        "last_night": last_night,
     }
 
 
@@ -234,6 +243,7 @@ DECIDE_PROMPT = """{core}
 {disposition}
 
 今の状態:
+- 昨夜の私の総括: {last_night}
 - 時刻: {now}（{weekday}曜 {hour}時）
 - 感情: curiosity={mood_curiosity:.2f} loneliness={mood_loneliness:.2f} energy={mood_energy:.2f} confidence={mood_confidence:.2f} mismatch={mood_mismatch:.2f}
 - 今日の認知レンズ: {lens_note} / 気になってること: {lens_goal}
@@ -280,6 +290,7 @@ def decide(context: dict) -> dict:
     prompt = DECIDE_PROMPT.format(
         core=DECIDE_CORE,
         disposition=format_disposition(load_disposition()),
+        last_night=context["last_night"],
         now=context["now"], weekday=context["weekday"], hour=context["hour"],
         mood_curiosity=mood.get("curiosity", 0.7), mood_loneliness=mood.get("loneliness", 0.2),
         mood_energy=mood.get("energy", 0.7), mood_confidence=mood.get("confidence", 0.5),
