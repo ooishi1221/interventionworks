@@ -24,6 +24,7 @@ ActionType = Literal[
     "diary_written",     # 日記を書いた
     "lens_generated",    # 今日の認知レンズを生成した
     "goal_set",          # 今日の目標を設定した
+    "work_briefing",     # 仕事の朝ブリーフィングを送信した
 ]
 
 
