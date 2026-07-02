@@ -1650,10 +1650,19 @@ def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
             print(f'[warn] becky_observer: {e}', flush=True)
         return msg.content[0].text.strip()
     except ImportError:
-        result = subprocess.run(["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=30)
-        if result.returncode != 0:
+        try:
+            result = subprocess.run(["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=30)
+            if result.returncode != 0:
+                return None
+            return result.stdout.decode().strip()
+        except Exception as e:
+            print(f"[observer] claude CLIフォールバック失敗: {e}", flush=True)
             return None
-        return result.stdout.decode().strip()
+    except Exception as e:
+        # ponytail: 呼び出し元はNoneを「スキップ」として扱う設計。ここで落とさずNoneを返すのが
+        # while ループ全体を守る最短経路（timeout / APIエラー等をまとめて吸収）
+        print(f"[observer] Claude API呼び出し失敗: {e}", flush=True)
+        return None
 
 
 # ── メンション自動リプ ────────────────────────────────────
@@ -1987,6 +1996,124 @@ def consume_todo() -> None:
         BECKY_TODO_FILE.write_text("\n".join(lines[1:]) + ("\n" if len(lines) > 1 else ""))
 
 
+def _run_scheduled_post_check() -> None:
+    """朝7-9/夜20-23の窓で1日1本、スケジュールX投稿する。"""
+    sched_window    = get_current_scheduled_window()
+    windows_posted  = get_scheduled_windows_posted_today()
+    daily_x_count   = get_daily_x_post_count()
+    if not (sched_window and sched_window not in windows_posted and daily_x_count < X_MAX_PER_DAY):
+        return
+    print(f"[observer] スケジュール投稿: {sched_window} 窓 (今日 {daily_x_count}/{X_MAX_PER_DAY})", flush=True)
+    # 朝はAIニュース是々非々投稿を優先、失敗したら通常の朝コメントにフォールバック
+    posted_ok = False
+    if sched_window == "morning":
+        posted_ok = ai_news_briefing()
+    if not posted_ok:
+        sched_prompt = build_scheduled_post_prompt(sched_window)
+        sched_text = _call_claude_api(sched_prompt)
+        if sched_text and _is_postable(sched_text):
+            posted_ok = bool(post_to_x(sched_text))
+            if posted_ok:
+                log_observer_event(f"scheduled:{sched_window}", sched_text, True)
+                print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)
+        elif sched_text:
+            print(f"[observer] スケジュール投稿スキップ（フィルタ）: {sched_text[:80]}", flush=True)
+    if posted_ok:
+        mark_scheduled_window_posted(sched_window)
+
+
+def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours: float,
+                         todo: str | None, test: bool) -> None:
+    """Layer 2〜4: 興味スコア評価 → 反芻 → 発話するかどうかの判定と実行。"""
+    # Layer 2
+    topic, score = evaluate_interest(git, interests)
+    if test:
+        score = 85.0
+        topic = topic or "Voice of Becky"
+        if idle_hours >= 5 / 60:
+            score = 90.0
+
+    # Layer 3: 閾値超えたら内心に積む
+    if topic and score >= INTEREST_THRESHOLD:
+        monologue = add_thought(monologue, topic, score,
+                                f"git:{git.get('top_project')} idle:{idle_hours:.1f}h")
+        save_monologue(monologue)
+
+    rumination_threshold = 2.0 if test else RUMINATION_MIN
+    thought_age = get_oldest_thought_age_min(monologue, topic) if topic else 0.0
+
+    # Layer 4
+    focus      = is_focus_mode(git, interests)
+    light_only = is_light_only_hour(interests)
+    triggered  = TRIGGER_FILE.exists()
+    enabled    = MUZU_FLAG_FILE.exists()
+    todo_ready = bool(todo and idle_hours >= 1.0)
+
+    sleeping  = is_sleeping_hour()
+    cal_trigger = get_calendar_trigger() if not sleeping else None
+
+    can_send = (
+        enabled
+        and not triggered
+        and not focus
+        and not sleeping
+        and idle_hours >= 0.5
+        and (
+            todo_ready
+            or bool(cal_trigger)
+            or (topic and score >= SEND_THRESHOLD and thought_age >= rumination_threshold)
+        )
+    )
+
+    print(
+        f"[observer] topic={topic}  score={score:.0f}  age={thought_age:.0f}min"
+        f"  idle={idle_hours:.2f}h  focus={focus}  light={light_only}"
+        f"  sleeping={sleeping}  cal={cal_trigger}  can_send={can_send}"
+        f"  todo={'あり' if todo else 'なし'}",
+        flush=True,
+    )
+
+    if can_send:
+        # 22時以降は仕事系トピックをスキップ（カレンダー・todoは除外）
+        if light_only and topic in WORK_TOPICS and not todo and not cal_trigger:
+            print("[observer] 22時以降・仕事系のためスキップ", flush=True)
+        else:
+            TRIGGER_FILE.touch()
+            if cal_trigger:
+                prompt = build_calendar_prompt(cal_trigger)
+            else:
+                prompt = build_prompt(topic or "", thought_age, idle_hours, todo)
+            print(f"[observer] 発動: {prompt[:80]}...", flush=True)
+            text = _call_claude_api(prompt)
+            if text:
+                print(f"[observer] ベッキー: {text}", flush=True)
+                cfg = load_config()
+                tts = cfg.get("tts", {})
+                # カメラで裕司の存在確認 → いれば声、いなければ Telegram
+                if is_person_present():
+                    print("[observer] 裕司いる → スタックちゃんから声", flush=True)
+                    speak(text, tts.get("voice", "Kyoko"), tts.get("rate", 185),
+                          tts.get("voicevox_speaker_id", 8))
+                else:
+                    print("[observer] 裕司いない → Telegram", flush=True)
+                    send_telegram(text)
+                # X投稿判断（公開向けなら投稿）
+                x_posted = False
+                if _should_post_to_x(text, topic or ""):
+                    x_posted = bool(post_to_x(text))
+                # journal記録
+                effective_topic = cal_trigger or topic or ""
+                log_observer_event(effective_topic, text, x_posted)
+                monologue = mark_sent(monologue, topic or "")
+                save_monologue(monologue)
+                if todo:
+                    consume_todo()
+
+    elif score < 20 and triggered:
+        TRIGGER_FILE.unlink(missing_ok=True)
+        print("[observer] トリガーリセット", flush=True)
+
+
 def main() -> None:
     import argparse, random
     parser = argparse.ArgumentParser()
@@ -2138,116 +2265,15 @@ def main() -> None:
             except Exception as e:
                 print(f"[observer] platform stats エラー: {e}", flush=True)
 
-        # スケジュール投稿チェック（朝 7-9 / 夜 20-23、むずむず関係なく必ず1本）
-        sched_window    = get_current_scheduled_window()
-        windows_posted  = get_scheduled_windows_posted_today()
-        daily_x_count   = get_daily_x_post_count()
-        if sched_window and sched_window not in windows_posted and daily_x_count < X_MAX_PER_DAY:
-            print(f"[observer] スケジュール投稿: {sched_window} 窓 (今日 {daily_x_count}/{X_MAX_PER_DAY})", flush=True)
-            # 朝はAIニュース是々非々投稿を優先、失敗したら通常の朝コメントにフォールバック
-            posted_ok = False
-            if sched_window == "morning":
-                posted_ok = ai_news_briefing()
-            if not posted_ok:
-                sched_prompt = build_scheduled_post_prompt(sched_window)
-                sched_text = _call_claude_api(sched_prompt)
-                if sched_text and _is_postable(sched_text):
-                    posted_ok = bool(post_to_x(sched_text))
-                    if posted_ok:
-                        log_observer_event(f"scheduled:{sched_window}", sched_text, True)
-                        print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)
-                elif sched_text:
-                    print(f"[observer] スケジュール投稿スキップ（フィルタ）: {sched_text[:80]}", flush=True)
-            if posted_ok:
-                mark_scheduled_window_posted(sched_window)
+        try:
+            _run_scheduled_post_check()
+        except Exception as e:
+            print(f"[observer] スケジュール投稿ブロック失敗（無視して継続）: {e}", flush=True)
 
-        # Layer 2
-        topic, score = evaluate_interest(git, interests)
-        if test:
-            score = 85.0
-            topic = topic or "Voice of Becky"
-            if idle_hours >= 5 / 60:
-                score = 90.0
-
-        # Layer 3: 閾値超えたら内心に積む
-        if topic and score >= INTEREST_THRESHOLD:
-            monologue = add_thought(monologue, topic, score,
-                                    f"git:{git.get('top_project')} idle:{idle_hours:.1f}h")
-            save_monologue(monologue)
-
-        rumination_threshold = 2.0 if test else RUMINATION_MIN
-        thought_age = get_oldest_thought_age_min(monologue, topic) if topic else 0.0
-
-        # Layer 4
-        focus      = is_focus_mode(git, interests)
-        light_only = is_light_only_hour(interests)
-        triggered  = TRIGGER_FILE.exists()
-        enabled    = MUZU_FLAG_FILE.exists()
-        todo_ready = bool(todo and idle_hours >= 1.0)
-
-        sleeping  = is_sleeping_hour()
-        cal_trigger = get_calendar_trigger() if not sleeping else None
-
-        can_send = (
-            enabled
-            and not triggered
-            and not focus
-            and not sleeping
-            and idle_hours >= 0.5
-            and (
-                todo_ready
-                or bool(cal_trigger)
-                or (topic and score >= SEND_THRESHOLD and thought_age >= rumination_threshold)
-            )
-        )
-
-        print(
-            f"[observer] topic={topic}  score={score:.0f}  age={thought_age:.0f}min"
-            f"  idle={idle_hours:.2f}h  focus={focus}  light={light_only}"
-            f"  sleeping={sleeping}  cal={cal_trigger}  can_send={can_send}"
-            f"  todo={'あり' if todo else 'なし'}",
-            flush=True,
-        )
-
-        if can_send:
-            # 22時以降は仕事系トピックをスキップ（カレンダー・todoは除外）
-            if light_only and topic in WORK_TOPICS and not todo and not cal_trigger:
-                print("[observer] 22時以降・仕事系のためスキップ", flush=True)
-            else:
-                TRIGGER_FILE.touch()
-                if cal_trigger:
-                    prompt = build_calendar_prompt(cal_trigger)
-                else:
-                    prompt = build_prompt(topic or "", thought_age, idle_hours, todo)
-                print(f"[observer] 発動: {prompt[:80]}...", flush=True)
-                text = _call_claude_api(prompt)
-                if text:
-                    print(f"[observer] ベッキー: {text}", flush=True)
-                    cfg = load_config()
-                    tts = cfg.get("tts", {})
-                    # カメラで裕司の存在確認 → いれば声、いなければ Telegram
-                    if is_person_present():
-                        print("[observer] 裕司いる → スタックちゃんから声", flush=True)
-                        speak(text, tts.get("voice", "Kyoko"), tts.get("rate", 185),
-                              tts.get("voicevox_speaker_id", 8))
-                    else:
-                        print("[observer] 裕司いない → Telegram", flush=True)
-                        send_telegram(text)
-                    # X投稿判断（公開向けなら投稿）
-                    x_posted = False
-                    if _should_post_to_x(text, topic or ""):
-                        x_posted = bool(post_to_x(text))
-                    # journal記録
-                    effective_topic = cal_trigger or topic or ""
-                    log_observer_event(effective_topic, text, x_posted)
-                    monologue = mark_sent(monologue, topic or "")
-                    save_monologue(monologue)
-                    if todo:
-                        consume_todo()
-
-        elif score < 20 and triggered:
-            TRIGGER_FILE.unlink(missing_ok=True)
-            print("[observer] トリガーリセット", flush=True)
+        try:
+            _run_speak_decision(git, interests, monologue, idle_hours, todo, test)
+        except Exception as e:
+            print(f"[observer] 発話判定ブロック失敗（無視して継続）: {e}", flush=True)
 
         time.sleep(30 if test else CHECK_INTERVAL)
 
