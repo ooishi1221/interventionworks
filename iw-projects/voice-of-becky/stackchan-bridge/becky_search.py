@@ -589,11 +589,14 @@ def run_overseas(dry_run: bool = False) -> None:
         return
 
     candidates = []
+    quoted_accounts: set[str] = set()  # 同じアカウントへの引用RTは1回/runまで（ブロック回避）
     for tweet in tweets:
         tweet_id = str(tweet.get("id", ""))
         if not tweet_id or tweet_id in seen:
             continue
         screen_name = tweet.get("author", {}).get("screen_name", "?")
+        if screen_name in quoted_accounts:
+            continue
         likes = tweet.get("metrics", {}).get("likes", 0)
         text = tweet.get("text", "")
         quote_text = generate_quote_rt_text(tweet)
@@ -606,6 +609,7 @@ def run_overseas(dry_run: bool = False) -> None:
                 "likes": likes,
                 "url": f"https://x.com/{screen_name}/status/{tweet_id}",
             })
+            quoted_accounts.add(screen_name)
         if len(candidates) >= 3:
             break
 
