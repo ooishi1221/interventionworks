@@ -399,6 +399,21 @@ def dispatch(decision: dict) -> str:
             _log_decision(decision, executed=False, extra="本文が空")
             return "probe_yu: 本文が空でスキップ"
         ok = send_telegram(text)
+        if ok:
+            # Telegramセッション側が「自分が送ったやつへの返信」と文脈を繋ぐための正本
+            # （becky_probe.py と同じ probe_latest.json 契約。書かないとゆうの返信に「え？何のこと？」が起きる）
+            try:
+                latest = {
+                    "title": "decide: 自分で決めて送った",
+                    "message": text,
+                    "ts": datetime.now().isoformat(),
+                    "probe_type": "decide_probe",
+                    "decide_reason": decision.get("reason", ""),
+                }
+                (Path.home() / ".stackchan" / "probe_latest.json").write_text(
+                    json.dumps(latest, ensure_ascii=False, indent=2))
+            except Exception as e:
+                print(f"[decide] probe_latest.json 書き込み失敗: {e}", flush=True)
         _log_decision(decision, executed=ok, extra=text[:60])
         return f"probe_yu: {'送信' if ok else '失敗'}"
 
