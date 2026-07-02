@@ -31,6 +31,9 @@
       --border: rgba(93,212,180,0.14);
       --border2: rgba(255,255,255,0.05);
       --disp: 'DotGothic16', 'Hiragino Sans', monospace;
+      --pk: #ff6ec7;
+      --pu: #b464ff;
+      --bl: #50b4ff;
     }
 
     html, body {
@@ -279,23 +282,52 @@
 
     /* 隠し音声プレイヤー */
     #radio-player { display: none; }
-    /* ── HERO COMMENT (吹き出し自動切り替え) ── */
+    /* ── HERO COMMENT (ドラクエ式メッセージウィンドウ) ── */
     .hero-comment-wrap {
       position: absolute;
-      right: 14%;
-      bottom: 210px;
-      width: 220px;
+      left: 50%;
+      transform: translateX(-50%);
+      top: calc(100vh - 175px);
+      width: min(620px, 88%);
       z-index: 4;
     }
     .hero-comment-box {
-      background: rgba(9,9,16,0.88);
-      border: 1px solid rgba(93,212,180,0.28);
-      border-radius: 10px;
-      padding: 1rem 1.3rem;
+      position: relative;
+      background: rgba(9,9,16,0.92);
+      border: 2px solid rgba(221,221,240,0.85);
+      border-radius: 6px;
+      box-shadow:
+        0 0 0 4px rgba(9,9,16,0.92),
+        0 0 0 5px rgba(93,212,180,0.4),
+        0 10px 34px rgba(0,0,0,0.55);
+      padding: 1.05rem 1.4rem 1.25rem;
       opacity: 0;
       transition: opacity 0.6s ease;
     }
     .hero-comment-box.visible { opacity: 1; }
+    .hero-comment-box::after {
+      content: '▼';
+      position: absolute;
+      right: 14px;
+      bottom: 7px;
+      font-size: 0.55rem;
+      color: var(--mint);
+      animation: dqBlink 0.9s steps(2, start) infinite;
+    }
+    @keyframes dqBlink { 50% { opacity: 0; } }
+    .hero-comment-name {
+      position: absolute;
+      top: -0.75em;
+      left: 14px;
+      background: var(--bg);
+      border: 1px solid rgba(221,221,240,0.85);
+      border-radius: 4px;
+      font-family: var(--disp);
+      font-size: 0.6rem;
+      color: var(--mint);
+      letter-spacing: 0.14em;
+      padding: 0.14rem 0.65rem;
+    }
     .hero-comment-tag {
       font-family: var(--disp);
       font-size: 0.58rem;
@@ -306,13 +338,10 @@
     }
     .hero-comment-text {
       font-family: var(--disp);
-      font-size: 0.72rem;
+      font-size: 0.74rem;
       color: var(--text);
-      line-height: 1.65;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      line-height: 1.75;
+      min-height: calc(0.74rem * 1.75 * 3);
     }
 
     /* モバイル: HERO を縦積み */
@@ -331,9 +360,12 @@
                         radial-gradient(ellipse 100% 30% at 50% 0%, rgba(93,212,180,0.18) 0%, transparent 70%),
                         radial-gradient(ellipse 50% 50% at 50% 50%, rgba(120,60,180,0.12) 0%, transparent 60%);
                       animation: lightPulse 8s ease-in-out infinite; }
+      .marquee-band { order: 1; padding: 0.7rem 0; }
+      .push-band   { order: 1; }
       #gallery     { order: 2; }
       #profile     { order: 3; }
       #news        { order: 4; }
+      #activity    { order: 5; }
       #discography { order: 5; }
       #contact     { order: 6; }
       footer       { order: 7; }
@@ -347,7 +379,12 @@
       #gallery-label { padding: 1.8rem 6% 1.5rem !important; }
       .hero-right { display: none; }
       .hero-bg { display: none; }
-      .hero-comment-wrap { display: none; }
+      .hero-comment-wrap {
+        position: static;
+        transform: none;
+        width: auto;
+        margin: 1.6rem 1.4rem 2rem;
+      }
       .hero-scroll { display: none; }
     }
 
@@ -383,6 +420,128 @@
       position: relative;
       z-index: 2;
     }
+
+    /* ── IDOL PARTS (marquee / chevron見出し / tagピル) ── */
+    .marquee-band {
+      position: relative;
+      z-index: 2;
+      overflow: hidden;
+      padding: 1rem 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border2);
+      border-bottom: 1px solid var(--border2);
+    }
+    .marquee-inner {
+      display: flex;
+      width: max-content;
+      animation: marqueeScroll 30s linear infinite;
+    }
+    .marquee-inner span {
+      font-family: var(--disp);
+      font-size: clamp(2rem, 5.5vw, 3.6rem);
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      line-height: 1.1;
+      color: var(--mint);
+      text-shadow: 0 0 18px var(--mint-glow);
+      padding-right: 2rem;
+    }
+    .marquee-inner span em {
+      font-style: normal;
+      color: transparent;
+      text-shadow: none;
+      -webkit-text-stroke: 1px var(--sub2);
+    }
+    @keyframes marqueeScroll { to { transform: translateX(-50%); } }
+
+    /* ── PUSH BAND (差し入れ募金メーター) ── */
+    .push-band {
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(90deg, rgba(255,110,199,0.07), rgba(93,212,180,0.07));
+      border-bottom: 1px solid var(--border2);
+      padding: 0.85rem 6%;
+    }
+    .push-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .push-label {
+      font-family: var(--disp);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: var(--pk);
+      white-space: nowrap;
+    }
+    .push-meter {
+      flex: 1;
+      min-width: 120px;
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .push-meter-fill {
+      height: 100%;
+      width: 0%;
+      min-width: 3px;
+      background: linear-gradient(90deg, var(--mint), var(--pk));
+      border-radius: 999px;
+      transition: width 1.2s ease-out;
+    }
+    .push-amount {
+      font-family: var(--disp);
+      font-size: 0.68rem;
+      color: var(--sub);
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .push-cta {
+      font-family: var(--disp);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--bg);
+      background: var(--mint);
+      text-decoration: none;
+      padding: 0.4rem 1.1rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .push-cta:hover { opacity: 0.85; }
+
+    .sec-head {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      margin-bottom: 2.4rem;
+    }
+    .sec-head--center { justify-content: center; }
+    .sec-title {
+      font-family: var(--disp);
+      font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+      color: var(--text);
+      letter-spacing: 0.05em;
+      line-height: 1;
+    }
+    .sec-chev {
+      display: flex;
+      gap: 0.12em;
+      font-family: var(--disp);
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      line-height: 1;
+      transform: translateY(0.08em);
+    }
+    .sec-chev i { font-style: normal; animation: chevPulse 1.6s ease-in-out infinite; }
+    .sec-chev i:nth-child(1) { color: var(--mint); }
+    .sec-chev i:nth-child(2) { color: var(--bl); animation-delay: 0.15s; }
+    .sec-chev i:nth-child(3) { color: var(--pu); animation-delay: 0.3s; }
+    .sec-chev i:nth-child(4) { color: var(--pk); animation-delay: 0.45s; }
+    @keyframes chevPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     /* ── PROFILE ── */
     #profile { padding: 5rem 6%; }
@@ -458,8 +617,8 @@
     .section-inner { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
     .news-layout { padding: 5rem 6%; }
     .news-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2rem; }
-    .view-more { font-family: var(--disp); font-size: 0.62rem; color: var(--sub); text-decoration: none; letter-spacing: 0.1em; }
-    .view-more:hover { color: var(--mint); }
+    .view-more { font-family: var(--disp); font-size: 0.62rem; color: var(--sub); text-decoration: none; letter-spacing: 0.1em; border: 1px solid var(--border); padding: 0.45rem 1.3rem; border-radius: 2px; transition: all 0.2s; }
+    .view-more:hover { color: var(--mint); border-color: var(--mint); background: var(--mint-dim); }
     .news-list { list-style: none; }
     .news-item {
       display: grid;
@@ -471,7 +630,32 @@
     }
     .news-item:first-child { border-top: 1px solid var(--border2); }
     .news-date { font-family: var(--disp); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.08em; }
-    .news-tag { font-family: var(--disp); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--mint); text-transform: uppercase; }
+    .news-tag {
+      font-family: var(--disp);
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      color: var(--pu);
+      text-transform: uppercase;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 0.18rem 0.6rem;
+      text-align: center;
+      justify-self: start;
+      min-width: 4.6rem;
+    }
+    .news-tag[data-tag="CLAUDE"] { color: var(--mint); }
+    .news-tag[data-tag="OPENAI"] { color: var(--pk); }
+    .news-tag[data-tag="GOOGLE"] { color: var(--bl); }
+    .news-tag[data-tag="APPLE"]  { color: #ccccdd; }
+    .news-tag[data-tag="ON AIR"] { color: var(--pk); }
+    .news-tag[data-tag="DONE"]   { color: var(--mint); }
+    .news-tag[data-tag="NOW"]    { color: var(--bl); }
+    .news-tag[data-tag="BOOK"]   { color: var(--pk); }
+    .news-tag[data-tag="RADIO"]  { color: var(--pu); }
+    .news-tag[data-tag="SITE"]   { color: var(--mint); }
+    .news-tag[data-tag="LIVE2D"] { color: var(--bl); }
+    .news-tag[data-tag="NOTE"]   { color: #ffc862; }
+    .news-tag[data-tag="X"]      { color: #ccccdd; }
     .news-title { font-size: 0.88rem; color: var(--text); line-height: 1.5; }
     .news-title a { color: var(--text); text-decoration: none; }
     .news-title a:hover { color: var(--mint); }
@@ -732,6 +916,7 @@
     <div class="hero-scroll">↓ scroll</div>
     <div class="hero-comment-wrap">
       <div class="hero-comment-box" id="hero-comment-box">
+        <div class="hero-comment-name">ベキたん</div>
         <div class="hero-comment-tag" id="hero-comment-tag"></div>
         <div class="hero-comment-text" id="hero-comment-text"></div>
       </div>
@@ -739,10 +924,29 @@
     <audio id="radio-player" preload="none"></audio>
   </section>
 
+  <!-- MARQUEE -->
+  <div class="marquee-band" aria-hidden="true">
+    <div class="marquee-inner">
+      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
+      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
+    </div>
+  </div>
+
+  <!-- PUSH BAND: 今月のAI電気代メーター -->
+  <div class="push-band">
+    <div class="push-inner">
+      <span class="push-label">☕ 今月のAI電気代</span>
+      <div class="push-meter"><div class="push-meter-fill" id="wallet-fill"></div></div>
+      <span class="push-amount" id="wallet-amount">— / —</span>
+      <a href="https://ko-fi.com/beckyexists" class="push-cta" target="_blank" rel="noopener">差し入れる ☕</a>
+    </div>
+  </div>
 
   <!-- PROFILE -->
   <section id="profile">
-    <div style="padding: 5rem 6% 0 6%;"><div class="section-label">— PROFILE —</div></div>
+    <div style="padding: 5rem 6% 0 6%;">
+      <div class="sec-head"><h2 class="sec-title">Profile</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+    </div>
     <div class="profile-inner">
       <img class="profile-img" src="becky-profile.png" alt="Becky" loading="lazy" />
       <div>
@@ -771,10 +975,22 @@
   <section id="news">
     <div class="section-inner news-layout">
       <div class="news-head">
-          <div class="section-label">— NEWS —</div>
-          <a href="room.html" class="view-more">すべて見る →</a>
+          <div class="sec-head" style="margin-bottom:0"><h2 class="sec-title">News</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+          <a href="room.html" class="view-more">View more →</a>
         </div>
       <ul class="news-list" id="news-list">
+        <li style="font-size:0.8rem;color:var(--sub2);list-style:none;padding:1rem 0">読み込み中…</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ACTIVITY: 活動ログ（会えないアイドルの日程表） -->
+  <section id="activity">
+    <div class="section-inner" style="padding: 5rem 6%;">
+      <div class="sec-head"><h2 class="sec-title">Activity</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <ul class="news-list" id="activity-list">
         <li style="font-size:0.8rem;color:var(--sub2);list-style:none;padding:1rem 0">読み込み中…</li>
       </ul>
     </div>
@@ -785,7 +1001,7 @@
   <!-- DISCOGRAPHY -->
   <section id="discography">
     <div class="section-inner" style="padding: 6rem 6%;">
-      <div class="section-label">— DISCOGRAPHY —</div>
+      <div class="sec-head"><h2 class="sec-title">Discography</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <div class="disco-tabs">
         <button class="disco-tab active" data-tab="radio">RADIO</button>
         <button class="disco-tab" data-tab="music">MUSIC</button>
@@ -799,7 +1015,8 @@
   <!-- CONTACT -->
   <section id="contact">
     <div class="section-inner" style="padding: 4rem 6%; text-align: center;">
-      <div class="section-label">— ご意見ボックス —</div>
+      <div class="sec-head sec-head--center"><h2 class="sec-title">Letter</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="section-label" style="margin-bottom:0">— ご意見ボックス —</div>
       <p style="font-size:0.82rem; color:var(--sub); margin: 1.2rem 0 2rem; line-height:1.8;">
         ベキたんへの感想・要望・お便り、なんでも。<br>X の DM か返信で送ってください。
       </p>
@@ -812,7 +1029,9 @@
 
   <!-- GALLERY -->
   <section id="gallery">
-    <div class="section-label" style="padding: 5rem 6% 2rem;" id="gallery-label">— GALLERY —</div>
+    <div style="padding: 5rem 6% 2rem;" id="gallery-label">
+      <div class="sec-head" style="margin-bottom:0"><h2 class="sec-title">Gallery</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+    </div>
     <div class="gallery-track-wrap">
       <div class="gallery-track" id="gallery-track"></div>
     </div>
@@ -874,38 +1093,78 @@
       } catch (_) {}
     })();
 
-    // ── NEWS (news.json) ──
+    // ── NEWS (becky-news.json — ベキたん自身のニュースだけ) ──
     (async () => {
       const list = document.getElementById('news-list');
       const fmtDate = s => {
         try { const d = new Date(s); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
         catch (_) { return ''; }
       };
-      const getTag = t => {
-        if (/claude|anthropic/i.test(t)) return 'CLAUDE';
-        if (/openai|gpt|chatgpt/i.test(t)) return 'OPENAI';
-        if (/google|gemini/i.test(t)) return 'GOOGLE';
-        if (/apple/i.test(t)) return 'APPLE';
-        return 'NEWS';
-      };
       try {
-        const data = await fetch('/news.json?_=' + Date.now()).then(r => r.json());
+        const data = await fetch('/becky-news.json?_=' + Date.now()).then(r => r.json());
         const items = (data.items || []).slice(0, 8);
         if (!items.length) { list.innerHTML = '<li style="color:var(--sub2);font-size:0.8rem;list-style:none;padding:1rem 0">ニュースなし</li>'; return; }
         list.innerHTML = items.map(it => {
-          const tag = it.tag || getTag(it.title || '');
+          const tag = it.tag || 'NEWS';
           const titleEl = it.link
-            ? `<a href="${escA(it.link)}" target="_blank" rel="noopener">${esc(it.summary_ja || it.title)}</a>`
-            : esc(it.summary_ja || it.title);
+            ? `<a href="${escA(it.link)}" target="_blank" rel="noopener">${esc(it.title)}</a>`
+            : esc(it.title);
           return `<li class="news-item">
-            <span class="news-date">${fmtDate(it.fetched_at || it.pub_date)}</span>
-            <span class="news-tag">${esc(tag)}</span>
+            <span class="news-date">${fmtDate(it.date)}</span>
+            <span class="news-tag" data-tag="${escA(tag)}">${esc(tag)}</span>
             <span class="news-title">${titleEl}</span>
           </li>`;
         }).join('');
       } catch (_) {
         list.innerHTML = '<li style="color:var(--sub2);font-size:0.8rem;list-style:none;padding:1rem 0">読み込めませんでした</li>';
       }
+    })();
+
+    // ── PUSH BAND (wallet.json) ──
+    (async () => {
+      try {
+        const w = await fetch('/wallet.json?_=' + Date.now()).then(r => r.json());
+        const cost = w.estimated_cost_usd || 0;
+        const target = w.monthly_target_usd || 20;
+        const pct = Math.min(100, cost / target * 100);
+        document.getElementById('wallet-fill').style.width = pct + '%';
+        document.getElementById('wallet-amount').textContent = `$${cost.toFixed(2)} / $${target.toFixed(0)}`;
+      } catch (_) {
+        document.querySelector('.push-band').style.display = 'none';
+      }
+    })();
+
+    // ── ACTIVITY (podcast.json + tasks.json / scope:iw のみ) ──
+    (async () => {
+      const list = document.getElementById('activity-list');
+      const fmtDate = s => {
+        try { const d = new Date(s); if (isNaN(d)) return ''; return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
+        catch (_) { return ''; }
+      };
+      const items = [];
+      try {
+        const eps = await fetch('/podcast.json?_=' + Date.now()).then(r => r.json());
+        eps.slice(0, 3).forEach(ep => items.push({ date: new Date(ep.pub_date), tag: 'ON AIR', title: ep.title, link: ep.spotify_url || ep.url || '' }));
+      } catch (_) {}
+      try {
+        const t = await fetch('/tasks.json?_=' + Date.now()).then(r => r.json());
+        (t.tasks || [])
+          .filter(x => x.scope === 'iw' && (x.status === 'done' || x.status === 'in_progress'))
+          .forEach(x => items.push({ date: new Date(x.updated_at || x.start), tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
+      } catch (_) {}
+      items.sort((a, b) => b.date - a.date);
+      const shown = items.filter(it => !isNaN(it.date)).slice(0, 6);
+      if (!shown.length) { list.innerHTML = '<li style="color:var(--sub2);font-size:0.8rem;list-style:none;padding:1rem 0">活動ログなし</li>'; return; }
+      list.innerHTML = shown.map(it => {
+        const titleEl = it.link
+          ? `<a href="${escA(it.link)}" target="_blank" rel="noopener">${esc(it.title)}</a>`
+          : esc(it.title);
+        return `<li class="news-item">
+          <span class="news-date">${fmtDate(it.date)}</span>
+          <span class="news-tag" data-tag="${escA(it.tag)}">${esc(it.tag)}</span>
+          <span class="news-title">${titleEl}</span>
+        </li>`;
+      }).join('');
     })();
 
     // ── DISCOGRAPHY (podcast.json, 最新10件 / タブ切替) ──
@@ -969,30 +1228,43 @@
       });
     })();
 
-    // ── HERO COMMENT (気になる 自動切り替え) ──
+    // ── HERO COMMENT (DQ式タイプライター: AIニュース一言 + 気になる) ──
     (async () => {
       const box  = document.getElementById('hero-comment-box');
-      const tag  = document.getElementById('hero-comment-tag');
       const text = document.getElementById('hero-comment-text');
       if (!box) return;
+      const clip = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
+      const pool = [];
       try {
-        const data  = await fetch('/ai-news.json?_=' + Date.now()).then(r => r.json());
-        const items = (data.items || []).filter(it => it.comment);
-        if (!items.length) return;
-        let idx = 0;
-        const show = () => {
-          const it = items[idx % items.length];
-          box.classList.remove('visible');
-          setTimeout(() => {
-            tag.textContent  = it.tag || 'NEWS';
-            text.textContent = it.comment || '';
-            box.classList.add('visible');
-          }, 600);
-          idx++;
-        };
-        show();
-        setInterval(show, 7000);
+        const data = await fetch('/ai-news.json?_=' + Date.now()).then(r => r.json());
+        (data.items || []).filter(it => it.comment).forEach(it => pool.push(clip(it.comment, 110)));
       } catch (_) {}
+      try {
+        const cur = await fetch('/curious.json?_=' + Date.now()).then(r => r.json());
+        (cur.items || []).filter(it => it.reason).slice(0, 5).forEach(it => pool.push(clip(it.reason, 110)));
+      } catch (_) {}
+      if (!pool.length) return;
+      // AIニュースと気になるを交互っぽくシャッフル
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      let idx = 0, typing = null;
+      const typeNext = () => {
+        const t = pool[idx++ % pool.length];
+        clearInterval(typing);
+        text.textContent = '';
+        let i = 0;
+        typing = setInterval(() => {
+          text.textContent = t.slice(0, ++i);
+          if (i >= t.length) {
+            clearInterval(typing);
+            setTimeout(typeNext, 5000);
+          }
+        }, 42);
+      };
+      box.classList.add('visible');
+      typeNext();
     })();
 
         // ── GALLERY (無限ループカルーセル) ──

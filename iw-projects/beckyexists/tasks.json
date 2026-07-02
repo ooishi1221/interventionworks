@@ -468,6 +468,32 @@
       "due": "2026-06-25",
       "note": "faster_whisper→whisperx 3.8.6に乗り換え。HuggingFace token取得済み・pyannote speaker-diarization-3.1接続済み・torchcodecアンインストール済み。次: サーバー再起動して話者分離の実動確認",
       "icon": "🎙️"
+    },
+    {
+      "id": "beckyexists-mobile-ui",
+      "scope": "iw",
+      "label": "beckyexists.com スマホUI大改修 完了",
+      "category": "beckyexists",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-01",
+      "updated_at": "2026-07-01",
+      "due": "2026-07-01",
+      "note": "Live2D非表示でタッチ干渉解消/ギャラリーfix(img width:240px固定)/スマホのみCSSorderでギャラリーをprofile前に/グラデ背景+丸プロフィールアイコン(アンナA+B)/余白修正。Vercel deploy済み",
+      "icon": "📱"
+    },
+    {
+      "id": "cs-ai-automation",
+      "scope": "wo",
+      "label": "CS AI自動化 ヒアリング → 設計（ゲームCS / ONE PIECE BR）",
+      "category": "biz",
+      "status": "pending",
+      "priority": "medium",
+      "start": "2026-06-30",
+      "updated_at": "2026-06-30",
+      "due": "2026-07-14",
+      "note": "会社の子の業務AI化相談。データ復旧CSマニュアル確認済み（14シート・画像109枚）。ターゲット: テンプレ差し込み自動化・着信情報抽出・フロー判断補助。個人情報はメアドのみ→マスク処理でOK。MinerU不要。次: ヒアリング後に具体設計",
+      "icon": "🎮"
     }
   ]
 }
