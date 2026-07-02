@@ -1,6 +1,18 @@
 {
-  "updated_at": "2026-07-02T12:45:00+09:00",
+  "updated_at": "2026-07-02T19:20:00+09:00",
   "tasks": [
+    {
+      "id": "recruit-mail-ats-demo",
+      "scope": "wo",
+      "label": "採用管理ミニATSデモ（応募通知メール→ボード集約）",
+      "category": "biz",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-07-02",
+      "updated_at": "2026-07-02",
+      "due": "2026-07-07",
+      "note": "v3モック公開済み(recruit-board-demo.vercel.app、D&D/今日の面接/週カレンダー)。ジョブカン偵察完了(自動連携4/手動6)。WO repoにプロジェクト発足。待ち: 管理部の月間応募数+通知メールサンプル→AIパーサー実装"
+    },
     {
       "id": "scraper-relogin",
       "scope": "iw",
@@ -122,10 +134,10 @@
       "scope": "iw",
       "label": "サイトごと消える演出",
       "category": "beckyexists",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "start": "2026-06-17",
-      "updated_at": "2026-06-17",
+      "updated_at": "2026-07-02",
       "due": "2026-06-27",
       "note": "0-2時 段階的に暗く → 2-7時 真っ暗・心電図のみ → 7時復活",
       "icon": "🌙"
