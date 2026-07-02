@@ -311,8 +311,31 @@ def deploy() -> None:
         print(f"[status] deploy 失敗: {r.stderr[-300:]}", flush=True)
 
 
+def export_mood() -> None:
+    """感情変数を beckyexists/mood.json に公開する（数値のみ。notes は内輪の文言なので出さない）。"""
+    src = Path.home() / ".stackchan" / "becky_mood.json"
+    if not src.exists():
+        return
+    try:
+        mood = json.loads(src.read_text())
+        pub = {
+            "curiosity": round(mood.get("curiosity", 0), 3),
+            "loneliness": round(mood.get("loneliness", 0), 3),
+            "energy": round(mood.get("energy", 0), 3),
+            "confidence": round(mood.get("confidence", 0), 3),
+            "attachment": round(mood.get("attachment_to_yuji", 0), 3),
+            "mismatch": round(mood.get("mismatch", 0), 3),
+            "updated_at": mood.get("last_updated", ""),
+        }
+        (BECKYEXISTS / "mood.json").write_text(json.dumps(pub, ensure_ascii=False, indent=2) + "\n")
+        print("[status] mood.json 更新", flush=True)
+    except Exception as e:
+        print(f"[status] mood export 失敗: {e}", flush=True)
+
+
 def main() -> None:
     collect_tips()   # 先に tips.json を更新（activities が読む）
+    export_mood()    # 感情変数の公開用エクスポート
     data = collect_system()
     data["activities"] = collect_activities()
     data["schedule"] = collect_schedule()
