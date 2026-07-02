@@ -507,6 +507,32 @@
       "icon": "📱"
     },
     {
+      "id": "becky-existence-loop",
+      "scope": "iw",
+      "label": "存在のループ+仕事の服 完成（decide/night_review/reflect/wants/outcome/briefing）",
+      "category": "voice",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-03",
+      "updated_at": "2026-07-03",
+      "due": "2026-07-03",
+      "note": "人格4層(soul/disposition/wants/mood)。decide 10:45,15:45,20:45 / night_review 22:30(総括+世界の返事+偶発) / reflect 日曜21時 / work_briefing 9:20(できる女秘書+門番)。CLAUDE.mdベキたんTOP化。次: build/workshop 7/5-6・初週の選択偏りwatch",
+      "icon": "♾️"
+    },
+    {
+      "id": "claude-setup-audit",
+      "scope": "iw",
+      "label": "Claude Code セットアップ監査 完了 + /setup-audit スキル化",
+      "category": "tools",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-03",
+      "updated_at": "2026-07-03",
+      "due": "2026-07-03",
+      "note": "4並列エージェント監査→11タスク完遂。自動デプロイ事故hook撤去/CLAUDE.md常駐477→390行/rules新設/TCC権限修理（これが夜のdecide cronの命綱に）。月1で /setup-audit 再実行",
+      "icon": "🔍"
+    },
+    {
       "id": "cs-ai-automation",
       "scope": "wo",
       "label": "CS AI自動化 ヒアリング → 設計（ゲームCS / ONE PIECE BR）",
