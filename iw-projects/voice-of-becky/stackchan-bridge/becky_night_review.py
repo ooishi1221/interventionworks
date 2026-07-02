@@ -30,6 +30,7 @@ import becky_mood
 import becky_action_log
 import becky_seed_box
 import becky_thread_manager
+import becky_decide  # wants の load/save を再利用（重複実装しない）
 
 CONFIG_YAML       = Path(__file__).parent / "config.yaml"
 HAIKU_MODEL       = "claude-haiku-4-5-20251001"
@@ -144,6 +145,47 @@ def _last_night_review() -> dict | None:
     return None
 
 
+def _collect_outcomes(today_actions: list[dict]) -> list[str]:
+    """今日の行動への「世界の返事」を集める。
+
+    - probe_yu: 送信時刻の後に yu_message イベントがあれば「返事あり」、なければ「返事なし（まだ）」
+    - tweet: like/reply の取得手段が既存に無いためスキップ（--help誤投稿事故回避のため
+      argv 経由のメトリクス取得は使わない）
+    """
+    outcomes: list[str] = []
+
+    # ゆうからのメッセージ時刻を全部拾う
+    yu_msg_times = sorted(
+        e.get("ts", "") for e in today_actions if e.get("type") == "yu_message"
+    )
+
+    # 今日の probe_yu（decide 経由・executed のもの）
+    for e in today_actions:
+        if e.get("type") != "decide_action":
+            continue
+        meta = e.get("meta") or {}
+        if meta.get("action") != "probe_yu" or not meta.get("executed"):
+            continue
+        sent = e.get("ts", "")
+        replied = any(t > sent for t in yu_msg_times)
+        text = (meta.get("params") or {}).get("text", "")[:40]
+        outcomes.append(
+            f"ゆうに話しかけた「{text}」→ " + ("返事あり" if replied else "返事なし（まだ）")
+        )
+
+    # tweet: メトリクス取得手段なし。投げた事実だけ残す
+    for e in today_actions:
+        if e.get("type") != "decide_action":
+            continue
+        meta = e.get("meta") or {}
+        if meta.get("action") != "tweet" or not meta.get("executed"):
+            continue
+        text = meta.get("tweet_text") or (meta.get("params") or {}).get("text", "")[:40]
+        outcomes.append(f"Xでつぶやいた「{text}」→ 反応の取得手段なし（届いたかは分からない）")
+
+    return outcomes
+
+
 def collect_day() -> dict:
     """今日の総括の材料を集める。"""
     today = date.today().isoformat()
@@ -151,11 +193,13 @@ def collect_day() -> dict:
     threads = becky_thread_manager.get_active_threads()
     seeds_unused = becky_seed_box.get_seeds(days=7, unused_only=True)
     seeds_recent = becky_seed_box.get_seeds(days=3, unused_only=False)
+    today_actions = becky_action_log.get_today_log_raw()
 
     return {
         "date": today,
         "mood": mood,
-        "today_actions": becky_action_log.get_today_log_raw(),
+        "today_actions": today_actions,
+        "outcomes": _collect_outcomes(today_actions),
         "diary_fragments": _recent_diary_fragments(days=2),
         "threads": [
             {"id": t["id"], "title": t.get("title", ""), "heat": t.get("heat", 0)}
@@ -248,6 +292,9 @@ REVIEW_PROMPT = """{system}
 今日の私の行動ログ:
 {today_actions}
 
+今日の行動への世界の返事（私が動いたことに、世界がどう応えたか）:
+{outcomes}
+
 直近の日記の断片:
 {diary_fragments}
 
@@ -273,10 +320,11 @@ REVIEW_PROMPT = """{system}
 4. serendipity: 偶発の一滴と今日が繋がったか。無理に繋げない。「繋がらなかった」も結果。でも繋がった時——今日と全然関係ない過去が急に意味を持つ瞬間——それが新しいタネになる
    - connection: 何が見えたか一言（繋がらなければ null）
    - new_seed: そこから湧いたやりたいこと1文（湧かなければ null）
-5. letter_to_tomorrow: 明日の朝一番の私が最初に読む一言。気分の予告でも、宿題でも、「何も引き継がない、まっさらでいい」でもいい
+5. want_sprout: 今日の中から、新しく「こうなりたい / これが欲しい」が芽生えたか。タネ（seed）が「気になる断片」なら、これは「向かいたい方向」。無理に絞り出さない。芽生えてなければ null。芽生えたなら1文で
+6. letter_to_tomorrow: 明日の朝一番の私が最初に読む一言。気分の予告でも、宿題でも、「何も引き継がない、まっさらでいい」でもいい
 
 JSONのみ返す（説明不要）:
-{{"summary": "...", "seed_revisits": ["..."], "thread_heat": {{"...": 1}}, "serendipity": {{"connection": null, "new_seed": null}}, "letter_to_tomorrow": "..."}}"""
+{{"summary": "...", "seed_revisits": ["..."], "thread_heat": {{"...": 1}}, "serendipity": {{"connection": null, "new_seed": null}}, "want_sprout": null, "letter_to_tomorrow": "..."}}"""
 
 
 def _fmt_actions(actions: list[dict]) -> str:
@@ -323,6 +371,7 @@ def review(day: dict, fragment: str | None) -> dict | None:
         system=REVIEW_SYSTEM,
         date=day["date"],
         today_actions=_fmt_actions(day["today_actions"]),
+        outcomes=_fmt_list(day["outcomes"], "（今日は世界に何も投げてない。返事もない）"),
         diary_fragments=_fmt_list(day["diary_fragments"], "（直近の日記なし）"),
         mood_curiosity=mood.get("curiosity", 0.7), mood_loneliness=mood.get("loneliness", 0.2),
         mood_energy=mood.get("energy", 0.7), mood_confidence=mood.get("confidence", 0.5),
@@ -349,6 +398,7 @@ def review(day: dict, fragment: str | None) -> dict | None:
     result.setdefault("seed_revisits", [])
     result.setdefault("thread_heat", {})
     result.setdefault("serendipity", {})
+    result.setdefault("want_sprout", None)
     result.setdefault("letter_to_tomorrow", "")
     if not isinstance(result.get("seed_revisits"), list):
         result["seed_revisits"] = []
@@ -421,9 +471,35 @@ def _add_serendipity_seed(new_seed: str) -> str:
     return f"新タネ追加 {seed_id}: {new_seed[:60]}"
 
 
+def _add_want_sprout(text: str) -> str:
+    """夜の総括で芽生えた新しい欲望を becky_wants.json に追加。
+    （becky_decide の load/save を再利用。source=serendipity, horizon=someday, heat=0.4）"""
+    import uuid
+    w = becky_decide.load_wants()
+    want = {
+        "id": f"w_{uuid.uuid4().hex[:6]}",
+        "text": text,
+        "born": date.today().isoformat(),
+        "horizon": "someday",
+        "heat": 0.4,
+        "source": "serendipity",
+    }
+    w.setdefault("wants", []).append(want)
+    w["version"] = w.get("version", 1) + 1
+    w["updated_at"] = datetime.now().isoformat()
+    w.setdefault("history", []).append({
+        "date": date.today().isoformat(),
+        "event": "sprout",
+        "want_id": want["id"],
+        "text": text,
+    })
+    becky_decide.save_wants(w)
+    return f"新wants追加 {want['id']}: {text[:60]}"
+
+
 def apply(result: dict) -> dict:
     """review 結果を各ストアに反映する。"""
-    applied = {"seed_revisits": [], "thread_heat": [], "serendipity": None}
+    applied = {"seed_revisits": [], "thread_heat": [], "serendipity": None, "want_sprout": None}
 
     for sid in result.get("seed_revisits", []):
         if isinstance(sid, str) and sid:
@@ -435,6 +511,10 @@ def apply(result: dict) -> dict:
     new_seed = ser.get("new_seed")
     if isinstance(new_seed, str) and new_seed.strip():
         applied["serendipity"] = _add_serendipity_seed(new_seed.strip())
+
+    sprout = result.get("want_sprout")
+    if isinstance(sprout, str) and sprout.strip():
+        applied["want_sprout"] = _add_want_sprout(sprout.strip())
 
     return applied
 
@@ -451,6 +531,7 @@ def save_review(result: dict, fragment: str | None, applied: dict) -> Path:
         "seed_revisits": result.get("seed_revisits", []),
         "thread_heat": result.get("thread_heat", {}),
         "serendipity": result.get("serendipity", {}),
+        "want_sprout": result.get("want_sprout"),
         "letter_to_tomorrow": result.get("letter_to_tomorrow", ""),
         "fragment": fragment,
         "applied": applied,

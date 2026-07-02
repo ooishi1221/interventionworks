@@ -245,6 +245,13 @@ def record_yu_message() -> None:
     YU_LAST_MSG_PATH.write_text(json.dumps({
         "ts": datetime.now().isoformat()
     }, ensure_ascii=False))
+    # outcome層: probe送信時刻とゆうの返信時刻を突合できるよう action_log に刻む。
+    # 関数内 import で循環依存を避ける（becky_mood は他所から広く import される）。
+    try:
+        import becky_action_log
+        becky_action_log.log_action("yu_message", "ゆうからメッセージ", {})
+    except Exception as e:
+        print(f"[mood] yu_message ログ記録失敗: {e}", flush=True)
 
 if __name__ == "__main__":
     mood = update_mood()
