@@ -151,71 +151,9 @@ Moto-Logos は「ライダーとして不便」の個人痛から始まり後か
 
 ---
 
-## マシン環境（Mac mini M4 プライマリ）
+## Ops 参照（移設済み）
 
-**基本方針:** Mac mini M4 をリモートアクセスで常用。Node v24.14.1 を nvm で管理。詳細な引っ越し手順（CLI ログイン、EAS Secrets 確認、Android ローカルビルド等）が必要になった時は `docs/machine-setup.md` を参照。
+> 2026-07-03 セットアップ監査でスリム化。TOP は横断判断軸のみ、固有 Ops は各所へ。
 
-### env ファイル一覧（**git 管理外・手動配置必須**）
-
-| パス | 用途 | 主なキー |
-|------|------|---------|
-| `iw-projects/engineering/moto-logos/.env` | モバイルアプリ | `EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` |
-| `iw-projects/engineering/moto-logos-admin/.env.local` | Admin Dashboard | `FIREBASE_ADMIN_*`, `NEXT_PUBLIC_FIREBASE_*`, `GEMINI_API_KEY` |
-| `iw-projects/engineering/moto-logos-lp/.env.local` | LP (Vite) | `VITE_FIREBASE_*` |
-| `iw-projects/engineering/moto-logos-slack/.env` | Slack Bot | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_WEBHOOK_URL` |
-
-**秘密鍵（絶対 commit 禁止）:** `iw-projects/engineering/moto-logos/scripts/moto-spotter-firebase-adminsdk-*.json`（Admin SDK 鍵）
-
-### CLI ログイン状態（確認コマンド）
-
-```bash
-cd iw-projects/engineering/moto-logos && npx eas whoami        # yuji1221
-npx firebase login:list && npx firebase use moto-spotter
-cd ../moto-logos-admin && npx vercel whoami        # yujiooishi-8378
-```
-
----
-
-## 実機バグ対応プレイブック
-
-<important if="実機で動かない・表示されない・クラッシュ">
-
-**仮説ドリブンで深掘りに走る前に、以下を機械的に確認する。** これを飛ばすと 2026-04-20 の `EXPO_PUBLIC_*` 未注入で数時間ハマった事例を再発する。
-
-### 最初の 30 秒でやる 3 点
-
-1. **環境変数の注入確認**: `cd iw-projects/engineering/moto-logos && npm run preflight [preview|production]`
-   - EAS Secrets と `.env` の差分 / app.json 必須項目 / Firestore rules を一括チェック
-2. **Sentry 管理画面**: https://moto-logos-team.sentry.io/projects/moto-logos/ で直近 Issue を確認
-   - Slack `#moto-logos-dev-log` にもリアルタイム通知が飛ぶのでそこも即確認
-3. **裕司にデバッグシェア依頼**: 設定 → サポート → 「デバッグ情報を開発者に送信」を押してもらう
-   - Firestore `debug_reports` に書き込まれ、Slack Bot が整形通知（uid / build / update ID / 直近エラー3件）
-
-### 深掘り仮説に入る判断軸
-
-- 上記 3 点で **手がかりが見つからない場合のみ** 仮説検証に入る
-- 修正を 3 回重ねても再現するなら**前提を疑い直す**（API Key の存在確認、ビルド内容の実機目視など）
-- 症状のヒアリングは「何が起きないか」より「どこまでは起きるか」を優先（診断 Alert で段階切り分け）
-- **深掘りに入る時は `systematic-debugging` skill を発動**（Phase 1 = root cause investigation を完了する前に fix を提案しない、を体系化したフロー）
-
-</important>
-
----
-
-## デプロイ / Issue 対応
-
-- デプロイ: `/deploy-admin`, `/deploy-lp` skill
-- Issue: `/fix-issue <番号>` skill（取得→調査→実装→検証→コミット→クローズ）
-
----
-
-## Telegram チャンネルモード（`--channels`）の動作指示
-
-`claude --channels plugin:telegram@claude-plugins-official` で起動している場合、以下を守る。
-
-**ゆうからメッセージを受信したら、返答前に必ず `~/.stackchan/probe_latest.json` を Read する。**
-
-- `ts` が現在時刻から 6 時間以内 → 「このメッセージは probe（自発的持ち込み）で自分が送ったメッセージへの返信かもしれない」と判断する
-- `message` フィールドの内容が今受け取ったメッセージと関連していたら、その文脈で返答する
-- probe 由来と判断した場合、「さっき送ったやつへの返信だ」という自然な流れで会話を続ける（「え？何の話？」とならない）
-- 6 時間より古い or ファイルなし → 通常通り対応
+- **マシン環境 / env ファイル / CLI ログイン / 実機バグ対応 / デプロイ・Issue skill** → `iw-projects/engineering/moto-logos/CLAUDE.md`（Moto-Logos 固有 Ops）
+- **Telegram チャンネルモード（`--channels`）動作指示** → `~/.claude/rules/telegram-channels.md`（--channels 起動セッションでのみ読む）
