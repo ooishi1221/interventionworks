@@ -260,6 +260,36 @@
       font-family: var(--mono); font-size: 11px; color: var(--sub2); margin-bottom: 6px;
     }
     .cost-bar { height: 6px; border-radius: 4px; background: var(--panel2); overflow: hidden; }
+
+    /* 週次分析グラフ / 締切レーダー / スパークライン */
+    .mr-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; margin: 4px 0 14px; }
+    .mr-num { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+    .mr-num-v { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+    .mr-num-l { font-size: 10.5px; color: var(--sub2); margin-top: 2px; letter-spacing: 0.06em; }
+    .mr-probe { margin: 0 0 18px; }
+    .mr-sec { margin-bottom: 12px; }
+    .mr-sec-h { font-family: var(--disp); font-size: 13px; color: var(--i-mint); margin-bottom: 4px; letter-spacing: 0.08em; }
+    .mr-sec-b { white-space: pre-line; line-height: 1.8; font-size: 13px; }
+    .radar-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 2px; border-bottom: 1px solid var(--line);
+      font-size: 12.5px;
+    }
+    .radar-row:last-child { border-bottom: none; }
+    .radar-days {
+      font-family: var(--mono); font-weight: 700; font-size: 12px;
+      min-width: 52px; text-align: center;
+      padding: 3px 8px; border-radius: 7px;
+    }
+    .radar-days.hot  { color: var(--red);   background: var(--red-dim); }
+    .radar-days.warm { color: var(--amber); background: var(--amber-dim); }
+    .radar-days.cool { color: var(--green); background: var(--green-dim); }
+    .radar-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .radar-due { font-family: var(--mono); font-size: 11px; color: var(--sub2); flex-shrink: 0; }
+    .spark-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+    .spark-now { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--i-mint); }
+    .spark-now .unit { font-size: 12px; color: var(--sub); font-weight: 500; margin-left: 4px; }
+    .spark-legend { font-family: var(--mono); font-size: 10.5px; color: var(--sub2); line-height: 1.8; }
     .cost-bar-fill { height: 100%; border-radius: 4px; background: var(--green); transition: width 0.8s ease; box-shadow: 0 0 8px rgba(0,230,118,0.4); }
     .cost-detail { margin-top: 12px; font-size: 11.5px; color: var(--sub); line-height: 1.7; }
     .cost-detail b { color: var(--text); font-family: var(--mono); }
@@ -705,6 +735,11 @@
         <div id="ganttChart"><div class="empty">loading...</div></div>
       </div>
       <div class="card" style="margin-top:16px;">
+        <h2><svg data-lucide="alarm-clock"></svg>締切レーダー</h2>
+        <div class="sub-note">due が近い順 — 赤=今日明日 / 黄=今週 / 緑=余裕</div>
+        <div id="dueRadar"><div class="empty">loading...</div></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
         <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
         <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
         <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
@@ -775,6 +810,16 @@
       </div>
     </div>
 
+    <!-- X フォロワー成長スパークライン -->
+    <div class="card" id="sparkCard" style="margin-top:16px; display:none;">
+      <h2><svg data-lucide="trending-up"></svg>X フォロワー推移 <span id="sparkMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="spark-wrap">
+        <div class="spark-now" id="sparkNow">--</div>
+        <svg id="sparkSvg" viewBox="0 0 300 64" preserveAspectRatio="none" style="flex:1;min-width:180px;height:64px;"></svg>
+        <div class="spark-legend" id="sparkLegend"></div>
+      </div>
+    </div>
+
     <!-- note記事リスト + 定期タスク -->
     <div class="grid note-row" style="margin-top:16px;">
       <div class="card">
@@ -800,7 +845,7 @@
     <div class="card" style="margin-top:16px;">
       <h2><svg data-lucide="bar-chart-2"></svg>週次コンテンツ分析 <span id="mediaReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">note / X / KDP — マイケル × クレア 週次レポート（毎週月曜更新）</div>
-      <div id="mediaReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--text);white-space:pre-line;"><div class="empty">loading...</div></div>
+      <div id="mediaReport" style="margin-top:14px;color:var(--text);"><div class="empty">loading...</div></div>
     </div>
 
     </div><!-- /sec-media -->
@@ -896,6 +941,7 @@
     <!-- ── Section: TOOLS ── -->
     <div class="sec-label" onclick="toggleSec('tools')">TOOLS<span class="sec-chev" id="chev-tools"><svg data-lucide="chevron-down"></svg></span></div>
     <div class="sec-content" id="sec-tools">
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
 
     <div class="card">
       <h2><svg data-lucide="wand-sparkles"></svg>ベキたんプロンプトビルダー</h2>
@@ -915,6 +961,7 @@
       <a href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:10px 20px;background:var(--green);color:#000;font-size:12px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-decoration:none;border-radius:4px;">OPEN CONSOLE →</a>
     </div>
 
+    </div>
     </div><!-- /sec-tools -->
 
   </main>
@@ -1012,7 +1059,7 @@ async function fetchJson(path) {
 }
 
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets] = await Promise.all([
+  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets, wallet] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/trending.json'),
     fetchJson('/news.json'),
@@ -1022,7 +1069,12 @@ async function loadAll() {
     fetchJson('/platform_stats.json'),
     fetchJson('/media_report.json'),
     fetchJson('/grok_tweets.json'),
+    fetchJson('/wallet.json'),
   ]);
+
+  // スクレイパーのセッション切れ検知（0 と区別する）
+  const needsLogin = s => !!s?.login_required;
+  const LOCK = '<span style="font-size:12px;color:var(--amber);font-family:var(--mono);letter-spacing:0.04em;">🔑 要ログイン</span>';
 
   // ── sync time ──
   const syncTs = platform?.updated_at || trending?.updated_at || status?.updated_at;
@@ -1031,7 +1083,10 @@ async function loadAll() {
   }
 
   // ── KPI: note PV ──
-  if (platform?.note) {
+  if (needsLogin(platform?.note)) {
+    $('kpiNotePV').innerHTML = LOCK;
+    $('kpiNotePVSub').querySelector('span').textContent = 'note セッション切れ';
+  } else if (platform?.note) {
     const n = platform.note;
     $('kpiNotePV').innerHTML = `${n.total_views.toLocaleString()}<span class="unit">views</span>`;
     $('kpiNotePVSub').querySelector('span').textContent = `${n.total_likes} likes`;
@@ -1039,7 +1094,10 @@ async function loadAll() {
   }
 
   // ── KPI: KDP ──
-  if (platform?.kdp) {
+  if (needsLogin(platform?.kdp)) {
+    $('kpiKdpOrders').innerHTML = LOCK;
+    $('kpiKdpKenp').querySelector('span').textContent = 'KDP セッション切れ';
+  } else if (platform?.kdp) {
     const k = platform.kdp;
     $('kpiKdpOrders').innerHTML = `${k.orders_this_month}<span class="unit">orders</span>`;
     $('kpiKdpKenp').querySelector('span').textContent = `${k.kenp_this_month} KENP`;
@@ -1110,26 +1168,34 @@ async function loadAll() {
     }).join('');
   }
 
-  // ── Claude API コスト ──
-  if (platform?.claude_api) {
-    const c = platform.claude_api;
+  // ── Claude API コスト（Console 取得 → 切れてたら wallet.json ローカル計測に fallback） ──
+  const ca = platform?.claude_api;
+  if (ca && !needsLogin(ca) && (ca.credit_remaining > 0 || ca.monthly_cost_usd > 0)) {
     const monthlyLimit = 500;
-    const pct = Math.min(100, (c.monthly_cost_usd / monthlyLimit) * 100);
-
-    $('claudeCredit').textContent = `$${c.credit_remaining.toFixed(2)}`;
-    $('claudeCostLabel').textContent = `今月 $${c.monthly_cost_usd.toFixed(2)}`;
+    const pct = Math.min(100, (ca.monthly_cost_usd / monthlyLimit) * 100);
+    $('claudeCredit').textContent = `$${ca.credit_remaining.toFixed(2)}`;
+    $('claudeCostLabel').textContent = `今月 $${ca.monthly_cost_usd.toFixed(2)}`;
     $('claudeLimitLabel').textContent = `上限 $${monthlyLimit}`;
     $('claudeCostBar').style.width = pct.toFixed(2) + '%';
-
-    // クレジットが何ヶ月分か計算
-    const monthsLeft = c.monthly_cost_usd > 0
-      ? (c.credit_remaining / c.monthly_cost_usd).toFixed(0)
+    const monthsLeft = ca.monthly_cost_usd > 0
+      ? (ca.credit_remaining / ca.monthly_cost_usd).toFixed(0)
       : '∞';
-    $('claudeDetail').innerHTML = `クレジット残 <b>$${c.credit_remaining.toFixed(2)}</b> — 今月のペースで <b>${monthsLeft} ヶ月分</b>`;
+    $('claudeDetail').innerHTML = `クレジット残 <b>$${ca.credit_remaining.toFixed(2)}</b> — 今月のペースで <b>${monthsLeft} ヶ月分</b>`;
+  } else if (wallet && typeof wallet.estimated_cost_usd === 'number') {
+    const target = wallet.monthly_target_usd || 20;
+    $('claudeCredit').innerHTML = needsLogin(ca) ? LOCK : '--';
+    $('claudeCostLabel').textContent = `今月 $${wallet.estimated_cost_usd.toFixed(2)}（ローカル計測）`;
+    $('claudeLimitLabel').textContent = `目標 $${target.toFixed(0)}`;
+    $('claudeCostBar').style.width = Math.min(100, wallet.estimated_cost_usd / target * 100).toFixed(2) + '%';
+    $('claudeDetail').innerHTML = `ローカル計測 <b>${(wallet.call_count || 0)} calls</b> / in ${(wallet.input_tokens||0).toLocaleString()} · out ${(wallet.output_tokens||0).toLocaleString()} tok${needsLogin(ca) ? ' — Console は gemini-chrome-profile で再ログインすると実測に戻る' : ''}`;
   }
 
   // ── X Analytics ──
-  if (platform?.x_analytics) {
+  if (needsLogin(platform?.x_analytics)) {
+    $('kpiXImp').innerHTML = LOCK;
+    $('kpiXImpSub').querySelector('span').textContent = 'X セッション切れ';
+    $('xPostList').innerHTML = '<div class="empty">🔑 X セッション切れ — スクレイパー用Chrome（gemini-chrome-profile）で再ログインしてください</div>';
+  } else if (platform?.x_analytics) {
     const xa = platform.x_analytics;
     const imp = xa.total_impressions || 0;
     $('kpiXImp').innerHTML = imp >= 1000
@@ -1157,7 +1223,9 @@ async function loadAll() {
   }
 
   // ── X Dev API ──
-  if (platform?.x_dev) {
+  if (needsLogin(platform?.x_dev)) {
+    $('xDevCredit').innerHTML = LOCK;
+  } else if (platform?.x_dev) {
     const x = platform.x_dev;
     $('xDevCredit').textContent = `$${Number(x.credit_remaining).toFixed(2)}`;
     if (x.scraped_at) {
@@ -1175,6 +1243,37 @@ async function loadAll() {
   } else {
     $('gcpCost').textContent = '$0.00';
     $('gcpCostUnit').textContent = '(手動確認)';
+  }
+
+  // ── X フォロワースパークライン（history.json 19日蓄積） ──
+  const snaps = history?.snapshots || [];
+  if (snaps.length >= 2) {
+    const card = $('sparkCard');
+    card.style.display = '';
+    const self_ = snaps.map(s => s.self_followers ?? 0);
+    const cur = self_[self_.length - 1];
+    const diff = cur - self_[0];
+    $('sparkNow').innerHTML = `${cur}<span class="unit">followers（${snaps.length}日で +${diff}）</span>`;
+    $('sparkMeta').textContent = `${snaps[0].date} 〜 ${snaps[snaps.length-1].date}`;
+    // 各系列を自分のmin-maxで正規化して形を比較（実数スケールが桁違いのため）
+    const line = (vals, color, width, dash) => {
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const norm = v => mx === mn ? 32 : 58 - (v - mn) / (mx - mn) * 52;
+      const pts = vals.map((v, i) => `${(i / (vals.length - 1) * 296 + 2).toFixed(1)},${norm(v).toFixed(1)}`).join(' ');
+      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${width}"${dash ? ' stroke-dasharray="3,3"' : ''} stroke-linejoin="round" stroke-linecap="round"/>`;
+    };
+    const rivalNames = Object.keys(snaps[snaps.length - 1].rivals || {});
+    let svg = '';
+    const legend = [];
+    rivalNames.forEach(rn => {
+      const vals = snaps.map(s => s.rivals?.[rn] ?? 0);
+      svg += line(vals, 'rgba(139,139,150,0.45)', 1, true);
+      legend.push(`<span style="color:var(--sub2)">- - @${esc(rn)} ${vals[vals.length-1].toLocaleString()}</span>`);
+    });
+    svg += line(self_, 'var(--i-mint)', 2, false);
+    legend.unshift(`<span style="color:var(--i-mint)">— @becky_exists ${cur}</span>`);
+    $('sparkSvg').innerHTML = svg;
+    $('sparkLegend').innerHTML = legend.join('<br>');
   }
 
   // ── Observer 稼働状態 ──
@@ -1226,7 +1325,38 @@ async function loadAll() {
 
   // ── メディア週次分析レポート ──
   if (mediaReport?.report) {
-    $('mediaReport').textContent = mediaReport.report;
+    const snap = mediaReport.snapshot || {};
+    const ev = snap.eval || {};
+    // snapshot 5数値カード
+    const nums = [
+      ['X imp 7d',    snap.x_impressions_7d, 'var(--i-mint)'],
+      ['X likes 7d',  snap.x_likes_7d,       'var(--blue)'],
+      ['note views',  snap.note_total_views, 'var(--i-pu)'],
+      ['KDP orders',  snap.kdp_orders,       'var(--i-pk)'],
+      ['KENP',        snap.kdp_kenp,         'var(--amber)'],
+    ];
+    const numsHtml = '<div class="mr-nums">' + nums.map(([l, v, c]) =>
+      `<div class="mr-num" style="border-top:2px solid ${c}"><div class="mr-num-v">${(v ?? 0).toLocaleString()}</div><div class="mr-num-l">${l}</div></div>`
+    ).join('') + '</div>';
+    // プローブ送信率バー（目標ライン付き）
+    const rate = ev.probe_send_rate_7d;
+    const PROBE_TARGET = 0.5;
+    const barHtml = (typeof rate !== 'number') ? '' :
+      `<div class="mr-probe">` +
+        `<div class="cost-bar-label"><span>プローブ送信率 7d（自律展開）</span><span>${Math.round(rate*100)}% / 目標 ${PROBE_TARGET*100}%</span></div>` +
+        `<div class="cost-bar" style="position:relative;overflow:visible;">` +
+          `<i style="display:block;height:100%;width:${Math.min(100, rate*100)}%;background:${rate >= PROBE_TARGET ? 'var(--green)' : 'var(--amber)'};border-radius:4px;"></i>` +
+          `<span style="position:absolute;left:${PROBE_TARGET*100}%;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,0.4);border-radius:1px;" title="目標ライン"></span>` +
+        `</div>` +
+      `</div>`;
+    // ■区切りレポートを見出し構造化
+    const secsHtml = mediaReport.report.split(/\n?■\s*/).filter(s => s.trim()).map(chunk => {
+      const nl = chunk.indexOf('\n');
+      const head = (nl === -1 ? chunk : chunk.slice(0, nl)).trim();
+      const body = nl === -1 ? '' : chunk.slice(nl + 1).trim();
+      return `<div class="mr-sec"><div class="mr-sec-h">■ ${esc(head)}</div><div class="mr-sec-b">${esc(body)}</div></div>`;
+    }).join('');
+    $('mediaReport').innerHTML = numsHtml + barHtml + secsHtml;
     if (mediaReport.generated_at) {
       $('mediaReportAt').textContent = fmtAgo(mediaReport.generated_at);
     }
@@ -1354,6 +1484,33 @@ async function loadTasks() {
   $('ganttMeta').textContent = `残 ${_taskActive.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
 
   renderTaskTable();
+  renderDueRadar(data.tasks);
+}
+
+// ── 締切レーダー（dueが近い順、色分け） ──
+function renderDueRadar(tasks) {
+  const el = $('dueRadar');
+  if (!el) return;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const withDue = (tasks || [])
+    .filter(t => t.status !== 'done' && t.due)
+    .map(t => {
+      const d = new Date(t.due);
+      const days = Math.round((d - today) / 86400000);
+      return { ...t, days };
+    })
+    .sort((a, b) => a.days - b.days)
+    .slice(0, 7);
+  if (!withDue.length) { el.innerHTML = '<div class="empty">due 付きタスクなし</div>'; return; }
+  el.innerHTML = withDue.map(t => {
+    const cls = t.days <= 1 ? 'hot' : t.days <= 7 ? 'warm' : 'cool';
+    const label = t.days < 0 ? `${-t.days}日超過` : t.days === 0 ? '今日' : t.days === 1 ? '明日' : `${t.days}日`;
+    return `<div class="radar-row">
+      <span class="radar-days ${cls}">${label}</span>
+      <span class="radar-label" title="${esc(t.label)}">${esc(t.label)}</span>
+      <span class="radar-due">${esc(t.due)}</span>
+    </div>`;
+  }).join('');
 }
 
 async function loadQuestions() {

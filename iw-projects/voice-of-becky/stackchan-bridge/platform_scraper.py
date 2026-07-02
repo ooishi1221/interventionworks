@@ -12,6 +12,7 @@ Usage:
 """
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -281,6 +282,9 @@ def main() -> None:
                 print(f"[scraper] {name} ...", flush=True)
                 result = func(tab)
                 result['scraped_at'] = datetime.now(timezone.utc).isoformat()
+                # ログインページに飛ばされてないか（0とセッション切れを区別する）
+                cur_url = js(tab, "location.href") or ""
+                result['login_required'] = bool(re.search(r'login|signin|/ap/|onboarding', cur_url))
                 stats[name] = result
                 print(f"[scraper] {name} OK → {result}", flush=True)
             except Exception as exc:

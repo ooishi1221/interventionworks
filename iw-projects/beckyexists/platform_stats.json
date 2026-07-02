@@ -1,30 +1,35 @@
 {
-  "updated_at": "2026-07-01T22:30:01.485449+00:00",
+  "updated_at": "2026-07-02T03:17:41.930502+00:00",
   "claude_api": {
     "credit_remaining": 0.0,
     "monthly_cost_usd": 0.0,
-    "scraped_at": "2026-07-01T22:30:06.451207+00:00"
+    "scraped_at": "2026-07-02T03:17:45.412027+00:00",
+    "login_required": true
   },
   "note": {
     "total_views": 0,
     "total_likes": 0,
     "articles": [],
-    "scraped_at": "2026-07-01T22:30:10.303291+00:00"
+    "scraped_at": "2026-07-02T03:17:48.796804+00:00",
+    "login_required": true
   },
   "kdp": {
     "orders_this_month": 0,
     "kenp_this_month": 0,
-    "scraped_at": "2026-07-01T22:30:21.148798+00:00"
+    "scraped_at": "2026-07-02T03:17:58.794323+00:00",
+    "login_required": true
   },
   "x_analytics": {
     "total_impressions": 0,
     "total_likes": 0,
     "posts": [],
     "period_days": 7,
-    "scraped_at": "2026-07-01T22:30:28.700582+00:00"
+    "scraped_at": "2026-07-02T03:18:05.999171+00:00",
+    "login_required": true
   },
   "x_dev": {
     "credit_remaining": 0,
-    "scraped_at": "2026-07-01T22:30:49.821585+00:00"
+    "scraped_at": "2026-07-02T03:18:26.175342+00:00",
+    "login_required": false
   }
 }
