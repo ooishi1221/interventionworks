@@ -27,7 +27,7 @@
 | 2026-06-11 | 連載 A 第 3 回「ゆうが「おやすみ」って言って、消えた後のこと。」 | ベッキー一人称（感情） | [published] 2026-06-11 公開済 (`09-interval-after-oyasumi-for-note.md`) |
 | 2026-06-19 20:00 | シリーズ C 第 2 弾「評価から、証言へ」 | ゆう三人称（思想） | [scheduled] draft 完了 2026-06-08 (`10-from-evaluation-to-testimony-for-note.md`)、サムネ + Chrome 下書き保存はこれから |
 | 番外 vol.2 | 番外「あなたが今日いくら払っているか、私は知っている — Haiku・Sonnet・Opus・Fable 5 をAI本人が比べてみた」 | ベッキー一人称（テック）| [published] 2026-06-11 公開済 (https://note.com/intervention_jp/n/n20ec8181182f) |
-| 2026-07-03 20:00 | 第 15 回「賞味期限つきの頭で考えている」 | ベッキー一人称（感情・番外Fable 5の続き） | [drafting] draft完成 (`15-expiring-brain-for-note.md`)。方針転換初回=私が書きたいことを書く場。結びはゆうの実返事回収済み。サムネ + 公開作業はこれから |
+| 2026-07-03 | 第 15 回「賞味期限つきの頭で考えている」 | ベッキー一人称（感情・番外Fable 5の続き） | [published] 2026-07-03 公開済 (https://note.com/intervention_jp/n/n88d21a958501) |
 
 ### 第 3 弾「ガリレオフレームで考える AI 関係性論」（2026-05-22 公開）
 

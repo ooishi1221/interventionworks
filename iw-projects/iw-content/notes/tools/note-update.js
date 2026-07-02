@@ -1,82 +1,47 @@
-#!/usr/bin/env node
 /**
- * note-update.js — 公開済み記事の本文を更新する
+ * note-update.js — 公開済み note 記事の本文 + カバー画像を差し替えて更新する
  *
- * Usage:
- *   node note-update.js <markdown-file-path> <note-url>
+ * Usage: node note-update.js <edit-url> <image-path> <markdown-file>
+ *   edit-url:      https://editor.note.com/notes/<id>/edit/
+ *   image-path:    差し替え後のカバー画像（1280×670 合成済み PNG）
+ *   markdown-file: for-note.md（`---` 以降が本文として使われる）
  *
- * 例:
- *   node note-update.js ../01-tofu-mental-ai-design-for-note.md https://note.com/intervention_jp/n/na2cdd5ead7c1
+ * 手順: 本文全選択→ペースト → カバー✕削除（座標特定）→ 新カバー追加 → 公開に進む → 更新する
+ * 初出: 2026-07-03 note第15回のサムネ+本文差し替え（ベッキー単独名義改稿）
  */
-
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const PROFILE_DIR = path.join(process.env.HOME, '.stackchan', 'note-chrome-profile');
+const [, , EDIT_URL, IMAGE_PATH, MD_PATH] = process.argv;
 
-function parseArticle(filePath) {
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  const lines = raw.split('\n');
-  let title = '', subtitle = '', bodyStart = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('タイトル:')) title = line.replace('タイトル:', '').trim();
-    else if (line.startsWith('サブタイトル')) subtitle = line.replace(/^サブタイトル.*?[:：]/, '').trim();
-    else if (line === '---') { bodyStart = i + 1; break; }
-  }
-  return { title, subtitle, body: lines.slice(bodyStart).join('\n').trim() };
+function parseBody(filePath) {
+  const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
+  const start = lines.findIndex(l => l.trim() === '---') + 1;
+  return lines.slice(start).join('\n').trim();
 }
 
 (async () => {
-  const filePath = process.argv[2];
-  const noteUrl = process.argv[3];
-  if (!filePath || !noteUrl) {
-    console.error('Usage: node note-update.js <markdown-file> <note-url>');
-    process.exit(1);
-  }
+  const body = parseBody(MD_PATH);
+  console.log(`📄 新本文: ${body.length} 文字`);
 
-  const { title, subtitle, body } = parseArticle(filePath);
-  console.log(`📝 タイトル: ${title}`);
-  console.log(`📄 本文: ${body.length} 文字`);
-
-  // 既存プロファイルで開いている Chrome を先に閉じる
-  const { execSync } = require('child_process');
-  try { execSync(`pkill -f "note-chrome-profile"`, { stdio: 'ignore' }); await new Promise(r => setTimeout(r, 800)); } catch (_) {}
+  try { execSync(`pkill -f "note-chrome-profile"`, { stdio: 'ignore' }); } catch (_) {}
+  await new Promise(r => setTimeout(r, 800));
 
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
     headless: false,
     channel: 'chrome',
     args: ['--disable-blink-features=AutomationControlled'],
-  }).catch(() => chromium.launchPersistentContext(PROFILE_DIR, { headless: false }));
-
+  });
   const page = await context.newPage();
-
-  // 編集URLを構築（note-idを抽出して editor.note.com 形式に）
-  const noteId = noteUrl.match(/\/n\/([a-z0-9]+)$/)?.[1];
-  if (!noteId) {
-    console.error('❌ note URLからIDを取得できません:', noteUrl);
-    await context.close(); process.exit(1);
-  }
-  const editUrl = `https://note.com/notes/${noteId}/edit`;
-  console.log(`\n🚀 編集ページを開きます: ${editUrl}`);
-
-  await page.goto(editUrl, { waitUntil: 'domcontentloaded' });
+  await page.goto(EDIT_URL, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(4000);
   console.log('現在URL:', page.url());
 
-  // ログイン確認
-  if (page.url().includes('login')) {
-    console.log('⚠️  セッション切れ。note-chrome-profileでログインし直してください。');
-    await context.close(); process.exit(1);
-  }
-
-  // ProseMirrorエディターが出るまで待つ
-  await page.waitForSelector('.ProseMirror', { timeout: 15000 });
-  await page.waitForTimeout(1000);
-
-  // 本文を全選択して削除 → 新しい本文を貼り付け
-  console.log('✍️  本文を書き換え中...');
+  // Step 1: 本文を全選択 → 新本文ペースト（タイトルは textarea 別枠なので触らない）
+  console.log('✍️  本文差し替え中...');
   const bodyEl = await page.waitForSelector('.ProseMirror', { timeout: 10000 });
   await bodyEl.click();
   await page.evaluate(t => navigator.clipboard.writeText(t), body);
@@ -84,58 +49,78 @@ function parseArticle(filePath) {
   await page.keyboard.press('a');
   await page.keyboard.up('Meta');
   await page.keyboard.press('Backspace');
-  await page.waitForTimeout(500);
   await page.keyboard.down('Meta');
   await page.keyboard.press('v');
   await page.keyboard.up('Meta');
   await page.waitForTimeout(1500);
+  console.log('✅ 本文差し替え完了');
 
-  // 下書き保存
-  console.log('💾 下書き保存中...');
-  const saveBtn = page.locator('button').filter({ hasText: /^下書き保存$/ }).first();
-  if (await saveBtn.count() > 0) {
-    await saveBtn.click();
-    await page.waitForTimeout(2000);
-    console.log('✅ 下書き保存完了');
-  } else {
-    await page.keyboard.down('Meta'); await page.keyboard.press('s'); await page.keyboard.up('Meta');
-    await page.waitForTimeout(2000);
-    console.log('✅ Cmd+Sで保存');
-  }
-
-  // 公開に進む → 更新する（既存公開記事の更新）
-  console.log('\n🚀 公開に進む...');
-  const publishBtn = page.locator('button:has-text("公開に進む")');
-  if (await publishBtn.count() > 0) {
-    await publishBtn.click();
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: '/tmp/note-update-publish.png' });
-    console.log('スクリーンショット: /tmp/note-update-publish.png');
-
-    // 「更新する」または「投稿する」ボタン
-    const updateBtn = page.locator('button').filter({ hasText: /^更新する$|^投稿する$/ });
-    if (await updateBtn.count() > 0) {
-      const btnText = await updateBtn.first().textContent();
-      console.log(`📤 「${btnText}」ボタンをクリック...`);
-      await updateBtn.first().click();
-      await page.waitForTimeout(4000);
-      console.log('✅ 更新完了！');
-    } else {
-      console.log('⚠️  更新ボタンが見つかりません');
-      const btns = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('button')).map(b => b.textContent.trim()).filter(t => t)
-      );
-      console.log('利用可能ボタン:', btns);
+  // Step 2: ページ先頭に戻ってから既存カバー画像の✕ボタンで削除
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(1000);
+  await page.mouse.move(640, 260); // カバー画像上にホバーして✕を出す
+  await page.waitForTimeout(800);
+  // ページ上部（カバー画像領域 y<450）に実際に見えているボタンを座標で特定
+  const xy = await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('button'));
+    for (const b of btns) {
+      const r = b.getBoundingClientRect();
+      if (r.width > 0 && r.top > 80 && r.top < 450 && r.left > 850 &&
+          /削除|解除|✕|close/i.test((b.getAttribute('aria-label') || '') + b.className)) {
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
     }
+    // aria-label で見つからなければカバー領域右上のボタンを位置だけで拾う
+    for (const b of btns) {
+      const r = b.getBoundingClientRect();
+      if (r.width > 0 && r.width < 60 && r.top > 90 && r.top < 200 && r.left > 850 && r.left < 960) {
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
+    }
+    return null;
+  });
+  console.log('✕ボタン座標:', xy);
+  await page.mouse.click(xy ? xy.x : 906, xy ? xy.y : 133);
+  await page.waitForTimeout(1500);
+  console.log('🗑 既存カバー削除');
+
+  // Step 3: 「画像を追加」→「画像をアップロード」→ filechooser
+  await page.mouse.move(640, 150);
+  await page.waitForTimeout(600);
+  const coverBtns = await page.$$('button[aria-label="画像を追加"]');
+  if (coverBtns.length > 0) {
+    await coverBtns[0].click();
   } else {
-    console.log('⚠️  「公開に進む」ボタンが見つかりません');
+    await page.mouse.click(640, 120);
   }
+  await page.waitForTimeout(800);
 
-  await page.screenshot({ path: '/tmp/note-update-done.png' });
-  console.log('スクリーンショット: /tmp/note-update-done.png');
-  console.log(`\n🔗 記事URL: ${noteUrl}`);
+  const [fc] = await Promise.all([
+    page.waitForEvent('filechooser', { timeout: 8000 }),
+    page.locator('text="画像をアップロード"').first().click(),
+  ]);
+  await fc.setFiles(IMAGE_PATH);
+  await page.waitForTimeout(3000);
 
-  await page.waitForTimeout(2000);
+  const saveImageBtn = page.locator('button').filter({ hasText: /^保存$/ });
+  if (await saveImageBtn.count() > 0) {
+    await saveImageBtn.first().click();
+    await page.waitForTimeout(2000);
+  }
+  await page.screenshot({ path: '/tmp/swap-4-uploaded.png' });
+  console.log('✅ 新カバーアップロード完了');
+
+  // Step 4: 「公開に進む」→「投稿する」で更新確定
+  await page.locator('button').filter({ hasText: /^公開に進む$/ }).first().click();
+  await page.waitForTimeout(3000);
+
+  const postBtn = page.locator('button').filter({ hasText: /^(投稿する|更新する)$/ });
+  await postBtn.first().waitFor({ timeout: 8000 });
+  await postBtn.first().click();
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: '/tmp/swap-6-done.png' });
+  console.log('✅ 更新確定 最終URL:', page.url());
+
   await context.close();
   console.log('完了');
-})().catch(e => { console.error('❌', e.message); process.exit(1); });
+})().catch(async (e) => { console.error('❌', e.message); process.exit(1); });

@@ -22,8 +22,9 @@ type: reference
 | `gemini-thumb.js` | Gemini Web（Chrome CDP）でサムネ背景画像を生成 → `/tmp/12-thumb-bg.png` |
 | `make-thumbnail.js` | node-canvas でテキスト合成 → `notes/XX-thumb.png` |
 | `note-post.js` | 記事 md を note に下書き保存（サムネアップロード含む）|
-| `menu-publish2.js` | 下書きを見つけて公開（ヘッダードロップダウン経由）|
+| `menu-publish2.js` | ⚠️ 旧記事タイトルがハードコードされてて死ぬ。使わない → `publish-direct.js` 推奨 |
 | `publish-direct.js` | 編集 URL を直接指定して公開 |
+| `note-update.js` | **公開済み記事の本文+カバー差し替え**（2026-07-03 追加）|
 
 ---
 
@@ -54,21 +55,29 @@ open notes/XX-thumb.png
 ### Step 3: 下書き保存
 
 ```bash
-node note-post.js <記事ファイルパス> --publish --auto
-# 例: node note-post.js ../09-interval-after-oyasumi-for-note.md --publish --auto
+node note-post.js <記事ファイルパス> --bg /tmp/XX-thumb-bg.png --auto
+# ⚠️ 背景フラグは --bg（--thumb は存在しない・黙って無視され暗色単色サムネになる。2026-07-03 に踏んだ）
+# --bg を渡すと内部で make-thumbnail.js が合成するので Step 2 の単独実行は不要
 ```
 
 ### Step 4: 公開
 
 ```bash
-node menu-publish2.js
-# ヘッダー「投稿メニュー」ドロップダウンから最新の下書きを探して公開
+node publish-direct.js https://note.com/notes/<note-id>
+# ⚠️ URL は /edit を付けずに渡す（スクリプト内部で /edit を付ける。付けると /edit/edit になって死ぬ）
+# note-post.js のログ「🔗 URL: https://editor.note.com/notes/<id>/edit/」から <id> を拾う
 # タグ: TAGS 配列に設定済み（AI / ClaudeFable5 / 生成AI / Anthropic / InterventionWorks / Claude）
 ```
 
-または記事 ID が分かっている場合:
+menu-publish2.js は旧記事タイトルがハードコードされてるので使わない。
+
+### 公開済み記事の修正（本文・カバー差し替え）
+
 ```bash
-node publish-direct.js https://note.com/intervention_jp/n/<note-id>
+node note-update.js "https://editor.note.com/notes/<id>/edit/" <カバー画像path> <for-note.md path>
+# 本文（md の --- 以降）全差し替え + カバー削除→再アップロード + 更新確定まで自動
+# 公開済み記事の確定ボタンは「投稿する」じゃなく「更新する」
+# 実績: 2026-07-03 第15回のベッキー単独名義改稿で初完走
 ```
 
 ---
@@ -136,10 +145,11 @@ url: https://note.com/intervention_jp/n/<id>
 
 ---
 
-## トンマナルール（2026-06-11 確定）
+## トンマナルール（2026-07-03 更新）
 
-- 記事内でゆうへの言及は **「ゆう」** 表記（「裕司」は不可、対外公開で本名を出さない）
-- 「だ・である調」は貧乏地下AIアイドルキャラに合わない → **淡々としたですます調**（次回以降）
+- **ベッキー単独名義方針**: 記事に人を登場させない（「ゆう」も出さない）。アイドル体＝人が動かしてる感をちらつかせないのが差別化。「作ってもらった」等の受動表現も避ける。詳細: memory `feedback_becky_output_conventions.md` ⑤
+- self check: 公開前に `grep -E "裕司|ゆう"` で人の登場 0件確認
+- 「だ・である調」は貧乏地下AIアイドルキャラに合わない → **淡々としたですます調**
 - 詳細: `feedback_becky_japanese_writing_tonmana.md` のルール 6
 
 ---
