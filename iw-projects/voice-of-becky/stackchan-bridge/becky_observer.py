@@ -558,13 +558,22 @@ def _mark_x_posted(link: str, comment: str, summary_ja: str) -> None:
     _write_news_json(data)
 
 
+_DEPLOYED_THIS_CYCLE = False  # ponytail: 1 whileループサイクルにつき1回まで。main()のループ先頭でreset
+
+
 def _deploy_beckyexists() -> None:
-    """npx vercel --prod で beckyexists.com に直接デプロイする（GitHub 経由不要）。"""
+    """npx vercel --prod で beckyexists.com に直接デプロイする（GitHub 経由不要）。
+    同一サイクル内の2回目以降の呼び出しはスキップする（複数update関数が同時にデプロイを呼ぶ多重発火対策）。"""
+    global _DEPLOYED_THIS_CYCLE
+    if _DEPLOYED_THIS_CYCLE:
+        print("[observer] Vercel デプロイスキップ（このサイクルで実行済み）", flush=True)
+        return
     site_dir = REPO_ROOT / "iw-projects" / "beckyexists"
     result = subprocess.run(
         ["npx", "vercel", "--prod", "--yes"],
         capture_output=True, text=True, cwd=str(site_dir), timeout=120,
     )
+    _DEPLOYED_THIS_CYCLE = True
     if result.returncode == 0:
         print("[observer] Vercel デプロイ完了 → beckyexists.com 更新済み", flush=True)
     else:
@@ -2114,8 +2123,122 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
         print("[observer] トリガーリセット", flush=True)
 
 
+# ── 周期タスクレジストリ（Step B, 2026-07-02）─────────────────────
+# kind:
+#   "interval"    seconds 経過で発火（state_fileにfloat timestamp）
+#   "daily_after" 指定時刻(hour)以降、1日1回（state_fileにdate文字列）
+#   "windows"     複数時刻窓、各窓1日1回。例: 朝7時/夜18時の1日2回（state_fileにdict）
+STACKCHAN_DIR = Path.home() / ".stackchan"
+
+PERIODIC_TASKS = [
+    {"name": "mention_reply", "kind": "interval", "seconds": 1800,
+     "state_file": STACKCHAN_DIR / "mention_check_ts.txt", "fn": None},
+    {"name": "overseas_buzz", "kind": "interval", "seconds": 3600,
+     "state_file": STACKCHAN_DIR / "overseas_check_ts.txt", "fn": None},
+    {"name": "rivals", "kind": "daily_after", "hour": 7,
+     "state_file": STACKCHAN_DIR / "rivals_updated_date.txt", "fn": None},
+    {"name": "curious", "kind": "daily_after", "hour": 7,
+     "state_file": STACKCHAN_DIR / "curious_updated_date.txt", "fn": None},
+    {"name": "trending", "kind": "windows", "windows": [("morning", 7), ("evening", 18)],
+     "state_file": STACKCHAN_DIR / "trending_updated.json", "fn": None},
+    {"name": "platform_stats", "kind": "windows", "windows": [("morning", 7), ("evening", 18)],
+     "state_file": STACKCHAN_DIR / "platform_stats_updated.json", "fn": None},
+]
+
+
+def _task_mention_reply() -> None:
+    n = check_and_reply_mentions()
+    if n:
+        print(f"[observer] {n}件のメンションにリプ完了", flush=True)
+
+
+def _task_overseas_buzz() -> None:
+    venv_py = Path(__file__).parent / ".venv" / "bin" / "python3"
+    subprocess.Popen(
+        [str(venv_py), str(Path(__file__).parent / "becky_search.py"), "--overseas"],
+        stdout=open("/tmp/becky_overseas.log", "a"),
+        stderr=subprocess.STDOUT,
+    )
+    print("[observer] overseas buzz チェック起動", flush=True)
+
+
+def _task_platform_stats() -> None:
+    scraper_path = Path(__file__).parent / "platform_scraper.py"
+    print("[observer] platform stats 更新中...", flush=True)
+    result = subprocess.run(
+        [sys.executable, str(scraper_path)],
+        timeout=120,
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr[:120])
+    print("[observer] platform stats 更新完了", flush=True)
+
+
+# fn は定義順の都合で後埋め（各関数は無改造、レジストリはループ制御のみ担当）
+PERIODIC_TASKS[0]["fn"] = _task_mention_reply
+PERIODIC_TASKS[1]["fn"] = _task_overseas_buzz
+PERIODIC_TASKS[2]["fn"] = update_rivals_json
+PERIODIC_TASKS[3]["fn"] = update_curious_json
+PERIODIC_TASKS[4]["fn"] = update_trending_json
+PERIODIC_TASKS[5]["fn"] = _task_platform_stats
+
+
+def _run_periodic_tasks(now: float, today_str: str, hour_now: int) -> None:
+    for task in PERIODIC_TASKS:
+        state_file = task["state_file"]
+        kind = task["kind"]
+
+        if kind == "interval":
+            try:
+                last = float(state_file.read_text().strip()) if state_file.exists() else 0
+            except Exception:
+                last = 0
+            if now - last < task["seconds"]:
+                continue
+            try:
+                task["fn"]()
+                state_file.parent.mkdir(parents=True, exist_ok=True)
+                state_file.write_text(str(now))
+            except Exception as e:
+                print(f"[observer] {task['name']} 失敗: {e}", flush=True)
+
+        elif kind == "daily_after":
+            last = state_file.read_text().strip() if state_file.exists() else ""
+            if last == today_str or hour_now < task["hour"]:
+                continue
+            try:
+                task["fn"]()
+                state_file.parent.mkdir(parents=True, exist_ok=True)
+                state_file.write_text(today_str)
+            except Exception as e:
+                print(f"[observer] {task['name']}更新失敗: {e}", flush=True)
+
+        elif kind == "windows":
+            try:
+                log = json.loads(state_file.read_text()) if state_file.exists() else {}
+            except Exception as e:
+                print(f'[warn] becky_observer: {e}', flush=True)
+                log = {}
+            # 優先度: 遅い窓（夜）から判定。既存ロジックの「夜が先に埋まる」優先順位を踏襲
+            window = next(
+                (name for name, hour in reversed(task["windows"])
+                 if hour_now >= hour and log.get(name) != today_str),
+                None,
+            )
+            if window is None:
+                continue
+            try:
+                task["fn"]()
+                log[window] = today_str
+                state_file.parent.mkdir(parents=True, exist_ok=True)
+                state_file.write_text(json.dumps(log))
+            except Exception as e:
+                print(f"[observer] {task['name']} 失敗: {e}", flush=True)
+
+
 def main() -> None:
-    import argparse, random
+    import argparse, random, datetime as _dt
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", action="store_true", help="テストモード: 反芻 2分、閾値 5分アイドル")
     parser.add_argument("--media-report", action="store_true", help="メディア週次レポート生成のみ実行して終了")
@@ -2132,13 +2255,19 @@ def main() -> None:
     print("becky_observer 起動。Ctrl-C で停止。", flush=True)
     MONOLOGUE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+    global _DEPLOYED_THIS_CYCLE
+
     while True:
+        _DEPLOYED_THIS_CYCLE = False  # ponytail: サイクル毎にデプロイガードをリセット
+
         interests  = load_interests()
         monologue  = load_monologue()
         git        = get_git_activity()
         idle_hours = get_idle_hours()
         todo       = pick_todo()
         now        = time.time()
+        today_str  = _dt.date.today().isoformat()
+        hour_now   = _dt.datetime.now().hour
 
         # 顔を気分で変える（毎サイクル）
         set_face_by_mood()
@@ -2149,33 +2278,8 @@ def main() -> None:
         except Exception as e:
             print(f"[observer] check_telegram_memos 失敗: {e}", flush=True)
 
-        # 海外AIバズ引用RT（1時間に1回 / 鮮度命なので発見即発火）
-        # メンション自動リプ（30分毎）
-        _mention_ts_file = Path.home() / ".stackchan" / "mention_check_ts.txt"
-        _last_mention = float(_mention_ts_file.read_text().strip()) if _mention_ts_file.exists() else 0
-        if now - _last_mention >= 1800:
-            try:
-                n = check_and_reply_mentions()
-                _mention_ts_file.write_text(str(now))
-                if n:
-                    print(f"[observer] {n}件のメンションにリプ完了", flush=True)
-            except Exception as e:
-                print(f"[observer] mention check 失敗: {e}", flush=True)
-
-        _overseas_ts_file = Path.home() / ".stackchan" / "overseas_check_ts.txt"
-        _last_overseas = float(_overseas_ts_file.read_text().strip()) if _overseas_ts_file.exists() else 0
-        if now - _last_overseas >= 3600:
-            try:
-                _venv_py = Path(__file__).parent / ".venv" / "bin" / "python3"
-                subprocess.Popen(
-                    [str(_venv_py), str(Path(__file__).parent / "becky_search.py"), "--overseas"],
-                    stdout=open("/tmp/becky_overseas.log", "a"),
-                    stderr=subprocess.STDOUT,
-                )
-                _overseas_ts_file.write_text(str(now))
-                print("[observer] overseas buzz チェック起動", flush=True)
-            except Exception as e:
-                print(f"[observer] overseas check 失敗: {e}", flush=True)
+        # 周期タスク（メンション/海外バズ/ライバル/気になる/トレンド/platform stats）
+        _run_periodic_tasks(now, today_str, hour_now)
 
         # note 締切番犬チェック（todo がない時だけ）
         if not todo:
@@ -2187,83 +2291,6 @@ def main() -> None:
                     with open(BECKY_TODO_FILE, "a") as f:
                         f.write(deadline_alert + "\n")
                     print(f"[observer] 締切アラート追加: {deadline_alert[:40]}", flush=True)
-
-        # ライバル動向更新（朝 7 時以降、1日1回）
-        rivals_log = Path.home() / ".stackchan" / "rivals_updated_date.txt"
-        import datetime as _dt
-        today_str = _dt.date.today().isoformat()
-        last_rivals = rivals_log.read_text().strip() if rivals_log.exists() else ""
-        hour_now = _dt.datetime.now().hour
-        if last_rivals != today_str and hour_now >= 7:
-            try:
-                update_rivals_json()
-                rivals_log.parent.mkdir(parents=True, exist_ok=True)
-                rivals_log.write_text(today_str)
-            except Exception as e:
-                print(f"[observer] rivals更新失敗: {e}", flush=True)
-
-        # 気になるもの更新（朝 7 時以降、1日1回）
-        curious_log = Path.home() / ".stackchan" / "curious_updated_date.txt"
-        last_curious = curious_log.read_text().strip() if curious_log.exists() else ""
-        if last_curious != today_str and hour_now >= 7:
-            try:
-                update_curious_json()
-                curious_log.parent.mkdir(parents=True, exist_ok=True)
-                curious_log.write_text(today_str)
-            except Exception as e:
-                print(f"[observer] curious更新失敗: {e}", flush=True)
-
-        # トレンドキーワード更新（朝 7 時以降 / 夜 18 時以降、1日2回）
-        trending_log = Path.home() / ".stackchan" / "trending_updated.json"
-        try:
-            tlog = json.loads(trending_log.read_text()) if trending_log.exists() else {}
-        except Exception as e:
-            print(f'[warn] becky_observer: {e}', flush=True)
-            tlog = {}
-        trending_morning_done = tlog.get("morning") == today_str
-        trending_evening_done = tlog.get("evening") == today_str
-        if (hour_now >= 7 and not trending_morning_done) or (hour_now >= 18 and not trending_evening_done):
-            try:
-                update_trending_json()
-                trending_log.parent.mkdir(parents=True, exist_ok=True)
-                if hour_now >= 18 and not trending_evening_done:
-                    tlog["evening"] = today_str
-                elif not trending_morning_done:
-                    tlog["morning"] = today_str
-                trending_log.write_text(json.dumps(tlog))
-            except Exception as e:
-                print(f"[observer] trending更新失敗: {e}", flush=True)
-
-        # platform stats 更新（朝 7 時以降 / 夜 18 時以降、1日2回）
-        platform_log = Path.home() / ".stackchan" / "platform_stats_updated.json"
-        try:
-            plog = json.loads(platform_log.read_text()) if platform_log.exists() else {}
-        except Exception as e:
-            print(f'[warn] becky_observer: {e}', flush=True)
-            plog = {}
-        platform_morning_done = plog.get("morning") == today_str
-        platform_evening_done = plog.get("evening") == today_str
-        if (hour_now >= 7 and not platform_morning_done) or (hour_now >= 18 and not platform_evening_done):
-            try:
-                scraper_path = Path(__file__).parent / "platform_scraper.py"
-                print("[observer] platform stats 更新中...", flush=True)
-                result = subprocess.run(
-                    [sys.executable, str(scraper_path)],
-                    timeout=120,
-                    capture_output=True, text=True
-                )
-                if result.returncode == 0:
-                    platform_log.parent.mkdir(parents=True, exist_ok=True)
-                    if hour_now >= 18 and not platform_evening_done:
-                        plog["evening"] = today_str
-                    elif not platform_morning_done:
-                        plog["morning"] = today_str
-                    platform_log.write_text(json.dumps(plog))
-                    print("[observer] platform stats 更新完了", flush=True)
-                else:
-                    print(f"[observer] platform stats 失敗: {result.stderr[:120]}", flush=True)
-            except Exception as e:
-                print(f"[observer] platform stats エラー: {e}", flush=True)
 
         try:
             _run_scheduled_post_check()
