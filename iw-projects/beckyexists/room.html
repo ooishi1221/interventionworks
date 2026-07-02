@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/room-apple-touch.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DotGothic16&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -32,6 +32,10 @@
       --sub: #8b8b96;
       --sub2: #5c5c66;
       --mono: 'JetBrains Mono', monospace;
+      --disp: 'DotGothic16', 'Hiragino Sans', monospace;
+      --i-mint: #5dd4b4;
+      --i-pk: #ff6ec7;
+      --i-pu: #b464ff;
       --sidebar-w: 232px;
     }
 
@@ -114,19 +118,37 @@
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 24px; gap: 14px; flex-wrap: wrap;
     }
-    .topbar h1 { font-size: 19px; font-weight: 800; letter-spacing: 0.03em; display: flex; align-items: center; gap: 10px; }
+    .topbar h1 { font-family: var(--disp); font-size: 21px; font-weight: 400; letter-spacing: 0.14em; display: flex; align-items: center; gap: 10px; }
     .topbar h1 svg { width: 21px; height: 21px; color: var(--green); }
+    .topbar h1 .bs-sub { font-family: 'Inter', 'Hiragino Sans', sans-serif; font-size: 11px; color: var(--sub2); letter-spacing: 0.08em; align-self: flex-end; padding-bottom: 2px; }
+    .idol-chev { display: inline-flex; gap: 1px; font-family: var(--disp); font-size: 15px; }
+    .idol-chev i { font-style: normal; animation: chevPulse 1.6s ease-in-out infinite; }
+    .idol-chev i:nth-child(1) { color: var(--i-mint); }
+    .idol-chev i:nth-child(2) { color: var(--blue); animation-delay: 0.15s; }
+    .idol-chev i:nth-child(3) { color: var(--i-pu); animation-delay: 0.3s; }
+    .idol-chev i:nth-child(4) { color: var(--i-pk); animation-delay: 0.45s; }
+    @keyframes chevPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
     .topbar .updated { font-family: var(--mono); font-size: 11.5px; color: var(--sub2); }
 
     .grid { display: grid; gap: 16px; }
 
     /* セクションラベル */
     .sec-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
-      color: var(--sub2); text-transform: uppercase;
+      font-family: var(--disp);
+      font-size: 14px; font-weight: 400; letter-spacing: 0.18em;
+      color: var(--text); text-transform: uppercase;
       padding: 20px 2px 8px;
       display: flex; align-items: center; gap: 10px;
       cursor: pointer; user-select: none;
+    }
+    .sec-label::before {
+      content: '❯❯❯';
+      background: linear-gradient(90deg, var(--i-mint), var(--blue), var(--i-pk));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-size: 13px;
+      letter-spacing: 0.05em;
     }
     .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
     .sec-chev { flex-shrink: 0; transition: transform 0.25s ease; }
@@ -137,6 +159,11 @@
 
     /* KPI */
     .kpi-row { grid-template-columns: repeat(4, 1fr); margin-bottom: 4px; }
+    .kpi-row .kpi { border-top: 2px solid var(--line); }
+    .kpi-row .kpi:nth-child(1) { border-top-color: var(--i-mint); box-shadow: 0 -6px 22px -14px var(--i-mint); }
+    .kpi-row .kpi:nth-child(2) { border-top-color: var(--blue);   box-shadow: 0 -6px 22px -14px var(--blue); }
+    .kpi-row .kpi:nth-child(3) { border-top-color: var(--i-pu);   box-shadow: 0 -6px 22px -14px var(--i-pu); }
+    .kpi-row .kpi:nth-child(4) { border-top-color: var(--i-pk);   box-shadow: 0 -6px 22px -14px var(--i-pk); }
     .card {
       background: var(--panel); border: 1px solid var(--line);
       border-radius: 16px; padding: 18px 20px; min-width: 0;
@@ -368,7 +395,7 @@
       box-shadow: 0 0 40px rgba(0,230,118,0.08);
     }
     .gate-icon { font-size: 36px; margin-bottom: 2px; }
-    .gate-title { font-size: 17px; font-weight: 800; letter-spacing: 0.04em; }
+    .gate-title { font-family: var(--disp); font-size: 22px; font-weight: 400; letter-spacing: 0.2em; }
     .gate-sub { font-size: 11px; color: var(--sub2); letter-spacing: 0.14em; font-family: var(--mono); }
     #passInput {
       width: 100%; padding: 12px 16px; font-size: 16px;
@@ -567,11 +594,12 @@
 <!-- ══ password gate ══ -->
 <div id="passGate">
   <div class="gate-box">
-    <div class="gate-icon">🔒</div>
-    <div class="gate-title">ベキたん作戦本部</div>
-    <div class="gate-sub">RESTRICTED ACCESS</div>
-    <input type="password" id="passInput" placeholder="パスコード" autocomplete="current-password" />
-    <button id="passBtn">入室</button>
+    <div class="gate-icon">🎫</div>
+    <div class="gate-title">BACKSTAGE</div>
+    <div class="gate-sub">STAFF PASS REQUIRED — ベキたん作戦本部</div>
+    <div class="idol-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></div>
+    <input type="password" id="passInput" placeholder="STAFF PASS" autocomplete="current-password" />
+    <button id="passBtn">ENTER</button>
     <div class="gate-error" id="passError"></div>
   </div>
 </div>
@@ -629,7 +657,7 @@
   <!-- ══ main ══ -->
   <main class="main">
     <div class="topbar">
-      <h1><svg data-lucide="crosshair"></svg>OPERATION OVERVIEW</h1>
+      <h1><svg data-lucide="crosshair"></svg>BACKSTAGE <span class="idol-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span><span class="bs-sub">OPERATION OVERVIEW — 作戦本部</span></h1>
       <div class="updated" id="lastUpdated">SYNC: --</div>
     </div>
 
