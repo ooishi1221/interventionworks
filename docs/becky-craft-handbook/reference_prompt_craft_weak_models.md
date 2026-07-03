@@ -38,5 +38,11 @@ Fable が行間で汲んでくれることを、Haiku/Sonnet は明文化しな�
 
 ## 未着手（follow-up）
 
-- `becky_observer.py` — 2,309行に8プロンプト散在 + 独自 `_call_claude_api` を保持したまま。単独で棚卸しして becky_llm へ寄せれば完全統一
 - systematic-debugging / mcp-builder / skill-creator スキル — 使用頻度低め、必要になったら同パターンで
+
+## observer 統一（2026-07-03 完了）
+
+- `_call_claude_api` を becky_llm 委譲化（呼び出し16箇所は無変更）。wallet.json 更新は `becky_llm.on_usage` フックで維持
+- Vision 呼び出し（カメラ人判定）だけは直呼びのまま=正しい判断（テキスト専用基盤に画像対応を盛らない）
+- 棚卸し所見: BECKY_PERSONA / strategic_reply 等の主要プロンプトは 6/30 X 改修時に整備済みで質は高かった。唯一ライバルリプ生成の例文丸写し罠を修正
+- **observer 編集後は常駐プロセスの kill→再起動が必須**（ops_gotchas ②参照）
