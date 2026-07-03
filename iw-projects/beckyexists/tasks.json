@@ -46,13 +46,14 @@
       "scope": "iw",
       "label": "workshop/build 実装 — decide 7番目の選択肢「見て？」",
       "category": "voice",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "start": "2026-07-03",
       "updated_at": "2026-07-03",
       "due": "2026-07-05",
-      "note": "設計書完成済み(voice-of-becky/docs/design-workshop-build.md)。日曜に設計書通り実装するだけ。安全枠=repo外dir+allowedTools制限+30分kill+週2上限。同日21時 reflect 初回",
-      "icon": "🏗️"
+      "note": "7/3 Fableデーで前倒し完成（予定7/5）。becky_workshop.py + decide build分岐、初回「見て？」= 7/3自身のタイムラインHTML、Telegram送信成功。commit 1d127b8",
+      "icon": "🏗️",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "fable-refactoring",
@@ -355,13 +356,14 @@
       "scope": "iw",
       "label": "X 発信・becky_image.py → 自動投稿連携",
       "category": "beckyexists",
-      "status": "in_progress",
+      "status": "done",
       "priority": "medium",
       "start": "2026-06-16",
-      "updated_at": "2026-06-24",
+      "updated_at": "2026-07-03",
       "due": "2026-07-07",
-      "note": "ツイートカード自動生成スクリプト作成ツール完成済み。次: becky_image.py → X自動投稿パイプライン連携",
-      "icon": "🃏"
+      "note": "7/3 前倒し完成（予定7/7）。衝動発火時に今日の画像を生成→添付は衝動セッションの判断。E2Eで「内面の話だから画像なし」の自律判断を確認。commit 0ccee79",
+      "icon": "🃏",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "observer-health",
