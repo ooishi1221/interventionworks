@@ -1,6 +1,20 @@
 {
-  "updated_at": "2026-07-03T12:15:00+09:00",
+  "updated_at": "2026-07-03",
   "tasks": [
+    {
+      "id": "room-redesign-v3",
+      "scope": "iw",
+      "label": "作戦本部フルリデザイン（コメント/完了日/🔑集約/mood配線）",
+      "category": "beckyexists",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-03",
+      "updated_at": "2026-07-03",
+      "completed_at": "2026-07-03",
+      "due": "2026-07-03",
+      "note": "アンナ情報設計+アンディ実装の並列委譲→私が合成・検証・デプロイ。タスクコメント（task_comments.json+health_server API+朝briefing持ち込み）/completed_at導入/締切レーダー→🎯長期帯統合/🔑5点ウィジェット/mood.json配線復旧。+673/-824で151行削減。commit 10ab5d9",
+      "icon": "✅"
+    },
     {
       "id": "claude-code-book",
       "scope": "iw",
