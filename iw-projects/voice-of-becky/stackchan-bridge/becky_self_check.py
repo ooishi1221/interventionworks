@@ -15,8 +15,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import anthropic
-from stop_hook_tts import load_config
+from becky_llm import call_llm_json
 
 MOOD_FILE       = Path.home() / ".stackchan" / "becky_mood.json"
 DIARY_DIR       = Path.home() / ".stackchan" / "diary"
@@ -175,22 +174,11 @@ def main():
     mismatch = mood.get("mismatch", 0.0)
     print(f"[self-check] mismatch={mismatch:.2f} diary={len(diary)}件 probes={len(probes)}件", flush=True)
 
-    cfg = load_config()
-    personal_key = cfg.get("becky_api_key", "").strip()
-    client = anthropic.Anthropic(api_key=personal_key if personal_key else None)
     prompt = build_prompt(diary, mood, probes, integrity_text)
 
-    try:
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = response.content[0].text.strip()
-        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
-        result = json.loads(json_match.group(0) if json_match else raw)
-    except Exception as e:
-        print(f"[self-check] APIエラー: {e}", flush=True)
+    result = call_llm_json(prompt, max_tokens=1024)
+    if result is None:
+        print("[self-check] APIエラー: LLM応答なし or JSON不正", flush=True)
         sys.exit(1)
 
     drift_score = float(result.get("drift_score", 0.0))

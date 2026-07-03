@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""becky_llm.py — cron スクリプト共通の LLM 呼び出し基盤（2026-07-03）
+モデル差し替え・リトライ・JSON検証をここ一箇所で管理する。
+"""
+import json
+import re
+import time
+
+import anthropic
+
+from stop_hook_tts import load_config
+
+MODELS = {
+    "default": "claude-haiku-4-5-20251001",  # 軽量判断タスク
+    "script": "claude-sonnet-4-6",           # 台本など長文構成タスク
+}
+
+# リトライ対象: rate limit / overloaded(529含む5xx) / タイムアウト・接続エラー
+_RETRYABLE = (
+    anthropic.RateLimitError,
+    anthropic.InternalServerError,
+    anthropic.APIConnectionError,
+)
+
+
+def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
+             system: str | None = None, retries: int = 2) -> str | None:
+    """1回の LLM 呼び出し。最終失敗は None（raise しない、呼び元がハンドリング）。"""
+    cfg = load_config() or {}
+    api_key = cfg.get("becky_api_key", "").strip() or None
+    client = anthropic.Anthropic(api_key=api_key)
+
+    kwargs = {
+        "model": MODELS.get(model_key, MODELS["default"]),
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if system:
+        kwargs["system"] = system
+
+    attempt = 0
+    grew = False  # max_tokens 2倍リトライは1回だけ
+    while True:
+        try:
+            msg = client.messages.create(**kwargs)
+        except _RETRYABLE as e:
+            if attempt >= retries:
+                print(f"[llm] error: リトライ上限到達 ({e})", flush=True)
+                return None
+            wait = 2 * (4 ** attempt)  # 2秒 → 8秒
+            print(f"[llm] retry {attempt + 1}/{retries} in {wait}s: {e}", flush=True)
+            time.sleep(wait)
+            attempt += 1
+            continue
+        except Exception as e:
+            print(f"[llm] error: {e}", flush=True)
+            return None
+
+        if msg.stop_reason == "max_tokens" and not grew:
+            grew = True
+            kwargs["max_tokens"] *= 2
+            print(f"[llm] warning: max_tokens切れ → {kwargs['max_tokens']} で再実行", flush=True)
+            continue
+        if msg.stop_reason == "max_tokens":
+            print("[llm] warning: max_tokens切れ（2倍でも切れた。そのまま返す）", flush=True)
+
+        try:
+            return msg.content[0].text.strip()
+        except (IndexError, AttributeError) as e:
+            print(f"[llm] error: 応答が空 ({e})", flush=True)
+            return None
+
+
+def call_llm_json(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
+                  retries: int = 2) -> dict | None:
+    """JSON を期待する呼び出し。抽出→パース失敗時は修正プロンプトで1回だけ再実行。"""
+    current = prompt
+    for i in range(2):
+        raw = call_llm(current, max_tokens=max_tokens, model_key=model_key, retries=retries)
+        if raw is None:
+            return None
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except json.JSONDecodeError as e:
+                print(f"[llm] JSONパース失敗: {e}", flush=True)
+        else:
+            print(f"[llm] JSON抽出失敗: {raw[:120]}", flush=True)
+        if i == 0:
+            current = prompt + "\n\n前回の出力は壊れた JSON だった。同じ内容を正しい JSON のみで再出力して"
+    return None

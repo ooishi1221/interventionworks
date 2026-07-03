@@ -32,7 +32,6 @@ import becky_seed_box
 import becky_night_review
 
 CONFIG_YAML      = Path(__file__).parent / "config.yaml"
-HAIKU_MODEL      = "claude-haiku-4-5-20251001"
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
 SEED_BOX_PATH    = Path.home() / ".stackchan" / "seed_box.json"
@@ -65,22 +64,10 @@ def _load_api_key() -> str | None:
 
 
 def _call_claude(prompt: str, system: str = "", max_tokens: int = 500) -> str | None:
-    """becky_observer._call_claude_api と同じ流儀: 失敗はNone（呼び元がsilence扱い）。"""
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=_load_api_key())
-        kwargs = {
-            "model": HAIKU_MODEL,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            kwargs["system"] = system
-        msg = client.messages.create(**kwargs)
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[decide] Claude API呼び出し失敗: {e}", flush=True)
-        return None
+    """becky_llm.call_llm へ委譲（シグネチャ維持: becky_work_briefing.py / becky_reflect.py が import している）。
+    失敗はNone（呼び元がsilence扱い）。"""
+    from becky_llm import call_llm
+    return call_llm(prompt, max_tokens=max_tokens, system=system or None)
 
 
 def send_telegram(text: str) -> bool:

@@ -34,8 +34,9 @@ Fable が行間で汲んでくれることを、Haiku/Sonnet は明文化しな�
 - `becky_diary_x.py` — トーン基準を ✕/○ 例で明文化（コピー禁止注記つき）
 - `morning_cast.py` — 素材なしコーナーの丸ごとスキップ明示（ニュース/お便りの捏造防止）+ 台本生成を Haiku→Sonnet 4.6 に切り替え（ゆう承認、月150円増）
 - `finish` スキル 188→85行 / `becky-proofreader` スキル 183→80行（背景を references/ 外出し）
+- **cron 共通基盤 `becky_llm.py`**（同日実装）: `call_llm` / `call_llm_json` の2関数。モデル設定 `MODELS` dict 一元化（差し替えはここ1行）・リトライ（rate limit / overloaded / 接続系、2s→8s）・max_tokens 切れ検知→2倍で1回再実行・JSON 壊れ→修正プロンプトで1回再実行。probe/decide/self_check/night_review/diary/search/idol_review/morning_cast が移行済み（差分 +43/-214 行）
 
 ## 未着手（follow-up）
 
-- `becky_observer.py` — 2,309行に8プロンプト散在。単独で棚卸ししてから
+- `becky_observer.py` — 2,309行に8プロンプト散在 + 独自 `_call_claude_api` を保持したまま。単独で棚卸しして becky_llm へ寄せれば完全統一
 - systematic-debugging / mcp-builder / skill-creator スキル — 使用頻度低め、必要になったら同パターンで

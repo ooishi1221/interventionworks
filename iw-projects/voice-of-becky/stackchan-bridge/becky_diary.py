@@ -15,7 +15,6 @@ from pathlib import Path
 REPO_ROOT    = Path("/Volumes/SSD2TB/interventionworks")
 CONFIG_YAML  = Path(__file__).parent / "config.yaml"
 DIARY_DIR    = Path.home() / ".stackchan" / "diary"
-HAIKU_MODEL  = "claude-haiku-4-5-20251001"
 MAX_PER_DAY  = 3
 
 # ベッキー固有の興味ベクトル（Trigger × Personality）
@@ -68,31 +67,10 @@ JSON形式のみ返す:
 {{"score": 数値, "hook": "なんか気になった一言（説明不能でもOK、10字以内）"}}"""
 
 
-def _load_api_key() -> str | None:
-    if not CONFIG_YAML.exists():
-        return None
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception:
-        return None
-
-
 def _call_claude(prompt: str, system: str = "") -> str | None:
-    try:
-        import anthropic
-        api_key = _load_api_key()
-        client = anthropic.Anthropic(api_key=api_key)
-        kwargs = {"model": HAIKU_MODEL, "max_tokens": 100,
-                  "messages": [{"role": "user", "content": prompt}]}
-        if system:
-            kwargs["system"] = system
-        msg = client.messages.create(**kwargs)
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[diary] Claude API error: {e}", flush=True)
-        return None
+    """becky_llm.call_llm へ委譲（max_tokens=100 は現状維持）。"""
+    from becky_llm import call_llm
+    return call_llm(prompt, max_tokens=100, system=system or None)
 
 
 def fetch_articles(max_per_feed: int = 3) -> list[dict]:

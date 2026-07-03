@@ -133,26 +133,26 @@ def save_manifest(manifest_text: str) -> None:
 
 
 def call_claude(prompt: str, max_tokens: int = 2500) -> str:
-    """Claude Sonnet で台本生成（2026-07-03 Haiku→Sonnet、台本品質優先・ゆう承認済み）。失敗したら CLI fallback"""
+    """Claude Sonnet で台本生成（2026-07-03 Haiku→Sonnet、台本品質優先・ゆう承認済み）。
+    becky_llm 共通基盤へ委譲（model_key="script" = sonnet）。失敗したら CLI fallback"""
+    text = None
     try:
-        import anthropic
-        cfg = load_config()
-        key = cfg.get("becky_api_key", "").strip()
-        client = anthropic.Anthropic(api_key=key if key else None)
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return resp.content[0].text
+        bridge_dir = str(Path(__file__).resolve().parent.parent / "stackchan-bridge")
+        if bridge_dir not in sys.path:
+            sys.path.insert(0, bridge_dir)
+        from becky_llm import call_llm
+        text = call_llm(prompt, max_tokens=max_tokens, model_key="script")
     except Exception as e1:
-        print(f"[morning_cast] Anthropic SDK 失敗 ({e1})、CLI fallback...", flush=True)
-        result = subprocess.run(
-            ["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=180
-        )
-        if result.returncode == 0:
-            return result.stdout.decode().strip()
-        raise RuntimeError(f"Claude 呼び出し失敗: {result.stderr.decode()[:100]}")
+        print(f"[morning_cast] becky_llm 呼び出し失敗 ({e1})", flush=True)
+    if text is not None:
+        return text
+    print("[morning_cast] Anthropic SDK 失敗、CLI fallback...", flush=True)
+    result = subprocess.run(
+        ["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=180
+    )
+    if result.returncode == 0:
+        return result.stdout.decode().strip()
+    raise RuntimeError(f"Claude 呼び出し失敗: {result.stderr.decode()[:100]}")
 
 
 WEEKDAY_CONFIG = {

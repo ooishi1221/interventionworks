@@ -148,42 +148,10 @@ def _build_reply_prompt(username: str, tweet_text: str, mood: dict, pattern_labe
 """
 
 
-def _load_becky_api_key() -> str | None:
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return cfg.get("becky_api_key")
-    except Exception as e:
-        print(f'[warn] becky_search: {e}', flush=True)
-        return None
-
-
 def _call_claude_api(prompt: str, max_tokens: int = 300) -> str | None:
-    api_key = _load_becky_api_key()
-    if not api_key:
-        return None
-    data = json.dumps({
-        "model": "claude-haiku-4-5-20251001",
-        "max_tokens": max_tokens,
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode()
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=data,
-        headers={
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read())
-            return result["content"][0]["text"].strip()
-    except Exception as e:
-        print(f"[search] Claude API エラー: {e}", flush=True)
-        return None
+    """becky_llm.call_llm へ委譲（urllib 直呼びから移行、2026-07-03）。"""
+    from becky_llm import call_llm
+    return call_llm(prompt, max_tokens=max_tokens)
 
 
 def _load_telegram_token() -> str | None:

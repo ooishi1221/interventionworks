@@ -33,7 +33,6 @@ import becky_thread_manager
 import becky_decide  # wants の load/save を再利用（重複実装しない）
 
 CONFIG_YAML       = Path(__file__).parent / "config.yaml"
-HAIKU_MODEL       = "claude-haiku-4-5-20251001"
 TELEGRAM_ENV      = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID  = "8983810776"
 SEED_BOX_PATH     = Path.home() / ".stackchan" / "seed_box.json"
@@ -50,37 +49,6 @@ FRAGMENT_ACTION_MIN_DAYS = 3
 
 
 # ── 共通ユーティリティ（becky_decide.py と同じ流儀）─────────────
-
-def _load_api_key() -> str | None:
-    if not CONFIG_YAML.exists():
-        return None
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception as e:
-        print(f"[night] config読み込み失敗: {e}", flush=True)
-        return None
-
-
-def _call_claude(prompt: str, system: str = "", max_tokens: int = 800) -> str | None:
-    """失敗はNone（呼び元が安全に終了する）。"""
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=_load_api_key())
-        kwargs = {
-            "model": HAIKU_MODEL,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            kwargs["system"] = system
-        msg = client.messages.create(**kwargs)
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[night] Claude API呼び出し失敗: {e}", flush=True)
-        return None
-
 
 def send_telegram(text: str) -> bool:
     try:
@@ -382,15 +350,10 @@ def review(day: dict, fragment: str | None) -> dict | None:
         fragment=f"  {fragment}" if fragment else "  （今日は蘇った断片なし）",
     )
 
-    resp = _call_claude(prompt, max_tokens=800)
-    if not resp:
-        return None
-    try:
-        start = resp.find("{")
-        end = resp.rfind("}") + 1
-        result = json.loads(resp[start:end])
-    except Exception as e:
-        print(f"[night] パース失敗: {e} / {resp[:120]}", flush=True)
+    from becky_llm import call_llm_json
+    result = call_llm_json(prompt, max_tokens=800)
+    if result is None:
+        print("[night] LLM応答なし or JSON不正", flush=True)
         return None
 
     # 欠損キーを埋める（apply がクラッシュしないように）

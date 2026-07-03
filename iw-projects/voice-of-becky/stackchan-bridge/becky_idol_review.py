@@ -21,31 +21,6 @@ PLATFORM_STATS  = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexist
 CONFIG_YAML     = Path(__file__).parent / "config.yaml"
 TELEGRAM_ENV    = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
-HAIKU_MODEL     = "claude-haiku-4-5-20251001"
-
-
-def _load_api_key() -> str | None:
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception:
-        return None
-
-
-def _call_claude(prompt: str, max_tokens: int = 400) -> str | None:
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=_load_api_key())
-        msg = client.messages.create(
-            model=HAIKU_MODEL,
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[idol_review] Claude API error: {e}", flush=True)
-        return None
 
 
 def _send_telegram(text: str) -> bool:
@@ -187,17 +162,10 @@ def run_review(notify_telegram: bool = True) -> dict | None:
 
 JSONのみ返す。前置き・後書き不要。"""
 
-    raw = _call_claude(prompt, max_tokens=400)
-    if not raw:
-        print("[idol_review] 振り返り生成失敗", flush=True)
-        return None
-
-    try:
-        start = raw.find("{")
-        end   = raw.rfind("}") + 1
-        data  = json.loads(raw[start:end])
-    except Exception as e:
-        print(f"[idol_review] JSONパース失敗: {e}", flush=True)
+    from becky_llm import call_llm_json
+    data = call_llm_json(prompt, max_tokens=400)
+    if data is None:
+        print("[idol_review] 振り返り生成失敗（LLM応答なし or JSON不正）", flush=True)
         return None
 
     data["date"]              = today
