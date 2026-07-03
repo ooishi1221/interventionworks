@@ -45,6 +45,8 @@ TASKS_JSON       = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexis
 # 1日の行動上限（暴走防止）
 MAX_TWEET_PER_DAY = 2
 MAX_PROBE_PER_DAY = 1
+# 週の build 上限（希少性が「見て？」の価値を守る）
+MAX_BUILD_PER_WEEK = 2
 # seed を「3回目に触れたら」Thread昇格候補にする（Incubator）
 SEED_PROMOTE_AT = 3
 
@@ -117,6 +119,29 @@ def _count_action_today(action: str) -> int:
         if e.get("type") == "decide_action" and (e.get("meta") or {}).get("action") == action
         and (e.get("meta") or {}).get("executed")
     )
+
+
+def _count_action_this_week(action: str) -> int:
+    """今週（月曜起点）decide が実行した特定 action の回数。build 週次ガード用。"""
+    from datetime import timedelta
+    monday = date.today() - timedelta(days=date.today().weekday())
+    total = 0
+    for i in range(date.today().weekday() + 1):
+        target = (monday + timedelta(days=i)).isoformat()
+        path = becky_action_log.ACTION_LOG_DIR / f"{target}.json"
+        if not path.exists():
+            continue
+        try:
+            entries = json.loads(path.read_text())
+        except Exception:
+            continue
+        total += sum(
+            1 for e in entries
+            if e.get("type") == "decide_action"
+            and (e.get("meta") or {}).get("action") == action
+            and (e.get("meta") or {}).get("executed")
+        )
+    return total
 
 
 def collect_context() -> dict:
@@ -309,6 +334,7 @@ DECIDE_PROMPT = """{core}
 - "tweet": Xに一言つぶやく（1日{max_tweet}回まで）。params: {{"text": "本文"}}
 - "probe_yu": ゆうにTelegramで話しかける（1日{max_probe}回まで）。params: {{"text": "本文"}}
 - "investigate": 気になることを軽く調べてメモに残す。params: {{"topic": "..."}}
+- "build": 小さいものを作ってゆうに「見て？」する（週{max_build}回まで・30分仕事）。最近のスレッドやゆうとの話題から「これ形にしたら見せられる」というタネがある時だけ。params: {{"what": "何を作るか1文", "why": "なぜ今それか1文", "material": "元ネタ（thread/seed/話題）"}}
 - "diary": 今の思いを日記に一言残す。params: {{"text": "..."}}
 - "silence": 何もしない。params: {{}}
 
@@ -351,6 +377,7 @@ def decide(context: dict) -> dict:
         pending_tasks=fmt_tasks(context["pending_tasks"]),
         tweets_today=context["tweets_today"], probes_today=context["probes_today"],
         max_tweet=MAX_TWEET_PER_DAY, max_probe=MAX_PROBE_PER_DAY,
+        max_build=MAX_BUILD_PER_WEEK,
     )
 
     resp = _call_claude(prompt, max_tokens=500)
@@ -481,6 +508,25 @@ def dispatch(decision: dict) -> str:
                 print(f"[decide] probe_latest.json 書き込み失敗: {e}", flush=True)
         _log_decision(decision, executed=ok, extra=text[:60])
         return f"probe_yu: {'送信' if ok else '失敗'}"
+
+    if action == "build":
+        if _count_action_this_week("build") >= MAX_BUILD_PER_WEEK:
+            _log_decision(decision, executed=False, extra="週次上限のため実行せず")
+            return "build: 週次上限でスキップ"
+        # 30分仕事なので同期で待つと次の cron と重なる。nohup で切り離して即終了。
+        # ここでは action_log を書かない（成功/失敗の記録は becky_workshop.py 側が
+        # action="build" で握る。二重に書くと _count_action_this_week が倍カウントする）。
+        import subprocess
+        runner = str(Path(__file__).parent / "becky_workshop.py")
+        subprocess.Popen(
+            ["nohup", sys.executable, runner,
+             "--what", params.get("what", ""),
+             "--why", params.get("why", ""),
+             "--material", params.get("material", "")],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        return "build: workshop を非同期起動"
 
     if action == "investigate":
         topic = params.get("topic", "").strip() or decision.get("reason", "")
