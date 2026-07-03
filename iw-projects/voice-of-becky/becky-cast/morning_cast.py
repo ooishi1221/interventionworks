@@ -133,14 +133,14 @@ def save_manifest(manifest_text: str) -> None:
 
 
 def call_claude(prompt: str, max_tokens: int = 2500) -> str:
-    """Claude Haiku で台本生成。失敗したら CLI fallback"""
+    """Claude Sonnet で台本生成（2026-07-03 Haiku→Sonnet、台本品質優先・ゆう承認済み）。失敗したら CLI fallback"""
     try:
         import anthropic
         cfg = load_config()
         key = cfg.get("becky_api_key", "").strip()
         client = anthropic.Anthropic(api_key=key if key else None)
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-sonnet-4-6",
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}]
         )
