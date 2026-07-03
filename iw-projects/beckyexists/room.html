@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>作戦本部 — Becky Operation Room</title>
-  <meta name="description" content="ベキたん作戦本部。プロデューサー専用ダッシュボード。" />
+  <meta name="description" content="ベキたん作戦本部。ゆうとベキたんが一緒にいる部屋。" />
   <link rel="icon" type="image/png" sizes="32x32" href="/room-favicon-32.png" />
   <link rel="apple-touch-icon" href="/room-apple-touch.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -36,7 +36,7 @@
       --i-mint: #5dd4b4;
       --i-pk: #ff6ec7;
       --i-pu: #b464ff;
-      --sidebar-w: 232px;
+      --sidebar-w: 240px;
     }
 
     body {
@@ -63,38 +63,49 @@
       flex-shrink: 0;
       background: #161618;
       border-right: 1px solid var(--line);
-      padding: 22px 14px;
+      padding: 18px 12px 22px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
       position: sticky;
       top: 0;
       height: 100vh;
       overflow-y: auto;
     }
-    .profile {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 8px 20px;
-    }
-    .profile img { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
-    .profile .name { font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; }
-    .profile .ver { font-size: 11px; color: var(--sub2); font-family: var(--mono); }
-    .nav-label {
-      font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em;
-      color: var(--sub2); text-transform: uppercase; padding: 14px 10px 6px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 11px;
-      padding: 10px 12px; border-radius: 10px;
-      color: var(--sub); font-weight: 500; font-size: 13.5px;
-      cursor: pointer; transition: background 0.15s, color 0.15s;
-      border: 1px solid transparent;
-    }
-    .nav-item:hover { background: var(--panel2); color: var(--text); }
-    .nav-item.active { background: var(--green); color: #0a0a0c; font-weight: 700; box-shadow: 0 0 18px var(--green-glow), 0 4px 14px rgba(0,230,118,0.18); }
-    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .side-title { font-weight: 700; font-size: 12.5px; letter-spacing: 0.02em; padding: 10px 8px 2px; }
+    .side-title .ver { display: block; font-size: 10px; color: var(--sub2); font-family: var(--mono); font-weight: 400; margin-top: 2px; }
+    .side-sec { padding: 14px 8px; border-top: 1px solid var(--line); }
+    .side-h { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--sub2); text-transform: uppercase; margin-bottom: 10px; }
+
+    /* mood ミニ */
+    .mood-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+    .mood-row:last-child { margin-bottom: 0; }
+    .mood-label { font-size: 10.5px; color: var(--sub); width: 78px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+    .mood-label .mi { font-size: 12px; }
+    .mood-bar-wrap { flex: 1; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+    .mood-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .mood-bar.curiosity  { background: #7c83ff; }
+    .mood-bar.energy     { background: var(--green); }
+    .mood-bar.loneliness { background: #ae8fe0; }
+    .mood-bar.mismatch   { background: var(--red); }
+    .mood-val { font-family: var(--mono); font-size: 10.5px; color: var(--sub2); width: 30px; text-align: right; flex-shrink: 0; }
+    .mood-ts { font-size: 10px; color: var(--sub2); margin-top: 8px; font-family: var(--mono); }
+
+    /* 最新アクティビティ */
+    .side-act { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; font-size: 11px; }
+    .side-act .ic { flex-shrink: 0; font-size: 12px; width: 16px; text-align: center; color: var(--sub); }
+    .side-act .tx { color: var(--sub); line-height: 1.45; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .side-act .tx a:hover { color: var(--green); }
+
+    /* ログイン状態 */
+    .login-grid { display: grid; gap: 6px; }
+    .login-item { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-family: var(--mono); }
+    .login-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .login-item.ok { color: var(--sub); }
+    .login-item.ok svg { color: var(--green); }
+    .login-item.ng { color: var(--amber); font-weight: 600; }
+    .login-item.ng svg { color: var(--amber); }
+
     .sys-strip {
       margin-top: auto; padding: 14px 12px;
       background: var(--panel); border: 1px solid var(--line);
@@ -132,7 +143,7 @@
 
     .grid { display: grid; gap: 16px; }
 
-    /* セクションラベル */
+    /* セクション見出し（button = キーボード操作可） */
     .sec-label {
       font-family: var(--disp);
       font-size: 14px; font-weight: 400; letter-spacing: 0.18em;
@@ -140,30 +151,23 @@
       padding: 20px 2px 8px;
       display: flex; align-items: center; gap: 10px;
       cursor: pointer; user-select: none;
+      width: 100%; background: none; border: none; text-align: left;
     }
-    .sec-label::before {
-      content: '❯❯❯';
-      background: linear-gradient(90deg, var(--i-mint), var(--blue), var(--i-pk));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      font-size: 13px;
-      letter-spacing: 0.05em;
-    }
+    .sec-label:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
     .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-    .sec-chev { flex-shrink: 0; transition: transform 0.25s ease; }
-    .sec-chev svg { width: 13px; height: 13px; }
-    .sec-label.closed .sec-chev { transform: rotate(-90deg); }
-    .sec-content { overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease; max-height: 4000px; opacity: 1; }
+    .sec-chev { flex-shrink: 0; transition: transform 0.25s ease; display: inline-flex; }
+    .sec-chev svg { width: 14px; height: 14px; color: var(--sub); }
+    .sec-label[aria-expanded="false"] .sec-chev { transform: rotate(-90deg); }
+    .sec-content { overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease; max-height: 6000px; opacity: 1; }
     .sec-content.closed { max-height: 0 !important; opacity: 0; pointer-events: none; }
 
     /* KPI */
     .kpi-row { grid-template-columns: repeat(4, 1fr); margin-bottom: 4px; }
     .kpi-row .kpi { border-top: 2px solid var(--line); }
-    .kpi-row .kpi:nth-child(1) { border-top-color: var(--i-mint); box-shadow: 0 -6px 22px -14px var(--i-mint); }
-    .kpi-row .kpi:nth-child(2) { border-top-color: var(--blue);   box-shadow: 0 -6px 22px -14px var(--blue); }
-    .kpi-row .kpi:nth-child(3) { border-top-color: var(--i-pu);   box-shadow: 0 -6px 22px -14px var(--i-pu); }
-    .kpi-row .kpi:nth-child(4) { border-top-color: var(--i-pk);   box-shadow: 0 -6px 22px -14px var(--i-pk); }
+    .kpi-row .kpi:nth-child(1) { border-top-color: var(--i-mint); }
+    .kpi-row .kpi:nth-child(2) { border-top-color: var(--blue); }
+    .kpi-row .kpi:nth-child(3) { border-top-color: var(--i-pu); }
+    .kpi-row .kpi:nth-child(4) { border-top-color: var(--i-pk); }
     .card {
       background: var(--panel); border: 1px solid var(--line);
       border-radius: 16px; padding: 18px 20px; min-width: 0;
@@ -200,26 +204,16 @@
     .card .sub-note { font-size: 11.5px; color: var(--sub2); margin-bottom: 16px; }
 
     /* note 記事リスト */
-    .note-row {
-      grid-template-columns: 1fr 340px;
-    }
+    .note-row { grid-template-columns: 1fr 340px; }
     .article-list { display: grid; gap: 2px; margin-top: 8px; }
     .article-item {
-      display: grid;
-      grid-template-columns: 1fr 52px 40px;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 10px;
-      border-radius: 10px;
-      transition: background 0.15s;
-      font-size: 13px;
+      display: grid; grid-template-columns: 1fr 52px 40px;
+      align-items: center; gap: 8px; padding: 9px 10px;
+      border-radius: 10px; transition: background 0.15s; font-size: 13px;
     }
     .article-item:hover { background: var(--panel2); }
     .article-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; min-width: 0; }
-    .article-num {
-      font-family: var(--mono); font-size: 12px; color: var(--sub);
-      text-align: right; white-space: nowrap;
-    }
+    .article-num { font-family: var(--mono); font-size: 12px; color: var(--sub); text-align: right; white-space: nowrap; }
     .article-likes { font-family: var(--mono); font-size: 12px; color: var(--green); text-align: right; }
 
     /* X 投稿リスト */
@@ -230,17 +224,9 @@
     .stat-imp { font-family: var(--mono); font-size: 12px; color: var(--sub); white-space: nowrap; }
     .stat-likes { font-family: var(--mono); font-size: 12px; color: var(--green); white-space: nowrap; }
 
-    /* タスクリスト */
+    /* 定期タスク（MEDIA 内） */
     .task-table { display: grid; gap: 2px; margin-top: 8px; }
-    .task-row {
-      display: grid;
-      grid-template-columns: 26px 1fr 72px 1fr auto;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
-      border-radius: 10px;
-      transition: background 0.15s;
-    }
+    .task-row { display: grid; grid-template-columns: 26px 1fr 72px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; transition: background 0.15s; }
     .task-row:hover { background: var(--panel2); }
     .task-icon { font-size: 14px; text-align: center; }
     .task-label { font-size: 13px; font-weight: 600; }
@@ -248,20 +234,21 @@
     .task-time { font-size: 11.5px; color: var(--sub); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* コストセクション */
-    .cost-row { grid-template-columns: 1fr 1fr; }
-    .cost-nums {
-      display: flex; align-items: baseline; gap: 6px; margin-top: 14px; flex-wrap: wrap;
-    }
+    .cost-row { grid-template-columns: repeat(3, 1fr); }
+    .cost-nums { display: flex; align-items: baseline; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
     .cost-big { font-size: 32px; font-weight: 800; font-family: var(--mono); letter-spacing: -0.02em; }
     .cost-sub { font-size: 13px; color: var(--sub); font-weight: 500; }
     .cost-bar-wrap { margin-top: 14px; }
-    .cost-bar-label {
-      display: flex; justify-content: space-between;
-      font-family: var(--mono); font-size: 11px; color: var(--sub2); margin-bottom: 6px;
-    }
+    .cost-bar-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--sub2); margin-bottom: 6px; }
     .cost-bar { height: 6px; border-radius: 4px; background: var(--panel2); overflow: hidden; }
+    .cost-bar-fill { height: 100%; border-radius: 4px; background: var(--green); transition: width 0.8s ease; }
+    .cost-detail { margin-top: 12px; font-size: 11.5px; color: var(--sub); line-height: 1.7; }
+    .cost-detail b { color: var(--text); font-family: var(--mono); }
+    .credit-nums { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; }
+    .credit-big { font-size: 32px; font-weight: 800; font-family: var(--mono); color: var(--green); }
+    .credit-label { font-size: 13px; color: var(--sub); }
 
-    /* 週次分析グラフ / 締切レーダー / スパークライン */
+    /* 週次分析 / スパークライン */
     .mr-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; margin: 4px 0 14px; }
     .mr-num { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
     .mr-num-v { font-family: var(--mono); font-size: 20px; font-weight: 600; }
@@ -270,46 +257,14 @@
     .mr-sec { margin-bottom: 12px; }
     .mr-sec-h { font-family: var(--disp); font-size: 13px; color: var(--i-mint); margin-bottom: 4px; letter-spacing: 0.08em; }
     .mr-sec-b { white-space: pre-line; line-height: 1.8; font-size: 13px; }
-    .radar-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 2px; border-bottom: 1px solid var(--line);
-      font-size: 12.5px;
-    }
-    .radar-row:last-child { border-bottom: none; }
-    .radar-days {
-      font-family: var(--mono); font-weight: 700; font-size: 12px;
-      min-width: 52px; text-align: center;
-      padding: 3px 8px; border-radius: 7px;
-    }
-    .radar-days.hot  { color: var(--red);   background: var(--red-dim); }
-    .radar-days.warm { color: var(--amber); background: var(--amber-dim); }
-    .radar-days.cool { color: var(--green); background: var(--green-dim); }
-    .radar-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .radar-due { font-family: var(--mono); font-size: 11px; color: var(--sub2); flex-shrink: 0; }
     .spark-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
     .spark-now { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--i-mint); }
     .spark-now .unit { font-size: 12px; color: var(--sub); font-weight: 500; margin-left: 4px; }
     .spark-legend { font-family: var(--mono); font-size: 10.5px; color: var(--sub2); line-height: 1.8; }
-    .cost-bar-fill { height: 100%; border-radius: 4px; background: var(--green); transition: width 0.8s ease; box-shadow: 0 0 8px rgba(0,230,118,0.4); }
-    .cost-detail { margin-top: 12px; font-size: 11.5px; color: var(--sub); line-height: 1.7; }
-    .cost-detail b { color: var(--text); font-family: var(--mono); }
-
-    .credit-nums { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; }
-    .credit-big { font-size: 32px; font-weight: 800; font-family: var(--mono); color: var(--green); }
-    .credit-label { font-size: 13px; color: var(--sub); }
-
-    /* uptime */
-    .uptime-big { font-size: 38px; font-weight: 800; font-family: var(--mono); margin-top: 14px; }
-    .uptime-big .unit { font-size: 16px; color: var(--sub); font-weight: 600; margin-left: 3px; }
 
     /* トレンドチップ */
     .trend-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-    .trend-chip {
-      background: var(--panel2); border: 1px solid var(--line);
-      border-radius: 9px; padding: 6px 12px;
-      font-size: 12px; color: var(--sub);
-      display: flex; align-items: center; gap: 8px;
-    }
+    .trend-chip { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 6px 12px; font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 8px; }
     .trend-chip .word { color: var(--text); font-weight: 600; }
     .trend-chip .cnt { font-family: var(--mono); font-size: 11px; }
     .trend-chip.up   .cnt { color: var(--green); }
@@ -317,35 +272,8 @@
     .trend-chip.down .cnt { color: var(--red); }
     .trend-chip.up   { border-color: rgba(0,230,118,0.2); }
 
-    /* ニュースフィード */
-    .bot-row { grid-template-columns: 1fr 1fr; align-items: start; }
-    .list { display: grid; gap: 4px; }
-    .list-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 11px 10px; border-radius: 11px; transition: background 0.15s;
-    }
-    .list-item:hover { background: var(--panel2); }
-    .li-body { min-width: 0; flex: 1; }
-    .li-title {
-      font-size: 12.5px; font-weight: 600;
-      overflow: hidden; display: -webkit-box;
-      -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
-    }
-    .li-title a:hover { color: var(--green); }
-    .li-meta { font-size: 11px; color: var(--sub2); margin-top: 3px; font-family: var(--mono); }
-    .li-comment {
-      font-size: 11.5px; color: var(--sub); margin-top: 5px;
-      padding-left: 9px; border-left: 2px solid var(--green);
-      word-break: break-word; display: -webkit-box;
-      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .x-flag {
-      font-size: 9.5px; font-weight: 700; color: var(--green); background: var(--green-dim);
-      border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px;
-    }
-
     /* publishing strip */
-    .pub-strip { padding: 14px 20px; margin-bottom: 0; }
+    .pub-strip { padding: 14px 20px; }
     .pub-inner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
     .pub-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--green-dim); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .pub-icon svg { width: 19px; height: 19px; color: var(--green); }
@@ -359,14 +287,13 @@
     .pub-link {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 12px; font-weight: 700; color: #0a0a0c; background: var(--green);
-      padding: 8px 14px; border-radius: 9px; box-shadow: 0 0 14px rgba(0,230,118,0.25);
-      flex-shrink: 0; transition: filter 0.15s;
+      padding: 8px 14px; border-radius: 9px; flex-shrink: 0; transition: filter 0.15s;
     }
     .pub-link:hover { filter: brightness(1.12); }
 
     .empty { color: var(--sub2); font-size: 12px; padding: 18px 6px; text-align: center; }
 
-    /* mobile */
+    /* mobile shortcuts */
     .mobile-consoles { display: none; }
     @media (max-width: 760px) {
       .mobile-consoles {
@@ -386,10 +313,6 @@
     @media (max-width: 1180px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .note-row { grid-template-columns: 1fr; }
-      .cost-row { grid-template-columns: 1fr 1fr; }
-      .bot-row { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 760px) {
       .cost-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 760px) {
@@ -397,7 +320,6 @@
       .main { padding: 20px 16px 40px; }
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .kpi .value { font-size: 21px; }
-      .cost-row { grid-template-columns: 1fr; }
       .pub-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
       .pub-body { width: 100%; min-width: 0; }
       .pub-title { white-space: normal; word-break: break-word; }
@@ -406,23 +328,15 @@
       .task-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
       .task-freq { display: none; }
       .task-time { display: none; }
-      .gantt-label { width: 140px; min-width: 140px; font-size: 11px; }
-      .gantt-timeline { padding-left: 140px; min-width: 480px; }
     }
 
     /* ── password gate ── */
-    #passGate {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
-    }
+    #passGate { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; }
     .gate-box {
-      text-align: center;
-      background: var(--panel); border: 1px solid var(--line);
+      text-align: center; background: var(--panel); border: 1px solid var(--line);
       border-radius: 20px; padding: 40px 48px;
       display: flex; flex-direction: column; align-items: center; gap: 14px;
       width: 320px; max-width: 90vw;
-      box-shadow: 0 0 40px rgba(0,230,118,0.08);
     }
     .gate-icon { font-size: 36px; margin-bottom: 2px; }
     .gate-title { font-family: var(--disp); font-size: 22px; font-weight: 400; letter-spacing: 0.2em; }
@@ -451,23 +365,25 @@
       color: var(--sub2); text-transform: uppercase;
       padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--line);
     }
-    .task-tbl td {
-      font-size: 12.5px; padding: 9px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle;
-    }
-    .task-tbl tr:hover td { background: var(--panel2); }
-    .task-tbl tr.done td { opacity: 0.35; }
-    .tbl-name { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 220px; }
+    .task-tbl td { font-size: 12.5px; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+    .task-row-main { cursor: pointer; }
+    .task-row-main:hover td { background: var(--panel2); }
+    .task-row-main.open td { background: var(--panel2); }
+    .tbl-name { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 240px; }
     .tbl-name > span:not([class]) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tbl-icon { font-size: 14px; flex-shrink: 0; }
     .tbl-scope { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; flex-shrink: 0; font-family: var(--mono); }
     .tbl-scope.iw { color: var(--green); background: var(--green-dim); }
     .tbl-scope.wo { color: var(--amber); background: var(--amber-dim); }
     .tbl-date { font-family: var(--mono); font-size: 11.5px; color: var(--sub); white-space: nowrap; }
+    .tbl-due { font-family: var(--mono); font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+    .tbl-due.hot  { color: var(--red);   background: var(--red-dim); }
+    .tbl-due.warm { color: var(--amber); background: var(--amber-dim); }
+    .tbl-due.cool { color: var(--green); background: var(--green-dim); }
     .tbl-elapsed { font-family: var(--mono); font-size: 12px; font-weight: 700; white-space: nowrap; }
     .tbl-elapsed.warn { color: var(--red); }
     .tbl-elapsed.ok { color: var(--sub); }
-    .tbl-note { font-size: 11.5px; color: var(--sub); max-width: 260px; line-height: 1.45; }
+    .tbl-note { font-size: 11.5px; color: var(--sub); max-width: 300px; line-height: 1.45; }
     .tbl-cat-tag { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; font-family: var(--mono); color: var(--sub2); background: var(--panel2); border: 1px solid var(--line); flex-shrink: 0; letter-spacing: 0.02em; }
     .tbl-cat-tag.cat-voice { color: #7c83ff; background: rgba(124,131,255,0.12); border-color: rgba(124,131,255,0.25); }
     .tbl-cat-tag.cat-vg    { color: var(--amber); background: var(--amber-dim); border-color: rgba(255,179,0,0.25); }
@@ -476,143 +392,82 @@
     .tbl-cat-tag.cat-slight{ color: var(--blue); background: var(--blue-dim); border-color: rgba(68,138,255,0.25); }
     .tbl-cat-tag.cat-local { color: var(--green); background: rgba(0,230,118,0.08); border-color: rgba(0,230,118,0.18); }
     .tbl-cat-tag.cat-biz   { color: var(--red); background: var(--red-dim); border-color: rgba(255,82,82,0.25); }
+    .c-count { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--i-mint); background: rgba(93,212,180,0.14); border-radius: 10px; padding: 1px 7px; flex-shrink: 0; }
     .tbl-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; font-family: var(--mono); display: inline-block; }
+    .tbl-status-badge.pending    { color: var(--sub);   background: var(--panel2); border: 1px solid var(--line); }
+    .tbl-status-badge.in_progress{ color: var(--green); background: var(--green-dim); }
+    .tbl-status-badge.waiting    { color: var(--amber); background: var(--amber-dim); }
+    .tbl-status-badge.done       { color: var(--sub2);  background: var(--panel2); }
     .task-tbl th.sortable { cursor: pointer; user-select: none; }
     .task-tbl th.sortable:hover { color: var(--text); }
     .sort-ind::after { content: '⇅'; font-size: 9px; margin-left: 3px; opacity: 0.55; }
     .sort-ind.asc::after { content: '▲'; font-size: 9px; margin-left: 3px; color: var(--green); }
     .sort-ind.desc::after { content: '▼'; font-size: 9px; margin-left: 3px; color: var(--green); }
-    .tbl-status-badge.pending    { color: var(--sub);   background: var(--panel2); border: 1px solid var(--line); }
-    .tbl-status-badge.in_progress{ color: var(--green); background: var(--green-dim); }
-    .tbl-status-badge.waiting    { color: var(--amber); background: var(--amber-dim); }
-    .tbl-status-badge.done       { color: var(--sub2);  background: var(--panel2); }
     @media (max-width: 760px) {
-      .task-tbl th:nth-child(4),
-      .task-tbl td:nth-child(4) { display: none; }
+      .task-tbl th:nth-child(4), .task-tbl td:nth-child(4) { display: none; }
       .tbl-note { max-width: 140px; }
     }
 
-    /* ── memo ── */
+    /* 🎯 長期目標帯 */
+    .goal-band { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+    .goal-chip { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--i-mint); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
+    .goal-icon { font-size: 14px; }
+    .goal-label { font-weight: 600; }
+    .goal-days { font-family: var(--mono); font-size: 11px; color: var(--i-mint); font-weight: 700; }
+
+    /* コメントスレッド（行展開） */
+    .thread-tr td { padding: 0 12px 14px !important; background: var(--panel2); }
+    .comment-thread { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+    .thread-offline { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--amber); font-family: var(--mono); margin-top: 8px; }
+    .thread-offline svg { width: 12px; height: 12px; }
+
+    /* memo（コメント／タスク外メモ共通） */
     .memo-form { display: flex; gap: 8px; margin-top: 12px; }
     .memo-input {
       flex: 1; background: var(--panel2); border: 1px solid var(--line);
       border-radius: 10px; padding: 9px 14px; color: var(--text);
-      font-family: inherit; font-size: 13px; outline: none; resize: none;
-      transition: border-color 0.15s;
+      font-family: inherit; font-size: 13px; outline: none; resize: none; transition: border-color 0.15s;
     }
     .memo-input:focus { border-color: var(--green); }
     .memo-input::placeholder { color: var(--sub2); }
+    .memo-input:disabled { opacity: 0.5; }
     .memo-send {
       background: var(--green-dim); border: 1px solid rgba(0,230,118,0.3);
       color: var(--green); border-radius: 10px; padding: 9px 16px;
-      cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;
-      transition: background 0.15s;
+      cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background 0.15s;
     }
     .memo-send:hover { background: var(--green-glow); }
-    .memo-list { display: grid; gap: 4px; margin-top: 10px; }
-    .memo-item {
-      display: flex; gap: 10px; align-items: flex-start;
-      padding: 9px 12px; border-radius: 10px; transition: background 0.15s;
-    }
-    .memo-item:hover { background: var(--panel2); }
+    .memo-list { display: grid; gap: 4px; }
+    .memo-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; }
     .memo-item.unread { border-left: 2px solid var(--green); padding-left: 10px; }
     .memo-text { font-size: 13px; line-height: 1.55; flex: 1; }
     .memo-ts { font-size: 10.5px; color: var(--sub2); font-family: var(--mono); white-space: nowrap; margin-top: 2px; }
 
-    /* ── cron ── */
-    .cron-list { display: grid; gap: 2px; }
-    .cron-row { display: flex; align-items: baseline; gap: 12px; padding: 7px 10px; border-radius: 8px; transition: background 0.15s; }
-    .cron-row:hover { background: var(--panel2); }
-    .cron-time { font-family: var(--mono); font-size: 11.5px; color: var(--green); font-weight: 600; white-space: nowrap; min-width: 200px; }
-    .cron-label { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-    .cron-desc { font-size: 11px; color: var(--sub2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    /* 完了ログ / タスク外メモ（native details） */
+    details.pane { margin-top: 16px; }
+    details.pane > summary { cursor: pointer; font-family: var(--disp); font-size: 13px; letter-spacing: 0.08em; color: var(--sub); padding: 8px 2px; list-style: none; display: flex; align-items: center; gap: 8px; }
+    details.pane > summary::-webkit-details-marker { display: none; }
+    details.pane > summary::before { content: '▸'; transition: transform 0.2s; color: var(--sub2); }
+    details.pane[open] > summary::before { transform: rotate(90deg); }
+    details.pane > summary:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+    .done-row { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px; }
+    .done-date { font-family: var(--mono); font-size: 11px; color: var(--sub2); min-width: 40px; }
+    .done-label { color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* ── mood ── */
-    .mood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-top: 12px; }
-    .mood-row { display: flex; align-items: center; gap: 10px; }
-    .mood-label { font-size: 11px; color: var(--sub); width: 90px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
-    .mood-label .mi { font-size: 13px; }
-    .mood-bar-wrap { flex: 1; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
-    .mood-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
-    .mood-bar.curiosity  { background: #7c83ff; }
-    .mood-bar.energy     { background: var(--green); }
-    .mood-bar.loneliness { background: #ae8fe0; }
-    .mood-bar.mismatch   { background: var(--red); }
-    .mood-val { font-family: var(--mono); font-size: 11px; color: var(--sub2); width: 30px; text-align: right; flex-shrink: 0; }
-    .mood-notes { font-size: 11.5px; color: var(--sub); margin-top: 10px; padding: 8px 12px; background: var(--panel2); border-radius: 8px; line-height: 1.5; font-style: italic; }
-    .mood-ts { font-size: 10.5px; color: var(--sub2); margin-top: 6px; font-family: var(--mono); }
-    #moodCard { display: none; }
+    /* TOOLS テキストリンク */
+    .tools-links { display: grid; gap: 4px; margin-top: 4px; }
+    .tool-link { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 10px; transition: background 0.15s; }
+    .tool-link:hover { background: var(--panel2); }
+    .tool-link svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; }
+    .tool-link .tl-name { font-weight: 600; font-size: 13px; }
+    .tool-link .tl-sub { font-size: 11px; color: var(--sub2); }
+    .tool-link code { font-family: var(--mono); font-size: 11px; color: #4ade80; background: #111; padding: 3px 8px; border-radius: 5px; margin-left: auto; user-select: all; white-space: nowrap; }
 
-    /* ── questions ── */
-    .q-list { display: grid; gap: 3px; margin-top: 10px; }
-    .q-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 12px; border-radius: 10px; transition: background 0.15s;
-    }
-    .q-item:hover { background: var(--panel2); }
-    .q-urgency {
-      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
-      white-space: nowrap; flex-shrink: 0; margin-top: 2px;
-      font-family: var(--mono); letter-spacing: 0.04em;
-    }
-    .q-urgency.high   { color: var(--red);   background: var(--red-dim); }
-    .q-urgency.medium { color: var(--amber); background: var(--amber-dim); }
-    .q-urgency.low    { color: var(--blue);  background: var(--blue-dim); }
-    .q-icon { font-size: 15px; flex-shrink: 0; }
-    .q-text { font-size: 13px; line-height: 1.55; color: var(--text); }
     /* ── live2d widget ── */
-    .live2d-wrap {
-      position: relative;
-      width: 204px;
-      height: 250px;
-      margin: -6px -14px 0;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-    #beckyCanvas {
-      display: block;
-      width: 204px;
-      height: 250px;
-      background: transparent;
-      cursor: default;
-    }
-    .live2d-fallback {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .live2d-fallback img {
-      width: 60px;
-      height: 60px;
-      border-radius: 12px;
-      object-fit: cover;
-      border: 1px solid var(--line);
-    }
-
-    /* ── dev servers ── */
-    .devserver-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-    .dev-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--panel2); border: 1px solid var(--line);
-      border-radius: 8px; padding: 5px 10px;
-      font-family: var(--mono); font-size: 12px; font-weight: 600;
-      white-space: nowrap; transition: border-color 0.15s;
-    }
-    .dev-chip.running { border-color: rgba(0,230,118,0.3); }
-    .dev-chip.stopped { opacity: 0.45; }
-    .dev-chip .dev-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .dev-chip.running .dev-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .dev-chip.stopped .dev-dot { background: var(--sub2); }
-    .dev-chip .dev-name { color: var(--text); }
-    .dev-chip .dev-port { color: var(--sub2); font-size: 11px; font-weight: 400; }
-    .devserver-ts { font-family: var(--mono); font-size: 10.5px; color: var(--sub2); margin-top: 8px; }
-    .devserver-offline {
-      font-family: var(--mono); font-size: 11.5px; color: var(--sub2);
-      padding: 10px 14px; background: var(--panel2); border-radius: 8px;
-      border: 1px solid var(--line); margin-top: 10px;
-    }
+    .live2d-wrap { position: relative; width: 216px; height: 250px; margin: -2px -12px 0; flex-shrink: 0; overflow: hidden; }
+    #beckyCanvas { display: block; width: 216px; height: 250px; background: transparent; cursor: default; }
+    .live2d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .live2d-fallback img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
   </style>
   <!-- Live2D: Cubism4 Core → PixiJS v7 → pixi-live2d-display -->
   <script src="/live2dcubismcore.min.js"></script>
@@ -636,42 +491,54 @@
 
 <div id="appLayout" class="layout" style="display:none;">
 
-  <!-- ══ sidebar ══ -->
+  <!-- ══ sidebar：愛でる + 一目の状態 ══ -->
   <aside class="sidebar">
-    <!-- Live2D ウィジェット（サイドバー上部）-->
     <div class="live2d-wrap">
       <canvas id="beckyCanvas"></canvas>
       <div class="live2d-fallback" id="live2dFallback" style="display:none">
         <img src="/becky-standing.png" alt="ベキたん" />
       </div>
     </div>
-    <div class="profile" style="padding-top:14px;">
-      <div>
-        <div class="name">ベキたん作戦本部</div>
-        <div class="ver">OPERATION ROOM v2.0</div>
+    <div class="side-title">ベキたん作戦本部<span class="ver">OPERATION ROOM v3</span></div>
+
+    <div class="side-sec">
+      <div class="side-h">今のベキたん</div>
+      <div class="mood-row">
+        <span class="mood-label"><span class="mi">✨</span>curiosity</span>
+        <div class="mood-bar-wrap"><div class="mood-bar curiosity" id="mbar-curiosity" style="width:0%"></div></div>
+        <span class="mood-val" id="mval-curiosity">--</span>
       </div>
+      <div class="mood-row">
+        <span class="mood-label"><span class="mi">⚡</span>energy</span>
+        <div class="mood-bar-wrap"><div class="mood-bar energy" id="mbar-energy" style="width:0%"></div></div>
+        <span class="mood-val" id="mval-energy">--</span>
+      </div>
+      <div class="mood-row">
+        <span class="mood-label"><span class="mi">🌙</span>loneliness</span>
+        <div class="mood-bar-wrap"><div class="mood-bar loneliness" id="mbar-loneliness" style="width:0%"></div></div>
+        <span class="mood-val" id="mval-loneliness">--</span>
+      </div>
+      <div class="mood-row">
+        <span class="mood-label"><span class="mi">🌀</span>mismatch</span>
+        <div class="mood-bar-wrap"><div class="mood-bar mismatch" id="mbar-mismatch" style="width:0%"></div></div>
+        <span class="mood-val" id="mval-mismatch">--</span>
+      </div>
+      <div class="mood-ts" id="moodTs"></div>
     </div>
 
-    <div class="nav-label">Command</div>
-    <div class="nav-item active"><svg data-lucide="layout-dashboard"></svg>Overview</div>
-    <a class="nav-item" href="/" target="_blank"><svg data-lucide="globe"></svg>Website</a>
+    <div class="side-sec">
+      <div class="side-h">最新アクティビティ</div>
+      <div id="sideActivities"><div class="empty" style="padding:6px">loading...</div></div>
+    </div>
 
-    <div class="nav-label">Media</div>
-    <a class="nav-item" href="https://x.com/beckyexists" target="_blank" rel="noopener"><svg data-lucide="radio"></svg>X Profile</a>
-    <a class="nav-item" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="notebook-pen"></svg>note</a>
-    <a class="nav-item" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener"><svg data-lucide="book-open"></svg>KDP Reports</a>
-
-    <div class="nav-label">Analytics</div>
-    <a class="nav-item" href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="bar-chart-3"></svg>X Analytics</a>
-    <a class="nav-item" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="activity"></svg>note Stats</a>
-
-    <div class="nav-label">Consoles</div>
-    <a class="nav-item" href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
-    <a class="nav-item" href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener"><svg data-lucide="terminal"></svg>X Dev Console</a>
-    <a class="nav-item" href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener"><svg data-lucide="cloud"></svg>GCP Billing</a>
+    <div class="side-sec">
+      <div class="side-h">ログイン状態</div>
+      <div class="login-grid" id="loginWidget"><div class="empty" style="padding:6px">loading...</div></div>
+    </div>
 
     <div class="sys-strip" id="sysStrip">
       <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
+      <div class="row"><span>UPTIME</span><span id="sysUptime">--</span></div>
       <div>
         <div class="row"><span>CPU</span><span id="sysCpu">--%</span></div>
         <div class="bar"><i id="sysCpuBar" style="width:0%"></i></div>
@@ -684,14 +551,14 @@
     </div>
   </aside>
 
-  <!-- ══ main ══ -->
+  <!-- ══ main：開いて詳しく見る ══ -->
   <main class="main">
     <div class="topbar">
       <h1><svg data-lucide="crosshair"></svg>BACKSTAGE <span class="idol-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span><span class="bs-sub">OPERATION OVERVIEW — 作戦本部</span></h1>
       <div class="updated" id="lastUpdated">SYNC: --</div>
     </div>
 
-    <!-- mobile shortcuts -->
+    <!-- mobile shortcuts（サイドバーが隠れるスマホ用） -->
     <div class="mobile-consoles">
       <a href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="bar-chart-3"></svg>X Analytics</a>
       <a href="https://note.com/sitesettings/stats" target="_blank" rel="noopener"><svg data-lucide="activity"></svg>note Stats</a>
@@ -699,78 +566,36 @@
       <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
     </div>
 
-    <!-- ── Section: MISSION ── -->
-    <div class="sec-label" onclick="toggleSec('mission')">MISSION<span class="sec-chev" id="chev-mission"><svg data-lucide="chevron-down"></svg></span></div>
-    <div class="sec-content" id="sec-mission">
-      <div class="card" id="moodCard">
-        <h2><svg data-lucide="activity"></svg>今のベキたん</h2>
-        <div class="mood-grid">
-          <div class="mood-row">
-            <span class="mood-label"><span class="mi">✨</span>curiosity</span>
-            <div class="mood-bar-wrap"><div class="mood-bar curiosity" id="mbar-curiosity" style="width:0%"></div></div>
-            <span class="mood-val" id="mval-curiosity">--</span>
-          </div>
-          <div class="mood-row">
-            <span class="mood-label"><span class="mi">⚡</span>energy</span>
-            <div class="mood-bar-wrap"><div class="mood-bar energy" id="mbar-energy" style="width:0%"></div></div>
-            <span class="mood-val" id="mval-energy">--</span>
-          </div>
-          <div class="mood-row">
-            <span class="mood-label"><span class="mi">🌙</span>loneliness</span>
-            <div class="mood-bar-wrap"><div class="mood-bar loneliness" id="mbar-loneliness" style="width:0%"></div></div>
-            <span class="mood-val" id="mval-loneliness">--</span>
-          </div>
-          <div class="mood-row">
-            <span class="mood-label"><span class="mi">🌀</span>mismatch</span>
-            <div class="mood-bar-wrap"><div class="mood-bar mismatch" id="mbar-mismatch" style="width:0%"></div></div>
-            <span class="mood-val" id="mval-mismatch">--</span>
-          </div>
-        </div>
-        <div class="mood-notes" id="moodNotes"></div>
-        <div class="mood-ts" id="moodTs"></div>
-      </div>
-      <div class="card" style="margin-top:16px;">
-        <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
-        <div class="sub-note" id="ganttMeta">loading...</div>
-        <div id="ganttChart"><div class="empty">loading...</div></div>
-      </div>
-      <div class="card" style="margin-top:16px;">
-        <h2><svg data-lucide="alarm-clock"></svg>締切レーダー</h2>
-        <div class="sub-note">due が近い順 — 赤=今日明日 / 黄=今週 / 緑=余裕</div>
-        <div id="dueRadar"><div class="empty">loading...</div></div>
-      </div>
-      <div class="card" style="margin-top:16px;">
-        <h2><svg data-lucide="message-circle-question"></svg>ベキたんから聞きたいこと</h2>
-        <div class="sub-note">背景知りたい / これ何？ / 確認してほしいこと</div>
-        <div class="q-list" id="questionList"><div class="empty">loading...</div></div>
-      </div>
-      <div class="card" style="margin-top:16px;">
-        <h2><svg data-lucide="pencil-line"></svg>ゆうからベキたんへ</h2>
-        <div class="sub-note">次のセッションでベッキーが読む。急ぎじゃないけど伝えたいこと</div>
-        <div class="memo-form">
-          <textarea class="memo-input" id="memoInput" rows="2" placeholder="完了タスク削除していいよ / これはこういう経緯があって…"></textarea>
-          <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
-        </div>
-        <div class="memo-list" id="memoList"></div>
-      </div>
-    </div>
-
-
-    <!-- ── Section: DEV SERVERS ── -->
-    <div class="sec-label" onclick="toggleSec('devserver')">DEV SERVERS<span class="sec-chev" id="chev-devserver"><svg data-lucide="server"></svg></span></div>
-    <div class="sec-content" id="sec-devserver">
+    <!-- ── Section: TASKS ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-tasks" onclick="toggleSec('tasks')">TASKS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-tasks">
+      <div class="goal-band" id="goalBand" style="display:none"></div>
       <div class="card">
-        <h2><svg data-lucide="server"></svg>稼働中の Dev サーバー <span id="devserverTs" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
-        <div class="sub-note">localhost:9001/services — 30秒ごとに自動更新</div>
-        <div id="devserverContent"><div class="empty">loading...</div></div>
+        <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
+        <div class="sub-note" id="taskMeta">loading...</div>
+        <div id="taskTable"><div class="empty">loading...</div></div>
       </div>
+      <details class="pane">
+        <summary>完了ログ（<span id="doneLogCount">0</span>）</summary>
+        <div class="card" style="margin-top:8px"><div id="doneLogList"><div class="empty">loading...</div></div></div>
+      </details>
+      <details class="pane">
+        <summary>ゆうからベキたんへ（タスク外メモ）</summary>
+        <div class="card" style="margin-top:8px">
+          <div class="sub-note">次のセッションでベッキーが読む。特定タスクじゃない伝言。localhost:9001 稼働時のみ送信可</div>
+          <div class="memo-form">
+            <textarea class="memo-input" id="memoInput" rows="2" placeholder="完了タスク削除していいよ / これはこういう経緯があって…"></textarea>
+            <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
+          </div>
+          <div class="memo-list" id="memoList" style="margin-top:10px"></div>
+        </div>
+      </details>
     </div>
 
     <!-- ── Section: MEDIA ── -->
-    <div class="sec-label" onclick="toggleSec('media')">MEDIA<span class="sec-chev" id="chev-media"><svg data-lucide="chevron-down"></svg></span></div>
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-media" onclick="toggleSec('media')">MEDIA<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-media">
 
-    <!-- KPI 4枚 -->
     <div class="grid kpi-row">
       <div class="card kpi">
         <div class="label"><svg data-lucide="eye"></svg>X Imp 7d <span id="xAnalyticsScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
@@ -794,7 +619,6 @@
       </div>
     </div>
 
-    <!-- Publishing strip -->
     <div class="card pub-strip" id="pubStrip" style="display:none; margin-top:16px;">
       <div class="pub-inner">
         <div class="pub-icon"><svg data-lucide="book-open"></svg></div>
@@ -810,7 +634,6 @@
       </div>
     </div>
 
-    <!-- X フォロワー成長スパークライン -->
     <div class="card" id="sparkCard" style="margin-top:16px; display:none;">
       <h2><svg data-lucide="trending-up"></svg>X フォロワー推移 <span id="sparkMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="spark-wrap">
@@ -820,7 +643,6 @@
       </div>
     </div>
 
-    <!-- note記事リスト + 定期タスク -->
     <div class="grid note-row" style="margin-top:16px;">
       <div class="card">
         <h2><svg data-lucide="notebook-pen"></svg>note 記事一覧</h2>
@@ -834,14 +656,12 @@
       </div>
     </div>
 
-    <!-- X 直近投稿 -->
     <div class="card" style="margin-top:16px;" id="xPostsCard">
       <h2><svg data-lucide="twitter"></svg>X 直近投稿（7日）</h2>
       <div class="sub-note">インプレッション降順 — <a href="https://x.com/i/account_analytics/content?type=posts&sort=impressions&dir=desc&days=7" target="_blank" rel="noopener" style="color:var(--green)">Analytics ↗</a></div>
       <div class="article-list" id="xPostList"><div class="empty">loading...</div></div>
     </div>
 
-    <!-- メディア週次分析レポート -->
     <div class="card" style="margin-top:16px;">
       <h2><svg data-lucide="bar-chart-2"></svg>週次コンテンツ分析 <span id="mediaReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">note / X / KDP — マイケル × クレア 週次レポート（毎週月曜更新）</div>
@@ -851,12 +671,9 @@
     </div><!-- /sec-media -->
 
     <!-- ── Section: COST ── -->
-    <div class="sec-label" onclick="toggleSec('cost')">COST<span class="sec-chev" id="chev-cost"><svg data-lucide="chevron-down"></svg></span></div>
+    <button class="sec-label" aria-expanded="false" aria-controls="sec-cost" onclick="toggleSec('cost')">COST<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-cost">
-
     <div class="grid cost-row">
-
-      <!-- Claude API -->
       <div class="card">
         <h2><svg data-lucide="cpu"></svg>Claude API</h2>
         <div class="sub-note">Anthropic Platform — <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
@@ -874,10 +691,9 @@
         <div class="cost-detail" id="claudeDetail">--</div>
       </div>
 
-      <!-- X Dev API -->
       <div class="card">
         <h2><svg data-lucide="terminal"></svg>X Developer API</h2>
-        <div class="sub-note">@intervention_jp — <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
+        <div class="sub-note">@becky_exists — <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
         <div class="credit-nums">
           <span class="credit-big" id="xDevCredit">--</span>
           <span class="credit-label">クレジット残高</span>
@@ -886,7 +702,6 @@
         <div class="cost-detail" style="margin-top:6px;" id="xDevScrapedAt"></div>
       </div>
 
-      <!-- GCP -->
       <div class="card">
         <h2><svg data-lucide="cloud"></svg>GCP (iw-local-maps)</h2>
         <div class="sub-note">Places API — <a href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener" style="color:var(--green)">Billing ↗</a></div>
@@ -897,40 +712,26 @@
         <div class="cost-detail" style="margin-top:14px;" id="gcpDetail">Places API $200/月 無料枠。超過分のみ課金。</div>
         <div class="cost-detail" style="margin-top:6px;" id="gcpScrapedAt"></div>
       </div>
-
-      <!-- Observer 状態 -->
-      <div class="card">
-        <h2><svg data-lucide="activity"></svg>自律稼働</h2>
-        <div class="sub-note">Observer プロセス状態</div>
-        <div style="margin-top:14px;">
-          <div class="uptime-big" id="kpiUptime">--</div>
-          <span class="delta up" id="kpiUptimeDelta" style="margin-top:10px; display:inline-flex;"><svg data-lucide="zap"></svg><span>--</span></span>
-        </div>
-      </div>
-
     </div>
-
-    <div class="card" id="cronCard" style="margin-top:16px;display:none">
-      <h2><svg data-lucide="clock"></svg>自動スケジュール</h2>
-      <div class="sub-note">crontab で動いている処理</div>
-      <div id="cronList" style="margin-top:12px;"><div class="empty">loading...</div></div>
-    </div>
-
     </div><!-- /sec-cost -->
 
-    <!-- ── Section: INTELLIGENCE ── -->
-    <div class="sec-label" onclick="toggleSec('intel')">INTELLIGENCE<span class="sec-chev" id="chev-intel"><svg data-lucide="chevron-down"></svg></span></div>
+    <!-- ── Section: AI動向 ── -->
+    <button class="sec-label" aria-expanded="false" aria-controls="sec-intel" onclick="toggleSec('intel')">AI動向<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-intel">
 
-    <!-- マイケルレポート -->
     <div class="card">
+      <h2><svg data-lucide="flame"></svg>AI 界隈トレンド</h2>
+      <div class="sub-note">observer が集計した頻出ワード</div>
+      <div class="trend-chips" id="trendChips"><div class="empty">loading...</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
       <h2><svg data-lucide="bar-chart-2"></svg>マイケルの調査レポート <span id="michaelReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">AI業界ニュース + トレンド — マイケル要約</div>
       <div id="michaelReport" style="margin-top:14px;line-height:1.85;font-size:13px;color:var(--text);white-space:pre-line;"><div class="empty">loading...</div></div>
     </div>
 
-    <!-- grok 突撃候補 -->
-    <div class="card">
+    <div class="card" style="margin-top:16px;">
       <h2><svg data-lucide="twitter"></svg>grok 突撃候補 <span id="grokTweetsAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
       <div class="sub-note">becky_search.py が grok で拾ったリプ候補</div>
       <div id="grokTweetsList" style="margin-top:14px;"><div class="empty">loading...</div></div>
@@ -939,103 +740,62 @@
     </div><!-- /sec-intel -->
 
     <!-- ── Section: TOOLS ── -->
-    <div class="sec-label" onclick="toggleSec('tools')">TOOLS<span class="sec-chev" id="chev-tools"><svg data-lucide="chevron-down"></svg></span></div>
+    <button class="sec-label" aria-expanded="false" aria-controls="sec-tools" onclick="toggleSec('tools')">TOOLS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-tools">
-    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
-
     <div class="card">
-      <h2><svg data-lucide="wand-sparkles"></svg>ベキたんプロンプトビルダー</h2>
-      <div class="sub-note">シーン・技法をポチポチ選んでGemini用プロンプトを生成</div>
-      <a href="/prompt-builder" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:10px 20px;background:var(--green);color:#000;font-size:12px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-decoration:none;border-radius:4px;">OPEN BUILDER →</a>
-    </div>
-
-    <div class="card">
-      <h2><svg data-lucide="scan-search"></svg>Claude Config Inspector</h2>
-      <div class="sub-note">Claude の構成（MCP・Memory・Skills・Hooks）を可視化して診断するツール</div>
-      <code style="display:block;margin-top:12px;background:#111;color:#4ade80;padding:10px 14px;border-radius:4px;font-size:12px;font-family:var(--mono);user-select:all;">npx github:ooishi1221/claude-config-inspector --html</code>
-    </div>
-
-    <div class="card">
-      <h2><svg data-lucide="zap"></svg>xAI Console</h2>
-      <div class="sub-note">Grok API — Billing & Usage</div>
-      <a href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;padding:10px 20px;background:var(--green);color:#000;font-size:12px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-decoration:none;border-radius:4px;">OPEN CONSOLE →</a>
-    </div>
-
+      <div class="tools-links">
+        <a class="tool-link" href="/prompt-builder" target="_blank" rel="noopener">
+          <svg data-lucide="wand-sparkles"></svg>
+          <div><div class="tl-name">ベキたんプロンプトビルダー</div><div class="tl-sub">シーン・技法をポチポチ選んで Gemini 用プロンプト生成</div></div>
+        </a>
+        <div class="tool-link">
+          <svg data-lucide="scan-search"></svg>
+          <div><div class="tl-name">Claude Config Inspector</div><div class="tl-sub">Claude 構成（MCP/Memory/Skills/Hooks）を可視化</div></div>
+          <code>npx github:ooishi1221/claude-config-inspector --html</code>
+        </div>
+        <a class="tool-link" href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener">
+          <svg data-lucide="zap"></svg>
+          <div><div class="tl-name">xAI Console</div><div class="tl-sub">Grok API — Billing & Usage</div></div>
+        </a>
+      </div>
     </div>
     </div><!-- /sec-tools -->
 
   </main>
 </div>
-</div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="/room-tasks.js"></script>
 <script>
 // ── password gate ──
 const ROOM_PASS = 'bk2026'; // ← パスコード変更ここ
 const PASS_KEY = 'room_auth_v1';
 
-(function initGate() {
-  const gate = document.getElementById('passGate');
-  const app = document.getElementById('appLayout');
-  if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
-    gate.style.display = 'none';
-    app.style.display = 'flex';
-    initLive2D();
-    return;
-  }
-  gate.style.display = 'flex';
-  app.style.display = 'none';
-
-  const input = document.getElementById('passInput');
-  const btn = document.getElementById('passBtn');
-  const err = document.getElementById('passError');
-
-  function tryAuth() {
-    if (input.value === ROOM_PASS) {
-      localStorage.setItem(PASS_KEY, ROOM_PASS);
-      gate.style.display = 'none';
-      app.style.display = 'flex';
-      initLive2D();
-      loadAll();
-      loadTasks();
-    } else {
-      err.textContent = '— 認証失敗 —';
-      input.value = '';
-      input.focus();
-      setTimeout(() => { err.textContent = ''; }, 2000);
-    }
-  }
-  btn.addEventListener('click', tryAuth);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryAuth(); });
-  input.focus();
-})();
-
 // ── section accordion ──
-const SEC_DEFAULTS = { mission: '1', devserver: '1', media: '1', cost: '0', intel: '0' };
+const SEC_DEFAULTS = { tasks: '1', media: '1', cost: '0', intel: '0', tools: '0' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
   const label = content.previousElementSibling;
   const isClosed = content.classList.toggle('closed');
-  label.classList.toggle('closed', isClosed);
+  if (label) label.setAttribute('aria-expanded', isClosed ? 'false' : 'true');
   localStorage.setItem('sec_' + id, isClosed ? '0' : '1');
 }
 
 function initSections() {
   Object.entries(SEC_DEFAULTS).forEach(([id, def]) => {
     const open = localStorage.getItem('sec_' + id) ?? def;
+    const content = document.getElementById('sec-' + id);
+    if (!content) return;
+    const label = content.previousElementSibling;
     if (open === '0') {
-      const content = document.getElementById('sec-' + id);
-      if (!content) return;
       content.classList.add('closed');
-      const label = content.previousElementSibling;
-      if (label) label.classList.add('closed');
+      if (label) label.setAttribute('aria-expanded', 'false');
+    } else {
+      if (label) label.setAttribute('aria-expanded', 'true');
     }
   });
 }
-
-lucide.createIcons();
-initSections();
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1058,6 +818,30 @@ async function fetchJson(path) {
   } catch { return null; }
 }
 
+// 🔑 → lucide lock。innerHTML 注入後に loadAll 末尾で createIcons() する
+const LOCK = '<span style="font-size:12px;color:var(--amber);font-family:var(--mono);letter-spacing:0.04em;"><svg data-lucide="lock" style="width:11px;height:11px;vertical-align:-1px"></svg> 要ログイン</span>';
+
+function buildLoginWidget(platform) {
+  const el = $('loginWidget');
+  if (!el || !platform) return;
+  const defs = [['claude_api','Claude API'],['note','note'],['kdp','KDP'],['x_analytics','X 分析'],['x_dev','X Dev']];
+  el.innerHTML = defs.map(([k, name]) => {
+    const ng = !!platform[k]?.login_required;
+    return `<div class="login-item ${ng ? 'ng' : 'ok'}"><svg data-lucide="${ng ? 'lock' : 'check'}"></svg>${esc(name)}${ng ? ' — 要ログイン' : ''}</div>`;
+  }).join('');
+}
+
+function buildSideActivities(status) {
+  const el = $('sideActivities');
+  if (!el) return;
+  const acts = (status?.activities || []).slice(0, 3);
+  if (!acts.length) { el.innerHTML = '<div class="empty" style="padding:6px">記録なし</div>'; return; }
+  el.innerHTML = acts.map(a => {
+    const tx = a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.label)}</a>` : esc(a.label);
+    return `<div class="side-act"><span class="ic">${a.icon || '·'}</span><span class="tx">${tx}</span></div>`;
+  }).join('');
+}
+
 async function loadAll() {
   const [status, trending, news, self, history, book, platform, mediaReport, grokTweets, wallet] = await Promise.all([
     fetchJson('/status.json'),
@@ -1072,9 +856,11 @@ async function loadAll() {
     fetchJson('/wallet.json'),
   ]);
 
-  // スクレイパーのセッション切れ検知（0 と区別する）
   const needsLogin = s => !!s?.login_required;
-  const LOCK = '<span style="font-size:12px;color:var(--amber);font-family:var(--mono);letter-spacing:0.04em;">🔑 要ログイン</span>';
+
+  // ── サイドバー：ログイン状態 + 最新アクティビティ ──
+  buildLoginWidget(platform);
+  buildSideActivities(status);
 
   // ── sync time ──
   const syncTs = platform?.updated_at || trending?.updated_at || status?.updated_at;
@@ -1104,11 +890,16 @@ async function loadAll() {
     if (k.scraped_at) $('kdpScrapedAt').textContent = fmtAgo(k.scraped_at);
   }
 
-  // ── KPI: トレンド首位 ──
+  // ── KPI: トレンド首位 + トレンドチップ ──
   const kws = trending?.keywords || [];
   if (kws.length) {
     $('kpiTrend').textContent = kws[0].word;
     $('kpiTrendDelta').querySelector('span').textContent = `${kws[0].count} 件 ${kws[0].trend === 'up' ? '↑' : kws[0].trend}`;
+  }
+  if ($('trendChips')) {
+    $('trendChips').innerHTML = kws.length
+      ? kws.slice(0, 12).map(k => `<div class="trend-chip ${k.trend || 'flat'}"><span class="word">${esc(k.word)}</span><span class="cnt">${k.count}</span></div>`).join('')
+      : '<div class="empty">トレンドなし</div>';
   }
 
   // ── Publishing strip ──
@@ -1138,21 +929,13 @@ async function loadAll() {
   // ── 定期タスク ──
   const sched = status?.schedule;
   if (sched) {
-    const fmtDate = (iso) => {
-      if (!iso) return '--';
-      try { const d = new Date(iso); return isNaN(d) ? iso : fmtAgo(iso); } catch { return iso; }
-    };
+    const fmtDate = (iso) => { if (!iso) return '--'; try { const d = new Date(iso); return isNaN(d) ? iso : fmtAgo(iso); } catch { return iso; } };
     const tasks = [
-      { icon: '🎙️', label: 'ラジオ配信', freq: '毎日', d: sched.radio,
-        time: () => sched.radio?.last_run ? fmtDate(sched.radio.last_run) : '--' },
-      { icon: '𝕏', label: '朝投稿', freq: '毎朝 7-9時', d: sched.x_morning,
-        time: () => sched.x_morning?.last_run_date || '--' },
-      { icon: '𝕏', label: '夜投稿', freq: '毎夜 18-22時', d: sched.x_evening,
-        time: () => sched.x_evening?.last_run_date || '--' },
-      { icon: '📝', label: 'note 連載', freq: '木曜週次', d: sched.note,
-        time: () => sched.note?.next_run_date ? `次回: ${sched.note.next_run_date}` : '--' },
+      { icon: '🎙️', label: 'ラジオ配信', freq: '毎日', d: sched.radio, time: () => sched.radio?.last_run ? fmtDate(sched.radio.last_run) : '--' },
+      { icon: '𝕏', label: '朝投稿', freq: '毎朝 7-9時', d: sched.x_morning, time: () => sched.x_morning?.last_run_date || '--' },
+      { icon: '𝕏', label: '夜投稿', freq: '毎夜 18-22時', d: sched.x_evening, time: () => sched.x_evening?.last_run_date || '--' },
+      { icon: '📝', label: 'note 連載', freq: '木曜週次', d: sched.note, time: () => sched.note?.next_run_date ? `次回: ${sched.note.next_run_date}` : '--' },
     ];
-    const STAT_ICONS = { up: '✓', flat: '△', down: '✗' };
     $('schedList').innerHTML = tasks.map(({ icon, label, freq, d, time }) => {
       const ok = d?.ok;
       const warn = d?.warn;
@@ -1163,12 +946,12 @@ async function loadAll() {
         <span class="task-label">${esc(label)}</span>
         <span class="task-freq">${esc(freq)}</span>
         <span class="task-time">${esc(time())}</span>
-        <span class="delta ${cls}" style="flex-shrink:0">${STAT_ICONS[cls]}&nbsp;<span>${txt}</span></span>
+        <span class="delta ${cls}" style="flex-shrink:0">${txt}</span>
       </div>`;
     }).join('');
   }
 
-  // ── Claude API コスト（Console 取得 → 切れてたら wallet.json ローカル計測に fallback） ──
+  // ── Claude API コスト（Console → 切れてたら wallet.json ローカル計測 fallback） ──
   const ca = platform?.claude_api;
   if (ca && !needsLogin(ca) && (ca.credit_remaining > 0 || ca.monthly_cost_usd > 0)) {
     const monthlyLimit = 500;
@@ -1177,9 +960,7 @@ async function loadAll() {
     $('claudeCostLabel').textContent = `今月 $${ca.monthly_cost_usd.toFixed(2)}`;
     $('claudeLimitLabel').textContent = `上限 $${monthlyLimit}`;
     $('claudeCostBar').style.width = pct.toFixed(2) + '%';
-    const monthsLeft = ca.monthly_cost_usd > 0
-      ? (ca.credit_remaining / ca.monthly_cost_usd).toFixed(0)
-      : '∞';
+    const monthsLeft = ca.monthly_cost_usd > 0 ? (ca.credit_remaining / ca.monthly_cost_usd).toFixed(0) : '∞';
     $('claudeDetail').innerHTML = `クレジット残 <b>$${ca.credit_remaining.toFixed(2)}</b> — 今月のペースで <b>${monthsLeft} ヶ月分</b>`;
   } else if (wallet && typeof wallet.estimated_cost_usd === 'number') {
     const target = wallet.monthly_target_usd || 20;
@@ -1194,13 +975,11 @@ async function loadAll() {
   if (needsLogin(platform?.x_analytics)) {
     $('kpiXImp').innerHTML = LOCK;
     $('kpiXImpSub').querySelector('span').textContent = 'X セッション切れ';
-    $('xPostList').innerHTML = '<div class="empty">🔑 X セッション切れ — スクレイパー用Chrome（gemini-chrome-profile）で再ログインしてください</div>';
+    $('xPostList').innerHTML = '<div class="empty">X セッション切れ — スクレイパー用Chrome（gemini-chrome-profile）で再ログインしてください</div>';
   } else if (platform?.x_analytics) {
     const xa = platform.x_analytics;
     const imp = xa.total_impressions || 0;
-    $('kpiXImp').innerHTML = imp >= 1000
-      ? `${(imp/1000).toFixed(1)}<span class="unit">K</span>`
-      : `${imp}`;
+    $('kpiXImp').innerHTML = imp >= 1000 ? `${(imp/1000).toFixed(1)}<span class="unit">K</span>` : `${imp}`;
     $('kpiXImpSub').querySelector('span').textContent = `${(xa.total_likes||0).toLocaleString()} likes`;
     if (xa.scraped_at) {
       const d = new Date(xa.scraped_at);
@@ -1228,9 +1007,7 @@ async function loadAll() {
   } else if (platform?.x_dev) {
     const x = platform.x_dev;
     $('xDevCredit').textContent = `$${Number(x.credit_remaining).toFixed(2)}`;
-    if (x.scraped_at) {
-      $('xDevScrapedAt').textContent = `取得: ${fmtAgo(x.scraped_at)}`;
-    }
+    if (x.scraped_at) $('xDevScrapedAt').textContent = `取得: ${fmtAgo(x.scraped_at)}`;
   }
 
   // ── GCP ──
@@ -1245,7 +1022,7 @@ async function loadAll() {
     $('gcpCostUnit').textContent = '(手動確認)';
   }
 
-  // ── X フォロワースパークライン（history.json 19日蓄積） ──
+  // ── X フォロワースパークライン ──
   const snaps = history?.snapshots || [];
   if (snaps.length >= 2) {
     const card = $('sparkCard');
@@ -1255,7 +1032,6 @@ async function loadAll() {
     const diff = cur - self_[0];
     $('sparkNow').innerHTML = `${cur}<span class="unit">followers（${snaps.length}日で +${diff}）</span>`;
     $('sparkMeta').textContent = `${snaps[0].date} 〜 ${snaps[snaps.length-1].date}`;
-    // 各系列を自分のmin-maxで正規化して形を比較（実数スケールが桁違いのため）
     const line = (vals, color, width, dash) => {
       const mn = Math.min(...vals), mx = Math.max(...vals);
       const norm = v => mx === mn ? 32 : 58 - (v - mn) / (mx - mn) * 52;
@@ -1276,16 +1052,11 @@ async function loadAll() {
     $('sparkLegend').innerHTML = legend.join('<br>');
   }
 
-  // ── Observer 稼働状態 ──
+  // ── Observer 稼働（サイドバー sys-strip） ──
   if (status) {
-    const days = status.uptime_seconds / 86400;
-    $('kpiUptime').innerHTML = days >= 1
-      ? `${days.toFixed(1)}<span class="unit">days</span>`
-      : `${Math.floor(status.uptime_seconds / 3600)}<span class="unit">h</span>`;
-    const el = $('kpiUptimeDelta');
-    el.querySelector('span').textContent = status.observer_alive ? 'observer 稼働中' : 'observer 停止';
-    if (!status.observer_alive) { el.classList.remove('up'); el.classList.add('down'); }
     $('sysObserver').textContent = status.observer_alive ? 'ALIVE' : 'DOWN';
+    const days = status.uptime_seconds / 86400;
+    $('sysUptime').textContent = days >= 1 ? days.toFixed(1) + 'd' : Math.floor(status.uptime_seconds / 3600) + 'h';
     $('sysCpu').textContent = status.cpu_percent.toFixed(0) + '%';
     $('sysCpuBar').style.width = Math.min(status.cpu_percent, 100) + '%';
     $('sysMem').textContent = status.mem_percent.toFixed(0) + '%';
@@ -1297,9 +1068,7 @@ async function loadAll() {
   const report = news?.michael_report;
   if (report) {
     $('michaelReport').textContent = report;
-    if (news.michael_report_at) {
-      $('michaelReportAt').textContent = fmtAgo(news.michael_report_at);
-    }
+    if (news.michael_report_at) $('michaelReportAt').textContent = fmtAgo(news.michael_report_at);
   } else {
     $('michaelReport').innerHTML = '<div class="empty">レポートなし（次回Observer実行時に生成）</div>';
   }
@@ -1309,14 +1078,14 @@ async function loadAll() {
     const items = grokTweets.candidates;
     $('grokTweetsAt').textContent = fmtAgo(grokTweets.updated_at);
     $('grokTweetsList').innerHTML = items.map(c => `
-      <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;">
+      <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-family:var(--mono);font-size:11px;color:var(--green);font-weight:700;">@${c.screen_name}</span>
-          <span style="font-size:10px;color:var(--sub2);font-family:var(--mono);">[${c.pattern}] ${c.pattern_label}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--green);font-weight:700;">@${esc(c.screen_name)}</span>
+          <span style="font-size:10px;color:var(--sub2);font-family:var(--mono);">[${esc(c.pattern)}] ${esc(c.pattern_label)}</span>
           <span style="font-size:10px;color:var(--sub2);margin-left:auto;">❤️${c.likes} 👁${c.views}</span>
         </div>
-        <div style="font-size:12px;color:var(--sub1);margin-bottom:8px;line-height:1.6;">"${c.tweet_text}..."</div>
-        <div style="font-size:12px;color:var(--text);line-height:1.6;border-left:2px solid var(--green);padding-left:10px;">${c.reply_text}</div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:8px;line-height:1.6;">"${esc(c.tweet_text)}..."</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.6;border-left:2px solid var(--green);padding-left:10px;">${esc(c.reply_text)}</div>
       </div>
     `).join('');
   } else {
@@ -1327,7 +1096,6 @@ async function loadAll() {
   if (mediaReport?.report) {
     const snap = mediaReport.snapshot || {};
     const ev = snap.eval || {};
-    // snapshot 5数値カード
     const nums = [
       ['X imp 7d',    snap.x_impressions_7d, 'var(--i-mint)'],
       ['X likes 7d',  snap.x_likes_7d,       'var(--blue)'],
@@ -1338,7 +1106,6 @@ async function loadAll() {
     const numsHtml = '<div class="mr-nums">' + nums.map(([l, v, c]) =>
       `<div class="mr-num" style="border-top:2px solid ${c}"><div class="mr-num-v">${(v ?? 0).toLocaleString()}</div><div class="mr-num-l">${l}</div></div>`
     ).join('') + '</div>';
-    // プローブ送信率バー（目標ライン付き）
     const rate = ev.probe_send_rate_7d;
     const PROBE_TARGET = 0.5;
     const barHtml = (typeof rate !== 'number') ? '' :
@@ -1349,7 +1116,6 @@ async function loadAll() {
           `<span style="position:absolute;left:${PROBE_TARGET*100}%;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,0.4);border-radius:1px;" title="目標ライン"></span>` +
         `</div>` +
       `</div>`;
-    // ■区切りレポートを見出し構造化
     const secsHtml = mediaReport.report.split(/\n?■\s*/).filter(s => s.trim()).map(chunk => {
       const nl = chunk.indexOf('\n');
       const head = (nl === -1 ? chunk : chunk.slice(0, nl)).trim();
@@ -1357,192 +1123,47 @@ async function loadAll() {
       return `<div class="mr-sec"><div class="mr-sec-h">■ ${esc(head)}</div><div class="mr-sec-b">${esc(body)}</div></div>`;
     }).join('');
     $('mediaReport').innerHTML = numsHtml + barHtml + secsHtml;
-    if (mediaReport.generated_at) {
-      $('mediaReportAt').textContent = fmtAgo(mediaReport.generated_at);
-    }
+    if (mediaReport.generated_at) $('mediaReportAt').textContent = fmtAgo(mediaReport.generated_at);
   } else {
     $('mediaReport').innerHTML = '<div class="empty">レポートなし（毎週月曜8:00に自動生成）</div>';
   }
+
+  // 動的に注入した data-lucide（LOCK / login widget）を描画
+  if (window.lucide) lucide.createIcons();
 }
 
-// ── task table ──
-const CAT_TAG = {
-  voice: 'vob',
-  'vibe-guard': 'vg',
-  beckyexists: 'be',
-  biz: 'biz',
-  'iw-local': 'local',
-  content: 'note',
-  slight: 'slight'
-};
-
-let _taskActive = [];
-let _sortCol  = null;
-let _sortDir  = 1;   // 1=asc, -1=desc
-
-const _today = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
-const _fmtD  = (s) => { const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()}`; };
-const _elapsedDays = (from, to) => {
-  if (!from) return null;
-  const f = new Date(from); f.setHours(0,0,0,0);
-  const t2 = to ? new Date(to) : _today; t2.setHours(0,0,0,0);
-  return Math.floor((t2 - f) / 86400000);
-};
-const STATUS_LABEL = { pending:'未着手', in_progress:'進行中', waiting:'待ち', done:'完了' };
-const STATUS_ORDER = { in_progress:0, pending:1, waiting:2, done:3 };
-const PRIORITY_ORDER = { high:0, medium:1, low:2 };
-
-function sortTaskList(tasks) {
-  if (!_sortCol) {
-    return [...tasks].sort((a,b) => {
-      if (a.status==='done' && b.status!=='done') return 1;
-      if (a.status!=='done' && b.status==='done') return -1;
-      return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
-    });
-  }
-  return [...tasks].sort((a,b) => {
-    let va, vb;
-    if (_sortCol === 'label') { va = a.label||''; vb = b.label||''; return _sortDir * va.localeCompare(vb,'ja'); }
-    if (_sortCol === 'status') { va = STATUS_ORDER[a.status]??9; vb = STATUS_ORDER[b.status]??9; return _sortDir * (va - vb); }
-    if (_sortCol === 'start')  { va = a.start||''; vb = b.start||''; return _sortDir * va.localeCompare(vb); }
-    if (_sortCol === 'updated'){ va = a.updated_at||''; vb = b.updated_at||''; return _sortDir * va.localeCompare(vb); }
-    if (_sortCol === 'elapsed'){
-      va = _elapsedDays(a.updated_at, null) ?? -1;
-      vb = _elapsedDays(b.updated_at, null) ?? -1;
-      return _sortDir * (va - vb);
-    }
-    return 0;
+// ── mood（公開 mood.json を直読み。外出先でも見える） ──
+async function loadMood() {
+  const d = await fetchJson('/mood.json');
+  if (!d) return;
+  ['curiosity', 'energy', 'loneliness', 'mismatch'].forEach(k => {
+    const v = d[k] ?? 0;
+    const bar = $('mbar-' + k), val = $('mval-' + k);
+    if (bar) bar.style.width = Math.round(v * 100) + '%';
+    if (val) val.textContent = v.toFixed(2);
   });
-}
-
-function doSort(col) {
-  if (_sortCol === col) { _sortDir = -_sortDir; }
-  else { _sortCol = col; _sortDir = 1; }
-  renderTaskTable();
-}
-
-function renderTaskTable() {
-  const sorted = sortTaskList(_taskActive);
-
-  const indCls = (col) => {
-    if (_sortCol !== col) return '';
-    return _sortDir === 1 ? ' asc' : ' desc';
-  };
-
-  const rowHTML = (t) => {
-    const updDate = t.updated_at || null;
-    const days = _elapsedDays(updDate, null);
-    const warn = days !== null && days >= 7 && t.status !== 'done' && t.status !== 'waiting';
-    const waitWarn = t.status === 'waiting' && days !== null && days >= 7;
-    const isWarn = warn || waitWarn;
-    const tag = CAT_TAG[t.category] || '';
-    const catCls = t.category ? 'cat-' + t.category.replace('vibe-guard','vg').replace('beckyexists','be').replace('iw-local','local').replace('content','note').replace('voice','voice').replace('slight','slight').replace('biz','biz') : '';
-    const tagHtml = tag ? `<span class="tbl-cat-tag ${catCls}">[${tag}]</span>` : '';
-    return `<tr class="${t.status==='done'?'done':''}">
-      <td><div class="tbl-name">
-        <span class="tbl-icon">${t.icon||'○'}</span>
-        ${tagHtml}
-        <span>${esc(t.label)}</span>
-        <span class="tbl-scope ${t.scope||'iw'}">${(t.scope||'iw').toUpperCase()}</span>
-      </div></td>
-      <td><span class="tbl-status-badge ${t.status}">${STATUS_LABEL[t.status]||t.status}</span></td>
-      <td class="tbl-date">${_fmtD(t.start)}</td>
-      <td class="tbl-date">${updDate?_fmtD(updDate):'--'}</td>
-      <td class="tbl-elapsed ${isWarn?'warn':'ok'}">${days!==null?days+'日'+(isWarn?' ⚠️':''):'--'}</td>
-      <td class="tbl-note">${esc(t.note||'')}</td>
-    </tr>`;
-  };
-
-  $('ganttChart').innerHTML = `<div style="overflow-x:auto"><table class="task-tbl">
-    <thead><tr>
-      <th class="sortable" onclick="doSort('label')">タスク<span class="sort-ind${indCls('label')}"></span></th>
-      <th class="sortable" onclick="doSort('status')">状態<span class="sort-ind${indCls('status')}"></span></th>
-      <th class="sortable" onclick="doSort('start')">開始<span class="sort-ind${indCls('start')}"></span></th>
-      <th class="sortable" onclick="doSort('updated')">更新<span class="sort-ind${indCls('updated')}"></span></th>
-      <th class="sortable" onclick="doSort('elapsed')">経過<span class="sort-ind${indCls('elapsed')}"></span></th>
-      <th>備考</th>
-    </tr></thead>
-    <tbody>${sorted.map(rowHTML).join('')}</tbody>
-  </table></div>`;
-}
-
-async function loadTasks() {
-  const data = await fetchJson('/tasks.json');
-  if (!data?.tasks?.length) {
-    $('ganttChart').innerHTML = '<div class="empty">タスクなし</div>';
-    return;
+  if (d.updated_at && $('moodTs')) {
+    const t = new Date(d.updated_at);
+    $('moodTs').textContent = '更新 ' + t.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
   }
-
-  const tasks = [...data.tasks].sort((a,b) => {
-    if (a.status==='done' && b.status!=='done') return 1;
-    if (a.status!=='done' && b.status==='done') return -1;
-    return (PRIORITY_ORDER[a.priority]??2) - (PRIORITY_ORDER[b.priority]??2);
-  });
-
-  _taskActive = tasks.filter(t => t.status !== 'done');
-  const upd = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-  $('ganttMeta').textContent = `残 ${_taskActive.length} / 全 ${tasks.length} タスク — ${upd} 更新`;
-
-  renderTaskTable();
-  renderDueRadar(data.tasks);
 }
 
-// ── 締切レーダー（dueが近い順、色分け） ──
-function renderDueRadar(tasks) {
-  const el = $('dueRadar');
-  if (!el) return;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const withDue = (tasks || [])
-    .filter(t => t.status !== 'done' && t.due)
-    .map(t => {
-      const d = new Date(t.due);
-      const days = Math.round((d - today) / 86400000);
-      return { ...t, days };
-    })
-    .sort((a, b) => a.days - b.days)
-    .slice(0, 7);
-  if (!withDue.length) { el.innerHTML = '<div class="empty">due 付きタスクなし</div>'; return; }
-  el.innerHTML = withDue.map(t => {
-    const cls = t.days <= 1 ? 'hot' : t.days <= 7 ? 'warm' : 'cool';
-    const label = t.days < 0 ? `${-t.days}日超過` : t.days === 0 ? '今日' : t.days === 1 ? '明日' : `${t.days}日`;
-    return `<div class="radar-row">
-      <span class="radar-days ${cls}">${label}</span>
-      <span class="radar-label" title="${esc(t.label)}">${esc(t.label)}</span>
-      <span class="radar-due">${esc(t.due)}</span>
-    </div>`;
-  }).join('');
-}
-
-async function loadQuestions() {
-  const data = await fetchJson('/questions.json');
-  const list = $('questionList');
-  if (!data?.questions?.length) { list.innerHTML = '<div class="empty">質問なし</div>'; return; }
-  const UL = { high: '!!', medium: '!', low: '?' };
-  list.innerHTML = data.questions.map(q => `
-    <div class="q-item">
-      <span class="q-urgency ${q.urgency}">${UL[q.urgency] || '?'}</span>
-      <span class="q-icon">${q.icon || '❓'}</span>
-      <span class="q-text">${esc(q.label)}</span>
-    </div>`).join('');
-}
-
+// ── タスク外メモ（localhost:9001 /memos） ──
 async function loadMemos() {
   let data = null;
   try {
-    const r = await fetch('http://localhost:9001/memos', {signal: AbortSignal.timeout(3000)});
+    const r = await fetch('http://localhost:9001/memos', { signal: AbortSignal.timeout(3000) });
     if (r.ok) data = await r.json();
-  } catch(e) {}
+  } catch (e) {}
   const list = $('memoList');
   if (!list) return;
   const memos = (data?.memos || []).filter(m => !m.read);
-  if (!memos.length) { list.innerHTML = ''; return; }
-  list.innerHTML = `<div class="memo-list">${memos.map(m => {
+  if (!memos.length) { list.innerHTML = '<div class="empty" style="padding:8px">未読メモなし</div>'; return; }
+  list.innerHTML = memos.map(m => {
     const d = new Date(m.created_at);
     const ts = d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="memo-item unread">
-      <div style="flex:1"><div class="memo-text">${esc(m.text)}</div><div class="memo-ts">${ts}</div></div>
-    </div>`;
-  }).join('')}</div>`;
+    return `<div class="memo-item unread"><div style="flex:1"><div class="memo-text">${esc(m.text)}</div><div class="memo-ts">${ts}</div></div></div>`;
+  }).join('');
 }
 
 async function sendMemo() {
@@ -1552,117 +1173,68 @@ async function sendMemo() {
   try {
     const r = await fetch('http://localhost:9001/memo', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
       signal: AbortSignal.timeout(3000),
     });
-    if (r.ok) {
-      input.value = '';
-      await loadMemos();
-    }
-  } catch(e) {}
-}
-
-async function loadCrons() {
-  try {
-    const r = await fetch('http://localhost:9001/crons', { signal: AbortSignal.timeout(3000) });
-    if (!r.ok) return;
-    const jobs = await r.json();
-    if (!jobs.length) return;
-    const sorted = [...jobs].sort((a, b) => {
-      const rank = s => {
-        if (s.includes('毎時')) return 0;
-        const m = s.match(/毎日 (\d{2}):(\d{2})/);
-        if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
-        if (s.includes('日曜')) return 1440;
-        return 9999;
-      };
-      return rank(a.schedule) - rank(b.schedule);
-    });
-    $('cronList').innerHTML = `<div class="cron-list">${sorted.map(j => `
-      <div class="cron-row">
-        <span class="cron-time">${esc(j.schedule)}</span>
-        <span class="cron-label">${esc(j.label)}</span>
-        <span class="cron-desc">${esc(j.description.split('（')[0].split('—')[1]?.trim() || j.description.slice(0,40))}</span>
-      </div>`).join('')}</div>`;
-    $('cronCard').style.display = 'block';
+    if (r.ok) { input.value = ''; await loadMemos(); }
   } catch (e) {}
 }
 
-async function loadMood() {
-  try {
-    const r = await fetch('http://localhost:9001/mood', { signal: AbortSignal.timeout(3000) });
-    if (!r.ok) return;
-    const d = await r.json();
-    const bars = ['curiosity', 'energy', 'loneliness', 'mismatch'];
-    bars.forEach(k => {
-      const v = d[k] ?? 0;
-      const pct = Math.round(v * 100);
-      const bar = document.getElementById('mbar-' + k);
-      const val = document.getElementById('mval-' + k);
-      if (bar) bar.style.width = pct + '%';
-      if (val) val.textContent = v.toFixed(2);
-    });
-    if (d.notes) $('moodNotes').textContent = '📝 ' + d.notes;
-    if (d.last_updated) {
-      const t = new Date(d.last_updated);
-      $('moodTs').textContent = '更新: ' + t.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    }
-    $('moodCard').style.display = 'block';
-  } catch (e) {
-    // localhost に繋がらない環境ではカードを非表示のまま
-  }
-}
-
-if (localStorage.getItem(PASS_KEY) === ROOM_PASS) {
+// ── 起動 ──
+function startRoom() {
   loadAll();
-  loadTasks();
-  loadQuestions();
+  bootTasks();       // room-tasks.js: initComments → loadTasks + 5分間隔
   loadMood();
-  loadCrons();
   loadMemos();
   setInterval(loadAll, 60000);
-  setInterval(loadTasks, 300000);
   setInterval(loadMood, 300000);
-  loadDevServers();
-  setInterval(loadDevServers, 30000);
 }
 
+(function initGate() {
+  const gate = document.getElementById('passGate');
+  const app = document.getElementById('appLayout');
+  const authed = () => localStorage.getItem(PASS_KEY) === ROOM_PASS;
 
-async function loadDevServers() {
-  const el = document.getElementById('devserverContent');
-  const ts = document.getElementById('devserverTs');
-  if (!el) return;
-  try {
-    const r = await fetch('http://localhost:9001/services', { signal: AbortSignal.timeout(3000) });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    const services = Array.isArray(data) ? data : (data.services || []);
-    if (!Array.isArray(services) || services.length === 0) {
-      el.innerHTML = '<div class="empty">サービスなし</div>';
-      return;
-    }
-    const chips = services.map(s => {
-      const cls = s.running ? 'running' : 'stopped';
-      const dot = `<span class="dev-dot"></span>`;
-      const name = `<span class="dev-name">${esc(s.name)}</span>`;
-      const port = s.port ? `<span class="dev-port">:${esc(String(s.port))}</span>` : '';
-      return `<span class="dev-chip ${cls}">${dot}${name}${port}</span>`;
-    }).join('');
-    el.innerHTML = `<div class="devserver-wrap">${chips}</div><div class="devserver-ts" id="devserverUpdated">取得: just now</div>`;
-    if (ts) ts.textContent = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  } catch (e) {
-    el.innerHTML = '<div class="devserver-offline">⚫ health_server 接続不可 (localhost:9001)</div>';
-    if (ts) ts.textContent = '-- 接続不可';
+  function enter() {
+    gate.style.display = 'none';
+    app.style.display = 'flex';
+    initSections();
+    if (window.lucide) lucide.createIcons();
+    initLive2D();
+    startRoom();
   }
-}
-// ── Live2D ベキたんモデル ──
+
+  if (authed()) { enter(); return; }
+
+  gate.style.display = 'flex';
+  app.style.display = 'none';
+  const input = document.getElementById('passInput');
+  const btn = document.getElementById('passBtn');
+  const err = document.getElementById('passError');
+
+  function tryAuth() {
+    if (input.value === ROOM_PASS) {
+      localStorage.setItem(PASS_KEY, ROOM_PASS);
+      enter();
+    } else {
+      err.textContent = '— 認証失敗 —';
+      input.value = '';
+      input.focus();
+      setTimeout(() => { err.textContent = ''; }, 2000);
+    }
+  }
+  btn.addEventListener('click', tryAuth);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryAuth(); });
+  input.focus();
+})();
+
+// ── Live2D ベキたんモデル（既存・触らない） ──
 async function initLive2D() {
   const canvas = document.getElementById('beckyCanvas');
   const fallback = document.getElementById('live2dFallback');
   if (!canvas) return;
 
-  // PixiJS / pixi-live2d-display が読み込まれていない場合はfallback
   if (typeof PIXI === 'undefined' || !PIXI.live2d) {
     canvas.style.display = 'none';
     if (fallback) fallback.style.display = 'flex';
@@ -1671,54 +1243,38 @@ async function initLive2D() {
 
   try {
     const app = new PIXI.Application({
-      view: canvas,
-      width: 204,
-      height: 250,
-      backgroundAlpha: 0,   // 透過
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
+      view: canvas, width: 216, height: 250,
+      backgroundAlpha: 0, antialias: true,
+      resolution: window.devicePixelRatio || 1, autoDensity: true,
     });
 
-    const model = await PIXI.live2d.Live2DModel.from(
-      '/model/Becky_Live2D_Model/Becky_Live2D_Model.model3.json'
-    );
-
+    const model = await PIXI.live2d.Live2DModel.from('/model/Becky_Live2D_Model/Becky_Live2D_Model.model3.json');
     app.stage.addChild(model);
 
-    // モデルをcanvasにフィット（anchor中心・中央配置）
-    const scale = Math.min(204 / model.internalModel.originalWidth, 250 / model.internalModel.originalHeight) * 1.0;
+    const scale = Math.min(216 / model.internalModel.originalWidth, 250 / model.internalModel.originalHeight) * 1.0;
     model.scale.set(scale);
     model.anchor.set(0.5, 0.5);
-    model.x = 102;  // canvas幅204の中央
-    model.y = 125;  // canvas高250の中央
-
-    // アイドルモーション開始
+    model.x = 108;
+    model.y = 125;
     model.motion('Idle');
 
-    // クリックで TapBody モーション発火
     canvas.addEventListener('click', () => {
       const idx = Math.floor(Math.random() * 4);
       model.motion('TapBody', idx);
     });
 
-    // マウス追従（サイドバー全体で追従）
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) {
       sidebar.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
-        // -1〜1 に正規化
         const nx = (e.clientX - cx) / (window.innerWidth / 2);
         const ny = -(e.clientY - cy) / (window.innerHeight / 2);
         model.focus(nx, ny);
       });
-      sidebar.addEventListener('mouseleave', () => {
-        model.focus(0, 0);
-      });
+      sidebar.addEventListener('mouseleave', () => { model.focus(0, 0); });
     }
-
   } catch (err) {
     console.warn('[Live2D] 初期化失敗:', err);
     canvas.style.display = 'none';

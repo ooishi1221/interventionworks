@@ -1277,7 +1277,7 @@
         const t = await fetch('/tasks.json?_=' + Date.now()).then(r => r.json());
         (t.tasks || [])
           .filter(x => x.scope === 'iw' && (x.status === 'done' || x.status === 'in_progress'))
-          .forEach(x => items.push({ date: new Date(x.updated_at || x.start), tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
+          .forEach(x => items.push({ date: new Date((x.status === 'done' ? x.completed_at : null) || x.updated_at || x.start), tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
       } catch (_) {}
       items.sort((a, b) => b.date - a.date);
       const shown = items.filter(it => !isNaN(it.date)).slice(0, 6);

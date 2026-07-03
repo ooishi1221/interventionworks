@@ -146,6 +146,18 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        if self.path == "/task_comments":
+            tc_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/task_comments.json")
+            obj = json.loads(tc_file.read_text(encoding="utf-8")) if tc_file.exists() else {"comments": []}
+            body = json.dumps(obj, ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         if self.path == "/mood":
             mood = load_mood()
             body = json.dumps(mood, ensure_ascii=False, indent=2).encode()
@@ -201,6 +213,44 @@ class HealthHandler(BaseHTTPRequestHandler):
             memo_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/memos_from_yu.json")
             obj = {"updated_at": datetime.now(timezone.utc).isoformat(), "memos": []}
             memo_file.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+            resp = json.dumps({"ok": True}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(resp)))
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+        if self.path == "/task_comment":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                data = json.loads(self.rfile.read(length).decode("utf-8"))
+                task_id = str(data.get("task_id", "")).strip()
+                text = str(data.get("text", "")).strip()
+            except Exception:
+                task_id = text = ""
+            if not task_id or not text:
+                resp = json.dumps({"ok": False, "error": "task_id and text required"}).encode()
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Length", str(len(resp)))
+                self.end_headers()
+                self.wfile.write(resp)
+                return
+            tc_file = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/task_comments.json")
+            obj = json.loads(tc_file.read_text(encoding="utf-8")) if tc_file.exists() else {"comments": []}
+            now = datetime.now(timezone.utc)
+            obj["comments"].append({
+                "id": f"tc-{int(now.timestamp() * 1000)}",
+                "task_id": task_id,
+                "from": "yu",
+                "text": text,
+                "ts": now.isoformat(),
+                "read": False,
+            })
+            obj["updated_at"] = now.isoformat()
+            tc_file.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
             resp = json.dumps({"ok": True}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")

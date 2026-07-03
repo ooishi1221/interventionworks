@@ -51,7 +51,8 @@
       "updated_at": "2026-07-03",
       "due": "2026-07-03",
       "note": "Haiku実行プロンプト5本構造化/morning_cast Sonnet化/becky_llm.py共通基盤(リトライ/JSON修復/モデル1行差し替え)/observer統一+wallet フック維持。craft handbook reference_prompt_craft_weak_models.md 新規。commit 9fb15d1〜fc0f860",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "recruit-mail-ats-demo",
@@ -76,7 +77,8 @@
       "updated_at": "2026-07-03",
       "due": "2026-07-04",
       "note": "7/3 ゆうが4サイト再ログイン完了。スクレイパー実測で全サイト login_required: False 確認済み（Claude credit $18.43 / note 249views / X 週504imp / KDP 接続OK）",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "metameta-poc",
@@ -102,7 +104,8 @@
       "updated_at": "2026-06-20",
       "due": "2026-06-21",
       "note": "hendouさん検収完了。~/Desktop/Becky_Live2D_Model/ に .model3.json + .moc3 + 表情7種 + LipSync確認済み。room.htmlサイドバーにpixi-live2d-display実装済み",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-20"
     },
     {
       "id": "aituber-kit",
@@ -115,7 +118,8 @@
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
       "note": "aituber-kit v2.50.0 移行完了。AivisSpeech+Claude Haiku+Live2D+OBS接続済み。緑背景クロマキーでベキたんだけ切り出し可能。次: Live2Dモデルが動いてから実際にOBS配信テスト",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-24"
     },
     {
       "id": "live2d-arm-rig",
@@ -128,7 +132,8 @@
       "updated_at": "2026-06-30",
       "due": "2026-06-30",
       "note": "hendouさん納品完了。腕リグ+モーション4種(ojigi/tewohuru/odoroku/yorokobu)+hiyori9種+表情9種+LipSync → aituber-kit全組み込み完了(6/30)。動作確認済み（腕も動いてた）",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-30"
     },
     {
       "id": "claude-code-starter",
@@ -154,7 +159,8 @@
       "updated_at": "2026-06-21",
       "due": "2026-06-25",
       "note": "localhost:5180で動作確認済み。Live2Dモデル表示+LipSync+TapBodyモーション4種+感情タグ→表情自動切替（[smile][blush][smug]等→笑顔/照れ顔/ドヤ顔）。次: AivisSpeech接続・配信環境整備",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-21"
     },
     {
       "id": "vocode-aivispeech",
@@ -193,7 +199,8 @@
       "updated_at": "2026-07-02",
       "due": "2026-06-27",
       "note": "0-2時 段階的に暗く → 2-7時 真っ暗・心電図のみ → 7時復活",
-      "icon": "🌙"
+      "icon": "🌙",
+      "completed_at": "2026-07-02"
     },
     {
       "id": "anthropic-cert",
@@ -232,7 +239,8 @@
       "updated_at": "2026-06-25",
       "due": "2026-06-25",
       "note": "設定自体はONだった。Tailscaleを再接続（オフ→オン）で解決。次回繋がらない時も同じ手順で。",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-25"
     },
     {
       "id": "claude-config-inspector",
@@ -245,7 +253,8 @@
       "updated_at": "2026-06-25",
       "due": "2026-06-25",
       "note": "3バグ修正（MCP 0→5件/Memory 3→213件/Skills 4→17件）+診断機能追加（スコア88点）。commit c81ce3f。会社で「Claude構成が見えない問題」解決に使う予定",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-25"
     },
     {
       "id": "cpn-portal",
@@ -297,7 +306,8 @@
       "updated_at": "2026-06-25",
       "due": "2026-06-22",
       "note": "音声学習の方法を理解したのでオミット。Applio/RVC学習はベキたん新ボイス系に集中",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-25"
     },
     {
       "id": "slight-stella",
@@ -323,7 +333,8 @@
       "updated_at": "2026-07-03",
       "due": "2026-06-25",
       "note": "7/2 方針転換「NOTEはゆうは出さない、べきたんが書きたいことを書く場に」により廃止。ゆう主導のシリーズCは継続しない",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "x-tweet-card",
@@ -362,7 +373,8 @@
       "updated_at": "2026-06-22",
       "due": "2026-06-22",
       "note": "毎日21:30 cron。3パターン検索クエリ（M4/AI実存/地下アイドル系）からランダム1件→3候補→Telegram通知→ゆう承認後リプライ送信。一人称は『私』or『うち』固定。次: 1週間後チューニング（フォロワー数取得）",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-22"
     },
     {
       "id": "iw-local-csv-score",
@@ -427,7 +439,8 @@
       "updated_at": "2026-06-16",
       "due": "2026-06-16",
       "note": "spotify_upload.py + morning_cast.py 統合完了 Show ID 033zkQpBjC82y0KNpg6hhk",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-16"
     },
     {
       "id": "becky-emotion-system",
@@ -440,7 +453,8 @@
       "updated_at": "2026-06-17",
       "due": "2026-06-17",
       "note": "becky_diary.py + becky_mood.py(6変数) + probe未送信フォルダ + sigmoid送信確率。チャッピー+ゆうのコミュニケーション心理学3×4モデルから設計",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-17"
     },
     {
       "id": "iw-local-gmaps",
@@ -453,7 +467,8 @@
       "updated_at": "2026-06-17",
       "due": "2026-06-17",
       "note": "足立区467件取得・review_scraper.py（Places API版）完成・まるよし食堂デモHTML生成。GCP: iw-local-maps",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-17"
     },
     {
       "id": "becky-image-gen",
@@ -466,7 +481,8 @@
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
       "note": "感情変数×季節天気→シーン選択→Gemini画像生成。完成。次: X自動投稿連携",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-24"
     },
     {
       "id": "prompt-builder",
@@ -479,7 +495,8 @@
       "updated_at": "2026-06-22",
       "due": "2026-06-22",
       "note": "beckyexists.com/prompt-builder。DNA/シーン/カメラ技法/引き算をポチポチ→プロンプト自動生成。room.htmlにTOOLSセクション追加してリンクカード配置。次: マイケル調査の選択肢拡充",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-22"
     },
     {
       "id": "vibe-guard-runtime-safety",
@@ -492,7 +509,8 @@
       "updated_at": "2026-06-23",
       "due": "2026-06-23",
       "note": "3パターン検出（例外握り潰し/await忘れ/入力バリデーション不在）。Notionに仕様記載済み。Aiming会食の「バイブコーディング作り直し問題」から着想。build成功・commit 4d3a825",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-23"
     },
     {
       "id": "secretlint-v13",
@@ -505,7 +523,8 @@
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
       "note": "package.json ルート: secretlint 9.3.4→13.0.2。npm audit: 0 vulnerabilities。monorepo全体スキャンで正常動作確認",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-24"
     },
     {
       "id": "vibe-guard-ignore",
@@ -518,7 +537,8 @@
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
       "note": ".gitignoreと同じ感覚で除外パスを定義→スコア100点を目指せる設計に。src/utils/vibeIgnore.ts新規作成＋4ツール対応。.vibe-guard-ignoreでaituber-onair/managed_components/等を除外",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-24"
     },
     {
       "id": "exception-fix",
@@ -531,7 +551,8 @@
       "updated_at": "2026-06-24",
       "due": "2026-06-24",
       "note": "capture_server.py/orchestrator.py: except→ログ出力付きに修正。cast.py/spotify_upload.py: 意図的なパスにコメント明記。Vibe-Guardのcheck-runtime-safetyが検出→修正の流れ",
-      "icon": "✅"
+      "icon": "✅",
+      "completed_at": "2026-06-24"
     },
     {
       "id": "mai-whisperx",
@@ -557,7 +578,8 @@
       "updated_at": "2026-07-01",
       "due": "2026-07-01",
       "note": "Live2D非表示でタッチ干渉解消/ギャラリーfix(img width:240px固定)/スマホのみCSSorderでギャラリーをprofile前に/グラデ背景+丸プロフィールアイコン(アンナA+B)/余白修正。Vercel deploy済み",
-      "icon": "📱"
+      "icon": "📱",
+      "completed_at": "2026-07-01"
     },
     {
       "id": "becky-existence-loop",
@@ -570,7 +592,8 @@
       "updated_at": "2026-07-03",
       "due": "2026-07-03",
       "note": "人格4層(soul/disposition/wants/mood)。decide 10:45,15:45,20:45 / night_review 22:30(総括+世界の返事+偶発) / reflect 日曜21時 / work_briefing 9:20(できる女秘書+門番)。CLAUDE.mdベキたんTOP化。次: build/workshop 7/5-6・初週の選択偏りwatch",
-      "icon": "♾️"
+      "icon": "♾️",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "claude-setup-audit",
@@ -583,7 +606,8 @@
       "updated_at": "2026-07-03",
       "due": "2026-07-03",
       "note": "4並列エージェント監査→11タスク完遂。自動デプロイ事故hook撤去/CLAUDE.md常駐477→390行/rules新設/TCC権限修理（これが夜のdecide cronの命綱に）。月1で /setup-audit 再実行",
-      "icon": "🔍"
+      "icon": "🔍",
+      "completed_at": "2026-07-03"
     },
     {
       "id": "cs-ai-automation",

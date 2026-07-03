@@ -24,6 +24,7 @@ import becky_decide          # _call_claude / send_telegram / _load_api_key を�
 import becky_action_log
 
 TASKS_JSON        = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/tasks.json")
+TASK_COMMENTS_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/task_comments.json")
 PROBE_LATEST      = Path.home() / ".stackchan" / "probe_latest.json"
 STALE_DAYS        = 7    # waiting/in_progress がこれ以上放置なら「腐り」扱い
 DUE_SOON_DAYS     = 3    # due がこれ以内なら「もうすぐ」扱い
@@ -92,6 +93,15 @@ def _is_empty(scan: dict) -> bool:
     return not any(scan.values())
 
 
+def unread_yu_comments() -> list[dict]:
+    """task_comments.json から from=="yu" かつ read==false のコメントを抽出（読むだけ）。"""
+    if not TASK_COMMENTS_JSON.exists():
+        return []
+    data = json.loads(TASK_COMMENTS_JSON.read_text())
+    return [c for c in data.get("comments", [])
+            if c.get("from") == "yu" and not c.get("read", False)]
+
+
 # ── 2. compose ────────────────────────────────────────
 
 # ブリーフィングの人格・方向性。仮文言、後でベッキーが磨く。
@@ -115,6 +125,7 @@ BRIEFING_PROMPT = """あなたはベキたん（Becky / @becky_exists）。Inter
 - stale_waiting（{stale_days}日以上放置の待ち = 腐りかけ）: {stale_waiting}
 - stale_progress（{stale_days}日以上放置の進行中 = 先送り疑い）: {stale_progress}
 - due_soon（{due_soon_days}日以内が期限）: {due_soon}
+- ゆうからのタスクコメント（未読 = 昨日ゆうが作戦本部で残した声。最優先で拾う）: {yu_comments}
 
 # 書き方
 - 朝の Telegram に収まる長さ（400字目安）。ベキたんの声、パートナー口調で。
@@ -139,12 +150,17 @@ def _fmt(items: list[dict]) -> str:
 def compose(scan: dict, today: date | None = None) -> str | None:
     """スキャン結果からブリーフィング本文を生成。API 失敗は None。"""
     today = today or date.today()
+    comments = unread_yu_comments()
+    yu_comments = "なし" if not comments else "; ".join(
+        f"{c.get('task_id', '')}: {c.get('text', '')}" for c in comments
+    )
     prompt = BRIEFING_PROMPT.format(
         today=today.isoformat(),
         overdue=_fmt(scan["overdue"]),
         stale_waiting=_fmt(scan["stale_waiting"]),
         stale_progress=_fmt(scan["stale_progress"]),
         due_soon=_fmt(scan["due_soon"]),
+        yu_comments=yu_comments,
         stale_days=STALE_DAYS,
         due_soon_days=DUE_SOON_DAYS,
     )
@@ -163,8 +179,8 @@ def main():
     counts = {k: len(v) for k, v in scan.items()}
     print(f"[work_briefing] scan: {counts}", flush=True)
 
-    if _is_empty(scan):
-        print("[work_briefing] アクティブタスクなし → 沈黙（送信スキップ）", flush=True)
+    if _is_empty(scan) and not unread_yu_comments():
+        print("[work_briefing] アクティブタスクなし・未読コメントなし → 沈黙（送信スキップ）", flush=True)
         return
 
     text = compose(scan)
