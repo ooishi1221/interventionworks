@@ -32,11 +32,10 @@ Fable が行間で汲んでくれることを、Haiku/Sonnet は明文化しな�
 
 - `becky_self_check.py` — 外部監査システムと役割明示・手順番号化・warning/drift 定義・score 算出目安・件数上限
 - `becky_diary_x.py` — トーン基準を ✕/○ 例で明文化（コピー禁止注記つき）
-- `morning_cast.py` — 素材なしコーナーの丸ごとスキップ明示（ニュース/お便りの捏造防止）
+- `morning_cast.py` — 素材なしコーナーの丸ごとスキップ明示（ニュース/お便りの捏造防止）+ 台本生成を Haiku→Sonnet 4.6 に切り替え（ゆう承認、月150円増）
 - `finish` スキル 188→85行 / `becky-proofreader` スキル 183→80行（背景を references/ 外出し）
 
 ## 未着手（follow-up）
 
 - `becky_observer.py` — 2,309行に8プロンプト散在。単独で棚卸ししてから
-- `morning_cast.py` の Haiku→Sonnet 切り替え — 台本品質向上の最有力だが API コスト増（お金なのでゆう判断）
 - systematic-debugging / mcp-builder / skill-creator スキル — 使用頻度低め、必要になったら同パターンで
