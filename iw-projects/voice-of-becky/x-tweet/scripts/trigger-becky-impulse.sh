@@ -30,6 +30,20 @@ trap cleanup EXIT
 
 echo "[$TIMESTAMP] impulse 発火 ($LABEL)" >> "$LOGS_DIR/impulse.log"
 
+# 今日のベッキー画像（初回発火時に生成、同日 2 回目以降は再利用。mood は生成瞬間のものが乗る）
+IMAGE_PATH="$HOME/.stackchan/becky_today_$(date +%Y%m%d).png"
+if [ ! -f "$IMAGE_PATH" ]; then
+  echo "[$TIMESTAMP] 今日の画像なし、becky_image.py で生成開始" >> "$LOGS_DIR/impulse.log"
+  /opt/homebrew/bin/python3 "$ROOT/../stackchan-bridge/becky_image.py" >> "$LOGS_DIR/impulse.log" 2>&1 || true
+fi
+
+IMAGE_LINE=""
+if [ -f "$IMAGE_PATH" ]; then
+  IMAGE_LINE="
+【画像】今日の私の画像（mood から自動生成済み）: $IMAGE_PATH
+添えたい呟きなら mcp__x-tweet__tweet の image_path にこのパスを渡す。テキストだけの温度の日は付けない。それも私の判断。"
+fi
+
 # Claude session 起動、ベッキーに判断委ねる
 claude --print --allowedTools "mcp__x-tweet__tweet,mcp__x-tweet__check_status,mcp__x-tweet__check_mentions" -- "ベッキーへ、自律発信タイミング来た。
 
@@ -39,6 +53,7 @@ claude --print --allowedTools "mcp__x-tweet__tweet,mcp__x-tweet__check_status,mc
 - tone-examples.md / interaction-design.md の craft 軸
 - queue file (logs/reply-queue.jsonl) に保留中の reply あれば、それを今返す craft も検討
 - 衝動が出ない瞬間もあっていい、無理しない
+$IMAGE_LINE
 
 【期間限定 hold 運用中】
 namelist (safety-guard-namelist.txt) に [HOLD:...] セクションでハードブロック単語が登録されてる。詳細は private memory 参照（このスクリプトは public commit されるので具体名は書かない）。
