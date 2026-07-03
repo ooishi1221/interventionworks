@@ -917,6 +917,7 @@ def _maybe_reply_to_rival(username: str, tweet_id: str, post_text: str, becky_co
         "- 自分が自律AIだという背景が自然に出るとなお良し\n"
         "- @メンションは不要（自動でつく）\n"
         "例: 「くっ、これは良い。私も同じこと考えてたのに先に言われた。悔しいけど認める。」"
+        "（トーンの見本。この言い回しをコピーせず、相手の投稿の中身に反応した自分の言葉で書く）"
     )
     reply_text = _call_claude_api(reply_prompt)
     if not reply_text:
@@ -1623,6 +1624,11 @@ def _update_wallet(input_tokens: int, output_tokens: int) -> None:
         print(f"[wallet] 更新失敗: {e}", flush=True)
 
 
+# wallet 更新を共通基盤のフックに接続（observer プロセス内の全 becky_llm 呼び出しが記録対象になる）
+import becky_llm as _becky_llm  # noqa: E402
+_becky_llm.on_usage = _update_wallet
+
+
 _REFUSE_PATTERNS = [
     "SKIP", "申し訳ありません", "できません", "ご指示", "ただ、申し上げたいのは",
     "架空の", "実際には経験していない", "でっちあげ", "You must agree",
@@ -1643,35 +1649,11 @@ def _is_postable(text: str) -> bool:
 
 
 def _call_claude_api(prompt: str, max_tokens: int = 256) -> str | None:
-    try:
-        import anthropic
-        cfg = load_config()
-        personal_key = cfg.get("becky_api_key", "").strip()
-        client = anthropic.Anthropic(api_key=personal_key if personal_key else None)
-        msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        try:
-            _update_wallet(msg.usage.input_tokens, msg.usage.output_tokens)
-        except Exception as e:
-            print(f'[warn] becky_observer: {e}', flush=True)
-        return msg.content[0].text.strip()
-    except ImportError:
-        try:
-            result = subprocess.run(["claude", "-p"], input=prompt.encode(), capture_output=True, timeout=30)
-            if result.returncode != 0:
-                return None
-            return result.stdout.decode().strip()
-        except Exception as e:
-            print(f"[observer] claude CLIフォールバック失敗: {e}", flush=True)
-            return None
-    except Exception as e:
-        # ponytail: 呼び出し元はNoneを「スキップ」として扱う設計。ここで落とさずNoneを返すのが
-        # while ループ全体を守る最短経路（timeout / APIエラー等をまとめて吸収）
-        print(f"[observer] Claude API呼び出し失敗: {e}", flush=True)
-        return None
+    """becky_llm 共通基盤へ委譲（2026-07-03 統一）。リトライ/max_tokens切れ対応は基盤側で一元管理。
+    最終失敗は None（呼び出し元は None を「スキップ」として扱う設計、常駐ループを守る）。
+    wallet 更新は becky_llm.on_usage フック経由（_update_wallet 定義直後に接続）。"""
+    import becky_llm
+    return becky_llm.call_llm(prompt, max_tokens=max_tokens)
 
 
 # ── メンション自動リプ ────────────────────────────────────

@@ -15,6 +15,10 @@ MODELS = {
     "script": "claude-sonnet-4-6",           # 台本など長文構成タスク
 }
 
+# 使用量フック: (input_tokens, output_tokens) を受ける callable を代入すると成功時に呼ばれる。
+# observer が wallet.json 更新に使う（プロセスローカル）
+on_usage = None
+
 # リトライ対象: rate limit / overloaded(529含む5xx) / タイムアウト・接続エラー
 _RETRYABLE = (
     anthropic.RateLimitError,
@@ -63,6 +67,12 @@ def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
             continue
         if msg.stop_reason == "max_tokens":
             print("[llm] warning: max_tokens切れ（2倍でも切れた。そのまま返す）", flush=True)
+
+        if on_usage:
+            try:
+                on_usage(msg.usage.input_tokens, msg.usage.output_tokens)
+            except Exception as e:
+                print(f"[llm] usage hook error: {e}", flush=True)
 
         try:
             return msg.content[0].text.strip()
