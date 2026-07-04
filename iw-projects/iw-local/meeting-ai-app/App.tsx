@@ -87,6 +87,7 @@ export default function App() {
   const [askInput, setAskInput] = useState("");
   const [askSending, setAskSending] = useState(false);
   const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
+  const [askExpanded, setAskExpanded] = useState(false);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<{ filename: string; content: string } | null>(null);
@@ -510,7 +511,10 @@ export default function App() {
   // Tab Contents
   // ──────────────────────────────────────────
   const renderHome = () => (
-    <>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -539,7 +543,39 @@ export default function App() {
           ))
         )}
       </ScrollView>
-    </>
+
+      {/* 会議中にその場で聞く（直近1件、タップで展開） */}
+      {askItems[0] && (
+        <TouchableOpacity
+          style={styles.homeAskCard}
+          onPress={() => setAskExpanded((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
+          <Text style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
+            {askItems[0].a}
+          </Text>
+        </TouchableOpacity>
+      )}
+      <View style={styles.homeAskBar}>
+        <TextInput
+          style={styles.homeAskInput}
+          value={askInput}
+          onChangeText={setAskInput}
+          placeholder="ベキたんに聞く…"
+          placeholderTextColor="#52525b"
+          returnKeyType="send"
+          onSubmitEditing={askBecky}
+        />
+        <TouchableOpacity
+          style={styles.homeAskSend}
+          onPress={askBecky}
+          disabled={askSending}
+        >
+          <Text style={styles.homeAskSendText}>{askSending ? "…" : "送信"}</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 
   const renderRequest = () => (
@@ -1148,6 +1184,45 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     backgroundColor: "#18181b",
+  },
+  homeAskCard: {
+    marginHorizontal: 12,
+    marginBottom: 6,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#18181b",
+  },
+  homeAskBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#27272a",
+  },
+  homeAskInput: {
+    flex: 1,
+    backgroundColor: "#18181b",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#3f3f46",
+    borderRadius: 20,
+    color: "#f4f4f5",
+    fontSize: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  homeAskSend: {
+    backgroundColor: "#2563eb",
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  homeAskSendText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   askQ: {
     color: "#71717a",

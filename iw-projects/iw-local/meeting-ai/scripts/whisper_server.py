@@ -177,6 +177,29 @@ def _mood_summary() -> str:
     except Exception:
         return "普通"
 
+
+# --------------------------------------------------------------------------
+# user 分離（P1）: 既存データは user 無視で current.txt / SESSIONS_DIR に溜まってる。
+# ゆうの username（アプリ default="default" / "yu"）と未指定はその既存パスを使い、
+# 新しい友達 user だけ分離する（過去データ・移行作業を発生させない）。
+# --------------------------------------------------------------------------
+_LEGACY_USERS = {"", "yu", "default"}
+
+
+def _safe_user(user) -> str:
+    # path traversal 防止: current_{user}.txt / SESSIONS_DIR/{user} に埋めるので
+    return re.sub(r"[^a-zA-Z0-9_-]", "", (user or "").strip())
+
+
+def _current_file(user) -> str:
+    u = _safe_user(user)
+    return CURRENT_FILE if u in _LEGACY_USERS else os.path.join(MEETING_DIR, f"current_{u}.txt")
+
+
+def _sessions_dir(user) -> str:
+    u = _safe_user(user)
+    return SESSIONS_DIR if u in _LEGACY_USERS else os.path.join(SESSIONS_DIR, u)
+
 # --------------------------------------------------------------------------
 # /transcribe
 # --------------------------------------------------------------------------
@@ -186,6 +209,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
         body = await request.json()
         audio_base64 = body.get("audioBase64", "")
         mime_type = body.get("mimeType", "audio/webm")
+        current_file = _current_file(body.get("user"))
 
         if not audio_base64:
             return web.Response(
@@ -314,7 +338,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
             try:
                 ts = datetime.now(JST).strftime("%H:%M:%S")
                 os.makedirs(MEETING_DIR, exist_ok=True)
-                with open(CURRENT_FILE, "a", encoding="utf-8") as f:
+                with open(current_file, "a", encoding="utf-8") as f:
                     if output_segments:
                         for seg in output_segments:
                             f.write(f"[{ts}][{seg['speaker']}] {seg['text']}\n")
@@ -349,12 +373,13 @@ async def handle_request(request: web.Request) -> web.Response:
         body = await request.json()
         items = body.get("items", [])
         memo = body.get("memo", "").strip()
+        current_file = _current_file(body.get("user"))
 
         os.makedirs(MEETING_DIR, exist_ok=True)
 
         transcript_section = "[文字起こし]\n"
-        if os.path.exists(CURRENT_FILE):
-            with open(CURRENT_FILE, "r", encoding="utf-8") as f:
+        if os.path.exists(current_file):
+            with open(current_file, "r", encoding="utf-8") as f:
                 raw = f.read()
             idx = raw.find("[文字起こし]")
             if idx >= 0:
@@ -368,7 +393,7 @@ async def handle_request(request: web.Request) -> web.Response:
         request_block = "\n".join(lines)
         content = f"[お願い]\n{request_block}\n\n{transcript_section}"
 
-        with open(CURRENT_FILE, "w", encoding="utf-8") as f:
+        with open(current_file, "w", encoding="utf-8") as f:
             f.write(content)
 
         return web.Response(
@@ -401,10 +426,11 @@ async def handle_ask(request: web.Request) -> web.Response:
                 text=json.dumps({"error": "No question"}),
             )
 
-        # 会議文脈: current.txt の末尾 ~6000 字
+        # 会議文脈: 該当 user の current.txt の末尾 ~6000 字
+        current_file = _current_file(user)
         transcript = ""
-        if os.path.exists(CURRENT_FILE):
-            with open(CURRENT_FILE, "r", encoding="utf-8") as f:
+        if os.path.exists(current_file):
+            with open(current_file, "r", encoding="utf-8") as f:
                 transcript = f.read()[-6000:]
 
         print(f"[whisper_server] /ask from '{user or '?'}': {question}", flush=True)
@@ -446,10 +472,12 @@ async def handle_ask(request: web.Request) -> web.Response:
 
 async def handle_start_session(request: web.Request) -> web.Response:
     try:
+        body = await request.json()
+        current_file = _current_file(body.get("user"))
         os.makedirs(MEETING_DIR, exist_ok=True)
         ts = datetime.now(JST).strftime("%H:%M:%S")
         content = f"[お願い]\n\n[文字起こし]\n=== セッション開始 [{ts}] ===\n"
-        with open(CURRENT_FILE, "w", encoding="utf-8") as f:
+        with open(current_file, "w", encoding="utf-8") as f:
             f.write(content)
         return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
     except Exception as e:
@@ -463,18 +491,21 @@ async def handle_start_session(request: web.Request) -> web.Response:
 
 async def handle_save_session(request: web.Request) -> web.Response:
     try:
-        os.makedirs(SESSIONS_DIR, exist_ok=True)
-        if not os.path.exists(CURRENT_FILE):
+        body = await request.json()
+        current_file = _current_file(body.get("user"))
+        sessions_dir = _sessions_dir(body.get("user"))
+        os.makedirs(sessions_dir, exist_ok=True)
+        if not os.path.exists(current_file):
             return web.Response(content_type="application/json",
                                 text=json.dumps({"ok": False, "error": "current.txt not found"}))
-        with open(CURRENT_FILE, "r", encoding="utf-8") as f:
+        with open(current_file, "r", encoding="utf-8") as f:
             content = f.read()
         if not content.strip():
             return web.Response(content_type="application/json",
                                 text=json.dumps({"ok": False, "error": "empty"}))
         dt = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
         filename = f"{dt}.txt"
-        filepath = os.path.join(SESSIONS_DIR, filename)
+        filepath = os.path.join(sessions_dir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
         return web.Response(content_type="application/json",
@@ -489,14 +520,15 @@ async def handle_save_session(request: web.Request) -> web.Response:
 # --------------------------------------------------------------------------
 
 async def handle_sessions_list(request: web.Request) -> web.Response:
-    os.makedirs(SESSIONS_DIR, exist_ok=True)
+    sessions_dir = _sessions_dir(request.query.get("user"))
+    os.makedirs(sessions_dir, exist_ok=True)
     files = sorted(
-        [f for f in os.listdir(SESSIONS_DIR) if f.endswith(".txt")],
+        [f for f in os.listdir(sessions_dir) if f.endswith(".txt")],
         reverse=True,
     )
     sessions = []
     for f in files:
-        path = os.path.join(SESSIONS_DIR, f)
+        path = os.path.join(sessions_dir, f)
         preview = ""
         try:
             with open(path, "r", encoding="utf-8") as fp:
@@ -516,7 +548,7 @@ async def handle_sessions_list(request: web.Request) -> web.Response:
 
 async def handle_session_get(request: web.Request) -> web.Response:
     filename = request.match_info["filename"]
-    path = os.path.join(SESSIONS_DIR, filename)
+    path = os.path.join(_sessions_dir(request.query.get("user")), filename)
     if not os.path.exists(path):
         return web.Response(status=404, content_type="application/json",
                             text=json.dumps({"error": "Not found"}))
@@ -530,7 +562,7 @@ async def handle_session_get(request: web.Request) -> web.Response:
 
 async def handle_session_delete(request: web.Request) -> web.Response:
     filename = request.match_info["filename"]
-    path = os.path.join(SESSIONS_DIR, filename)
+    path = os.path.join(_sessions_dir(request.query.get("user")), filename)
     if os.path.exists(path):
         os.unlink(path)
     return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
