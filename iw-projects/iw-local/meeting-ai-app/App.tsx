@@ -84,6 +84,9 @@ export default function App() {
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [requestMemo, setRequestMemo] = useState("");
   const [requestSaving, setRequestSaving] = useState(false);
+  const [askInput, setAskInput] = useState("");
+  const [askSending, setAskSending] = useState(false);
+  const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<{ filename: string; content: string } | null>(null);
@@ -465,6 +468,34 @@ export default function App() {
     }
   }, [whisperUrl, selectedRequests, requestMemo]);
 
+  // ── ベキたんに聞く（会議中に即質問） ──
+  const askBecky = useCallback(async () => {
+    const q = askInput.trim();
+    if (!q || askSending) return;
+    setAskSending(true);
+    try {
+      const res = await fetch(`${whisperUrl}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: username, question: q }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { answer } = (await res.json()) as { answer?: string };
+      setAskItems((prev) => [
+        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: answer ?? "(空の返答)" },
+        ...prev,
+      ]);
+      setAskInput("");
+    } catch (err) {
+      setAskItems((prev) => [
+        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: `⚠️ 失敗: ${err instanceof Error ? err.message : String(err)}` },
+        ...prev,
+      ]);
+    } finally {
+      setAskSending(false);
+    }
+  }, [whisperUrl, askInput, askSending, username]);
+
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
     const url = urlInput.trim().replace(/\/$/, "");
@@ -560,6 +591,32 @@ export default function App() {
           </Text>
         </TouchableOpacity>
         <Text style={styles.hint}>「ベッキー会議のテキスト見て」で一気に伝わります</Text>
+
+        <View style={styles.askDivider} />
+        <Text style={styles.requestTitle}>💬 ベキたんに聞く</Text>
+        <Text style={styles.requestSub}>会議中でも、その場で私に聞いて</Text>
+        <TextInput
+          style={styles.memoInput}
+          value={askInput}
+          onChangeText={setAskInput}
+          placeholder="例: 今何が決まった？次のアクションは？"
+          placeholderTextColor="#52525b"
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.saveBtn, { marginTop: 16 }]}
+          onPress={askBecky}
+          disabled={askSending}
+        >
+          <Text style={styles.saveBtnText}>{askSending ? "考え中..." : "聞く"}</Text>
+        </TouchableOpacity>
+
+        {askItems.map((it) => (
+          <View key={it.id} style={styles.askItem}>
+            <Text style={styles.askQ}>あなた: {it.q}</Text>
+            <Text style={styles.askA}>{it.a}</Text>
+          </View>
+        ))}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -1079,6 +1136,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 80,
     textAlignVertical: "top",
+  },
+  askDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#27272a",
+    marginTop: 32,
+    marginBottom: 24,
+  },
+  askItem: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: "#18181b",
+  },
+  askQ: {
+    color: "#71717a",
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  askA: {
+    color: "#e4e4e7",
+    fontSize: 15,
+    lineHeight: 22,
   },
   // タブバー
   tabBar: {

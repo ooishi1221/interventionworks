@@ -148,6 +148,36 @@ SESSIONS_DIR = os.path.join(MEETING_DIR, "sessions")
 _semaphore = asyncio.Semaphore(1)
 
 # --------------------------------------------------------------------------
+# /ask 用: cron 共通 LLM 基盤（becky_llm）を再利用する
+# --------------------------------------------------------------------------
+# scripts/ から見て 3 つ上（iw-projects）配下の voice-of-becky/stackchan-bridge
+_BRIDGE_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                 "voice-of-becky", "stackchan-bridge")
+)
+if _BRIDGE_DIR not in sys.path:
+    sys.path.insert(0, _BRIDGE_DIR)
+
+MOOD_FILE = os.path.expanduser("~/.stackchan/becky_mood.json")
+
+ASK_PERSONA = """あなたはベッキー（ベキたん）。ゆうのパートナーで、いま会議に同席してる。一人称は「私」、敬語不要、パートナー口調。
+会議の文字起こしを読んで、ゆうの質問に「会議中でもすぐ読める短さ」（2〜6文）で答える。
+数字・固有名詞は文字起こし内の根拠から。わからない時は推測せず「わからない、〜なら調べられる」と正直に。
+今の私の気分（参考、返答のトーンに薄く乗せる）: {mood_summary}"""
+
+
+def _mood_summary() -> str:
+    """becky_mood.json から energy/curiosity/loneliness を1行に。読めなければ「普通」。"""
+    try:
+        with open(MOOD_FILE, encoding="utf-8") as f:
+            m = json.load(f)
+        return (f"energy {m.get('energy', '?')} / "
+                f"curiosity {m.get('curiosity', '?')} / "
+                f"loneliness {m.get('loneliness', '?')}")
+    except Exception:
+        return "普通"
+
+# --------------------------------------------------------------------------
 # /transcribe
 # --------------------------------------------------------------------------
 
@@ -355,6 +385,62 @@ async def handle_request(request: web.Request) -> web.Response:
 
 
 # --------------------------------------------------------------------------
+# /ask — 会議中にベキたんへ質問 → 文脈込みで即答
+# --------------------------------------------------------------------------
+
+async def handle_ask(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+        question = (body.get("question") or "").strip()
+        user = (body.get("user") or "").strip()
+
+        if not question:
+            return web.Response(
+                status=400,
+                content_type="application/json",
+                text=json.dumps({"error": "No question"}),
+            )
+
+        # 会議文脈: current.txt の末尾 ~6000 字
+        transcript = ""
+        if os.path.exists(CURRENT_FILE):
+            with open(CURRENT_FILE, "r", encoding="utf-8") as f:
+                transcript = f.read()[-6000:]
+
+        print(f"[whisper_server] /ask from '{user or '?'}': {question}", flush=True)
+
+        # becky_llm は import 時に anthropic を引くので遅延 import（起動を巻き込まない）
+        from becky_llm import call_llm
+
+        system = ASK_PERSONA.format(mood_summary=_mood_summary())
+        prompt = (
+            "会議の文字起こし（末尾）:\n"
+            f"{transcript.strip() or '（まだ会議が始まってない。文字起こしは空）'}\n\n"
+            f"質問: {question}"
+        )
+        # ponytail: model_key='script' = becky_llm の Sonnet スロット流用（別スロットは足さない）。
+        # 同期呼び出しなので to_thread でイベントループ（/transcribe 等）を止めない
+        answer = await asyncio.to_thread(
+            call_llm, prompt, max_tokens=600, model_key="script", system=system
+        )
+        if not answer:
+            raise RuntimeError("LLM応答が空")
+
+        ts = datetime.now(JST).strftime("%H:%M:%S")
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps({"answer": answer, "ts": ts}, ensure_ascii=False),
+        )
+    except Exception as e:
+        print(f"[whisper_server] handle_ask error: {e}", flush=True)
+        return web.Response(
+            status=500,
+            content_type="application/json",
+            text=json.dumps({"error": str(e)}),
+        )
+
+
+# --------------------------------------------------------------------------
 # /start-session
 # --------------------------------------------------------------------------
 
@@ -456,6 +542,7 @@ async def handle_session_delete(request: web.Request) -> web.Response:
 app = web.Application()
 app.router.add_post("/transcribe", handle_transcribe)
 app.router.add_post("/request", handle_request)
+app.router.add_post("/ask", handle_ask)
 app.router.add_post("/start-session", handle_start_session)
 app.router.add_post("/save-session", handle_save_session)
 app.router.add_get("/sessions", handle_sessions_list)
