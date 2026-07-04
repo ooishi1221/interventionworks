@@ -1318,6 +1318,29 @@ def _collect_eval_stats() -> dict:
     }
 
 
+def _quote_rts_7d() -> list[str]:
+    """quote_rt_log.jsonl から直近7日の海外引用RTを整形して返す。
+    （都度Telegram通知は 2026-07-05 廃止、週次レポートに内包）"""
+    import datetime
+    log_path = Path.home() / ".stackchan" / "quote_rt_log.jsonl"
+    if not log_path.exists():
+        return []
+    cutoff = (datetime.datetime.now() - datetime.timedelta(days=7)).isoformat()
+    lines = []
+    for line in log_path.read_text().splitlines():
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        if e.get("ts", "") < cutoff:
+            continue
+        lines.append(
+            f"  ・@{e.get('screen_name', '?')} ❤️{e.get('likes', 0)}"
+            f"「{e.get('quote_text', '')[:60]}」 {e.get('url', '')}"
+        )
+    return lines[-20:]
+
+
 def generate_media_report() -> None:
     """note/X/KDP数値 + 投稿内容を週次分析し、media_report.json に保存。"""
     import datetime
@@ -1380,9 +1403,15 @@ def generate_media_report() -> None:
         print("[observer] media_report: 生成失敗", flush=True)
         return
 
+    # 海外引用RTの週次内包（LLMを通さず実データをそのまま載せる）
+    report_text = report.strip()
+    quote_rts = _quote_rts_7d()
+    if quote_rts:
+        report_text += f"\n\n■ 今週の海外引用RT（{len(quote_rts)}件）\n" + "\n".join(quote_rts)
+
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     data = {
-        "report": report.strip(),
+        "report": report_text,
         "generated_at": now,
         "period": "weekly",
         "snapshot": {

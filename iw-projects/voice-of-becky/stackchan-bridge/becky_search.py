@@ -49,6 +49,7 @@ MAX_CANDIDATES_PER_RUN = 3
 OVERSEAS_ACCOUNTS = ["rowancheung", "Zuby_Tech", "BenjaminDEKR", "minchoi"]
 OVERSEAS_MIN_LIKES = 500
 OVERSEAS_SEEN_FILE = Path.home() / ".stackchan" / "overseas_seen_log.json"
+QUOTE_RT_LOG       = Path.home() / ".stackchan" / "quote_rt_log.jsonl"  # 週次media_reportが読む
 
 # 検索クエリパターン（Grok提案反映版）
 SEARCH_PATTERNS = {
@@ -610,7 +611,14 @@ def run_overseas(dry_run: bool = False) -> None:
     print(notification)
 
     if not dry_run:
-        send_telegram(notification)
+        # Telegram 都度通知は廃止（2026-07-05 ゆう指示: 数が多く大事な連絡が埋もれる）。
+        # quote_rt_log.jsonl に積んで、週次 media_report（becky_observer --media-report）が内包する
+        try:
+            with QUOTE_RT_LOG.open("a") as f:
+                for c in posted:
+                    f.write(json.dumps({**c, "ts": datetime.now().isoformat()}, ensure_ascii=False) + "\n")
+        except Exception as e:
+            print(f"[search] quote_rt_log 書き込み失敗: {e}", flush=True)
         new_seen = seen | {c["tweet_id"] for c in posted}
         _save_overseas_seen(new_seen)
 
