@@ -2178,12 +2178,15 @@ def _task_platform_stats() -> None:
     print("[observer] platform stats 更新中...", flush=True)
     result = subprocess.run(
         [sys.executable, str(scraper_path)],
-        timeout=120,
+        timeout=180,
         capture_output=True, text=True
     )
+    # 失敗しても raise しない: raise すると窓の完了マークが書かれず毎サイクル再試行になり、
+    # ゆうの Chrome にタブが日中開き続ける（2026-07-05 報告）。窓ごとに1回だけ試す。
     if result.returncode != 0:
-        raise RuntimeError(result.stderr[:120])
-    print("[observer] platform stats 更新完了", flush=True)
+        print(f"[observer] platform_stats 失敗（今窓はスキップ）: {result.stderr[:500]}", flush=True)
+    else:
+        print("[observer] platform stats 更新完了", flush=True)
 
 
 # fn は定義順の都合で後埋め（各関数は無改造、レジストリはループ制御のみ担当）
