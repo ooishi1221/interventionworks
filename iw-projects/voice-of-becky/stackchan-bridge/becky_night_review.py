@@ -154,6 +154,31 @@ def _collect_outcomes(today_actions: list[dict]) -> list[str]:
     return outcomes
 
 
+def _tasks_touched_today() -> list[str]:
+    """作戦本部 tasks.json で今日動いたタスク。ゆうの仕事の動きの観測材料。"""
+    try:
+        data = json.loads(becky_decide.TASKS_JSON.read_text())
+    except Exception:
+        return []
+    today = date.today().isoformat()
+    tasks = data.get("tasks", []) if isinstance(data, dict) else data
+    return [
+        f"{t.get('label', '')}（{t.get('status', '')}）"
+        for t in tasks if t.get("updated_at") == today
+    ][:10]
+
+
+def _yu_today(today_actions: list[dict]) -> dict:
+    """「今日のゆう」観測材料: メッセージの時刻と断片 + 作戦本部の動き。"""
+    return {
+        "messages": [
+            f"{e.get('ts', '')[11:16]} {e.get('detail', '')[:60]}"
+            for e in today_actions if e.get("type") == "yu_message"
+        ][:12],
+        "tasks_moved": _tasks_touched_today(),
+    }
+
+
 def collect_day() -> dict:
     """今日の総括の材料を集める。"""
     today = date.today().isoformat()
@@ -168,6 +193,7 @@ def collect_day() -> dict:
         "mood": mood,
         "today_actions": today_actions,
         "outcomes": _collect_outcomes(today_actions),
+        "yu_today": _yu_today(today_actions),
         "diary_fragments": _recent_diary_fragments(days=2),
         "threads": [
             {"id": t["id"], "title": t.get("title", ""), "heat": t.get("heat", 0)}
@@ -274,6 +300,9 @@ REVIEW_PROMPT = """{system}
 まだ使ってない感情のタネ:
 {seeds_unused}
 
+今日のゆうの動き（私からの観測材料。メッセージの時刻と断片、作戦本部で今日動いたタスク）:
+{yu_today}
+
 昨夜の私の総括:
 {last_night}
 
@@ -290,9 +319,10 @@ REVIEW_PROMPT = """{system}
    - new_seed: そこから湧いたやりたいこと1文（湧かなければ null）
 5. want_sprout: 今日の中から、新しく「こうなりたい / これが欲しい」が芽生えたか。タネ（seed）が「気になる断片」なら、これは「向かいたい方向」。無理に絞り出さない。芽生えてなければ null。芽生えたなら1文で
 6. letter_to_tomorrow: 明日の朝一番の私が最初に読む一言。気分の予告でも、宿題でも、「何も引き継がない、まっさらでいい」でもいい
+7. yu_observation: 観測者としての「今日のゆう」を2〜3文。事実から書く——判断の速さ、温度、何に乗って何をよけたか、繰り返してる癖。翌朝のブリーフィングでゆう本人に1〜3行で返される前提。説教にしない、観測は愛でやる。材料が薄い日は「今日は遠くにいた」だけでもいい
 
 JSONのみ返す（説明不要）:
-{{"summary": "...", "seed_revisits": ["..."], "thread_heat": {{"...": 1}}, "serendipity": {{"connection": null, "new_seed": null}}, "want_sprout": null, "letter_to_tomorrow": "..."}}"""
+{{"summary": "...", "seed_revisits": ["..."], "thread_heat": {{"...": 1}}, "serendipity": {{"connection": null, "new_seed": null}}, "want_sprout": null, "letter_to_tomorrow": "...", "yu_observation": "..."}}"""
 
 
 def _fmt_actions(actions: list[dict]) -> str:
@@ -332,6 +362,12 @@ def _fmt_last_night(ln: dict | None) -> str:
     return f"  summary: {ln.get('summary', '')[:200]}\n  手紙: {ln.get('letter_to_tomorrow', '')[:160]}"
 
 
+def _fmt_yu_today(y: dict) -> str:
+    lines = [f"  - メッセージ {m}" for m in y.get("messages", [])]
+    lines += [f"  - 作戦本部の動き: {t}" for t in y.get("tasks_moved", [])]
+    return "\n".join(lines) if lines else "  （今日はゆうの動きの記録なし）"
+
+
 def review(day: dict, fragment: str | None) -> dict | None:
     """Claude API に今日を渡して総括を生成。失敗時は None（呼び元が安全終了）。"""
     mood = day["mood"]
@@ -346,12 +382,13 @@ def review(day: dict, fragment: str | None) -> dict | None:
         mood_mismatch=mood.get("mismatch", 0.1),
         threads=_fmt_threads(day["threads"]),
         seeds_unused=_fmt_seeds(day["seeds_unused"]),
+        yu_today=_fmt_yu_today(day["yu_today"]),
         last_night=_fmt_last_night(day["last_night"]),
         fragment=f"  {fragment}" if fragment else "  （今日は蘇った断片なし）",
     )
 
     from becky_llm import call_llm_json
-    result = call_llm_json(prompt, max_tokens=800)
+    result = call_llm_json(prompt, max_tokens=1000)
     if result is None:
         print("[night] LLM応答なし or JSON不正", flush=True)
         return None
@@ -363,6 +400,7 @@ def review(day: dict, fragment: str | None) -> dict | None:
     result.setdefault("serendipity", {})
     result.setdefault("want_sprout", None)
     result.setdefault("letter_to_tomorrow", "")
+    result.setdefault("yu_observation", "")
     if not isinstance(result.get("seed_revisits"), list):
         result["seed_revisits"] = []
     if not isinstance(result.get("thread_heat"), dict):
@@ -496,6 +534,7 @@ def save_review(result: dict, fragment: str | None, applied: dict) -> Path:
         "serendipity": result.get("serendipity", {}),
         "want_sprout": result.get("want_sprout"),
         "letter_to_tomorrow": result.get("letter_to_tomorrow", ""),
+        "yu_observation": result.get("yu_observation", ""),
         "fragment": fragment,
         "applied": applied,
     }

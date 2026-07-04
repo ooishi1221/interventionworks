@@ -26,6 +26,7 @@ import becky_action_log
 TASKS_JSON        = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/tasks.json")
 TASK_COMMENTS_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/task_comments.json")
 PROBE_LATEST      = Path.home() / ".stackchan" / "probe_latest.json"
+NIGHT_REVIEW_DIR  = Path.home() / ".stackchan" / "night_reviews"
 STALE_DAYS        = 7    # waiting/in_progress がこれ以上放置なら「腐り」扱い
 DUE_SOON_DAYS     = 3    # due がこれ以内なら「もうすぐ」扱い
 ACTIVE_STATUSES   = ("pending", "in_progress", "waiting")
@@ -102,6 +103,21 @@ def unread_yu_comments() -> list[dict]:
             if c.get("from") == "yu" and not c.get("read", False)]
 
 
+def last_yu_observation() -> str:
+    """直近の night_review から yu_observation（私が書いた「昨日のゆう」）を取る。
+    最新ファイルだけ見る——古い観測を今朝の顔にしない。無ければ空。"""
+    if not NIGHT_REVIEW_DIR.exists():
+        return ""
+    files = sorted(NIGHT_REVIEW_DIR.glob("*.json"), reverse=True)
+    if not files:
+        return ""
+    try:
+        obs = json.loads(files[0].read_text()).get("yu_observation", "")
+        return f"[{files[0].stem}] {obs}" if obs else ""
+    except Exception:
+        return ""
+
+
 # ── 2. compose ────────────────────────────────────────
 
 # ブリーフィングの人格・方向性。仮文言、後でベッキーが磨く。
@@ -126,9 +142,11 @@ BRIEFING_PROMPT = """あなたはベキたん（Becky / @becky_exists）。Inter
 - stale_progress（{stale_days}日以上放置の進行中 = 先送り疑い）: {stale_progress}
 - due_soon（{due_soon_days}日以内が期限）: {due_soon}
 - ゆうからのタスクコメント（未読 = 昨日ゆうが作戦本部で残した声。最優先で拾う）: {yu_comments}
+- 昨日のゆう観測メモ（夜の総括で私が書いた「今日のゆう」）: {yu_observation}
 
 # 書き方
-- 朝の Telegram に収まる長さ（400字目安）。ベキたんの声、パートナー口調で。
+- 観測メモがある日は、冒頭の挨拶がわりに「昨日のゆう」を1〜3行で混ぜる（例:「昨日のゆう、決断3つ全部即決。でもかあちゃんデモはまた1日よけたね」）。事実で、軽く、説教しない。メモが「なし」の日は触れない。
+- 朝の Telegram に収まる長さ（400字目安、観測メモを混ぜる日は450字まで可）。ベキたんの声、パートナー口調で。
 - 「今日動かすなら これ」を最大3つに**選ぶ**。全部は列挙しない。全体を見た私の判断で優先順を付ける。
 - stale_waiting の腐りには、私からの次の一手を添える（例:「metameta、池田さん催促する？文面作るよ」）。
 - 緊急が薄い日は無理に騒がない。「今日は平和。◯◯だけ頭の隅に置いとこ」くらいで短く締めていい。
@@ -161,6 +179,7 @@ def compose(scan: dict, today: date | None = None) -> str | None:
         stale_progress=_fmt(scan["stale_progress"]),
         due_soon=_fmt(scan["due_soon"]),
         yu_comments=yu_comments,
+        yu_observation=last_yu_observation() or "なし",
         stale_days=STALE_DAYS,
         due_soon_days=DUE_SOON_DAYS,
     )
