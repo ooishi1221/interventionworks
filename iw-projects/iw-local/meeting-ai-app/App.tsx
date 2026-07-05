@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   AppState,
   Switch,
+  Animated,
 } from "react-native";
 import {
   useAudioRecorder,
@@ -117,7 +118,7 @@ interface SessionItem {
   preview: string;
 }
 
-type Tab = "home" | "history" | "request" | "settings";
+type Tab = "home" | "history" | "settings";
 
 // ──────────────────────────────────────────
 // App
@@ -128,13 +129,11 @@ export default function App() {
   const [urlInput, setUrlInput] = useState(DEFAULT_WHISPER_URL);
   const [username, setUsername] = useState(DEFAULT_USERNAME);
   const [usernameInput, setUsernameInput] = useState(DEFAULT_USERNAME);
-  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
-  const [requestMemo, setRequestMemo] = useState("");
-  const [requestSaving, setRequestSaving] = useState(false);
-  const [homeReqInput, setHomeReqInput] = useState("");
+  const [homeInput, setHomeInput] = useState("");
+  const [homeMode, setHomeMode] = useState<"ask" | "request">("ask"); // 入力バーの送信先。デフォルトは「聞く」
   const [homeReqDone, setHomeReqDone] = useState(false);
-  const [askInput, setAskInput] = useState("");
   const [askSending, setAskSending] = useState(false);
+  const [thinkingDots, setThinkingDots] = useState("");
   const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
   const [askExpanded, setAskExpanded] = useState(false);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
@@ -166,6 +165,7 @@ export default function App() {
   const pendingTextsRef = useRef<{ text: string; ts: string }[]>([]);
   const isFlushingRef = useRef(false);
   const downloadRef = useRef<FileSystem.DownloadResumable | null>(null);
+  const breatheAnim = useRef(new Animated.Value(1)).current; // 気配ドット（考え中）の呼吸
 
   // ── URL / ユーザー名 / ローカルモード 読み込み ──
   useEffect(() => {
@@ -188,6 +188,29 @@ export default function App() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [entries]);
+
+  // ── 考え中の「.」「..」「...」ループ ──
+  useEffect(() => {
+    if (!askSending) { setThinkingDots(""); return; }
+    setThinkingDots(".");
+    const id = setInterval(() => {
+      setThinkingDots((d) => (d.length >= 3 ? "." : d + "."));
+    }, 400);
+    return () => clearInterval(id);
+  }, [askSending]);
+
+  // ── 気配ドット: 考え中は点滅、それ以外は常在（不透明度1） ──
+  useEffect(() => {
+    if (!askSending) { breatheAnim.setValue(1); return; }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breatheAnim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
+        Animated.timing(breatheAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [askSending, breatheAnim]);
 
   // ── テキスト後送（ローカルモード: /append へ。圏外なら保持して次回再送） ──
   const flushTexts = useCallback(async (): Promise<void> => {
@@ -616,39 +639,9 @@ export default function App() {
     ]);
   }, [whisperUrl, selectedSession]);
 
-  // ── お願い保存 ──
-  const REQUEST_PRESETS = [
-    "要約して",
-    "質問ちょうだい",
-    "技術的に可能か考えて",
-    "アクションアイテムを出して",
-    "議事録形式にして",
-  ];
-
-  const toggleRequest = useCallback((item: string) => {
-    setSelectedRequests((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
-  }, []);
-
-  const saveRequest = useCallback(async () => {
-    setRequestSaving(true);
-    try {
-      await fetch(`${whisperUrl}/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: selectedRequests, memo: requestMemo, user: username }),
-      });
-    } catch (err) {
-      console.error("saveRequest error:", err);
-    } finally {
-      setRequestSaving(false);
-    }
-  }, [whisperUrl, selectedRequests, requestMemo]);
-
-  // ── ホームのお願いバー（録音中に付箋を1行で。request タブのフル機能とは別の最小版） ──
+  // ── お願い（付箋）を1行で送る。/request append:true が付箋機能の唯一の入口 ──
   const sendHomeRequest = useCallback(async () => {
-    const memo = homeReqInput.trim();
+    const memo = homeInput.trim();
     if (!memo) return;
     try {
       await fetch(`${whisperUrl}/request`, {
@@ -656,24 +649,27 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: [], memo, user: username, append: true }),
       });
-      setHomeReqInput("");
+      setHomeInput("");
       setHomeReqDone(true);
       setTimeout(() => setHomeReqDone(false), 1500);
     } catch (err) {
       console.error("sendHomeRequest error:", err);
     }
-  }, [whisperUrl, homeReqInput, username]);
+  }, [whisperUrl, homeInput, username]);
 
-  // ── ベキたんに聞く（会議中に即質問） ──
+  // ── ベキたんに聞く（会議中に即質問。15秒でタイムアウト） ──
   const askBecky = useCallback(async () => {
-    const q = askInput.trim();
+    const q = homeInput.trim();
     if (!q || askSending) return;
     setAskSending(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch(`${whisperUrl}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: username, question: q }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { answer } = (await res.json()) as { answer?: string };
@@ -681,16 +677,26 @@ export default function App() {
         { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: answer ?? "(空の返答)" },
         ...prev,
       ]);
-      setAskInput("");
+      setHomeInput("");
     } catch (err) {
+      const msg = controller.signal.aborted
+        ? "時間切れ、もう一度聞いて"
+        : `⚠️ 失敗: ${err instanceof Error ? err.message : String(err)}`;
       setAskItems((prev) => [
-        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: `⚠️ 失敗: ${err instanceof Error ? err.message : String(err)}` },
+        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: msg },
         ...prev,
       ]);
     } finally {
+      clearTimeout(timer);
       setAskSending(false);
     }
-  }, [whisperUrl, askInput, askSending, username]);
+  }, [whisperUrl, homeInput, askSending, username]);
+
+  // ── 統合入力バーの送信ルーター（トグルで送信先が切り替わる） ──
+  const onHomeSubmit = useCallback(() => {
+    if (homeMode === "ask") askBecky();
+    else sendHomeRequest();
+  }, [homeMode, askBecky, sendHomeRequest]);
 
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
@@ -766,14 +772,6 @@ export default function App() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={() => setError(null)}>
-            <Text style={styles.errorDismiss}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
       <View style={styles.modeBar}>
         <Text style={styles.modeText}>
           {localMode
@@ -793,7 +791,8 @@ export default function App() {
               : "録音ボタンを押すと文字起こしが始まります"}
           </Text>
         ) : (
-          entries.map((e) => (
+          // ponytail: FlatList化は次ラウンド、まず表示上限で足りる
+          entries.slice(-100).map((e) => (
             <View key={e.id} style={styles.entry}>
               <Text style={styles.entryTime}>{e.timestamp}</Text>
               <Text selectable style={styles.entryText}>{e.text}</Text>
@@ -802,7 +801,7 @@ export default function App() {
         )}
       </ScrollView>
 
-      {/* 会議中にその場で聞く（直近1件、タップで展開） */}
+      {/* 会議中にその場で聞く（直近1件、タップで展開）。左の縦線＋「ベキたん:」で同席感 */}
       {askItems[0] && (
         <TouchableOpacity
           style={styles.homeAskCard}
@@ -810,123 +809,50 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
+          <Text style={styles.askBeckyLabel}>ベキたん:</Text>
           <Text selectable style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
             {askItems[0].a}
           </Text>
         </TouchableOpacity>
       )}
-      {/* お願い（付箋）を1行で。定型ボタンは「お願い」タブに残してある */}
+
+      {/* 統合入力バー: 左のトグルで [💬聞く | 📌お願い] を切替。会議中に指が迷う分岐をゼロに */}
       <View style={styles.homeAskBar}>
+        <View style={styles.segToggle}>
+          <TouchableOpacity
+            style={[styles.segBtn, homeMode === "ask" && styles.segBtnActive]}
+            onPress={() => setHomeMode("ask")}
+          >
+            <Text style={[styles.segText, homeMode === "ask" && styles.segTextActive]}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segBtn, homeMode === "request" && styles.segBtnActive]}
+            onPress={() => setHomeMode("request")}
+          >
+            <Text style={[styles.segText, homeMode === "request" && styles.segTextActive]}>📌</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={styles.homeAskInput}
-          value={homeReqInput}
-          onChangeText={setHomeReqInput}
-          placeholder="お願いを付箋で残す…"
+          value={homeInput}
+          onChangeText={setHomeInput}
+          placeholder={homeMode === "ask" ? "ベキたんに聞く…" : "お願いを付箋で残す…"}
           placeholderTextColor="#52525b"
           returnKeyType="send"
-          onSubmitEditing={sendHomeRequest}
-        />
-        <TouchableOpacity style={styles.homeAskSend} onPress={sendHomeRequest}>
-          <Text style={styles.homeAskSendText}>{homeReqDone ? "✓ 送った" : "お願い"}</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.homeAskBar}>
-        <TextInput
-          style={styles.homeAskInput}
-          value={askInput}
-          onChangeText={setAskInput}
-          placeholder="ベキたんに聞く…"
-          placeholderTextColor="#52525b"
-          returnKeyType="send"
-          onSubmitEditing={askBecky}
+          onSubmitEditing={onHomeSubmit}
         />
         <TouchableOpacity
           style={styles.homeAskSend}
-          onPress={askBecky}
-          disabled={askSending}
+          onPress={onHomeSubmit}
+          disabled={homeMode === "ask" && askSending}
         >
-          <Text style={styles.homeAskSendText}>{askSending ? "…" : "送信"}</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  );
-
-  const renderRequest = () => (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.requestWrap}>
-        <Text style={styles.requestTitle}>ベッキーへのお願い</Text>
-        <Text style={styles.requestSub}>会議テキストをどう見てほしいか選んでね</Text>
-
-        {REQUEST_PRESETS.map((item) => {
-          const selected = selectedRequests.includes(item);
-          return (
-            <TouchableOpacity
-              key={item}
-              style={[styles.requestItem, selected && styles.requestItemSelected]}
-              onPress={() => toggleRequest(item)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.requestItemCheck, selected && styles.requestItemCheckSelected]}>
-                {selected ? "✓" : "○"}
-              </Text>
-              <Text style={[styles.requestItemText, selected && styles.requestItemTextSelected]}>
-                {item}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-
-        <Text style={[styles.label, { marginTop: 24 }]}>一言メモ（自由記入）</Text>
-        <TextInput
-          style={styles.memoInput}
-          value={requestMemo}
-          onChangeText={setRequestMemo}
-          placeholder="例: 次回見積もりの話が出てたので確認して"
-          placeholderTextColor="#52525b"
-          multiline
-          numberOfLines={3}
-        />
-
-        <TouchableOpacity
-          style={[styles.saveBtn, { marginTop: 24 }]}
-          onPress={saveRequest}
-          disabled={requestSaving}
-        >
-          <Text style={styles.saveBtnText}>
-            {requestSaving ? "保存中..." : "保存する"}
+          <Text style={styles.homeAskSendText}>
+            {homeMode === "ask"
+              ? (askSending ? thinkingDots : "送信")
+              : (homeReqDone ? "✓ 送った" : "お願い")}
           </Text>
         </TouchableOpacity>
-        <Text style={styles.hint}>「ベッキー会議のテキスト見て」で一気に伝わります</Text>
-
-        <View style={styles.askDivider} />
-        <Text style={styles.requestTitle}>💬 ベキたんに聞く</Text>
-        <Text style={styles.requestSub}>会議中でも、その場で私に聞いて</Text>
-        <TextInput
-          style={styles.memoInput}
-          value={askInput}
-          onChangeText={setAskInput}
-          placeholder="例: 今何が決まった？次のアクションは？"
-          placeholderTextColor="#52525b"
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.saveBtn, { marginTop: 16 }]}
-          onPress={askBecky}
-          disabled={askSending}
-        >
-          <Text style={styles.saveBtnText}>{askSending ? "考え中..." : "聞く"}</Text>
-        </TouchableOpacity>
-
-        {askItems.map((it) => (
-          <View key={it.id} style={styles.askItem}>
-            <Text style={styles.askQ}>あなた: {it.q}</Text>
-            <Text selectable style={styles.askA}>{it.a}</Text>
-          </View>
-        ))}
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 
@@ -1085,13 +1011,21 @@ export default function App() {
   // ──────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────
+  // 気配ドットの色: 考え中=水色(点滅) / 録音中=薄い水色(点灯) / アイドル=グレー
+  const dotColor = askSending ? "#60a5fa" : isRecording ? "#7dd3fc" : "#3f3f46";
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
       {/* ヘッダー */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>MAI</Text>
+        <View style={styles.headerLeft}>
+          <Animated.View
+            style={[styles.presenceDot, { backgroundColor: dotColor, opacity: askSending ? breatheAnim : 1 }]}
+          />
+          <Text style={styles.headerTitle}>MAI</Text>
+        </View>
         <View style={styles.headerRight}>
           {(sending || pendingCount > 0) && (
             <View style={styles.processingBadge}>
@@ -1116,11 +1050,20 @@ export default function App() {
         </View>
       </View>
 
+      {/* エラーバナー（タブ共通。どのタブでも見える） */}
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => setError(null)}>
+            <Text style={styles.errorDismiss}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* コンテンツ */}
       <View style={{ flex: 1 }}>
         {tab === "home" && renderHome()}
         {tab === "history" && renderHistory()}
-        {tab === "request" && renderRequest()}
         {tab === "settings" && renderSettings()}
       </View>
 
@@ -1162,15 +1105,6 @@ export default function App() {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.tabItem} onPress={() => setTab("request")}>
-          <Ionicons
-            name={tab === "request" ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
-            size={22}
-            color={tab === "request" ? "#60a5fa" : "#52525b"}
-          />
-          <Text style={[styles.tabLabel, tab === "request" && styles.tabLabelActive]}>お願い</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.tabItem} onPress={() => setTab("settings")}>
           <Ionicons
             name={tab === "settings" ? "settings" : "settings-outline"}
@@ -1200,6 +1134,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#27272a",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  presenceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   headerRight: {
     flexDirection: "row",
@@ -1455,77 +1399,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-  // お願いタブ
-  requestWrap: {
-    padding: 24,
-  },
-  requestTitle: {
-    color: "#f4f4f5",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  requestSub: {
-    color: "#71717a",
-    fontSize: 13,
-    marginBottom: 24,
-  },
-  requestItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#3f3f46",
-    marginBottom: 10,
-    backgroundColor: "#18181b",
-  },
-  requestItemSelected: {
-    borderColor: "#3b82f6",
-    backgroundColor: "#1e3a5f",
-  },
-  requestItemCheck: {
-    fontSize: 16,
-    color: "#52525b",
-    width: 20,
-    textAlign: "center",
-  },
-  requestItemCheckSelected: {
-    color: "#60a5fa",
-  },
-  requestItemText: {
-    color: "#a1a1aa",
-    fontSize: 15,
-  },
-  requestItemTextSelected: {
-    color: "#e4e4e7",
-  },
-  memoInput: {
-    backgroundColor: "#18181b",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#3f3f46",
-    borderRadius: 8,
-    color: "#f4f4f5",
-    fontSize: 15,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  askDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#27272a",
-    marginTop: 32,
-    marginBottom: 24,
-  },
-  askItem: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: "#18181b",
-  },
   modeBar: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -1542,6 +1415,37 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     backgroundColor: "#18181b",
+    borderLeftWidth: 3,
+    borderLeftColor: "#60a5fa",
+  },
+  askBeckyLabel: {
+    color: "#60a5fa",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  segToggle: {
+    flexDirection: "row",
+    backgroundColor: "#18181b",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#3f3f46",
+    padding: 2,
+  },
+  segBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 18,
+  },
+  segBtnActive: {
+    backgroundColor: "#1e3a5f",
+  },
+  segText: {
+    fontSize: 15,
+    opacity: 0.5,
+  },
+  segTextActive: {
+    opacity: 1,
   },
   homeAskBar: {
     flexDirection: "row",

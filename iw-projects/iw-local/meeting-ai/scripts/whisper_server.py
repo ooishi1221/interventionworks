@@ -577,8 +577,22 @@ async def handle_sessions_list(request: web.Request) -> web.Response:
     )
 
 
+# セッションfilenameのホワイトリスト（path traversal 封じ。公開エンドポイント化の前提）
+_FILENAME_RE = re.compile(r"^[A-Za-z0-9_\-]+\.txt$")
+
+
+def _safe_filename(filename: str):
+    """不正な filename なら None を返す"""
+    if _FILENAME_RE.fullmatch(filename):
+        return filename
+    return None
+
+
 async def handle_session_get(request: web.Request) -> web.Response:
-    filename = request.match_info["filename"]
+    filename = _safe_filename(request.match_info["filename"])
+    if not filename:
+        return web.Response(status=400, content_type="application/json",
+                            text=json.dumps({"error": "Invalid filename"}))
     path = os.path.join(_sessions_dir(request.query.get("user")), filename)
     if not os.path.exists(path):
         return web.Response(status=404, content_type="application/json",
@@ -592,7 +606,10 @@ async def handle_session_get(request: web.Request) -> web.Response:
 
 
 async def handle_session_delete(request: web.Request) -> web.Response:
-    filename = request.match_info["filename"]
+    filename = _safe_filename(request.match_info["filename"])
+    if not filename:
+        return web.Response(status=400, content_type="application/json",
+                            text=json.dumps({"error": "Invalid filename"}))
     path = os.path.join(_sessions_dir(request.query.get("user")), filename)
     if os.path.exists(path):
         os.unlink(path)
