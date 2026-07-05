@@ -13,6 +13,11 @@
       "ios": {
         "simulator": false
       }
+    },
+    "production": {
+      "channel": "production",
+      "distribution": "store",
+      "autoIncrement": true
     }
   }
 }

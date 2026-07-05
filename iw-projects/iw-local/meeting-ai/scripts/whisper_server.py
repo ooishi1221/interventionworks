@@ -247,16 +247,25 @@ def _json(obj, status=200) -> web.Response:
                         text=json.dumps(obj, ensure_ascii=False))
 
 
-def _auth(request: web.Request):
-    """Bearer トークン検証。成功で (user, None)、失敗で (None, web.Response)。"""
+@web.middleware
+async def auth_middleware(request: web.Request, handler):
+    """全ルート Bearer 必須。解決した user を request["auth_user"] に格納する。
+    素通し例外: OPTIONS(CORSプリフライト) と GET /health(死活監視)。"""
+    if request.method == "OPTIONS" or (request.method == "GET" and request.path == "/health"):
+        return await handler(request)
     if not USERS:
-        return None, _json({"error": "no users configured"}, status=503)
+        return _json({"error": "no users configured"}, status=503)
     hdr = request.headers.get("Authorization", "")
     token = hdr[7:] if hdr.startswith("Bearer ") else ""
     user = _TOKEN_TO_USER.get(token)
     if not user:
-        return None, _json({"error": "unauthorized"}, status=401)
-    return user, None
+        return _json({"error": "unauthorized"}, status=401)
+    request["auth_user"] = user
+    return await handler(request)
+
+
+async def handle_health(request: web.Request) -> web.Response:
+    return _json({"ok": True})
 
 
 def _active_path(user) -> str:
@@ -306,7 +315,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
         body = await request.json()
         audio_base64 = body.get("audioBase64", "")
         mime_type = body.get("mimeType", "audio/webm")
-        current_file = _current_file(body.get("user"))
+        current_file = _current_file(request["auth_user"])
 
         if not audio_base64:
             return web.Response(
@@ -479,7 +488,7 @@ async def handle_request(request: web.Request) -> web.Response:
         body = await request.json()
         items = body.get("items", [])
         memo = body.get("memo", "").strip()
-        current_file = _current_file(body.get("user"))
+        current_file = _current_file(request["auth_user"])
 
         os.makedirs(MEETING_DIR, exist_ok=True)
 
@@ -530,7 +539,7 @@ async def handle_ask(request: web.Request) -> web.Response:
     try:
         body = await request.json()
         question = (body.get("question") or "").strip()
-        user = (body.get("user") or "").strip()
+        user = request["auth_user"]
 
         if not question:
             return web.Response(
@@ -600,14 +609,14 @@ async def handle_ask(request: web.Request) -> web.Response:
 
 async def handle_start_session(request: web.Request) -> web.Response:
     try:
-        body = await request.json()
-        current_file = _current_file(body.get("user"))
+        user = request["auth_user"]
+        current_file = _current_file(user)
         os.makedirs(MEETING_DIR, exist_ok=True)
         ts = datetime.now(JST).strftime("%H:%M:%S")
         content = f"[お願い]\n\n[文字起こし]\n=== セッション開始 [{ts}] ===\n"
         with open(current_file, "w", encoding="utf-8") as f:
             f.write(content)
-        with open(_active_path(body.get("user")), "w", encoding="utf-8") as f:
+        with open(_active_path(user), "w", encoding="utf-8") as f:
             json.dump({"active": True, "started": time.time()}, f)
         return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
     except Exception as e:
@@ -621,9 +630,9 @@ async def handle_start_session(request: web.Request) -> web.Response:
 
 async def handle_save_session(request: web.Request) -> web.Response:
     try:
-        body = await request.json()
-        current_file = _current_file(body.get("user"))
-        sessions_dir = _sessions_dir(body.get("user"))
+        user = request["auth_user"]
+        current_file = _current_file(user)
+        sessions_dir = _sessions_dir(user)
         os.makedirs(sessions_dir, exist_ok=True)
         if not os.path.exists(current_file):
             return web.Response(content_type="application/json",
@@ -638,7 +647,7 @@ async def handle_save_session(request: web.Request) -> web.Response:
         filepath = os.path.join(sessions_dir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-        with open(_active_path(body.get("user")), "w", encoding="utf-8") as f:
+        with open(_active_path(user), "w", encoding="utf-8") as f:
             json.dump({"active": False, "ended": time.time()}, f)
         return web.Response(content_type="application/json",
                             text=json.dumps({"ok": True, "filename": filename}, ensure_ascii=False))
@@ -652,7 +661,7 @@ async def handle_save_session(request: web.Request) -> web.Response:
 # --------------------------------------------------------------------------
 
 async def handle_sessions_list(request: web.Request) -> web.Response:
-    user = request.query.get("user")
+    user = request["auth_user"]
     sessions_dir = _sessions_dir(user)
     os.makedirs(sessions_dir, exist_ok=True)
     files = sorted(
@@ -702,7 +711,7 @@ async def handle_session_get(request: web.Request) -> web.Response:
     if not filename:
         return web.Response(status=400, content_type="application/json",
                             text=json.dumps({"error": "Invalid filename"}))
-    path = os.path.join(_sessions_dir(request.query.get("user")), filename)
+    path = os.path.join(_sessions_dir(request["auth_user"]), filename)
     if not os.path.exists(path):
         return web.Response(status=404, content_type="application/json",
                             text=json.dumps({"error": "Not found"}))
@@ -719,7 +728,7 @@ async def handle_session_delete(request: web.Request) -> web.Response:
     if not filename:
         return web.Response(status=400, content_type="application/json",
                             text=json.dumps({"error": "Invalid filename"}))
-    user = request.query.get("user")
+    user = request["auth_user"]
     path = os.path.join(_sessions_dir(user), filename)
     if os.path.exists(path):
         os.unlink(path)
@@ -738,7 +747,7 @@ async def handle_session_meta(request: web.Request) -> web.Response:
             return web.Response(status=400, content_type="application/json",
                                 text=json.dumps({"error": "Invalid filename"}))
         body = await request.json()
-        user = body.get("user")
+        user = request["auth_user"]
         path = os.path.join(_sessions_dir(user), filename)
         if not os.path.exists(path):
             return web.Response(status=404, content_type="application/json",
@@ -766,7 +775,7 @@ async def handle_append(request: web.Request) -> web.Response:
     try:
         body = await request.json()
         text = (body.get("text") or "").strip()
-        current_file = _current_file(body.get("user"))
+        current_file = _current_file(request["auth_user"])
         if not text:
             return web.Response(status=400, content_type="application/json",
                                 text=json.dumps({"error": "No text"}))
@@ -797,9 +806,7 @@ async def handle_append(request: web.Request) -> web.Response:
 
 async def handle_api_transcript(request: web.Request) -> web.Response:
     """current_{user}.txt の [文字起こし] から since(HH:MM:SS)より後の行を返す。"""
-    user, err = _auth(request)
-    if err:
-        return err
+    user = request["auth_user"]
     since = request.query.get("since", "")
     current_file = _current_file(user)
     lines = []
@@ -824,9 +831,7 @@ async def handle_api_transcript(request: web.Request) -> web.Response:
 
 async def handle_api_inbox(request: web.Request) -> web.Response:
     """未回答の質問 + current の [お願い] 行を返す。"""
-    user, err = _auth(request)
-    if err:
-        return err
+    user = request["auth_user"]
     questions = [{"id": q.get("id"), "q": q.get("q"), "ts": q.get("ts")}
                  for q in _read_jsonl(_questions_path(user)) if not q.get("answered")]
     requests = []
@@ -844,9 +849,7 @@ async def handle_api_inbox(request: web.Request) -> web.Response:
 
 async def handle_api_answer(request: web.Request) -> web.Response:
     """{question_id, text} を answers に追記し、該当質問を回答済みにする。"""
-    user, err = _auth(request)
-    if err:
-        return err
+    user = request["auth_user"]
     body = await request.json()
     qid = body.get("question_id")
     text = (body.get("text") or "").strip()
@@ -868,9 +871,7 @@ async def handle_api_answer(request: web.Request) -> web.Response:
 
 async def handle_api_status(request: web.Request) -> web.Response:
     """録音セッションが active か（相棒のループ終了判断用）。"""
-    user, err = _auth(request)
-    if err:
-        return err
+    user = request["auth_user"]
     try:
         with open(_active_path(user), encoding="utf-8") as f:
             return _json(json.load(f))
@@ -879,7 +880,7 @@ async def handle_api_status(request: web.Request) -> web.Response:
 
 
 # --------------------------------------------------------------------------
-# アプリ側 companion 入口/出口（認証なし・Tailscale内のみ。トンネルには出さない）
+# アプリ側 companion 入口/出口（B-1 で全ルート Bearer 必須化。user はトークンから解決）
 # --------------------------------------------------------------------------
 
 async def handle_companion_ask(request: web.Request) -> web.Response:
@@ -889,7 +890,7 @@ async def handle_companion_ask(request: web.Request) -> web.Response:
     if not question:
         return _json({"error": "No question"}, status=400)
     qid = uuid.uuid4().hex[:8]
-    _append_jsonl(_questions_path(body.get("user")),
+    _append_jsonl(_questions_path(request["auth_user"]),
                   {"id": qid, "q": question, "ts": time.time(), "answered": False})
     return _json({"ok": True, "id": qid})
 
@@ -901,7 +902,7 @@ async def handle_companion_answers(request: web.Request) -> web.Response:
         since_f = float(since) if since else 0.0
     except ValueError:
         since_f = 0.0
-    answers = [a for a in _read_jsonl(_answers_path(request.query.get("user")))
+    answers = [a for a in _read_jsonl(_answers_path(request["auth_user"]))
                if a.get("ts", 0) > since_f]
     return _json({"answers": answers})
 
@@ -910,7 +911,8 @@ async def handle_companion_answers(request: web.Request) -> web.Response:
 # ルーティング
 # --------------------------------------------------------------------------
 # 録音チャンクが aiohttp デフォルト上限(1MB)を超えると 413 で弾かれる（7/5 実機で発生）→ 100MB に拡大
-app = web.Application(client_max_size=100 * 1024**2)
+app = web.Application(client_max_size=100 * 1024**2, middlewares=[auth_middleware])
+app.router.add_get("/health", handle_health)  # 認証なし・死活監視用
 app.router.add_post("/transcribe", handle_transcribe)
 app.router.add_post("/append", handle_append)
 app.router.add_post("/request", handle_request)
@@ -926,7 +928,7 @@ app.router.add_get("/api/transcript", handle_api_transcript)
 app.router.add_get("/api/inbox", handle_api_inbox)
 app.router.add_post("/api/answer", handle_api_answer)
 app.router.add_get("/api/status", handle_api_status)
-# アプリ側 companion 入口/出口（認証なし・Tailscale内）
+# アプリ側 companion 入口/出口（Bearer 認証・user はトークンから解決）
 app.router.add_post("/companion-ask", handle_companion_ask)
 app.router.add_get("/companion-answers", handle_companion_answers)
 

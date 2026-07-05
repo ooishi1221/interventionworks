@@ -36,11 +36,12 @@ import type { WhisperContext } from "whisper.rn";
 // ──────────────────────────────────────────
 // Constants
 // ──────────────────────────────────────────
-const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
+const DEFAULT_WHISPER_URL = "https://mai.intervention.jp";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
 const STORAGE_KEY_USER = "@meeting_ai_username";
 const STORAGE_KEY_LOCAL = "@meeting_ai_local_mode";
 const STORAGE_KEY_PARTNER = "@meeting_ai_partner_name";
+const STORAGE_KEY_TOKEN = "@meeting_ai_token";
 const DEFAULT_USERNAME = "default";
 const DEFAULT_PARTNER = "ベキたん";
 // チャンク回転間隔のノブ。端末内モードはレスポンス優先で短く、サーバーモードは話者分離の精度優先で長く。
@@ -136,6 +137,8 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState(DEFAULT_USERNAME);
   const [partnerName, setPartnerName] = useState(DEFAULT_PARTNER);
   const [partnerNameInput, setPartnerNameInput] = useState(DEFAULT_PARTNER);
+  const [token, setToken] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
   const [homeInput, setHomeInput] = useState("");
   const [homeMode, setHomeMode] = useState<"companion" | "request">("companion"); // 入力バーの送信先。デフォルトは「聞く」(テレポート)
   const [homeReqDone, setHomeReqDone] = useState(false);
@@ -179,8 +182,8 @@ export default function App() {
 
   // ── URL / ユーザー名 / ローカルモード 読み込み ──
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER, STORAGE_KEY_LOCAL, STORAGE_KEY_PARTNER]).then(
-      ([[, url], [, user], [, local], [, partner]]) => {
+    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER, STORAGE_KEY_LOCAL, STORAGE_KEY_PARTNER, STORAGE_KEY_TOKEN]).then(
+      ([[, url], [, user], [, local], [, partner], [, tok]]) => {
         if (url) { setWhisperUrl(url); setUrlInput(url); }
         if (user) { setUsername(user); setUsernameInput(user); }
         // 保存値があれば従う（明示OFFも尊重）。無ければデフォルト（iOS=ON）のまま
@@ -190,6 +193,7 @@ export default function App() {
           localModeRef.current = v;
         }
         if (partner) { setPartnerName(partner); setPartnerNameInput(partner); }
+        if (tok) { setToken(tok); setTokenInput(tok); }
       }
     );
     // モデルが既にDL済みか確認（iOSのみ）
@@ -218,6 +222,12 @@ export default function App() {
     return () => loop.stop();
   }, [pending.length, breatheAnim]);
 
+  // ── 認証ヘッダ（トークン未設定なら空。全 fetch の headers にマージ） ──
+  const authHeaders = useCallback(
+    (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token]
+  );
+
   // ── テキスト後送（ローカルモード: /append へ。圏外なら保持して次回再送） ──
   const flushTexts = useCallback(async (): Promise<void> => {
     if (isFlushingRef.current) return;
@@ -227,9 +237,10 @@ export default function App() {
         const item = pendingTextsRef.current[0];
         const res = await fetch(`${whisperUrl}/append`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({ text: item.text, ts: item.ts, user: username }),
         });
+        if (res.status === 401) { setError("認証エラー: 設定でトークンを確認して"); throw new Error("HTTP 401"); }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         pendingTextsRef.current.shift();
         setPendingTextCount(pendingTextsRef.current.length);
@@ -239,7 +250,7 @@ export default function App() {
     } finally {
       isFlushingRef.current = false;
     }
-  }, [whisperUrl, username]);
+  }, [whisperUrl, username, authHeaders]);
 
   // ── チャンク送信（キュー方式。ローカルモード=端末内whisper / OFF=音声POST） ──
   const processQueue = useCallback(async (): Promise<void> => {
@@ -283,9 +294,10 @@ export default function App() {
         });
         const res = await fetch(`${whisperUrl}/transcribe`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({ audioBase64: base64, mimeType: "audio/m4a", user: username }),
         });
+        if (res.status === 401) { setError("認証エラー: 設定でトークンを確認して"); throw new Error("HTTP 401"); }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { text } = (await res.json()) as { text?: string };
         setError(null);
@@ -324,7 +336,7 @@ export default function App() {
       // 失敗時はタイトループを避け、次のチャンク到着 / フォアグラウンド復帰で消化する
       if (!failed && pendingChunksRef.current.length > 0) processQueue();
     }
-  }, [whisperUrl, username, flushTexts]);
+  }, [whisperUrl, username, flushTexts, authHeaders]);
 
   const sendChunk = useCallback(
     (uri: string) => {
@@ -501,7 +513,7 @@ export default function App() {
       if (freshSession) {
         setEntries([]);
         // current.txt をクリアして新セッション開始
-        fetch(`${whisperUrl}/start-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) }).catch(() => {});
+        fetch(`${whisperUrl}/start-session`, { method: "POST", headers: {"Content-Type": "application/json", ...authHeaders()}, body: JSON.stringify({ user: username }) }).catch(() => {});
       }
       // freshSession=false: entries もサーバー current も残したまま追記継続
       await recordChunk();
@@ -511,7 +523,7 @@ export default function App() {
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [configureRecordingAudioSession, recordChunk, whisperUrl, username, modelReady]);
+  }, [configureRecordingAudioSession, recordChunk, whisperUrl, username, modelReady, authHeaders]);
 
   // ── 録音ボタン: 既存の文字起こしがあれば新規/追記を確認してから開始 ──
   const startRecording = useCallback(() => {
@@ -558,10 +570,10 @@ export default function App() {
     await setIsAudioActiveAsync(false);
 
     // セッションを自動保存して履歴を更新
-    fetch(`${whisperUrl}/save-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) })
+    fetch(`${whisperUrl}/save-session`, { method: "POST", headers: {"Content-Type": "application/json", ...authHeaders()}, body: JSON.stringify({ user: username }) })
       .then(() => fetchSessions())
       .catch(() => {});
-  }, [copyChunkToDocumentDirectory, recorderA, recorderB, sendChunk, whisperUrl]);
+  }, [copyChunkToDocumentDirectory, recorderA, recorderB, sendChunk, whisperUrl, authHeaders]);
 
   // ── クリーンアップ ──
   useEffect(() => {
@@ -588,9 +600,10 @@ export default function App() {
     try {
       const res = await fetch(`${whisperUrl}/companion-ask`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ question: q, user: username }),
       });
+      if (res.status === 401) { setError("認証エラー: 設定でトークンを確認して"); return; }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { id } = (await res.json()) as { id?: string };
       setPending((prev) => [...prev, { id: id ?? `${Date.now()}`, q, ts: Math.floor(Date.now() / 1000) }]);
@@ -599,7 +612,7 @@ export default function App() {
       console.error("companionAsk error:", err);
       setError(`相棒への送信失敗: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [whisperUrl, homeInput, username]);
+  }, [whisperUrl, homeInput, username, authHeaders]);
 
   // ── 相棒の回答をポーリング（pending がある間だけ 10秒間隔。question_id で照合、返事カードへ） ──
   const pollCompanion = useCallback(async () => {
@@ -608,8 +621,10 @@ export default function App() {
     const since = Math.min(...pendingRef.current.map((p) => p.ts)) - 1;
     try {
       const res = await fetch(
-        `${whisperUrl}/companion-answers?user=${encodeURIComponent(username)}&since=${since}`
+        `${whisperUrl}/companion-answers?user=${encodeURIComponent(username)}&since=${since}`,
+        { headers: authHeaders() }
       );
+      if (res.status === 401) { setError("認証エラー: 設定でトークンを確認して"); return; }
       if (!res.ok) return;
       const { answers } = (await res.json()) as {
         answers?: { question_id: string; text: string; ts: number }[];
@@ -627,7 +642,7 @@ export default function App() {
     } catch {
       // 圏外/失敗 → 次の tick で再試行
     }
-  }, [whisperUrl, username]);
+  }, [whisperUrl, username, authHeaders]);
 
   // ── ポーリングの起動/停止: pending が1件以上なら 10秒間隔で回し、空になったら止める ──
   useEffect(() => {
@@ -678,7 +693,7 @@ export default function App() {
   const fetchSessions = useCallback(async () => {
     setSessionsLoading(true);
     try {
-      const res = await fetch(`${whisperUrl}/sessions?user=${encodeURIComponent(username)}`);
+      const res = await fetch(`${whisperUrl}/sessions?user=${encodeURIComponent(username)}`, { headers: authHeaders() });
       const data = await res.json() as { sessions: SessionItem[] };
       setSessions(data.sessions ?? []);
     } catch {
@@ -686,30 +701,30 @@ export default function App() {
     } finally {
       setSessionsLoading(false);
     }
-  }, [whisperUrl, username]);
+  }, [whisperUrl, username, authHeaders]);
 
   const openSession = useCallback(async (filename: string) => {
     try {
-      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`);
+      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`, { headers: authHeaders() });
       const data = await res.json() as { content: string };
       setSelectedSession({ filename, content: data.content });
     } catch {
       Alert.alert("エラー", "セッションを開けませんでした");
     }
-  }, [whisperUrl, username]);
+  }, [whisperUrl, username, authHeaders]);
 
   const deleteSession = useCallback((filename: string) => {
     Alert.alert("削除", `${filename} を削除しますか？`, [
       { text: "キャンセル", style: "cancel" },
       {
         text: "削除", style: "destructive", onPress: async () => {
-          await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`, { method: "DELETE" });
+          await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}?user=${encodeURIComponent(username)}`, { method: "DELETE", headers: authHeaders() });
           setSessions((prev) => prev.filter((s) => s.filename !== filename));
           if (selectedSession?.filename === filename) setSelectedSession(null);
         },
       },
     ]);
-  }, [whisperUrl, username, selectedSession]);
+  }, [whisperUrl, username, selectedSession, authHeaders]);
 
   // ── セッションのメタ更新（title / pinned）。楽観更新→失敗時はサーバー状態へ戻す ──
   const updateMeta = useCallback(async (filename: string, patch: { title?: string; pinned?: boolean }) => {
@@ -717,14 +732,14 @@ export default function App() {
     try {
       const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}/meta`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ user: username, ...patch }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
       fetchSessions();
     }
-  }, [whisperUrl, username, fetchSessions]);
+  }, [whisperUrl, username, fetchSessions, authHeaders]);
 
   const renameSession = useCallback((filename: string, currentTitle: string) => {
     Alert.prompt(
@@ -746,7 +761,7 @@ export default function App() {
     try {
       await fetch(`${whisperUrl}/request`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ items: [], memo, user: username, append: true }),
       });
       setHomeInput("");
@@ -766,7 +781,7 @@ export default function App() {
       console.error("sendHomeRequest error:", err);
       setError(`お願い送信失敗: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [whisperUrl, homeInput, username]);
+  }, [whisperUrl, homeInput, username, authHeaders]);
 
   // ── 統合入力バーの送信ルーター（トグルで送信先が切り替わる） ──
   const onHomeSubmit = useCallback(() => {
@@ -779,13 +794,16 @@ export default function App() {
     const url = urlInput.trim().replace(/\/$/, "");
     const user = usernameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "") || DEFAULT_USERNAME;
     const partner = partnerNameInput.trim() || DEFAULT_PARTNER;
-    await AsyncStorage.multiSet([[STORAGE_KEY_URL, url], [STORAGE_KEY_USER, user], [STORAGE_KEY_PARTNER, partner]]);
+    const tok = tokenInput.trim();
+    await AsyncStorage.multiSet([[STORAGE_KEY_URL, url], [STORAGE_KEY_USER, user], [STORAGE_KEY_PARTNER, partner], [STORAGE_KEY_TOKEN, tok]]);
     setWhisperUrl(url);
     setUsername(user);
     setUsernameInput(user);
     setPartnerName(partner);
     setPartnerNameInput(partner);
-  }, [urlInput, usernameInput, partnerNameInput]);
+    setToken(tok);
+    setTokenInput(tok);
+  }, [urlInput, usernameInput, partnerNameInput, tokenInput]);
 
   // ── ローカルモード切替（録音中は不可） ──
   const toggleLocalMode = useCallback((val: boolean) => {
@@ -1126,14 +1144,25 @@ export default function App() {
         <Text style={styles.hint}>
           文字起こしテキスト・お願い・質問・履歴の同期先（末尾スラッシュ不要）。端末内文字起こしを OFF にした時は音声もここに送られる（話者分離あり）。
         </Text>
+
+        <Text style={styles.label}>アクセストークン</Text>
+        <TextInput
+          style={styles.input}
+          value={tokenInput}
+          onChangeText={setTokenInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="発行されたトークン"
+          placeholderTextColor="#4a4a52"
+        />
+        <Text style={styles.hint}>
+          管理者から発行されたトークン。全通信の認証に使う。
+        </Text>
         <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
           <Text style={styles.saveBtnText}>保存</Text>
         </TouchableOpacity>
         <Text style={styles.currentUrl}>ユーザー: {username}</Text>
         <Text style={styles.currentUrl}>接続先: {whisperUrl}</Text>
-        <Text style={[styles.hint, { marginTop: 16 }]}>
-          Claude Codeで読む場合: {whisperUrl}/current/{username}
-        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
