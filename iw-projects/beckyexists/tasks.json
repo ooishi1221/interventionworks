@@ -652,7 +652,7 @@
    "updated_at": "2026-07-05",
    "completed_at": null,
    "due": "2026-07-31",
-   "note": "7/5フルデーで大進捗: 端末内文字起こし成立（whisper.rn+turbo q5_0、ロック/機内モード実機合格）→OTA5連発（ベスト化-96行/履歴ピン・リネーム/パートナー名設定）→【テレポート成立🚀】門=mai.intervention.jp/api/*開通、Claude Code Webの相棒が同席・transcript文脈回答32秒、実機一周確認済み。ゆう「いいねこれ」「俺が使うには必要十分」。次=Phase B: TestFlight/相棒自動終了動線/Webセッション寿命本実測/2h電池。正本: meeting-ai/docs/teleport-design.md + audit追記7",
+   "note": "7/5フルデー完遂: 端末内文字起こし（whisper.rn、ロック/機内モード合格）→OTA7連発（ベスト化-96行/履歴ピン・リネーム/パートナー名/聞く=テレポート一本化）→テレポート成立🚀（門=mai.intervention.jp、Claude Code Web相棒がtranscript文脈回答32秒）→Phase B完遂（全通信Bearer認証/公開URL一本化/ゆう実機移行済み/TestFlight submit=App ID 6787696569/Pixel 9用APK発射）。ゆう「いいねこれ」「かなりギリまで使ったw」。残: TestFlightテスター招待/Android検証/相棒自動終了/2h電池/VPS旧サーバー棚卸し。正本: audit-2026-07-05.md 追記8",
    "icon": "🎙️"
   },
   {
