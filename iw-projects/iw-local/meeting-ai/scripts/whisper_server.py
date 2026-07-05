@@ -15,6 +15,8 @@ import sys
 import tempfile
 import os
 import subprocess
+import time
+import uuid
 import numpy as np
 from scipy.io import wavfile as scipy_wavfile
 from datetime import datetime, timezone, timedelta
@@ -218,6 +220,82 @@ def _save_meta(user, meta: dict) -> None:
     os.makedirs(_sessions_dir(user), exist_ok=True)
     with open(_meta_path(user), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
+
+
+# --------------------------------------------------------------------------
+# 相棒(Claude Code Web)向け API 認証 + キュー（テレポート A-1）
+# --------------------------------------------------------------------------
+# users.json: {"<user>": {"token": "<token>", "partner": "<相棒名>"}}
+# 起動時に一度だけロードする。ユーザー追加・トークン変更はサーバー再起動で反映する。
+USERS_FILE = os.path.join(MEETING_DIR, "users.json")
+
+
+def _load_users() -> dict:
+    try:
+        with open(USERS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+USERS = _load_users()
+_TOKEN_TO_USER = {v["token"]: u for u, v in USERS.items() if v.get("token")}
+
+
+def _json(obj, status=200) -> web.Response:
+    return web.Response(status=status, content_type="application/json",
+                        text=json.dumps(obj, ensure_ascii=False))
+
+
+def _auth(request: web.Request):
+    """Bearer トークン検証。成功で (user, None)、失敗で (None, web.Response)。"""
+    if not USERS:
+        return None, _json({"error": "no users configured"}, status=503)
+    hdr = request.headers.get("Authorization", "")
+    token = hdr[7:] if hdr.startswith("Bearer ") else ""
+    user = _TOKEN_TO_USER.get(token)
+    if not user:
+        return None, _json({"error": "unauthorized"}, status=401)
+    return user, None
+
+
+def _active_path(user) -> str:
+    return os.path.join(MEETING_DIR, f"active_{_safe_user(user) or 'default'}.json")
+
+
+def _companion_dir(user) -> str:
+    return os.path.join(MEETING_DIR, "companion", _safe_user(user) or "default")
+
+
+def _questions_path(user) -> str:
+    return os.path.join(_companion_dir(user), "questions.jsonl")
+
+
+def _answers_path(user) -> str:
+    return os.path.join(_companion_dir(user), "answers.jsonl")
+
+
+def _read_jsonl(path) -> list:
+    out = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    out.append(json.loads(line))
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def _append_jsonl(path, obj) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+
+
+_TS_LINE_RE = re.compile(r"^\[(\d{2}:\d{2}:\d{2})\]")
+
 
 # --------------------------------------------------------------------------
 # /transcribe
@@ -529,6 +607,8 @@ async def handle_start_session(request: web.Request) -> web.Response:
         content = f"[お願い]\n\n[文字起こし]\n=== セッション開始 [{ts}] ===\n"
         with open(current_file, "w", encoding="utf-8") as f:
             f.write(content)
+        with open(_active_path(body.get("user")), "w", encoding="utf-8") as f:
+            json.dump({"active": True, "started": time.time()}, f)
         return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
     except Exception as e:
         return web.Response(status=500, content_type="application/json",
@@ -558,6 +638,8 @@ async def handle_save_session(request: web.Request) -> web.Response:
         filepath = os.path.join(sessions_dir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
+        with open(_active_path(body.get("user")), "w", encoding="utf-8") as f:
+            json.dump({"active": False, "ended": time.time()}, f)
         return web.Response(content_type="application/json",
                             text=json.dumps({"ok": True, "filename": filename}, ensure_ascii=False))
     except Exception as e:
@@ -710,6 +792,121 @@ async def handle_append(request: web.Request) -> web.Response:
 
 
 # --------------------------------------------------------------------------
+# 相棒向け API 4本（全て Bearer 認証・user はトークンから解決）
+# --------------------------------------------------------------------------
+
+async def handle_api_transcript(request: web.Request) -> web.Response:
+    """current_{user}.txt の [文字起こし] から since(HH:MM:SS)より後の行を返す。"""
+    user, err = _auth(request)
+    if err:
+        return err
+    since = request.query.get("since", "")
+    current_file = _current_file(user)
+    lines = []
+    session_started = ""
+    if os.path.exists(current_file):
+        with open(current_file, encoding="utf-8") as f:
+            raw = f.read()
+        tidx = raw.find("[文字起こし]")
+        section = raw[tidx:] if tidx >= 0 else raw
+        m = re.search(r"=== セッション開始 \[(\d{2}:\d{2}:\d{2})\]", section)
+        if m:
+            session_started = m.group(1)
+        for line in section.splitlines():
+            tm = _TS_LINE_RE.match(line)
+            if not tm:
+                continue
+            if since and tm.group(1) <= since:
+                continue
+            lines.append(line)
+    return _json({"lines": lines, "session_started": session_started})
+
+
+async def handle_api_inbox(request: web.Request) -> web.Response:
+    """未回答の質問 + current の [お願い] 行を返す。"""
+    user, err = _auth(request)
+    if err:
+        return err
+    questions = [{"id": q.get("id"), "q": q.get("q"), "ts": q.get("ts")}
+                 for q in _read_jsonl(_questions_path(user)) if not q.get("answered")]
+    requests = []
+    current_file = _current_file(user)
+    if os.path.exists(current_file):
+        with open(current_file, encoding="utf-8") as f:
+            raw = f.read()
+        oidx = raw.find("[お願い]")
+        tidx = raw.find("[文字起こし]")
+        if oidx >= 0:
+            block = raw[oidx + len("[お願い]"):(tidx if tidx > oidx else len(raw))]
+            requests = [l.strip() for l in block.splitlines() if l.strip()]
+    return _json({"questions": questions, "requests": requests})
+
+
+async def handle_api_answer(request: web.Request) -> web.Response:
+    """{question_id, text} を answers に追記し、該当質問を回答済みにする。"""
+    user, err = _auth(request)
+    if err:
+        return err
+    body = await request.json()
+    qid = body.get("question_id")
+    text = (body.get("text") or "").strip()
+    if not qid or not text:
+        return _json({"error": "question_id and text required"}, status=400)
+    _append_jsonl(_answers_path(user), {"question_id": qid, "text": text, "ts": time.time()})
+    # answered マークは全読み→書き直し（会議1回の質問は高々十数件なので許容）
+    qs = _read_jsonl(_questions_path(user))
+    for q in qs:
+        if q.get("id") == qid:
+            q["answered"] = True
+    path = _questions_path(user)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for q in qs:
+            f.write(json.dumps(q, ensure_ascii=False) + "\n")
+    return _json({"ok": True})
+
+
+async def handle_api_status(request: web.Request) -> web.Response:
+    """録音セッションが active か（相棒のループ終了判断用）。"""
+    user, err = _auth(request)
+    if err:
+        return err
+    try:
+        with open(_active_path(user), encoding="utf-8") as f:
+            return _json(json.load(f))
+    except Exception:
+        return _json({"active": False})
+
+
+# --------------------------------------------------------------------------
+# アプリ側 companion 入口/出口（認証なし・Tailscale内のみ。トンネルには出さない）
+# --------------------------------------------------------------------------
+
+async def handle_companion_ask(request: web.Request) -> web.Response:
+    """アプリ「相棒に聞く」→ 質問を questions.jsonl に積む。"""
+    body = await request.json()
+    question = (body.get("question") or "").strip()
+    if not question:
+        return _json({"error": "No question"}, status=400)
+    qid = uuid.uuid4().hex[:8]
+    _append_jsonl(_questions_path(body.get("user")),
+                  {"id": qid, "q": question, "ts": time.time(), "answered": False})
+    return _json({"ok": True, "id": qid})
+
+
+async def handle_companion_answers(request: web.Request) -> web.Response:
+    """アプリのポーリング出口。since(epoch秒)以降の回答を返す。"""
+    since = request.query.get("since")
+    try:
+        since_f = float(since) if since else 0.0
+    except ValueError:
+        since_f = 0.0
+    answers = [a for a in _read_jsonl(_answers_path(request.query.get("user")))
+               if a.get("ts", 0) > since_f]
+    return _json({"answers": answers})
+
+
+# --------------------------------------------------------------------------
 # ルーティング
 # --------------------------------------------------------------------------
 # 録音チャンクが aiohttp デフォルト上限(1MB)を超えると 413 で弾かれる（7/5 実機で発生）→ 100MB に拡大
@@ -724,6 +921,14 @@ app.router.add_get("/sessions", handle_sessions_list)
 app.router.add_get("/sessions/{filename}", handle_session_get)
 app.router.add_delete("/sessions/{filename}", handle_session_delete)
 app.router.add_post("/sessions/{filename}/meta", handle_session_meta)
+# 相棒向け API（Bearer 認証）
+app.router.add_get("/api/transcript", handle_api_transcript)
+app.router.add_get("/api/inbox", handle_api_inbox)
+app.router.add_post("/api/answer", handle_api_answer)
+app.router.add_get("/api/status", handle_api_status)
+# アプリ側 companion 入口/出口（認証なし・Tailscale内）
+app.router.add_post("/companion-ask", handle_companion_ask)
+app.router.add_get("/companion-answers", handle_companion_answers)
 
 if __name__ == "__main__":
     web.run_app(app, host="0.0.0.0", port=PORT)
