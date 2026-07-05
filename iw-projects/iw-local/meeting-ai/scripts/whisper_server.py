@@ -571,7 +571,8 @@ async def handle_session_delete(request: web.Request) -> web.Response:
 # --------------------------------------------------------------------------
 # ルーティング
 # --------------------------------------------------------------------------
-app = web.Application()
+# 録音チャンクが aiohttp デフォルト上限(1MB)を超えると 413 で弾かれる（7/5 実機で発生）→ 100MB に拡大
+app = web.Application(client_max_size=100 * 1024**2)
 app.router.add_post("/transcribe", handle_transcribe)
 app.router.add_post("/request", handle_request)
 app.router.add_post("/ask", handle_ask)
