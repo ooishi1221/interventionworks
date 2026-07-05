@@ -137,12 +137,15 @@ export default function App() {
   const [partnerName, setPartnerName] = useState(DEFAULT_PARTNER);
   const [partnerNameInput, setPartnerNameInput] = useState(DEFAULT_PARTNER);
   const [homeInput, setHomeInput] = useState("");
-  const [homeMode, setHomeMode] = useState<"ask" | "request">("ask"); // 入力バーの送信先。デフォルトは「聞く」
+  const [homeMode, setHomeMode] = useState<"ask" | "companion" | "request">("ask"); // 入力バーの送信先。デフォルトは「すぐ聞く」
   const [homeReqDone, setHomeReqDone] = useState(false);
   const [askSending, setAskSending] = useState(false);
   const [thinkingDots, setThinkingDots] = useState("");
-  const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
+  const [askItems, setAskItems] = useState<{ id: string; q: string; a: string; via?: "companion" }[]>([]);
   const [askExpanded, setAskExpanded] = useState(false);
+  // 🚀相棒に聞く: 質問キューに積んで相棒(Claude Code Web)の回答をポーリング。q=質問文 ts=送信時刻(epoch秒)
+  const [pending, setPending] = useState<{ id: string; q: string; ts: number }[]>([]);
+  const [, setPollTick] = useState(0); // pending の経過時間表示(5分閾値)を10秒ごとに再評価させるためのtick
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<{ filename: string; content: string } | null>(null);
@@ -173,6 +176,8 @@ export default function App() {
   const isFlushingRef = useRef(false);
   const downloadRef = useRef<FileSystem.DownloadResumable | null>(null);
   const breatheAnim = useRef(new Animated.Value(1)).current; // 気配ドット（考え中）の呼吸
+  const pendingRef = useRef<{ id: string; q: string; ts: number }[]>([]); // interval 内で最新 pending を読むため state と同期
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── URL / ユーザー名 / ローカルモード 読み込み ──
   useEffect(() => {
@@ -583,13 +588,79 @@ export default function App() {
     if (tab === "history") fetchSessions();
   }, [tab]);
 
+  // ── 🚀相棒に聞く（質問をキューに積む。相棒=Claude Code Web が読んで回答を書く） ──
+  const companionAsk = useCallback(async () => {
+    const q = homeInput.trim();
+    if (!q) return;
+    try {
+      const res = await fetch(`${whisperUrl}/companion-ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, user: username }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { id } = (await res.json()) as { id?: string };
+      setPending((prev) => [...prev, { id: id ?? `${Date.now()}`, q, ts: Math.floor(Date.now() / 1000) }]);
+      setHomeInput("");
+    } catch (err) {
+      console.error("companionAsk error:", err);
+      setError(`相棒への送信失敗: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [whisperUrl, homeInput, username]);
+
+  // ── 相棒の回答をポーリング（pending がある間だけ 10秒間隔。question_id で照合、返事カードへ） ──
+  const pollCompanion = useCallback(async () => {
+    if (pendingRef.current.length === 0) return;
+    // since = 最古 pending の送信時刻-1（サーバーは ts>=since を返す想定。question_id で dedup するので重複受信は無害）
+    const since = Math.min(...pendingRef.current.map((p) => p.ts)) - 1;
+    try {
+      const res = await fetch(
+        `${whisperUrl}/companion-answers?user=${encodeURIComponent(username)}&since=${since}`
+      );
+      if (!res.ok) return;
+      const { answers } = (await res.json()) as {
+        answers?: { question_id: string; text: string; ts: number }[];
+      };
+      if (!answers || answers.length === 0) return;
+      for (const ans of answers) {
+        const match = pendingRef.current.find((p) => p.id === ans.question_id);
+        if (!match) continue;
+        setAskItems((prev) => [
+          { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q: match.q, a: ans.text, via: "companion" },
+          ...prev,
+        ]);
+        setPending((prev) => prev.filter((p) => p.id !== ans.question_id));
+      }
+    } catch {
+      // 圏外/失敗 → 次の tick で再試行
+    }
+  }, [whisperUrl, username]);
+
+  // ── ポーリングの起動/停止: pending が1件以上なら 10秒間隔で回し、空になったら止める ──
+  useEffect(() => {
+    pendingRef.current = pending;
+    if (pending.length > 0 && !pollTimerRef.current) {
+      pollTimerRef.current = setInterval(() => {
+        setPollTick((t) => t + 1); // 5分経過表示の再評価
+        pollCompanion();
+      }, 10000);
+    } else if (pending.length === 0 && pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, [pending, pollCompanion]);
+
+  // ── アンマウント時にポーリング停止 ──
+  useEffect(() => () => { if (pollTimerRef.current) clearInterval(pollTimerRef.current); }, []);
+
   // ── フォアグラウンド復帰時に録音を自動再開 ──
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
       if (nextState !== "active") return;
-      // フォアグラウンド復帰: 滞留したチャンク / 未送信テキストを消化
+      // フォアグラウンド復帰: 滞留したチャンク / 未送信テキスト / 相棒の回答を消化
       processQueue();
       flushTexts();
+      pollCompanion();
       if (isRecordingRef.current) {
         // チャンクタイマーが動いていない = バックグラウンドで止まっていた
         if (!chunkTimerRef.current) {
@@ -608,7 +679,7 @@ export default function App() {
       }
     });
     return () => sub.remove();
-  }, [configureRecordingAudioSession, getRecorder, recordChunk, scheduleChunkHandoff, processQueue, flushTexts]);
+  }, [configureRecordingAudioSession, getRecorder, recordChunk, scheduleChunkHandoff, processQueue, flushTexts, pollCompanion]);
 
   // ── セッション一覧取得 ──
   const fetchSessions = useCallback(async () => {
@@ -742,8 +813,9 @@ export default function App() {
   // ── 統合入力バーの送信ルーター（トグルで送信先が切り替わる） ──
   const onHomeSubmit = useCallback(() => {
     if (homeMode === "ask") askBecky();
+    else if (homeMode === "companion") companionAsk();
     else sendHomeRequest();
-  }, [homeMode, askBecky, sendHomeRequest]);
+  }, [homeMode, askBecky, companionAsk, sendHomeRequest]);
 
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
@@ -855,6 +927,22 @@ export default function App() {
         )}
       </ScrollView>
 
+      {/* 🚀相棒に聞く: 回答待ちの質問（相棒=Claude Code Web が読みに来るのを待つ） */}
+      {pending.map((p) => {
+        const waitedTooLong = Math.floor(Date.now() / 1000) - p.ts > 300; // 5分
+        return (
+          <View key={p.id} style={styles.pendingCard}>
+            <Text style={styles.pendingStatus}>🚀 {partnerName}が読みに来るのを待ってる…</Text>
+            <Text style={styles.askQ} numberOfLines={2}>あなた: {p.q}</Text>
+            {waitedTooLong && (
+              <Text style={styles.pendingStale}>
+                まだ来ない。相棒（Claude Code Web）が起動してるか確認してみて
+              </Text>
+            )}
+          </View>
+        );
+      })}
+
       {/* 会議中にその場で聞く（直近1件、タップで展開）。左の縦線＋「ベキたん:」で同席感 */}
       {askItems[0] && (
         <TouchableOpacity
@@ -863,14 +951,16 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
-          <Text style={styles.askPartnerLabel}>{partnerName}:</Text>
+          <Text style={styles.askPartnerLabel}>
+            {partnerName}{askItems[0].via === "companion" ? " 🚀" : ""}:
+          </Text>
           <Text selectable style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
             {askItems[0].a}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* 統合入力バー: 左のトグルで [💬聞く | 📌お願い] を切替。会議中に指が迷う分岐をゼロに */}
+      {/* 統合入力バー: 左のトグルで [💬すぐ聞く | 🚀相棒に聞く | 📌お願い] を切替。会議中に指が迷う分岐をゼロに */}
       <View style={styles.homeAskBar}>
         <View style={styles.segToggle}>
           <TouchableOpacity
@@ -878,6 +968,12 @@ export default function App() {
             onPress={() => setHomeMode("ask")}
           >
             <Text style={[styles.segText, homeMode === "ask" && styles.segTextActive]}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segBtn, homeMode === "companion" && styles.segBtnActive]}
+            onPress={() => setHomeMode("companion")}
+          >
+            <Text style={[styles.segText, homeMode === "companion" && styles.segTextActive]}>🚀</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segBtn, homeMode === "request" && styles.segBtnActive]}
@@ -890,7 +986,13 @@ export default function App() {
           style={styles.homeAskInput}
           value={homeInput}
           onChangeText={setHomeInput}
-          placeholder={homeMode === "ask" ? `${partnerName}に聞く…` : "お願いを付箋で残す…"}
+          placeholder={
+            homeMode === "ask"
+              ? `${partnerName}にすぐ聞く…`
+              : homeMode === "companion"
+                ? `${partnerName}に聞く（記憶ごと・少し待つ）…`
+                : "お願いを付箋で残す…"
+          }
           placeholderTextColor="#4a4a52"
           returnKeyType="send"
           onSubmitEditing={onHomeSubmit}
@@ -904,7 +1006,9 @@ export default function App() {
           <Text style={styles.homeAskSendText}>
             {homeMode === "ask"
               ? (askSending ? thinkingDots : "送信")
-              : (homeReqDone ? "✓ 送った" : "お願い")}
+              : homeMode === "companion"
+                ? "送る"
+                : (homeReqDone ? "✓ 送った" : "お願い")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1535,6 +1639,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 4,
+  },
+  pendingCard: {
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#1f1f23",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#1e1e22",
+  },
+  pendingStatus: {
+    color: "#3b7cf6",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  pendingStale: {
+    color: "#6c6c76",
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 8,
   },
   segToggle: {
     flexDirection: "row",
