@@ -153,7 +153,7 @@ export default function App() {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingTextCount, setPendingTextCount] = useState(0); // 端末内モードの未送信テキスト数（表示用、pendingTextsRef と同期）
   const [error, setError] = useState<string | null>(null);
-  const [localMode, setLocalMode] = useState(false);
+  const [localMode, setLocalMode] = useState(Platform.OS === "ios"); // デフォルト端末内ON（iOSのみ対応）
   const [modelReady, setModelReady] = useState(false);
   const [dlProgress, setDlProgress] = useState<number | null>(null); // null=非DL中 / 0〜1=進捗
   const [canResume, setCanResume] = useState(false); // DL中断からの再開ボタン表示
@@ -168,7 +168,7 @@ export default function App() {
   const activeRecorderIndexRef = useRef(0);
   const handoffInProgressRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
-  const localModeRef = useRef(false);
+  const localModeRef = useRef(Platform.OS === "ios");
   const whisperCtxRef = useRef<WhisperContext | null>(null);
   const pendingTextsRef = useRef<{ text: string; ts: string }[]>([]);
   const isFlushingRef = useRef(false);
@@ -183,7 +183,12 @@ export default function App() {
       ([[, url], [, user], [, local], [, partner]]) => {
         if (url) { setWhisperUrl(url); setUrlInput(url); }
         if (user) { setUsername(user); setUsernameInput(user); }
-        if (local === "1") { setLocalMode(true); localModeRef.current = true; }
+        // 保存値があれば従う（明示OFFも尊重）。無ければデフォルト（iOS=ON）のまま
+        if (local !== null && Platform.OS === "ios") {
+          const v = local === "1";
+          setLocalMode(v);
+          localModeRef.current = v;
+        }
         if (partner) { setPartnerName(partner); setPartnerNameInput(partner); }
       }
     );
@@ -1107,7 +1112,7 @@ export default function App() {
           英数字・ハイフン・アンダースコアのみ。友達と共有する場合は別の名前に。
         </Text>
 
-        <Text style={styles.label}>Whisper サーバー URL</Text>
+        <Text style={styles.label}>ホームサーバー URL</Text>
         <TextInput
           style={styles.input}
           value={urlInput}
@@ -1119,7 +1124,7 @@ export default function App() {
           placeholderTextColor="#4a4a52"
         />
         <Text style={styles.hint}>
-          Mac mini の Tailscale IP を入力（末尾スラッシュ不要）
+          文字起こしテキスト・お願い・質問・履歴の同期先（末尾スラッシュ不要）。端末内文字起こしを OFF にした時は音声もここに送られる（話者分離あり）。
         </Text>
         <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
           <Text style={styles.saveBtnText}>保存</Text>
