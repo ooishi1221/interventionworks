@@ -111,6 +111,7 @@ interface TranscriptEntry {
   id: string;
   timestamp: string;
   text: string;
+  kind?: "note"; // note = お願い付箋（文字起こしの流れに📌で刻む）
 }
 
 interface SessionItem {
@@ -652,8 +653,19 @@ export default function App() {
       setHomeInput("");
       setHomeReqDone(true);
       setTimeout(() => setHomeReqDone(false), 1500);
+      // 付箋は会議の流れに刻む（その時点でお願いした、が時系列に残る）
+      setEntries((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+          timestamp: getTimestamp(),
+          text: memo,
+          kind: "note",
+        },
+      ]);
     } catch (err) {
       console.error("sendHomeRequest error:", err);
+      setError(`お願い送信失敗: ${err instanceof Error ? err.message : String(err)}`);
     }
   }, [whisperUrl, homeInput, username]);
 
@@ -793,9 +805,11 @@ export default function App() {
         ) : (
           // ponytail: FlatList化は次ラウンド、まず表示上限で足りる
           entries.slice(-100).map((e) => (
-            <View key={e.id} style={styles.entry}>
+            <View key={e.id} style={[styles.entry, e.kind === "note" && styles.entryNote]}>
               <Text style={styles.entryTime}>{e.timestamp}</Text>
-              <Text selectable style={styles.entryText}>{e.text}</Text>
+              <Text selectable style={e.kind === "note" ? styles.entryNoteText : styles.entryText}>
+                {e.kind === "note" ? `📌 ${e.text}` : e.text}
+              </Text>
             </View>
           ))
         )}
@@ -1215,6 +1229,16 @@ const styles = StyleSheet.create({
   },
   entryText: {
     color: "#e4e4e7",
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  entryNote: {
+    borderLeftWidth: 3,
+    borderLeftColor: "#fbbf24",
+    paddingLeft: 8,
+  },
+  entryNoteText: {
+    color: "#fbbf24",
     fontSize: 15,
     lineHeight: 22,
   },
