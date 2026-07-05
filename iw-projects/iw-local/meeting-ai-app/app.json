@@ -27,6 +27,7 @@
       }
     },
     "android": {
+      "package": "works.intervention.meetingai",
       "adaptiveIcon": {
         "backgroundColor": "#09090b",
         "foregroundImage": "./assets/android-icon-foreground.png"
