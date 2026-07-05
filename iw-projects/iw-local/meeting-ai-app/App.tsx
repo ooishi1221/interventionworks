@@ -137,11 +137,9 @@ export default function App() {
   const [partnerName, setPartnerName] = useState(DEFAULT_PARTNER);
   const [partnerNameInput, setPartnerNameInput] = useState(DEFAULT_PARTNER);
   const [homeInput, setHomeInput] = useState("");
-  const [homeMode, setHomeMode] = useState<"ask" | "companion" | "request">("ask"); // 入力バーの送信先。デフォルトは「すぐ聞く」
+  const [homeMode, setHomeMode] = useState<"companion" | "request">("companion"); // 入力バーの送信先。デフォルトは「聞く」(テレポート)
   const [homeReqDone, setHomeReqDone] = useState(false);
-  const [askSending, setAskSending] = useState(false);
-  const [thinkingDots, setThinkingDots] = useState("");
-  const [askItems, setAskItems] = useState<{ id: string; q: string; a: string; via?: "companion" }[]>([]);
+  const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
   const [askExpanded, setAskExpanded] = useState(false);
   // 🚀相棒に聞く: 質問キューに積んで相棒(Claude Code Web)の回答をポーリング。q=質問文 ts=送信時刻(epoch秒)
   const [pending, setPending] = useState<{ id: string; q: string; ts: number }[]>([]);
@@ -202,19 +200,9 @@ export default function App() {
     }
   }, [entries]);
 
-  // ── 考え中の「.」「..」「...」ループ ──
+  // ── 気配ドット: 相棒の回答待ち(pending)がある間は点滅、それ以外は常在（不透明度1） ──
   useEffect(() => {
-    if (!askSending) { setThinkingDots(""); return; }
-    setThinkingDots(".");
-    const id = setInterval(() => {
-      setThinkingDots((d) => (d.length >= 3 ? "." : d + "."));
-    }, 400);
-    return () => clearInterval(id);
-  }, [askSending]);
-
-  // ── 気配ドット: 考え中は点滅、それ以外は常在（不透明度1） ──
-  useEffect(() => {
-    if (!askSending) { breatheAnim.setValue(1); return; }
+    if (pending.length === 0) { breatheAnim.setValue(1); return; }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(breatheAnim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
@@ -223,7 +211,7 @@ export default function App() {
     );
     loop.start();
     return () => loop.stop();
-  }, [askSending, breatheAnim]);
+  }, [pending.length, breatheAnim]);
 
   // ── テキスト後送（ローカルモード: /append へ。圏外なら保持して次回再送） ──
   const flushTexts = useCallback(async (): Promise<void> => {
@@ -626,7 +614,7 @@ export default function App() {
         const match = pendingRef.current.find((p) => p.id === ans.question_id);
         if (!match) continue;
         setAskItems((prev) => [
-          { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q: match.q, a: ans.text, via: "companion" },
+          { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q: match.q, a: ans.text },
           ...prev,
         ]);
         setPending((prev) => prev.filter((p) => p.id !== ans.question_id));
@@ -775,47 +763,11 @@ export default function App() {
     }
   }, [whisperUrl, homeInput, username]);
 
-  // ── ベキたんに聞く（会議中に即質問。15秒でタイムアウト） ──
-  const askBecky = useCallback(async () => {
-    const q = homeInput.trim();
-    if (!q || askSending) return;
-    setAskSending(true);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
-    try {
-      const res = await fetch(`${whisperUrl}/ask`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: username, question: q }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const { answer } = (await res.json()) as { answer?: string };
-      setAskItems((prev) => [
-        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: answer ?? "(空の返答)" },
-        ...prev,
-      ]);
-      setHomeInput("");
-    } catch (err) {
-      const msg = controller.signal.aborted
-        ? "時間切れ、もう一度聞いて"
-        : `⚠️ 失敗: ${err instanceof Error ? err.message : String(err)}`;
-      setAskItems((prev) => [
-        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, q, a: msg },
-        ...prev,
-      ]);
-    } finally {
-      clearTimeout(timer);
-      setAskSending(false);
-    }
-  }, [whisperUrl, homeInput, askSending, username]);
-
   // ── 統合入力バーの送信ルーター（トグルで送信先が切り替わる） ──
   const onHomeSubmit = useCallback(() => {
-    if (homeMode === "ask") askBecky();
-    else if (homeMode === "companion") companionAsk();
+    if (homeMode === "companion") companionAsk();
     else sendHomeRequest();
-  }, [homeMode, askBecky, companionAsk, sendHomeRequest]);
+  }, [homeMode, companionAsk, sendHomeRequest]);
 
   // ── 設定保存 ──
   const saveSettings = useCallback(async () => {
@@ -951,29 +903,21 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
-          <Text style={styles.askPartnerLabel}>
-            {partnerName}{askItems[0].via === "companion" ? " 🚀" : ""}:
-          </Text>
+          <Text style={styles.askPartnerLabel}>{partnerName}:</Text>
           <Text selectable style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
             {askItems[0].a}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* 統合入力バー: 左のトグルで [💬すぐ聞く | 🚀相棒に聞く | 📌お願い] を切替。会議中に指が迷う分岐をゼロに */}
+      {/* 統合入力バー: 左のトグルで [💬聞く(テレポート) | 📌お願い] を切替。会議中に指が迷う分岐をゼロに */}
       <View style={styles.homeAskBar}>
         <View style={styles.segToggle}>
-          <TouchableOpacity
-            style={[styles.segBtn, homeMode === "ask" && styles.segBtnActive]}
-            onPress={() => setHomeMode("ask")}
-          >
-            <Text style={[styles.segText, homeMode === "ask" && styles.segTextActive]}>💬</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segBtn, homeMode === "companion" && styles.segBtnActive]}
             onPress={() => setHomeMode("companion")}
           >
-            <Text style={[styles.segText, homeMode === "companion" && styles.segTextActive]}>🚀</Text>
+            <Text style={[styles.segText, homeMode === "companion" && styles.segTextActive]}>💬</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segBtn, homeMode === "request" && styles.segBtnActive]}
@@ -987,11 +931,9 @@ export default function App() {
           value={homeInput}
           onChangeText={setHomeInput}
           placeholder={
-            homeMode === "ask"
-              ? `${partnerName}にすぐ聞く…`
-              : homeMode === "companion"
-                ? `${partnerName}に聞く（記憶ごと・少し待つ）…`
-                : "お願いを付箋で残す…"
+            homeMode === "companion"
+              ? `${partnerName}に聞く…`
+              : "お願いを付箋で残す…"
           }
           placeholderTextColor="#4a4a52"
           returnKeyType="send"
@@ -1001,14 +943,11 @@ export default function App() {
           style={styles.homeAskSend}
           onPress={onHomeSubmit}
           activeOpacity={0.8}
-          disabled={homeMode === "ask" && askSending}
         >
           <Text style={styles.homeAskSendText}>
-            {homeMode === "ask"
-              ? (askSending ? thinkingDots : "送信")
-              : homeMode === "companion"
-                ? "送る"
-                : (homeReqDone ? "✓ 送った" : "お願い")}
+            {homeMode === "companion"
+              ? "送る"
+              : (homeReqDone ? "✓ 送った" : "お願い")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1197,9 +1136,10 @@ export default function App() {
   // ──────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────
-  // 気配ドットの色: 考え中=青(点滅) / 録音中=薄い水色(点灯) / アイドル=グレー
-  const dotColor = askSending ? "#3b7cf6" : isRecording ? "#7dd3fc" : "#4a4a52";
-  const dotLit = askSending || isRecording; // 点灯時だけ shadow を出す
+  // 気配ドットの色: 相棒の回答待ち=青(点滅) / 録音中=薄い水色(点灯) / アイドル=グレー
+  const thinking = pending.length > 0;
+  const dotColor = thinking ? "#3b7cf6" : isRecording ? "#7dd3fc" : "#4a4a52";
+  const dotLit = thinking || isRecording; // 点灯時だけ shadow を出す
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1211,7 +1151,7 @@ export default function App() {
           <Animated.View
             style={[
               styles.presenceDot,
-              { backgroundColor: dotColor, opacity: askSending ? breatheAnim : 1 },
+              { backgroundColor: dotColor, opacity: thinking ? breatheAnim : 1 },
               dotLit && { shadowColor: dotColor, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
             ]}
           />
