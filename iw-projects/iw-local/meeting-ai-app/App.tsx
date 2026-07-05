@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   AppState,
+  Switch,
 } from "react-native";
 import {
   useAudioRecorder,
@@ -21,11 +22,15 @@ import {
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
   RecordingPresets,
+  IOSOutputFormat,
+  AudioQuality,
 } from "expo-audio";
 import type { AudioRecorder, RecordingOptions } from "expo-audio";
 import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
+import { initWhisper } from "whisper.rn";
+import type { WhisperContext } from "whisper.rn";
 
 // ──────────────────────────────────────────
 // Constants
@@ -33,9 +38,38 @@ import { StatusBar } from "expo-status-bar";
 const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
 const STORAGE_KEY_USER = "@meeting_ai_username";
+const STORAGE_KEY_LOCAL = "@meeting_ai_local_mode";
 const DEFAULT_USERNAME = "default";
 const CHUNK_DURATION_MS = 45000;
 const RECORDING_OPTIONS: RecordingOptions = RecordingPresets.HIGH_QUALITY;
+
+// 端末内文字起こし用モデル（差し替えノブ: filename/url/sizeMB を差し替えるだけで別モデルに）
+const WHISPER_MODEL = {
+  filename: "ggml-large-v3-turbo-q5_0.bin",
+  url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+  sizeMB: 574,
+};
+const MODEL_PATH = `${FileSystem.documentDirectory}${WHISPER_MODEL.filename}`;
+
+// whisper.rn は WAV/16bit PCM のみ受け付ける（m4a 不可）。ローカルモード時だけこの設定で録音する。
+const WAV_RECORDING_OPTIONS: RecordingOptions = {
+  extension: ".wav",
+  sampleRate: 16000,
+  numberOfChannels: 1,
+  bitRate: 256000, // 16000Hz * 16bit * 1ch
+  android: { outputFormat: "default", audioEncoder: "default" }, // Android はローカルモード非対応（未使用）
+  ios: {
+    extension: ".wav",
+    outputFormat: IOSOutputFormat.LINEARPCM,
+    audioQuality: AudioQuality.HIGH,
+    sampleRate: 16000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: { mimeType: "audio/wav", bitsPerSecond: 256000 },
+};
+
 const NOISE_PATTERNS = [
   "ご視聴ありがとう",
   "日本語の会議",
@@ -43,6 +77,17 @@ const NOISE_PATTERNS = [
   "チャンネル登録",
   "字幕",
 ];
+
+// サーバー whisper_server.py の remove_fillers を JS 移植（表示用。/append 側でも再実行されるので冪等でよい）
+const FILLER_PATTERN =
+  /(?:えーっと|えーと|えっと|えー、?|あのー|あの[ーっ]|あのう|あの、|うーん|うーんと|まあ(?=[、。\s]|$)|そうですね(?=[、。\s]|$)|ですね(?=[、。\s]|$)|なんか(?=[、。\s]|$))/gu;
+
+function removeFillers(text: string): string {
+  let cleaned = text.replace(FILLER_PATTERN, "");
+  cleaned = cleaned.replace(/[　\s]+/g, " ").trim();
+  cleaned = cleaned.replace(/、{2,}/g, "、");
+  return cleaned;
+}
 
 function getTimestamp() {
   return new Date().toLocaleTimeString("ja-JP", {
@@ -96,6 +141,10 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [localMode, setLocalMode] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+  const [dlProgress, setDlProgress] = useState<number | null>(null); // null=非DL中 / 0〜1=進捗
+  const [canResume, setCanResume] = useState(false); // DL中断からの再開ボタン表示
 
   const recorderA = useAudioRecorder(RECORDING_OPTIONS);
   const recorderB = useAudioRecorder(RECORDING_OPTIONS);
@@ -107,13 +156,25 @@ export default function App() {
   const activeRecorderIndexRef = useRef(0);
   const handoffInProgressRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
+  const localModeRef = useRef(false);
+  const whisperCtxRef = useRef<WhisperContext | null>(null);
+  const pendingTextsRef = useRef<{ text: string; ts: string }[]>([]);
+  const isFlushingRef = useRef(false);
+  const downloadRef = useRef<FileSystem.DownloadResumable | null>(null);
 
-  // ── URL / ユーザー名 読み込み ──
+  // ── URL / ユーザー名 / ローカルモード 読み込み ──
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER]).then(([[, url], [, user]]) => {
-      if (url) { setWhisperUrl(url); setUrlInput(url); }
-      if (user) { setUsername(user); setUsernameInput(user); }
-    });
+    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER, STORAGE_KEY_LOCAL]).then(
+      ([[, url], [, user], [, local]]) => {
+        if (url) { setWhisperUrl(url); setUrlInput(url); }
+        if (user) { setUsername(user); setUsernameInput(user); }
+        if (local === "1") { setLocalMode(true); localModeRef.current = true; }
+      }
+    );
+    // モデルが既にDL済みか確認（iOSのみ）
+    if (Platform.OS === "ios") {
+      FileSystem.getInfoAsync(MODEL_PATH).then((info) => setModelReady(info.exists)).catch(() => {});
+    }
   }, []);
 
   // ── スクロール最下部 ──
@@ -123,7 +184,29 @@ export default function App() {
     }
   }, [entries]);
 
-  // ── チャンク送信（キュー方式） ──
+  // ── テキスト後送（ローカルモード: /append へ。圏外なら保持して次回再送） ──
+  const flushTexts = useCallback(async (): Promise<void> => {
+    if (isFlushingRef.current) return;
+    isFlushingRef.current = true;
+    try {
+      while (pendingTextsRef.current.length > 0) {
+        const item = pendingTextsRef.current[0];
+        const res = await fetch(`${whisperUrl}/append`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: item.text, ts: item.ts, user: username }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        pendingTextsRef.current.shift();
+      }
+    } catch {
+      // 圏外/失敗 → キュー先頭に残したまま。次の flushTexts で再送
+    } finally {
+      isFlushingRef.current = false;
+    }
+  }, [whisperUrl, username]);
+
+  // ── チャンク送信（キュー方式。ローカルモード=端末内whisper / OFF=音声POST） ──
   const processQueue = useCallback(async (): Promise<void> => {
     if (isSendingRef.current) return;
     const uri = pendingChunksRef.current.shift();
@@ -131,39 +214,81 @@ export default function App() {
 
     isSendingRef.current = true;
     setSending(true);
+    let failed = false;
     try {
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const res = await fetch(`${whisperUrl}/transcribe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioBase64: base64, mimeType: "audio/m4a", user: username }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const { text } = (await res.json()) as { text?: string };
-      setError(null);
-      if (text && text.trim().length > 0 && !isNoise(text.trim())) {
-        setEntries((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-            timestamp: getTimestamp(),
-            text: text.trim(),
-          },
-        ]);
+      if (localModeRef.current && Platform.OS === "ios") {
+        // 端末内文字起こし
+        const ctx = whisperCtxRef.current;
+        if (!ctx) throw new Error("whisper未ロード");
+        const started = Date.now();
+        const { promise } = ctx.transcribe(uri, { language: "ja" });
+        const { result } = await promise;
+        const elapsed = ((Date.now() - started) / 1000).toFixed(1);
+        const cleaned = removeFillers((result ?? "").trim());
+        setError(null);
+        if (cleaned.length > 0 && !isNoise(cleaned)) {
+          const ts = getTimestamp();
+          setEntries((prev) => [
+            ...prev,
+            {
+              id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+              timestamp: `${ts} (${elapsed}s)`,
+              text: cleaned,
+            },
+          ]);
+          pendingTextsRef.current.push({ text: cleaned, ts });
+          flushTexts();
+        }
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+      } else {
+        // 従来: 音声を POST /transcribe（話者分離が要る会議の保険）
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const res = await fetch(`${whisperUrl}/transcribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audioBase64: base64, mimeType: "audio/m4a", user: username }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { text } = (await res.json()) as { text?: string };
+        setError(null);
+        if (text && text.trim().length > 0 && !isNoise(text.trim())) {
+          setEntries((prev) => [
+            ...prev,
+            {
+              id: `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+              timestamp: getTimestamp(),
+              text: text.trim(),
+            },
+          ]);
+        }
+        await FileSystem.deleteAsync(uri, { idempotent: true });
       }
-      await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (err) {
-      console.error("sendChunk error:", err);
+      console.error("processQueue error:", err);
       setError(`送信失敗: ${err instanceof Error ? err.message : String(err)}`);
+      // 失敗チャンクはキューに戻す（音声ファイル残存=データロスゼロ）。復帰時に再消化
+      pendingChunksRef.current.unshift(uri);
+      failed = true;
     } finally {
       isSendingRef.current = false;
       setSending(false);
       setPendingCount(pendingChunksRef.current.length);
-      if (pendingChunksRef.current.length > 0) processQueue();
+      // キュー消化しきって録音停止済みなら whisper を解放（非会議時に~700MB常駐でjetsamを招かない）
+      if (
+        localModeRef.current &&
+        pendingChunksRef.current.length === 0 &&
+        !isRecordingRef.current &&
+        whisperCtxRef.current
+      ) {
+        whisperCtxRef.current.release().catch(() => {});
+        whisperCtxRef.current = null;
+      }
+      // 失敗時はタイトループを避け、次のチャンク到着 / フォアグラウンド復帰で消化する
+      if (!failed && pendingChunksRef.current.length > 0) processQueue();
     }
-  }, [whisperUrl]);
+  }, [whisperUrl, username, flushTexts]);
 
   const sendChunk = useCallback(
     (uri: string) => {
@@ -192,7 +317,9 @@ export default function App() {
 
   const copyChunkToDocumentDirectory = useCallback(async (uri: string) => {
     try {
-      const destUri = `${FileSystem.documentDirectory}chunk_${Date.now()}.m4a`;
+      const dot = uri.lastIndexOf(".");
+      const ext = dot >= 0 ? uri.slice(dot) : ".m4a";
+      const destUri = `${FileSystem.documentDirectory}chunk_${Date.now()}${ext}`;
       await FileSystem.copyAsync({ from: uri, to: destUri });
       return destUri;
     } catch {
@@ -202,7 +329,9 @@ export default function App() {
 
   const startRecorder = useCallback(
     async (targetRecorder: AudioRecorder) => {
-      await targetRecorder.prepareToRecordAsync(RECORDING_OPTIONS);
+      await targetRecorder.prepareToRecordAsync(
+        localModeRef.current ? WAV_RECORDING_OPTIONS : RECORDING_OPTIONS
+      );
       targetRecorder.record();
     },
     []
@@ -308,6 +437,26 @@ export default function App() {
         return;
       }
 
+      // ローカルモード: モデル確認 + whisper 遅延ロード
+      if (localModeRef.current && Platform.OS === "ios") {
+        if (!modelReady) {
+          Alert.alert(
+            "モデル未ダウンロード",
+            "設定タブで文字起こしモデル（574MB）をダウンロードしてください。"
+          );
+          return;
+        }
+        if (!whisperCtxRef.current) {
+          try {
+            whisperCtxRef.current = await initWhisper({ filePath: MODEL_PATH });
+          } catch (e) {
+            console.error("initWhisper error:", e);
+            Alert.alert("エラー", "文字起こしモデルの読み込みに失敗しました。");
+            return;
+          }
+        }
+      }
+
       await configureRecordingAudioSession();
 
       activeRecorderIndexRef.current = 0;
@@ -322,7 +471,7 @@ export default function App() {
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [configureRecordingAudioSession, recordChunk, whisperUrl]);
+  }, [configureRecordingAudioSession, recordChunk, whisperUrl, modelReady]);
 
   // ── 録音停止 ──
   const stopRecording = useCallback(async () => {
@@ -382,7 +531,11 @@ export default function App() {
   // ── フォアグラウンド復帰時に録音を自動再開 ──
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "active" && isRecordingRef.current) {
+      if (nextState !== "active") return;
+      // フォアグラウンド復帰: 滞留したチャンク / 未送信テキストを消化
+      processQueue();
+      flushTexts();
+      if (isRecordingRef.current) {
         // チャンクタイマーが動いていない = バックグラウンドで止まっていた
         if (!chunkTimerRef.current) {
           configureRecordingAudioSession()
@@ -400,7 +553,7 @@ export default function App() {
       }
     });
     return () => sub.remove();
-  }, [configureRecordingAudioSession, getRecorder, recordChunk, scheduleChunkHandoff]);
+  }, [configureRecordingAudioSession, getRecorder, recordChunk, scheduleChunkHandoff, processQueue, flushTexts]);
 
   // ── セッション一覧取得 ──
   const fetchSessions = useCallback(async () => {
@@ -506,6 +659,62 @@ export default function App() {
     setUsername(user);
     setUsernameInput(user);
   }, [urlInput, usernameInput]);
+
+  // ── ローカルモード切替（録音中は不可） ──
+  const toggleLocalMode = useCallback((val: boolean) => {
+    setLocalMode(val);
+    localModeRef.current = val;
+    AsyncStorage.setItem(STORAGE_KEY_LOCAL, val ? "1" : "0").catch(() => {});
+  }, []);
+
+  // ── モデルダウンロード（.part に落として完走後 moveAsync） ──
+  const downloadModel = useCallback(async () => {
+    if (Platform.OS !== "ios") return;
+    const partPath = `${MODEL_PATH}.part`;
+    setCanResume(false);
+    setDlProgress(0);
+    try {
+      const dl = FileSystem.createDownloadResumable(
+        WHISPER_MODEL.url,
+        partPath,
+        {},
+        (p) => {
+          const total = p.totalBytesExpectedToWrite || WHISPER_MODEL.sizeMB * 1024 * 1024;
+          setDlProgress(p.totalBytesWritten / total);
+        }
+      );
+      downloadRef.current = dl;
+      const result = await dl.downloadAsync();
+      if (result) {
+        await FileSystem.moveAsync({ from: partPath, to: MODEL_PATH });
+        setModelReady(true);
+        downloadRef.current = null;
+      }
+      setDlProgress(null);
+    } catch (err) {
+      // 中断: downloadRef は残す（再開ボタンで resumeAsync）
+      setError(`モデルDL失敗: ${err instanceof Error ? err.message : String(err)}`);
+      setCanResume(true);
+    }
+  }, []);
+
+  const resumeDownload = useCallback(async () => {
+    const dl = downloadRef.current;
+    if (!dl) { downloadModel(); return; }
+    setCanResume(false);
+    try {
+      const result = await dl.resumeAsync();
+      if (result) {
+        await FileSystem.moveAsync({ from: `${MODEL_PATH}.part`, to: MODEL_PATH });
+        setModelReady(true);
+        downloadRef.current = null;
+        setDlProgress(null);
+      }
+    } catch (err) {
+      setError(`再開失敗: ${err instanceof Error ? err.message : String(err)}`);
+      setCanResume(true);
+    }
+  }, [downloadModel]);
 
   // ──────────────────────────────────────────
   // Tab Contents
@@ -731,6 +940,44 @@ export default function App() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.settingsWrap}>
+        {Platform.OS === "ios" && (
+          <>
+            <Text style={styles.label}>端末内文字起こし</Text>
+            <View style={styles.localRow}>
+              <Text style={styles.localRowLabel}>
+                iPhone内で処理（オフライン対応）
+              </Text>
+              <Switch
+                value={localMode}
+                onValueChange={toggleLocalMode}
+                disabled={isRecording}
+              />
+            </View>
+            <View style={styles.modelStatusRow}>
+              {modelReady ? (
+                <Text style={styles.modelStatusReady}>✓ モデル準備完了</Text>
+              ) : dlProgress !== null ? (
+                <Text style={styles.modelStatusText}>
+                  ダウンロード中… {Math.round(dlProgress * 100)}%
+                </Text>
+              ) : canResume ? (
+                <TouchableOpacity onPress={resumeDownload}>
+                  <Text style={styles.modelDlBtn}>再開する</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={downloadModel} disabled={isRecording}>
+                  <Text style={styles.modelDlBtn}>
+                    モデルをダウンロード（{WHISPER_MODEL.sizeMB}MB）
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.hint}>
+              574MBのモデルを初回のみDL。Wi-Fi推奨。ONにすると音声を外に送らず端末内で文字起こしします（話者分離は無し）。録音中は切替できません。
+            </Text>
+          </>
+        )}
+
         <Text style={styles.label}>ユーザー名</Text>
         <TextInput
           style={styles.input}
@@ -1032,6 +1279,36 @@ const styles = StyleSheet.create({
     color: "#52525b",
     fontSize: 12,
     textAlign: "center",
+  },
+  localRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  localRowLabel: {
+    color: "#e4e4e7",
+    fontSize: 15,
+    flex: 1,
+    marginRight: 12,
+  },
+  modelStatusRow: {
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  modelStatusText: {
+    color: "#60a5fa",
+    fontSize: 14,
+    fontVariant: ["tabular-nums"],
+  },
+  modelStatusReady: {
+    color: "#4ade80",
+    fontSize: 14,
+  },
+  modelDlBtn: {
+    color: "#60a5fa",
+    fontSize: 14,
+    fontWeight: "600",
   },
   // 履歴タブ
   historyHeader: {

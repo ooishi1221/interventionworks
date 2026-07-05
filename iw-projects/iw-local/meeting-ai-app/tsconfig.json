@@ -1,6 +1,11 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "paths": {
+      // whisper.rn の exports は "./*" のみで root "." を持たないため bundler 解決で型が引けない。
+      // Metro は main/react-native フィールドで実行時解決するので、型解決だけ実体へ橋渡しする。
+      "whisper.rn": ["./node_modules/whisper.rn/lib/typescript/index.d.ts"]
+    }
   }
 }

@@ -593,11 +593,45 @@ async def handle_session_delete(request: web.Request) -> web.Response:
 
 
 # --------------------------------------------------------------------------
+# /append — 端末内文字起こし(R3)のテキスト同期。音声を送らずテキストだけ追記する
+# --------------------------------------------------------------------------
+
+async def handle_append(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+        text = (body.get("text") or "").strip()
+        current_file = _current_file(body.get("user"))
+        if not text:
+            return web.Response(status=400, content_type="application/json",
+                                text=json.dumps({"error": "No text"}))
+        if any(p in text for p in NOISE_PATTERNS):
+            return web.Response(content_type="application/json",
+                                text=json.dumps({"ok": True, "skipped": True}))
+        text = remove_fillers(text)
+        if not text:
+            return web.Response(content_type="application/json",
+                                text=json.dumps({"ok": True, "skipped": True}))
+        # ts はクライアント発話時刻優先（オフライン後送で追記時刻がズレるため）
+        ts = body.get("ts") or ""
+        if not re.fullmatch(r"\d{2}:\d{2}:\d{2}", ts):
+            ts = datetime.now(JST).strftime("%H:%M:%S")
+        os.makedirs(MEETING_DIR, exist_ok=True)
+        with open(current_file, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] {text}\n")
+        return web.Response(content_type="application/json",
+                            text=json.dumps({"ok": True}))
+    except Exception as e:
+        return web.Response(status=500, content_type="application/json",
+                            text=json.dumps({"error": str(e)}))
+
+
+# --------------------------------------------------------------------------
 # ルーティング
 # --------------------------------------------------------------------------
 # 録音チャンクが aiohttp デフォルト上限(1MB)を超えると 413 で弾かれる（7/5 実機で発生）→ 100MB に拡大
 app = web.Application(client_max_size=100 * 1024**2)
 app.router.add_post("/transcribe", handle_transcribe)
+app.router.add_post("/append", handle_append)
 app.router.add_post("/request", handle_request)
 app.router.add_post("/ask", handle_ask)
 app.router.add_post("/start-session", handle_start_session)

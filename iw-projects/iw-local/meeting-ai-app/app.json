@@ -2,7 +2,7 @@
   "expo": {
     "name": "meeting-ai",
     "slug": "meeting-ai-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,6 +15,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "works.intervention.meetingai",
+      "entitlements": {
+        "com.apple.developer.kernel.extended-virtual-addressing": true,
+        "com.apple.developer.kernel.increased-memory-limit": true
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
