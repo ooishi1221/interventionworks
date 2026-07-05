@@ -1,12 +1,4 @@
 {
-  "updated_at": "2026-06-25T09:00:00+09:00",
-  "questions": [
-    {
-      "id": "q-vocals",
-      "label": "歌わせる vocals.mp3 って何の曲？変換後どう使う予定？",
-      "category": "voice",
-      "urgency": "medium",
-      "icon": "🎤"
-    }
-  ]
+  "updated_at": "2026-07-05T09:00:00+09:00",
+  "questions": []
 }

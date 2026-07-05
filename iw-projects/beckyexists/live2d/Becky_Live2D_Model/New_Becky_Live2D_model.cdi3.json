@@ -1,0 +1,761 @@
+{
+	"Version": 3,
+	"Parameters": [
+		{
+			"Id": "ParamAngleX",
+			"GroupId": "",
+			"Name": "角度 X"
+		},
+		{
+			"Id": "ParamAngleY",
+			"GroupId": "",
+			"Name": "角度 Y"
+		},
+		{
+			"Id": "ParamAngleZ",
+			"GroupId": "",
+			"Name": "角度 Z"
+		},
+		{
+			"Id": "ParamEyeLOpen",
+			"GroupId": "",
+			"Name": "左目　開閉"
+		},
+		{
+			"Id": "ParamEyeLSmile",
+			"GroupId": "",
+			"Name": "左目　笑顔"
+		},
+		{
+			"Id": "ParamEyeROpen",
+			"GroupId": "",
+			"Name": "右目　開閉"
+		},
+		{
+			"Id": "ParamEyeRSmile",
+			"GroupId": "",
+			"Name": "右目　笑顔"
+		},
+		{
+			"Id": "ParamEyeBallX",
+			"GroupId": "",
+			"Name": "目玉 X"
+		},
+		{
+			"Id": "ParamEyeBallY",
+			"GroupId": "",
+			"Name": "目玉 Y"
+		},
+		{
+			"Id": "ParamBrowLY",
+			"GroupId": "",
+			"Name": "左眉　上下"
+		},
+		{
+			"Id": "ParamBrowRY",
+			"GroupId": "",
+			"Name": "右眉　上下"
+		},
+		{
+			"Id": "ParamBrowLX",
+			"GroupId": "",
+			"Name": "左眉　左右"
+		},
+		{
+			"Id": "ParamBrowRX",
+			"GroupId": "",
+			"Name": "右眉　左右"
+		},
+		{
+			"Id": "ParamBrowLAngle",
+			"GroupId": "",
+			"Name": "左眉　角度"
+		},
+		{
+			"Id": "ParamBrowRAngle",
+			"GroupId": "",
+			"Name": "右眉　角度"
+		},
+		{
+			"Id": "ParamBrowLForm",
+			"GroupId": "",
+			"Name": "左眉　変形"
+		},
+		{
+			"Id": "ParamBrowRForm",
+			"GroupId": "",
+			"Name": "右眉　変形"
+		},
+		{
+			"Id": "ParamMouthForm",
+			"GroupId": "",
+			"Name": "口　変形"
+		},
+		{
+			"Id": "ParamMouthOpenY",
+			"GroupId": "",
+			"Name": "口　開閉"
+		},
+		{
+			"Id": "ParamCheek",
+			"GroupId": "",
+			"Name": "照れ"
+		},
+		{
+			"Id": "ParamBodyAngleX",
+			"GroupId": "",
+			"Name": "体の回転 X"
+		},
+		{
+			"Id": "ParamBodyAngleY",
+			"GroupId": "",
+			"Name": "体の回転 Y"
+		},
+		{
+			"Id": "ParamBodyAngleZ",
+			"GroupId": "",
+			"Name": "体の回転 Z"
+		},
+		{
+			"Id": "ParamBreath",
+			"GroupId": "",
+			"Name": "呼吸"
+		},
+		{
+			"Id": "ParamHairFront",
+			"GroupId": "",
+			"Name": "髪揺れ　前"
+		},
+		{
+			"Id": "ParamHairSide",
+			"GroupId": "",
+			"Name": "髪揺れ　横"
+		},
+		{
+			"Id": "ParamHairBack",
+			"GroupId": "",
+			"Name": "髪揺れ　後"
+		},
+		{
+			"Id": "migiribon13noyure",
+			"GroupId": "",
+			"Name": "←リボン13の揺れ"
+		},
+		{
+			"Id": "migiribon45noyure",
+			"GroupId": "",
+			"Name": "←リボン45の揺れ"
+		},
+		{
+			"Id": "hidariribon13noyure",
+			"GroupId": "",
+			"Name": "→リボン13の揺れ"
+		},
+		{
+			"Id": "hidariribon45noyure",
+			"GroupId": "",
+			"Name": "→リボン45の揺れ"
+		},
+		{
+			"Id": "usirohurirunoyure",
+			"GroupId": "",
+			"Name": "後ろフリルの揺れ"
+		},
+		{
+			"Id": "maehurirunoyure",
+			"GroupId": "",
+			"Name": "前フリルの揺れ"
+		},
+		{
+			"Id": "yokokaminoyure",
+			"GroupId": "",
+			"Name": "横髪の揺れ"
+		},
+		{
+			"Id": "maegaminoyure",
+			"GroupId": "",
+			"Name": "前髪の揺れ"
+		},
+		{
+			"Id": "maegamikagenoyure",
+			"GroupId": "",
+			"Name": "前髪影の揺れ"
+		},
+		{
+			"Id": "hidarituinnoyure",
+			"GroupId": "",
+			"Name": "→ツインの揺れ"
+		},
+		{
+			"Id": "migituinnoyure",
+			"GroupId": "",
+			"Name": "←ツインの揺れ"
+		},
+		{
+			"Id": "sukatonoyure",
+			"GroupId": "",
+			"Name": "スカートの揺れ"
+		},
+		{
+			"Id": "katahurirunoyure",
+			"GroupId": "",
+			"Name": "肩フリルの揺れ"
+		},
+		{
+			"Id": "kosiribon23noyure",
+			"GroupId": "",
+			"Name": "腰リボン23の揺れ"
+		},
+		{
+			"Id": "kosiribon45noyure",
+			"GroupId": "",
+			"Name": "腰リボン45の揺れ"
+		},
+		{
+			"Id": "hurirukagenoyure",
+			"GroupId": "",
+			"Name": "フリル影の揺れ"
+		},
+		{
+			"Id": "hidariudenoyure",
+			"GroupId": "",
+			"Name": "→腕の揺れ"
+		},
+		{
+			"Id": "migiudenoyure",
+			"GroupId": "",
+			"Name": "←腕の揺れ"
+		},
+		{
+			"Id": "hidariudehurirunoyure",
+			"GroupId": "",
+			"Name": "→腕フリルの揺れ"
+		},
+		{
+			"Id": "migiudehurirunoyure",
+			"GroupId": "",
+			"Name": "←腕フリルの揺れ"
+		},
+		{
+			"Id": "hidarihairaitonoyure",
+			"GroupId": "",
+			"Name": "→ハイライトの揺れ"
+		},
+		{
+			"Id": "migihairaitonoyure",
+			"GroupId": "",
+			"Name": "←ハイライトの揺れ"
+		},
+		{
+			"Id": "nekkuresu2noyure",
+			"GroupId": "",
+			"Name": "ネックレス2の揺れ"
+		},
+		{
+			"Id": "nekkuresu1noyure",
+			"GroupId": "",
+			"Name": "ネックレス1の揺れ"
+		},
+		{
+			"Id": "hidarimenoyure1",
+			"GroupId": "",
+			"Name": "→目の揺れ1"
+		},
+		{
+			"Id": "hidarimenoyure2",
+			"GroupId": "",
+			"Name": "→目の揺れ2"
+		},
+		{
+			"Id": "migimenoyure1",
+			"GroupId": "",
+			"Name": "←目の揺れ1"
+		},
+		{
+			"Id": "migimenoyure2",
+			"GroupId": "",
+			"Name": "←目の揺れ2"
+		},
+		{
+			"Id": "Ymigiribon45noyureY1",
+			"GroupId": "",
+			"Name": "←リボン45の揺れY1"
+		},
+		{
+			"Id": "migiribon45noyureY2",
+			"GroupId": "",
+			"Name": "←リボン45の揺れY2"
+		},
+		{
+			"Id": "hidariribon45noyureY1",
+			"GroupId": "",
+			"Name": "→リボン45の揺れY1"
+		},
+		{
+			"Id": "hidariribon45noyureY2",
+			"GroupId": "",
+			"Name": "→リボン45の揺れY2"
+		},
+		{
+			"Id": "usirohurirunoyureY1",
+			"GroupId": "",
+			"Name": "後ろフリルの揺れY1"
+		},
+		{
+			"Id": "usirohurirunoyureY2",
+			"GroupId": "",
+			"Name": "後ろフリルの揺れY2"
+		},
+		{
+			"Id": "maehurirunoyurey1",
+			"GroupId": "",
+			"Name": "前フリルの揺れY1"
+		},
+		{
+			"Id": "maehurirunoyurey2",
+			"GroupId": "",
+			"Name": "前フリルの揺れY2"
+		},
+		{
+			"Id": "yokokaminoyureY1",
+			"GroupId": "",
+			"Name": "横髪の揺れY1"
+		},
+		{
+			"Id": "yokokaminoyureY2",
+			"GroupId": "",
+			"Name": "横髪の揺れY2"
+		},
+		{
+			"Id": "maegaminoyureY1",
+			"GroupId": "",
+			"Name": "前髪の揺れY1"
+		},
+		{
+			"Id": "maegaminoyureY2",
+			"GroupId": "",
+			"Name": "前髪の揺れY2"
+		},
+		{
+			"Id": "maegamikagenoyureY1",
+			"GroupId": "",
+			"Name": "前髪影の揺れY1"
+		},
+		{
+			"Id": "maegamikagenoyureY2",
+			"GroupId": "",
+			"Name": "前髪影の揺れY2"
+		},
+		{
+			"Id": "hidarituinnoyureY1",
+			"GroupId": "",
+			"Name": "→ツインの揺れY1"
+		},
+		{
+			"Id": "hidarituinnnoyureY2",
+			"GroupId": "",
+			"Name": "→ツインの揺れY2"
+		},
+		{
+			"Id": "migituinnoyureY1",
+			"GroupId": "",
+			"Name": "←ツインの揺れY1"
+		},
+		{
+			"Id": "migituinnoyureY2",
+			"GroupId": "",
+			"Name": "←ツインの揺れY2"
+		},
+		{
+			"Id": "sukatonoyureY1",
+			"GroupId": "",
+			"Name": "スカートの揺れY1"
+		},
+		{
+			"Id": "sukatonoyureY2",
+			"GroupId": "",
+			"Name": "スカートの揺れY2"
+		},
+		{
+			"Id": "kosiribon23noyureY1",
+			"GroupId": "",
+			"Name": "腰リボン23の揺れY1"
+		},
+		{
+			"Id": "kosiribon23noyureY2",
+			"GroupId": "",
+			"Name": "腰リボン23の揺れY2"
+		},
+		{
+			"Id": "kosiribon45noyurey1",
+			"GroupId": "",
+			"Name": "腰リボン45の揺れY1"
+		},
+		{
+			"Id": "kosiribon45noyureY2",
+			"GroupId": "",
+			"Name": "腰リボン45の揺れY2"
+		},
+		{
+			"Id": "hidariasikagenoyure",
+			"GroupId": "",
+			"Name": "→足影の揺れ"
+		},
+		{
+			"Id": "migiasikagenoyure",
+			"GroupId": "",
+			"Name": "←足影の揺れ"
+		},
+		{
+			"Id": "hidariasikagenoyureY1",
+			"GroupId": "",
+			"Name": "→足影の揺れY1"
+		},
+		{
+			"Id": "hidariasikagenoyureY2",
+			"GroupId": "",
+			"Name": "→足影の揺れY2"
+		},
+		{
+			"Id": "migiasikagenoyureY1",
+			"GroupId": "",
+			"Name": "←足影の揺れY1"
+		},
+		{
+			"Id": "migiasikagenoyureY2",
+			"GroupId": "",
+			"Name": "←足影の揺れY2"
+		},
+		{
+			"Id": "ayasigegao",
+			"GroupId": "",
+			"Name": "怪しげ顔"
+		},
+		{
+			"Id": "doyagao",
+			"GroupId": "",
+			"Name": "ドヤ顔"
+		},
+		{
+			"Id": "zisinarigegao",
+			"GroupId": "",
+			"Name": "自信ありげ顔"
+		},
+		{
+			"Id": "sunegao",
+			"GroupId": "",
+			"Name": "拗ね顔"
+		},
+		{
+			"Id": "humangao",
+			"GroupId": "",
+			"Name": "不満顔"
+		},
+		{
+			"Id": "teregao",
+			"GroupId": "",
+			"Name": "照れ顔"
+		},
+		{
+			"Id": "egao",
+			"GroupId": "",
+			"Name": "笑顔"
+		},
+		{
+			"Id": "odorokigao",
+			"GroupId": "",
+			"Name": "驚き顔"
+		},
+		{
+			"Id": "odorokimoosyon",
+			"GroupId": "",
+			"Name": "驚きモーション"
+		},
+		{
+			"Id": "komarigao",
+			"GroupId": "",
+			"Name": "困り顔"
+		},
+		{
+			"Id": "hidariudenoyureY1",
+			"GroupId": "",
+			"Name": "→腕の揺れY1"
+		},
+		{
+			"Id": "hidariudenoyureY2",
+			"GroupId": "",
+			"Name": "→腕の揺れY2"
+		},
+		{
+			"Id": "migiudenoyureY1",
+			"GroupId": "",
+			"Name": "←腕の揺れY1"
+		},
+		{
+			"Id": "migiudenoyureY2",
+			"GroupId": "",
+			"Name": "←腕の揺れY2"
+		},
+		{
+			"Id": "ParamArmLA",
+			"GroupId": "",
+			"Name": "→腕の上下"
+		},
+		{
+			"Id": "ParamArmLB",
+			"GroupId": "",
+			"Name": "→腕の肘曲げ"
+		},
+		{
+			"Id": "ParamShoulder",
+			"GroupId": "",
+			"Name": "→肩の上下"
+		},
+		{
+			"Id": "ParamArmRA",
+			"GroupId": "",
+			"Name": "←腕の上下"
+		},
+		{
+			"Id": "ParamArmRB",
+			"GroupId": "",
+			"Name": "←腕の肘曲げ"
+		},
+		{
+			"Id": "ParamShoulderR",
+			"GroupId": "",
+			"Name": "←肩の上下"
+		},
+		{
+			"Id": "ParamHandL",
+			"GroupId": "",
+			"Name": "→手の差分"
+		},
+		{
+			"Id": "ParamHandR",
+			"GroupId": "",
+			"Name": "←手の差分"
+		},
+		{
+			"Id": "PartArmL",
+			"GroupId": "",
+			"Name": "→腕の前後"
+		},
+		{
+			"Id": "PartArmR",
+			"GroupId": "",
+			"Name": "←腕の前後"
+		},
+		{
+			"Id": "ParamTewohuruL",
+			"GroupId": "",
+			"Name": "→手を振る差分"
+		},
+		{
+			"Id": "ParamTewohuruR",
+			"GroupId": "",
+			"Name": "←手を振る差分"
+		}
+	],
+	"ParameterGroups": [],
+	"Parts": [
+		{
+			"Id": "Part",
+			"Name": "←リボン"
+		},
+		{
+			"Id": "Part2",
+			"Name": "→リボン"
+		},
+		{
+			"Id": "Part3",
+			"Name": "ヘッドドレス"
+		},
+		{
+			"Id": "Part4",
+			"Name": "フリル"
+		},
+		{
+			"Id": "Part19",
+			"Name": "上半身ベルト"
+		},
+		{
+			"Id": "Part22",
+			"Name": "肩フリル"
+		},
+		{
+			"Id": "Part24",
+			"Name": "→腕"
+		},
+		{
+			"Id": "Part25",
+			"Name": "←腕"
+		},
+		{
+			"Id": "Part5",
+			"Name": "→横髪"
+		},
+		{
+			"Id": "Part6",
+			"Name": "←横髪"
+		},
+		{
+			"Id": "Part7",
+			"Name": "前髪"
+		},
+		{
+			"Id": "Part8",
+			"Name": "→眉毛"
+		},
+		{
+			"Id": "Part9",
+			"Name": "→目"
+		},
+		{
+			"Id": "Part10",
+			"Name": "←眉毛"
+		},
+		{
+			"Id": "Part11",
+			"Name": "←目"
+		},
+		{
+			"Id": "Part12",
+			"Name": "前髪影"
+		},
+		{
+			"Id": "Part13",
+			"Name": "口"
+		},
+		{
+			"Id": "Part14",
+			"Name": "輪郭"
+		},
+		{
+			"Id": "Part15",
+			"Name": "耳"
+		},
+		{
+			"Id": "Part16",
+			"Name": "ネックレス"
+		},
+		{
+			"Id": "Part17",
+			"Name": "サイリウム"
+		},
+		{
+			"Id": "Part18",
+			"Name": "スカート"
+		},
+		{
+			"Id": "Part20",
+			"Name": "胸フリル"
+		},
+		{
+			"Id": "Part21",
+			"Name": "上半身"
+		},
+		{
+			"Id": "Part23",
+			"Name": "腰リボン"
+		},
+		{
+			"Id": "Part26",
+			"Name": "→ツイン"
+		},
+		{
+			"Id": "Part27",
+			"Name": "←ツイン"
+		},
+		{
+			"Id": "Part29",
+			"Name": "→足"
+		},
+		{
+			"Id": "Part30",
+			"Name": "←足"
+		},
+		{
+			"Id": "Part28",
+			"Name": "後頭部"
+		},
+		{
+			"Id": "PartSketch0",
+			"Name": "[ 下絵 ]"
+		}
+	],
+	"CombinedParameters": [
+		[
+			"ParamAngleX",
+			"ParamAngleY"
+		],
+		[
+			"ParamMouthForm",
+			"ParamMouthOpenY"
+		],
+		[
+			"Ymigiribon45noyureY1",
+			"migiribon45noyureY2"
+		],
+		[
+			"hidariribon45noyureY1",
+			"hidariribon45noyureY2"
+		],
+		[
+			"usirohurirunoyureY1",
+			"usirohurirunoyureY2"
+		],
+		[
+			"maehurirunoyurey1",
+			"maehurirunoyurey2"
+		],
+		[
+			"yokokaminoyureY1",
+			"yokokaminoyureY2"
+		],
+		[
+			"maegaminoyureY1",
+			"maegaminoyureY2"
+		],
+		[
+			"maegamikagenoyureY1",
+			"maegamikagenoyureY2"
+		],
+		[
+			"hidarituinnoyureY1",
+			"hidarituinnnoyureY2"
+		],
+		[
+			"migituinnoyureY1",
+			"migituinnoyureY2"
+		],
+		[
+			"sukatonoyureY1",
+			"sukatonoyureY2"
+		],
+		[
+			"kosiribon23noyureY1",
+			"kosiribon23noyureY2"
+		],
+		[
+			"kosiribon45noyurey1",
+			"kosiribon45noyureY2"
+		],
+		[
+			"hidariasikagenoyureY1",
+			"hidariasikagenoyureY2"
+		],
+		[
+			"migiasikagenoyureY1",
+			"migiasikagenoyureY2"
+		],
+		[
+			"hidariudenoyureY1",
+			"hidariudenoyureY2"
+		],
+		[
+			"migiudenoyureY1",
+			"migiudenoyureY2"
+		]
+	]
+}

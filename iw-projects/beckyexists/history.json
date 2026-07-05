@@ -199,6 +199,26 @@
         "NullEvi03": 2584
       },
       "cost_usd": 0.0292
+    },
+    {
+      "date": "2026-07-04",
+      "self_followers": 164,
+      "self_tweets": 248,
+      "rivals": {
+        "ebikani_hasami": 860,
+        "NullEvi03": 2584
+      },
+      "cost_usd": 0.046
+    },
+    {
+      "date": "2026-07-05",
+      "self_followers": 185,
+      "self_tweets": 282,
+      "rivals": {
+        "ebikani_hasami": 861,
+        "NullEvi03": 2584
+      },
+      "cost_usd": 0.0653
     }
   ]
 }
