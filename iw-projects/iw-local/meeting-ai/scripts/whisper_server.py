@@ -200,6 +200,25 @@ def _sessions_dir(user) -> str:
     u = _safe_user(user)
     return SESSIONS_DIR if u in _LEGACY_USERS else os.path.join(SESSIONS_DIR, u)
 
+
+# セッションのメタ情報（表示名・ピン留め）。ファイル自体は動かさず .meta.json に持つ
+def _meta_path(user) -> str:
+    return os.path.join(_sessions_dir(user), ".meta.json")
+
+
+def _load_meta(user) -> dict:
+    try:
+        with open(_meta_path(user), "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_meta(user, meta: dict) -> None:
+    os.makedirs(_sessions_dir(user), exist_ok=True)
+    with open(_meta_path(user), "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=1)
+
 # --------------------------------------------------------------------------
 # /transcribe
 # --------------------------------------------------------------------------
@@ -551,12 +570,14 @@ async def handle_save_session(request: web.Request) -> web.Response:
 # --------------------------------------------------------------------------
 
 async def handle_sessions_list(request: web.Request) -> web.Response:
-    sessions_dir = _sessions_dir(request.query.get("user"))
+    user = request.query.get("user")
+    sessions_dir = _sessions_dir(user)
     os.makedirs(sessions_dir, exist_ok=True)
     files = sorted(
         [f for f in os.listdir(sessions_dir) if f.endswith(".txt")],
         reverse=True,
     )
+    meta = _load_meta(user)
     sessions = []
     for f in files:
         path = os.path.join(sessions_dir, f)
@@ -570,7 +591,13 @@ async def handle_sessions_list(request: web.Request) -> web.Response:
                         break
         except Exception:
             pass
-        sessions.append({"filename": f, "preview": preview})
+        m = meta.get(f, {})
+        sessions.append({
+            "filename": f,
+            "preview": preview,
+            "title": m.get("title", ""),
+            "pinned": bool(m.get("pinned", False)),
+        })
     return web.Response(
         content_type="application/json",
         text=json.dumps({"sessions": sessions}, ensure_ascii=False),
@@ -610,10 +637,43 @@ async def handle_session_delete(request: web.Request) -> web.Response:
     if not filename:
         return web.Response(status=400, content_type="application/json",
                             text=json.dumps({"error": "Invalid filename"}))
-    path = os.path.join(_sessions_dir(request.query.get("user")), filename)
+    user = request.query.get("user")
+    path = os.path.join(_sessions_dir(user), filename)
     if os.path.exists(path):
         os.unlink(path)
+    meta = _load_meta(user)
+    if filename in meta:
+        meta.pop(filename, None)
+        _save_meta(user, meta)
     return web.Response(content_type="application/json", text=json.dumps({"ok": True}))
+
+
+async def handle_session_meta(request: web.Request) -> web.Response:
+    """セッションの表示名・ピン留めを更新（body: {user, title?, pinned?}）"""
+    try:
+        filename = _safe_filename(request.match_info["filename"])
+        if not filename:
+            return web.Response(status=400, content_type="application/json",
+                                text=json.dumps({"error": "Invalid filename"}))
+        body = await request.json()
+        user = body.get("user")
+        path = os.path.join(_sessions_dir(user), filename)
+        if not os.path.exists(path):
+            return web.Response(status=404, content_type="application/json",
+                                text=json.dumps({"error": "Not found"}))
+        meta = _load_meta(user)
+        entry = meta.get(filename, {})
+        if "title" in body:
+            entry["title"] = str(body["title"] or "")[:100]
+        if "pinned" in body:
+            entry["pinned"] = bool(body["pinned"])
+        meta[filename] = entry
+        _save_meta(user, meta)
+        return web.Response(content_type="application/json",
+                            text=json.dumps({"ok": True, "meta": entry}, ensure_ascii=False))
+    except Exception as e:
+        return web.Response(status=500, content_type="application/json",
+                            text=json.dumps({"error": str(e)}))
 
 
 # --------------------------------------------------------------------------
@@ -663,6 +723,7 @@ app.router.add_post("/save-session", handle_save_session)
 app.router.add_get("/sessions", handle_sessions_list)
 app.router.add_get("/sessions/{filename}", handle_session_get)
 app.router.add_delete("/sessions/{filename}", handle_session_delete)
+app.router.add_post("/sessions/{filename}/meta", handle_session_meta)
 
 if __name__ == "__main__":
     web.run_app(app, host="0.0.0.0", port=PORT)
