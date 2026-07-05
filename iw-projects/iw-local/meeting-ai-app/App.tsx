@@ -40,7 +40,9 @@ const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
 const STORAGE_KEY_USER = "@meeting_ai_username";
 const STORAGE_KEY_LOCAL = "@meeting_ai_local_mode";
+const STORAGE_KEY_PARTNER = "@meeting_ai_partner_name";
 const DEFAULT_USERNAME = "default";
+const DEFAULT_PARTNER = "ベキたん";
 // チャンク回転間隔のノブ。端末内モードはレスポンス優先で短く、サーバーモードは話者分離の精度優先で長く。
 const SERVER_CHUNK_MS = 45000;
 const LOCAL_CHUNK_MS = 20000; // ponytail: 体感で 15s まで下げられる
@@ -117,6 +119,8 @@ interface TranscriptEntry {
 interface SessionItem {
   filename: string;
   preview: string;
+  title: string;
+  pinned: boolean;
 }
 
 type Tab = "home" | "history" | "settings";
@@ -130,6 +134,8 @@ export default function App() {
   const [urlInput, setUrlInput] = useState(DEFAULT_WHISPER_URL);
   const [username, setUsername] = useState(DEFAULT_USERNAME);
   const [usernameInput, setUsernameInput] = useState(DEFAULT_USERNAME);
+  const [partnerName, setPartnerName] = useState(DEFAULT_PARTNER);
+  const [partnerNameInput, setPartnerNameInput] = useState(DEFAULT_PARTNER);
   const [homeInput, setHomeInput] = useState("");
   const [homeMode, setHomeMode] = useState<"ask" | "request">("ask"); // 入力バーの送信先。デフォルトは「聞く」
   const [homeReqDone, setHomeReqDone] = useState(false);
@@ -170,11 +176,12 @@ export default function App() {
 
   // ── URL / ユーザー名 / ローカルモード 読み込み ──
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER, STORAGE_KEY_LOCAL]).then(
-      ([[, url], [, user], [, local]]) => {
+    AsyncStorage.multiGet([STORAGE_KEY_URL, STORAGE_KEY_USER, STORAGE_KEY_LOCAL, STORAGE_KEY_PARTNER]).then(
+      ([[, url], [, user], [, local], [, partner]]) => {
         if (url) { setWhisperUrl(url); setUrlInput(url); }
         if (user) { setUsername(user); setUsernameInput(user); }
         if (local === "1") { setLocalMode(true); localModeRef.current = true; }
+        if (partner) { setPartnerName(partner); setPartnerNameInput(partner); }
       }
     );
     // モデルが既にDL済みか確認（iOSのみ）
@@ -615,7 +622,7 @@ export default function App() {
     } finally {
       setSessionsLoading(false);
     }
-  }, [whisperUrl]);
+  }, [whisperUrl, username]);
 
   const openSession = useCallback(async (filename: string) => {
     try {
@@ -625,7 +632,7 @@ export default function App() {
     } catch {
       Alert.alert("エラー", "セッションを開けませんでした");
     }
-  }, [whisperUrl]);
+  }, [whisperUrl, username]);
 
   const deleteSession = useCallback((filename: string) => {
     Alert.alert("削除", `${filename} を削除しますか？`, [
@@ -638,7 +645,35 @@ export default function App() {
         },
       },
     ]);
-  }, [whisperUrl, selectedSession]);
+  }, [whisperUrl, username, selectedSession]);
+
+  // ── セッションのメタ更新（title / pinned）。楽観更新→失敗時はサーバー状態へ戻す ──
+  const updateMeta = useCallback(async (filename: string, patch: { title?: string; pinned?: boolean }) => {
+    setSessions((prev) => prev.map((s) => (s.filename === filename ? { ...s, ...patch } : s)));
+    try {
+      const res = await fetch(`${whisperUrl}/sessions/${encodeURIComponent(filename)}/meta`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: username, ...patch }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch {
+      fetchSessions();
+    }
+  }, [whisperUrl, username, fetchSessions]);
+
+  const renameSession = useCallback((filename: string, currentTitle: string) => {
+    Alert.prompt(
+      "名前を変更",
+      "セッションの表示名を入力",
+      [
+        { text: "キャンセル", style: "cancel" },
+        { text: "保存", onPress: (text?: string) => updateMeta(filename, { title: (text ?? "").trim() }) },
+      ],
+      "plain-text",
+      currentTitle
+    );
+  }, [updateMeta]);
 
   // ── お願い（付箋）を1行で送る。/request append:true が付箋機能の唯一の入口 ──
   const sendHomeRequest = useCallback(async () => {
@@ -714,11 +749,14 @@ export default function App() {
   const saveSettings = useCallback(async () => {
     const url = urlInput.trim().replace(/\/$/, "");
     const user = usernameInput.trim().replace(/[^a-zA-Z0-9_-]/g, "") || DEFAULT_USERNAME;
-    await AsyncStorage.multiSet([[STORAGE_KEY_URL, url], [STORAGE_KEY_USER, user]]);
+    const partner = partnerNameInput.trim() || DEFAULT_PARTNER;
+    await AsyncStorage.multiSet([[STORAGE_KEY_URL, url], [STORAGE_KEY_USER, user], [STORAGE_KEY_PARTNER, partner]]);
     setWhisperUrl(url);
     setUsername(user);
     setUsernameInput(user);
-  }, [urlInput, usernameInput]);
+    setPartnerName(partner);
+    setPartnerNameInput(partner);
+  }, [urlInput, usernameInput, partnerNameInput]);
 
   // ── ローカルモード切替（録音中は不可） ──
   const toggleLocalMode = useCallback((val: boolean) => {
@@ -784,12 +822,14 @@ export default function App() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.modeBar}>
-        <Text style={styles.modeText}>
-          {localMode
-            ? `📱 端末内${pendingTextCount > 0 ? ` (後送待ち${pendingTextCount}件)` : ""}`
-            : "🖥️ サーバー"}
-        </Text>
+      <View style={styles.modeBarWrap}>
+        <View style={styles.modeBadge}>
+          <Text style={styles.modeText}>
+            {localMode
+              ? `📱 端末内${pendingTextCount > 0 ? ` (後送待ち${pendingTextCount}件)` : ""}`
+              : "🖥️ サーバー"}
+          </Text>
+        </View>
       </View>
       <ScrollView
         ref={scrollRef}
@@ -823,7 +863,7 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
-          <Text style={styles.askBeckyLabel}>ベキたん:</Text>
+          <Text style={styles.askPartnerLabel}>{partnerName}:</Text>
           <Text selectable style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
             {askItems[0].a}
           </Text>
@@ -850,14 +890,15 @@ export default function App() {
           style={styles.homeAskInput}
           value={homeInput}
           onChangeText={setHomeInput}
-          placeholder={homeMode === "ask" ? "ベキたんに聞く…" : "お願いを付箋で残す…"}
-          placeholderTextColor="#52525b"
+          placeholder={homeMode === "ask" ? `${partnerName}に聞く…` : "お願いを付箋で残す…"}
+          placeholderTextColor="#4a4a52"
           returnKeyType="send"
           onSubmitEditing={onHomeSubmit}
         />
         <TouchableOpacity
           style={styles.homeAskSend}
           onPress={onHomeSubmit}
+          activeOpacity={0.8}
           disabled={homeMode === "ask" && askSending}
         >
           <Text style={styles.homeAskSendText}>
@@ -873,6 +914,7 @@ export default function App() {
   const renderHistory = () => {
     // セッション詳細表示
     if (selectedSession) {
+      const detailTitle = sessions.find((s) => s.filename === selectedSession.filename)?.title ?? "";
       return (
         <>
           <View style={styles.historyDetailHeader}>
@@ -880,9 +922,11 @@ export default function App() {
               <Text style={styles.backBtnText}>← 戻る</Text>
             </TouchableOpacity>
             <Text style={styles.historyDetailTitle} numberOfLines={1}>
-              {selectedSession.filename.replace(".txt", "").replace("_", " ")}
+              {detailTitle || selectedSession.filename.replace(".txt", "").replace("_", " ")}
             </Text>
-            <View style={{ minWidth: 60 }} />
+            <TouchableOpacity onPress={() => renameSession(selectedSession.filename, detailTitle)} style={styles.renameBtn}>
+              <Text style={styles.renameBtnText}>名前変更</Text>
+            </TouchableOpacity>
           </View>
           <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.sessionContent}>{selectedSession.content}</Text>
@@ -901,7 +945,7 @@ export default function App() {
         </View>
         {sessionsLoading ? (
           <View style={styles.placeholderWrap}>
-            <ActivityIndicator size="large" color="#60a5fa" />
+            <ActivityIndicator size="large" color="#3b7cf6" />
           </View>
         ) : sessions.length === 0 ? (
           <View style={styles.placeholderWrap}>
@@ -913,22 +957,34 @@ export default function App() {
           </View>
         ) : (
           <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-            {sessions.map((s) => (
+            {[...sessions]
+              .sort((a, b) => {
+                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                return b.filename.localeCompare(a.filename);
+              })
+              .map((s) => (
               <View key={s.filename} style={styles.sessionItem}>
                 <TouchableOpacity
                   style={{ flex: 1 }}
                   onPress={() => openSession(s.filename)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.sessionFilename}>
-                    {s.filename.replace(".txt", "").replace("_", " ")}
+                  <Text style={styles.sessionFilename} numberOfLines={1}>
+                    {s.title || s.filename.replace(".txt", "").replace("_", " ")}
                   </Text>
-                  {s.preview ? (
+                  {s.title ? (
+                    <Text style={styles.sessionSub} numberOfLines={1}>
+                      {s.filename.replace(".txt", "").replace("_", " ")}
+                    </Text>
+                  ) : s.preview ? (
                     <Text style={styles.sessionPreview} numberOfLines={1}>{s.preview}</Text>
                   ) : null}
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => updateMeta(s.filename, { pinned: !s.pinned })} style={styles.sessionPinBtn}>
+                  <Ionicons name={s.pinned ? "pin" : "pin-outline"} size={18} color={s.pinned ? "#f5b942" : "#6c6c76"} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => deleteSession(s.filename)} style={styles.sessionDeleteBtn}>
-                  <Ionicons name="trash-outline" size={18} color="#52525b" />
+                  <Ionicons name="trash-outline" size={18} color="#6c6c76" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -982,6 +1038,18 @@ export default function App() {
           </>
         )}
 
+        <Text style={styles.label}>パートナー名</Text>
+        <TextInput
+          style={styles.input}
+          value={partnerNameInput}
+          onChangeText={setPartnerNameInput}
+          placeholder="例: あかり"
+          placeholderTextColor="#4a4a52"
+        />
+        <Text style={styles.hint}>
+          会議に同席するAIパートナーの呼び名。入力バーや回答の表示名に使われます。
+        </Text>
+
         <Text style={styles.label}>ユーザー名</Text>
         <TextInput
           style={styles.input}
@@ -990,7 +1058,7 @@ export default function App() {
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="例: yuji, tanaka"
-          placeholderTextColor="#52525b"
+          placeholderTextColor="#4a4a52"
         />
         <Text style={styles.hint}>
           英数字・ハイフン・アンダースコアのみ。友達と共有する場合は別の名前に。
@@ -1005,7 +1073,7 @@ export default function App() {
           autoCorrect={false}
           keyboardType="url"
           placeholder="http://100.86.242.55:8767"
-          placeholderTextColor="#52525b"
+          placeholderTextColor="#4a4a52"
         />
         <Text style={styles.hint}>
           Mac mini の Tailscale IP を入力（末尾スラッシュ不要）
@@ -1025,8 +1093,9 @@ export default function App() {
   // ──────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────
-  // 気配ドットの色: 考え中=水色(点滅) / 録音中=薄い水色(点灯) / アイドル=グレー
-  const dotColor = askSending ? "#60a5fa" : isRecording ? "#7dd3fc" : "#3f3f46";
+  // 気配ドットの色: 考え中=青(点滅) / 録音中=薄い水色(点灯) / アイドル=グレー
+  const dotColor = askSending ? "#3b7cf6" : isRecording ? "#7dd3fc" : "#4a4a52";
+  const dotLit = askSending || isRecording; // 点灯時だけ shadow を出す
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1036,14 +1105,18 @@ export default function App() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Animated.View
-            style={[styles.presenceDot, { backgroundColor: dotColor, opacity: askSending ? breatheAnim : 1 }]}
+            style={[
+              styles.presenceDot,
+              { backgroundColor: dotColor, opacity: askSending ? breatheAnim : 1 },
+              dotLit && { shadowColor: dotColor, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+            ]}
           />
           <Text style={styles.headerTitle}>MAI</Text>
         </View>
         <View style={styles.headerRight}>
           {(sending || pendingCount > 0) && (
             <View style={styles.processingBadge}>
-              <ActivityIndicator size="small" color="#60a5fa" style={{ marginRight: 6 }} />
+              <ActivityIndicator size="small" color="#3b7cf6" style={{ marginRight: 8 }} />
               <Text style={styles.processingText}>
                 {pendingCount > 0 ? `残り${pendingCount}件` : "処理中"}
               </Text>
@@ -1058,7 +1131,7 @@ export default function App() {
                 ])
               }
             >
-              <Ionicons name="trash-outline" size={20} color="#52525b" />
+              <Ionicons name="trash-outline" size={20} color="#6c6c76" />
             </TouchableOpacity>
           )}
         </View>
@@ -1087,7 +1160,7 @@ export default function App() {
           <Ionicons
             name={tab === "home" ? "home" : "home-outline"}
             size={22}
-            color={tab === "home" ? "#60a5fa" : "#52525b"}
+            color={tab === "home" ? "#3b7cf6" : "#5c5c66"}
           />
           <Text style={[styles.tabLabel, tab === "home" && styles.tabLabelActive]}>ホーム</Text>
         </TouchableOpacity>
@@ -1096,7 +1169,7 @@ export default function App() {
           <Ionicons
             name={tab === "history" ? "time" : "time-outline"}
             size={22}
-            color={tab === "history" ? "#60a5fa" : "#52525b"}
+            color={tab === "history" ? "#3b7cf6" : "#5c5c66"}
           />
           <Text style={[styles.tabLabel, tab === "history" && styles.tabLabelActive]}>履歴</Text>
         </TouchableOpacity>
@@ -1110,11 +1183,11 @@ export default function App() {
           >
             <Ionicons
               name={isRecording ? "stop" : "mic"}
-              size={22}
+              size={24}
               color="#fff"
             />
           </TouchableOpacity>
-          <Text style={[styles.tabLabel, isRecording && { color: "#f87171" }]}>
+          <Text style={[styles.tabLabel, isRecording && { color: "#ef4444" }]}>
             {isRecording ? "停止" : "録音"}
           </Text>
         </View>
@@ -1123,7 +1196,7 @@ export default function App() {
           <Ionicons
             name={tab === "settings" ? "settings" : "settings-outline"}
             size={22}
-            color={tab === "settings" ? "#60a5fa" : "#52525b"}
+            color={tab === "settings" ? "#3b7cf6" : "#5c5c66"}
           />
           <Text style={[styles.tabLabel, tab === "settings" && styles.tabLabelActive]}>設定</Text>
         </TouchableOpacity>
@@ -1138,16 +1211,16 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#09090b",
+    backgroundColor: "#0a0a0c",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#27272a",
+    borderBottomColor: "#1e1e22",
   },
   headerLeft: {
     flexDirection: "row",
@@ -1166,38 +1239,39 @@ const styles = StyleSheet.create({
   processingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1e3a5f",
-    paddingHorizontal: 10,
+    backgroundColor: "#1c2c42",
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
     marginRight: 8,
   },
   processingText: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
     fontSize: 12,
+    fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
   headerTitle: {
-    color: "#f4f4f5",
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: -0.3,
+    color: "#f2f2f4",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.4,
   },
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#7f1d1d",
+    backgroundColor: "#3a1414",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   errorText: {
-    color: "#fca5a5",
+    color: "#ef4444",
     fontSize: 13,
     flex: 1,
   },
   errorDismiss: {
-    color: "#fca5a5",
+    color: "#ef4444",
     fontSize: 16,
     paddingLeft: 12,
   },
@@ -1209,48 +1283,42 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   emptyText: {
-    color: "#52525b",
+    color: "#6c6c76",
     fontSize: 15,
     textAlign: "center",
     marginTop: 60,
     lineHeight: 24,
   },
   entry: {
-    marginBottom: 14,
-    borderLeftWidth: 2,
-    borderLeftColor: "#3f3f46",
+    marginBottom: 18,
+    borderLeftWidth: 1,
+    borderLeftColor: "#2a2a2f",
     paddingLeft: 12,
   },
   entryTime: {
-    color: "#71717a",
+    color: "#6c6c76",
     fontSize: 11,
-    marginBottom: 3,
+    marginBottom: 4,
     fontVariant: ["tabular-nums"],
   },
   entryText: {
-    color: "#e4e4e7",
-    fontSize: 15,
-    lineHeight: 22,
+    color: "#f2f2f4",
+    fontSize: 16,
+    lineHeight: 24,
   },
   entryNote: {
     borderLeftWidth: 3,
-    borderLeftColor: "#fbbf24",
-    paddingLeft: 8,
+    borderLeftColor: "#f5b942",
+    backgroundColor: "#231c10",
+    borderRadius: 8,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingVertical: 8,
   },
   entryNoteText: {
-    color: "#fbbf24",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  clearBtn: {
-    alignSelf: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  clearBtnText: {
-    color: "#71717a",
-    fontSize: 13,
+    color: "#f5b942",
+    fontSize: 16,
+    lineHeight: 24,
   },
   // プレースホルダー
   placeholderWrap: {
@@ -1259,13 +1327,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   placeholderText: {
-    color: "#52525b",
+    color: "#6c6c76",
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 8,
   },
   placeholderSub: {
-    color: "#3f3f46",
+    color: "#4a4a52",
     fontSize: 13,
   },
   // 設定
@@ -1273,32 +1341,32 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   label: {
-    color: "#a1a1aa",
+    color: "#9a9aa2",
     fontSize: 13,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#18181b",
+    backgroundColor: "#17171a",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#3f3f46",
-    borderRadius: 8,
-    color: "#f4f4f5",
-    fontSize: 15,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: "#1e1e22",
+    borderRadius: 12,
+    color: "#f2f2f4",
+    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   hint: {
-    color: "#52525b",
+    color: "#6c6c76",
     fontSize: 12,
     marginTop: 8,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   saveBtn: {
-    backgroundColor: "#2563eb",
-    borderRadius: 10,
-    paddingVertical: 14,
+    backgroundColor: "#3b7cf6",
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: "center",
     marginBottom: 16,
   },
@@ -1308,7 +1376,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   currentUrl: {
-    color: "#52525b",
+    color: "#6c6c76",
     fontSize: 12,
     textAlign: "center",
   },
@@ -1319,7 +1387,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   localRowLabel: {
-    color: "#e4e4e7",
+    color: "#f2f2f4",
     fontSize: 15,
     flex: 1,
     marginRight: 12,
@@ -1329,7 +1397,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   modelStatusText: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
     fontSize: 14,
     fontVariant: ["tabular-nums"],
   },
@@ -1338,7 +1406,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   modelDlBtn: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -1348,12 +1416,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#27272a",
+    borderBottomColor: "#1e1e22",
   },
   historyHeaderTitle: {
-    color: "#f4f4f5",
+    color: "#f2f2f4",
     fontSize: 15,
     fontWeight: "600",
   },
@@ -1361,27 +1429,36 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   refreshBtnText: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
     fontSize: 14,
   },
   sessionItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: "#18181b",
-    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: "#17171a",
+    marginBottom: 8,
   },
   sessionFilename: {
-    color: "#e4e4e7",
-    fontSize: 14,
-    fontWeight: "500",
+    color: "#f2f2f4",
+    fontSize: 15,
+    fontWeight: "600",
     marginBottom: 4,
   },
-  sessionPreview: {
-    color: "#71717a",
+  sessionSub: {
+    color: "#6c6c76",
     fontSize: 12,
+    fontVariant: ["tabular-nums"],
+  },
+  sessionPreview: {
+    color: "#6c6c76",
+    fontSize: 12,
+  },
+  sessionPinBtn: {
+    padding: 8,
+    marginLeft: 4,
   },
   sessionDeleteBtn: {
     padding: 8,
@@ -1392,12 +1469,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#27272a",
+    borderBottomColor: "#1e1e22",
   },
   historyDetailTitle: {
-    color: "#f4f4f5",
+    color: "#f2f2f4",
     fontSize: 13,
     flex: 1,
     textAlign: "center",
@@ -1408,52 +1485,61 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   backBtnText: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
     fontSize: 14,
   },
-  deleteBtnText: {
-    color: "#f87171",
-    fontSize: 14,
+  renameBtn: {
+    padding: 4,
     minWidth: 60,
-    textAlign: "right",
+    alignItems: "flex-end",
+  },
+  renameBtnText: {
+    color: "#3b7cf6",
+    fontSize: 14,
   },
   sessionContent: {
-    color: "#a1a1aa",
+    color: "#9a9aa2",
     fontSize: 13,
     lineHeight: 20,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-  modeBar: {
-    paddingHorizontal: 16,
+  modeBarWrap: {
+    paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 2,
+    paddingBottom: 4,
+  },
+  modeBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#17171a",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#1e1e22",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   modeText: {
-    color: "#71717a",
+    color: "#9a9aa2",
     fontSize: 12,
+    fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
   homeAskCard: {
     marginHorizontal: 12,
-    marginBottom: 6,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#18181b",
-    borderLeftWidth: 3,
-    borderLeftColor: "#60a5fa",
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "#1f1f23",
   },
-  askBeckyLabel: {
-    color: "#60a5fa",
+  askPartnerLabel: {
+    color: "#3b7cf6",
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 4,
   },
   segToggle: {
     flexDirection: "row",
-    backgroundColor: "#18181b",
+    backgroundColor: "transparent",
     borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#3f3f46",
     padding: 2,
   },
   segBtn: {
@@ -1462,7 +1548,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   segBtnActive: {
-    backgroundColor: "#1e3a5f",
+    backgroundColor: "#1c2c42",
   },
   segText: {
     fontSize: 15,
@@ -1475,27 +1561,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#27272a",
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 6,
+    borderRadius: 24,
+    backgroundColor: "#17171a",
   },
   homeAskInput: {
     flex: 1,
-    backgroundColor: "#18181b",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#3f3f46",
-    borderRadius: 20,
-    color: "#f4f4f5",
-    fontSize: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: "transparent",
+    color: "#f2f2f4",
+    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   homeAskSend: {
-    backgroundColor: "#2563eb",
-    borderRadius: 20,
-    paddingHorizontal: 18,
+    backgroundColor: "#3b7cf6",
+    borderRadius: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   homeAskSendText: {
@@ -1504,44 +1587,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   askQ: {
-    color: "#71717a",
+    color: "#9a9aa2",
     fontSize: 13,
     marginBottom: 8,
   },
   askA: {
-    color: "#e4e4e7",
-    fontSize: 15,
-    lineHeight: 22,
+    color: "#f2f2f4",
+    fontSize: 16,
+    lineHeight: 24,
   },
   // タブバー
   tabBar: {
     flexDirection: "row",
     alignItems: "flex-end",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#27272a",
-    backgroundColor: "#09090b",
+    borderTopColor: "#1e1e22",
+    backgroundColor: "#17171a",
     paddingBottom: 8,
     paddingTop: 4,
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 6,
-  },
-  tabIcon: {
-    fontSize: 20,
-    color: "#52525b",
-    marginBottom: 2,
-  },
-  tabIconActive: {
-    color: "#60a5fa",
+    paddingVertical: 8,
   },
   tabLabel: {
-    fontSize: 10,
-    color: "#52525b",
+    fontSize: 11,
+    color: "#5c5c66",
   },
   tabLabelActive: {
-    color: "#60a5fa",
+    color: "#3b7cf6",
   },
   // 中央録音ボタン
   tabRecordWrap: {
@@ -1550,34 +1625,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tabRecordBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#2563eb",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#3b7cf6",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
-    marginTop: -20,
-    shadowColor: "#2563eb",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    marginTop: -22,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.15)",
+    shadowColor: "#3b7cf6",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 8,
   },
   tabRecordBtnActive: {
-    backgroundColor: "#dc2626",
-    shadowColor: "#dc2626",
-  },
-  recDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#fff",
-  },
-  stopIcon: {
-    width: 14,
-    height: 14,
-    borderRadius: 3,
-    backgroundColor: "#fff",
+    backgroundColor: "#ef4444",
+    borderColor: "rgba(255,255,255,0.25)",
+    shadowColor: "#ef4444",
   },
 });
