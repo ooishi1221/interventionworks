@@ -34,7 +34,7 @@ const DEFAULT_WHISPER_URL = "http://100.86.242.55:8767";
 const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
 const STORAGE_KEY_USER = "@meeting_ai_username";
 const DEFAULT_USERNAME = "default";
-const CHUNK_DURATION_MS = 30000;
+const CHUNK_DURATION_MS = 45000;
 const RECORDING_OPTIONS: RecordingOptions = RecordingPresets.HIGH_QUALITY;
 const NOISE_PATTERNS = [
   "ご視聴ありがとう",
@@ -538,7 +538,7 @@ export default function App() {
           entries.map((e) => (
             <View key={e.id} style={styles.entry}>
               <Text style={styles.entryTime}>{e.timestamp}</Text>
-              <Text style={styles.entryText}>{e.text}</Text>
+              <Text selectable style={styles.entryText}>{e.text}</Text>
             </View>
           ))
         )}
@@ -552,7 +552,7 @@ export default function App() {
           activeOpacity={0.7}
         >
           <Text style={styles.askQ} numberOfLines={1}>あなた: {askItems[0].q}</Text>
-          <Text style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
+          <Text selectable style={styles.askA} numberOfLines={askExpanded ? undefined : 2}>
             {askItems[0].a}
           </Text>
         </TouchableOpacity>
@@ -650,7 +650,7 @@ export default function App() {
         {askItems.map((it) => (
           <View key={it.id} style={styles.askItem}>
             <Text style={styles.askQ}>あなた: {it.q}</Text>
-            <Text style={styles.askA}>{it.a}</Text>
+            <Text selectable style={styles.askA}>{it.a}</Text>
           </View>
         ))}
       </ScrollView>

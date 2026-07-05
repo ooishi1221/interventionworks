@@ -257,6 +257,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
 
             # --- Step 2 & 3: align + diarize（テキストがある場合のみ）---
             output_segments = []
+            diarized_ok = False  # 話者分離が実際に効いた時だけ True（rawフォールバックは False）
             if text and raw_segments:
                 try:
                     align_model, align_metadata = get_align_model()
@@ -302,6 +303,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
                             diarize_segments, aligned
                         )
                         aligned_segments = diarized.get("segments", aligned_segments)
+                        diarized_ok = True
 
                     for seg in aligned_segments:
                         speaker = seg.get("speaker", "SPEAKER_00")
@@ -333,13 +335,20 @@ async def handle_transcribe(request: web.Request) -> web.Response:
         finally:
             os.unlink(tmp_path)
 
-        # current.txt に追記
+        # 話者分離が効いた時だけラベル付きテキストを返す（rawフォールバックはラベル無し）
+        labeled = diarized_ok and bool(output_segments)
+        display_text = (
+            "\n".join(f"[{seg['speaker']}] {seg['text']}" for seg in output_segments)
+            if labeled else text
+        )
+
+        # current.txt に追記（ホーム表示と揃える）
         if text:
             try:
                 ts = datetime.now(JST).strftime("%H:%M:%S")
                 os.makedirs(MEETING_DIR, exist_ok=True)
                 with open(current_file, "a", encoding="utf-8") as f:
-                    if output_segments:
+                    if labeled:
                         for seg in output_segments:
                             f.write(f"[{ts}][{seg['speaker']}] {seg['text']}\n")
                     else:
@@ -350,7 +359,7 @@ async def handle_transcribe(request: web.Request) -> web.Response:
         return web.Response(
             content_type="application/json",
             text=json.dumps(
-                {"text": text, "segments": output_segments},
+                {"text": display_text, "segments": output_segments},
                 ensure_ascii=False,
             ),
         )
@@ -426,12 +435,22 @@ async def handle_ask(request: web.Request) -> web.Response:
                 text=json.dumps({"error": "No question"}),
             )
 
-        # 会議文脈: 該当 user の current.txt の末尾 ~6000 字
+        # 会議文脈: [お願い] は先頭固定で長い会議だと末尾6000字から押し出される。
+        # 別枠で必ず抽出 + 文字起こしは末尾6000字、の構成にする。
         current_file = _current_file(user)
+        onegai = ""
         transcript = ""
         if os.path.exists(current_file):
             with open(current_file, "r", encoding="utf-8") as f:
-                transcript = f.read()[-6000:]
+                raw = f.read()
+            oidx = raw.find("[お願い]")
+            tidx = raw.find("[文字起こし]")
+            if oidx >= 0 and tidx > oidx:
+                onegai = raw[oidx + len("[お願い]"):tidx].strip()
+                transcript = raw[tidx:]
+            else:
+                transcript = raw
+        transcript = transcript[-6000:]
 
         print(f"[whisper_server] /ask from '{user or '?'}': {question}", flush=True)
 
@@ -439,7 +458,12 @@ async def handle_ask(request: web.Request) -> web.Response:
         from becky_llm import call_llm
 
         system = ASK_PERSONA.format(mood_summary=_mood_summary())
+        onegai_block = (
+            f"[お願い]（ゆうが会議前に頼んだこと。必ず踏まえて答える）:\n{onegai}\n\n"
+            if onegai else ""
+        )
         prompt = (
+            f"{onegai_block}"
             "会議の文字起こし（末尾）:\n"
             f"{transcript.strip() or '（まだ会議が始まってない。文字起こしは空）'}\n\n"
             f"質問: {question}"
