@@ -40,7 +40,9 @@ const STORAGE_KEY_URL = "@meeting_ai_whisper_url";
 const STORAGE_KEY_USER = "@meeting_ai_username";
 const STORAGE_KEY_LOCAL = "@meeting_ai_local_mode";
 const DEFAULT_USERNAME = "default";
-const CHUNK_DURATION_MS = 45000;
+// チャンク回転間隔のノブ。端末内モードはレスポンス優先で短く、サーバーモードは話者分離の精度優先で長く。
+const SERVER_CHUNK_MS = 45000;
+const LOCAL_CHUNK_MS = 20000; // ponytail: 体感で 15s まで下げられる
 const RECORDING_OPTIONS: RecordingOptions = RecordingPresets.HIGH_QUALITY;
 
 // 端末内文字起こし用モデル（差し替えノブ: filename/url/sizeMB を差し替えるだけで別モデルに）
@@ -129,6 +131,8 @@ export default function App() {
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   const [requestMemo, setRequestMemo] = useState("");
   const [requestSaving, setRequestSaving] = useState(false);
+  const [homeReqInput, setHomeReqInput] = useState("");
+  const [homeReqDone, setHomeReqDone] = useState(false);
   const [askInput, setAskInput] = useState("");
   const [askSending, setAskSending] = useState(false);
   const [askItems, setAskItems] = useState<{ id: string; q: string; a: string }[]>([]);
@@ -140,6 +144,7 @@ export default function App() {
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [sending, setSending] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingTextCount, setPendingTextCount] = useState(0); // 端末内モードの未送信テキスト数（表示用、pendingTextsRef と同期）
   const [error, setError] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState(false);
   const [modelReady, setModelReady] = useState(false);
@@ -198,6 +203,7 @@ export default function App() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         pendingTextsRef.current.shift();
+        setPendingTextCount(pendingTextsRef.current.length);
       }
     } catch {
       // 圏外/失敗 → キュー先頭に残したまま。次の flushTexts で再送
@@ -237,6 +243,7 @@ export default function App() {
             },
           ]);
           pendingTextsRef.current.push({ text: cleaned, ts });
+          setPendingTextCount(pendingTextsRef.current.length);
           flushTexts();
         }
         await FileSystem.deleteAsync(uri, { idempotent: true });
@@ -388,7 +395,7 @@ export default function App() {
         } finally {
           handoffInProgressRef.current = false;
         }
-      }, CHUNK_DURATION_MS);
+      }, localModeRef.current ? LOCAL_CHUNK_MS : SERVER_CHUNK_MS);
     },
     [
       configureRecordingAudioSession,
@@ -421,8 +428,8 @@ export default function App() {
     }
   }, [getRecorder, scheduleChunkHandoff, startRecorder]);
 
-  // ── 録音開始 ──
-  const startRecording = useCallback(async () => {
+  // ── 録音開始（本体。freshSession=true なら entries クリア + サーバー側 current もクリア） ──
+  const beginRecording = useCallback(async (freshSession: boolean) => {
     setError(null);
     try {
       const existingPermission = await getRecordingPermissionsAsync();
@@ -462,16 +469,33 @@ export default function App() {
       activeRecorderIndexRef.current = 0;
       isRecordingRef.current = true;
       setIsRecording(true);
-      // current.txt をクリアして新セッション開始
-      fetch(`${whisperUrl}/start-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) }).catch(() => {});
+      if (freshSession) {
+        setEntries([]);
+        // current.txt をクリアして新セッション開始
+        fetch(`${whisperUrl}/start-session`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ user: username }) }).catch(() => {});
+      }
+      // freshSession=false: entries もサーバー current も残したまま追記継続
       await recordChunk();
     } catch (e) {
-      console.error("startRecording error:", e);
+      console.error("beginRecording error:", e);
       Alert.alert("エラー", "録音を開始できませんでした。");
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [configureRecordingAudioSession, recordChunk, whisperUrl, modelReady]);
+  }, [configureRecordingAudioSession, recordChunk, whisperUrl, username, modelReady]);
+
+  // ── 録音ボタン: 既存の文字起こしがあれば新規/追記を確認してから開始 ──
+  const startRecording = useCallback(() => {
+    if (entries.length > 0) {
+      Alert.alert("録音を開始", "前回の文字起こしが残っています。", [
+        { text: "新規セッション", onPress: () => beginRecording(true) },
+        { text: "前回に追記", onPress: () => beginRecording(false) },
+        { text: "キャンセル", style: "cancel" },
+      ]);
+      return;
+    }
+    beginRecording(true);
+  }, [entries.length, beginRecording]);
 
   // ── 録音停止 ──
   const stopRecording = useCallback(async () => {
@@ -622,6 +646,24 @@ export default function App() {
     }
   }, [whisperUrl, selectedRequests, requestMemo]);
 
+  // ── ホームのお願いバー（録音中に付箋を1行で。request タブのフル機能とは別の最小版） ──
+  const sendHomeRequest = useCallback(async () => {
+    const memo = homeReqInput.trim();
+    if (!memo) return;
+    try {
+      await fetch(`${whisperUrl}/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [], memo, user: username, append: true }),
+      });
+      setHomeReqInput("");
+      setHomeReqDone(true);
+      setTimeout(() => setHomeReqDone(false), 1500);
+    } catch (err) {
+      console.error("sendHomeRequest error:", err);
+    }
+  }, [whisperUrl, homeReqInput, username]);
+
   // ── ベキたんに聞く（会議中に即質問） ──
   const askBecky = useCallback(async () => {
     const q = askInput.trim();
@@ -732,6 +774,13 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
+      <View style={styles.modeBar}>
+        <Text style={styles.modeText}>
+          {localMode
+            ? `📱 端末内${pendingTextCount > 0 ? ` (後送待ち${pendingTextCount}件)` : ""}`
+            : "🖥️ サーバー"}
+        </Text>
+      </View>
       <ScrollView
         ref={scrollRef}
         style={styles.scrollArea}
@@ -766,6 +815,21 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       )}
+      {/* お願い（付箋）を1行で。定型ボタンは「お願い」タブに残してある */}
+      <View style={styles.homeAskBar}>
+        <TextInput
+          style={styles.homeAskInput}
+          value={homeReqInput}
+          onChangeText={setHomeReqInput}
+          placeholder="お願いを付箋で残す…"
+          placeholderTextColor="#52525b"
+          returnKeyType="send"
+          onSubmitEditing={sendHomeRequest}
+        />
+        <TouchableOpacity style={styles.homeAskSend} onPress={sendHomeRequest}>
+          <Text style={styles.homeAskSendText}>{homeReqDone ? "✓ 送った" : "お願い"}</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.homeAskBar}>
         <TextInput
           style={styles.homeAskInput}
@@ -1461,6 +1525,16 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     backgroundColor: "#18181b",
+  },
+  modeBar: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  modeText: {
+    color: "#71717a",
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
   },
   homeAskCard: {
     marginHorizontal: 12,

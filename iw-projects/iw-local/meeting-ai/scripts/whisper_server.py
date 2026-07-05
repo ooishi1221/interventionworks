@@ -386,6 +386,7 @@ async def handle_request(request: web.Request) -> web.Response:
 
         os.makedirs(MEETING_DIR, exist_ok=True)
 
+        raw = ""
         transcript_section = "[文字起こし]\n"
         if os.path.exists(current_file):
             with open(current_file, "r", encoding="utf-8") as f:
@@ -399,6 +400,12 @@ async def handle_request(request: web.Request) -> web.Response:
         lines = [f"- {i}" for i in items if i]
         if memo:
             lines.append(f"- メモ: {memo}")
+        # append=true: 既存の [お願い] 行を保持して末尾に追加（ホームバーの逐次送信用。タブ版は従来の上書き）
+        if body.get("append") and raw:
+            m = re.search(r"\[お願い\]\n(.*?)(?=\n*\[文字起こし\]|\Z)", raw, re.S)
+            if m:
+                existing = [l for l in m.group(1).splitlines() if l.strip()]
+                lines = existing + lines
         request_block = "\n".join(lines)
         content = f"[お願い]\n{request_block}\n\n{transcript_section}"
 
