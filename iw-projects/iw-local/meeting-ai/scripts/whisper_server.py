@@ -51,7 +51,7 @@ sys.stderr.reconfigure(line_buffering=True)
 # 定数
 # --------------------------------------------------------------------------
 PORT = 8767
-MODEL_SIZE = "large-v3"
+MODEL_SIZE = "large-v3-turbo"  # 7/5 レイテンシ対策: 蒸留版（精度ほぼ同等・数倍速）。問題あれば large-v3 に戻す
 LANGUAGE = "ja"
 JST = timezone(timedelta(hours=9))
 
