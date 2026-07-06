@@ -76,3 +76,20 @@ export const motionParamsAt = (frame: number, fps: number): Record<string, numbe
   add(sample(WAVE, (t - T_WAVE) % WAVE.duration), wWave);
   return acc;
 };
+
+// 台本の境界時刻でモーションを配置する版（通しサンプル用）: opening=ojigi / body=idle / ending=手振り
+export const motionParamsFor = (frame: number, fps: number, ojigiEnd: number, waveStart: number): Record<string, number> => {
+  const t = frame / fps;
+  const wOjigi = t < ojigiEnd ? 1 : t < ojigiEnd + XF ? 1 - (t - ojigiEnd) / XF : 0;
+  const wWave = t < waveStart ? 0 : t < waveStart + XF ? (t - waveStart) / XF : 1;
+  const wIdle = Math.max(0, 1 - wOjigi);
+  const acc: Record<string, number> = {};
+  const add = (d: Record<string, number>, w: number) => {
+    if (w <= 0) return;
+    for (const k in d) acc[k] = (acc[k] || 0) + d[k] * w;
+  };
+  add(sample(OJIGI, Math.min(t, OJIGI.duration)), wOjigi);
+  add(sample(IDLE, t % IDLE.duration), wIdle);
+  add(sample(WAVE, Math.max(0, t - waveStart) % WAVE.duration), wWave);
+  return acc;
+};

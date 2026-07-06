@@ -81,6 +81,35 @@ const rmsEased: number[] = (() => {
 })();
 export const rmsEasedAt = (frame: number): number => rmsEased[clampIdx(frame, rmsEased.length)];
 
+// 別音源(pilot通し等)用の口ファクトリ。C改(rmsEased)＋Rhubarb形状(form)を任意データで組む。
+// ponytail: midjourney版の上のロジックと薄く重複するが、shipされた既存exportを無傷に保つため分離。
+type LipData = { mouthCues: Cue[]; metadata?: { duration?: number } };
+export const makeMouth = (lip: LipData, rms: { mouth: number[] }) => {
+  const cs = lip.mouthCues;
+  const dur = lip.metadata?.duration ?? 30;
+  const shape = (s: number): string => {
+    for (const c of cs) if (s >= c.start && s < c.end) return c.value;
+    return "X";
+  };
+  const eased = (() => {
+    const o: number[] = []; let m = 0;
+    for (const v of rms.mouth) { m += (v - m) * (v > m ? 0.8 : 0.22); o.push(m); } // C改
+    return o;
+  })();
+  let fc: { fps: number; form: Float32Array } | null = null;
+  const bakeForm = (fps: number) => {
+    if (fc?.fps === fps) return fc;
+    const n = Math.ceil(dur * fps) + 1;
+    const form = new Float32Array(n); let ff = 0;
+    for (let f = 0; f < n; f++) { ff += ((FORM[shape(f / fps)] ?? 0) - ff) * 0.12; form[f] = ff; }
+    fc = { fps, form }; return fc;
+  };
+  return {
+    rmsEasedAt: (f: number) => eased[clampIdx(f, eased.length)],
+    mouthFormAt: (f: number, fps: number, lead = 2) => bakeForm(fps).form[clampIdx(f + lead, bakeForm(fps).form.length)],
+  };
+};
+
 // 首・体: 高周波sinの頭揺れは廃止。超低周波の呼吸(周期12-15s)を1枚敷き、声量で微増幅(±1〜3度級)。
 export const headAt = (frame: number, fps: number) => {
   const b = bake(fps);

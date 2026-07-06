@@ -1,6 +1,10 @@
 import { Composition } from "remotion";
 import { BeckyScene } from "./BeckyScene";
 import { MouthTest } from "./MouthTest";
+import { Pilot007 } from "./Pilot007";
+import { Pilot008 } from "./Pilot008";
+import boundaries007 from "../public/boundaries-007.json";
+import boundaries008 from "../public/boundaries-008.json";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -9,6 +13,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="MouthA" component={MouthTest} durationInFrames={300} fps={30} width={1080} height={1080} defaultProps={{ method: "A" as const }} />
       <Composition id="MouthB" component={MouthTest} durationInFrames={300} fps={30} width={1080} height={1080} defaultProps={{ method: "B" as const }} />
       <Composition id="MouthC" component={MouthTest} durationInFrames={300} fps={30} width={1080} height={1080} defaultProps={{ method: "C" as const }} />
+      <Composition id="Pilot007" component={Pilot007} durationInFrames={Math.ceil(boundaries007.duration * 30)} fps={30} width={1080} height={1920} />
+      <Composition id="Pilot008" component={Pilot008} durationInFrames={Math.ceil(boundaries008.duration * 30)} fps={30} width={1080} height={1920} />
     </>
   );
 };

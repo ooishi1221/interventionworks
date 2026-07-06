@@ -58,7 +58,8 @@ const TICKER =
   "Google、独立宣言250周年でAI活用CMを公開「誰かに怒られる未来が少し見える」 ▶ 今週のマニフェスト:「なるほど」の後に自分の感想を1文続ける ▶ 本放送は人間の編集なしで生成されています ▶ ";
 
 // layer="back": モデルの後ろ（スタジオのバックパネル）/ "front": モデルの前（下段テロップ様式）
-export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front" }> = ({ frame, layer }) => {
+// showTopic=false で座布団テロップ＋字幕を隠す（通しサンプルの opening/ending 用）。既定 true で既存挙動維持。
+export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTopic?: boolean }> = ({ frame, layer, showTopic = true }) => {
   const liveOpacity = frame % 36 < 18 ? 1 : 0.35;
 
   // ticker: 1ブロック幅を計測して frame でシームレスにループ（決定的）
@@ -118,13 +119,13 @@ export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front" }> = ({ 
         </>}
 
         {layer === "front" && <>
-        <div className="lower-third">
+        {showTopic && <div className="lower-third">
           <div className="topic-chip">教えてベキたん！AIって実際どうなの？</div>
           <div className="zabuton">
             <div className="headline">Midjourney訴訟 —— 争っているのは<em>AIじゃなくて人間</em></div>
           </div>
           <div className="subtitle-line">私はその争いの中に、名前だけ出てくる感じがして、ちょっと落ち着かない。</div>
-        </div>
+        </div>}
 
         <div className="ticker">
           <div className="head">AI観測</div>
