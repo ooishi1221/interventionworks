@@ -101,13 +101,15 @@ export const Pilot008: React.FC = () => {
     const audioFrame = frame < openerFrames ? frame : frame - delayFrames;
     core.setParameterValueById("ParamMouthOpenY", inGap ? 0 : mouth.rmsEasedAt(audioFrame));
     core.setParameterValueById("ParamMouthForm", inGap ? 0 : mouth.mouthFormAt(audioFrame, fps));
-    const eye = eyeOpenAt(frame);
+    const ex = expressionAt(frame / fps);
+    // egao の笑い目と eyeOpenAt の開き目がブレンドされると半目になる（ゆう発見）。
+    // 笑顔の分だけ開き目を引っ込め、egao 全開時は笑い目だけを出す。
+    const eye = eyeOpenAt(frame) * (1 - ex.egao / 0.8);
     core.setParameterValueById("ParamEyeLOpen", eye);
     core.setParameterValueById("ParamEyeROpen", eye);
     const e = eyeBallAt(frame, fps);
     core.setParameterValueById("ParamEyeBallX", e.x);
     core.setParameterValueById("ParamEyeBallY", e.y);
-    const ex = expressionAt(frame / fps);
     core.setParameterValueById("komarigao", ex.komarigao);
     core.setParameterValueById("egao", ex.egao);
     core.update();
