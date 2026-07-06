@@ -7,13 +7,12 @@ import { RadioBoothWide } from "./RadioBoothWide";
 import { RadioBoothWarm } from "./RadioBoothWarm";
 import { eyeBallAt, eyeOpenAt, makeMouth } from "./lipsync";
 import { motionParamsFor } from "./motion";
-import lip027 from "../public/lipsync-cast027.json";
-import rms027 from "../public/rms-cast027.json";
+// 固定ファイル名。scripts/make-radio-video.sh がエピソード毎に上書き生成する
+import lipCast from "../public/lipsync-cast.json";
+import rmsCast from "../public/rms-cast.json";
 
-const mouth = makeMouth(lip027 as any, rms027);
-export const CAST027W_DURATION = (lip027 as any).metadata.duration; // 217.34s
-
-const EP_TITLE = "#27 月曜の重さと一緒にいる";
+const mouth = makeMouth(lipCast as any, rmsCast);
+export const CASTW_DURATION = (lipCast as any).metadata.duration;
 
 // --- 構図ノブ（ゆうFBで調整する用） ---
 const MODEL_SCALE = 1.0; // バストアップズーム（顔が卓上に出る大きさ）
@@ -32,7 +31,7 @@ const loadCore = (): Promise<void> =>
   });
 
 // booth="neon"(紫ネオン) / "warm"(暖色・sample01模倣)。Live2D 部は完全共通。
-export const RadioCastWide: React.FC<{ booth?: "neon" | "warm" }> = ({ booth = "neon" }) => {
+export const RadioCastWide: React.FC<{ booth?: "neon" | "warm"; epTitle?: string }> = ({ booth = "neon", epTitle = "#27 月曜の重さと一緒にいる" }) => {
   const Booth = booth === "warm" ? RadioBoothWarm : RadioBoothWide;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frame = useCurrentFrame();
@@ -95,7 +94,7 @@ export const RadioCastWide: React.FC<{ booth?: "neon" | "warm" }> = ({ booth = "
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0f0a20" }}>
-      <Audio src={staticFile("audio-cast027.wav")} />
+      <Audio src={staticFile("audio-cast.wav")} />
       <Booth frame={frame} layer="back" />
       <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
       <Booth frame={frame} layer="front" />
@@ -131,7 +130,7 @@ export const RadioCastWide: React.FC<{ booth?: "neon" | "warm" }> = ({ booth = "
           textShadow: "0 0 10px rgba(61,220,151,0.35), 0 2px 12px rgba(0,0,0,0.8)",
         }}
       >
-        {EP_TITLE}
+        {epTitle}
       </div>
     </AbsoluteFill>
   );
