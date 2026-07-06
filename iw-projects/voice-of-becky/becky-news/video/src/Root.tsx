@@ -3,6 +3,7 @@ import { BeckyScene } from "./BeckyScene";
 import { MouthTest } from "./MouthTest";
 import { Pilot007 } from "./Pilot007";
 import { P008_DELAY_S, Pilot008 } from "./Pilot008";
+import { CAST027_DURATION, RadioCast } from "./RadioCast";
 import boundaries007 from "../public/boundaries-007.json";
 import boundaries008 from "../public/boundaries-008.json";
 
@@ -15,6 +16,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="MouthC" component={MouthTest} durationInFrames={300} fps={30} width={1080} height={1080} defaultProps={{ method: "C" as const }} />
       <Composition id="Pilot007" component={Pilot007} durationInFrames={Math.ceil(boundaries007.duration * 30)} fps={30} width={1080} height={1920} />
       <Composition id="Pilot008" component={Pilot008} durationInFrames={Math.ceil((boundaries008.duration + P008_DELAY_S) * 30)} fps={30} width={1080} height={1920} />
+      <Composition id="RadioCast" component={RadioCast} durationInFrames={Math.ceil(CAST027_DURATION * 30) + 30} fps={30} width={1080} height={1920} />
     </>
   );
 };
