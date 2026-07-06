@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ベキたん家から雑談フレーム — mock (1920x1080 / OBS Browser Source)</title>
+<style>
+/* ============================================================
+   ベキたん「自宅から配信」フレーム mock — mock-zatsudan.html の姉妹版
+   構図: 背景=room-bg.png / 左=レトロテレビ(コメント窓) / 中央右=キャラ /
+         手前=自宅デスク(腰下隠し) / 下端=お題ルーレット帯
+   調整ノブは全部ここ ↓
+   ============================================================ */
+:root {
+  /* --- 色 --- */
+  --green: #3ddc97;        /* 番組緑（部屋のLEDと同系） */
+  --green-hi: #5cffb0;     /* 発光 */
+  --red: #ff4d5e;          /* 差し赤 */
+  --live-red: #e0245e;     /* LIVE バッジ */
+  --panel: rgba(10, 14, 12, 0.72);
+  --panel-border: #24352c;
+  --ink: #eeeeee;
+  --ink-dim: #8a9e93;
+  --wood0: #4d3a2a;        /* 机天板 明 */
+  --wood1: #2b1e15;        /* 机天板 暗 */
+  --mono: Menlo, monospace;
+  --sans: "Hiragino Sans", "Noto Sans JP", sans-serif;
+
+  /* --- 速度（秒） --- */
+  --spd-kenburns: 46s;     /* 背景 Ken Burns 片道 */
+  --spd-led: 7s;           /* 緑LEDの呼吸 */
+  --spd-live: 1.2s;        /* LIVE パルス */
+  --spd-feed: 36s;         /* コメント1巡（6件 × 6s） */
+  --spd-tvflicker: 9s;     /* 走査線ちらつき周期 */
+  --spd-tvscan: 5s;        /* 画面内スキャンバー */
+  --spd-roulette: 30s;     /* お題ルーレット1巡（5題 × 6s） */
+
+  /* --- サイズ / 傾き --- */
+  --tv-w: 520px;           /* テレビ筐体幅 ≒ 27% */
+  --comment-step: 102px;   /* コメント1件の送り高（item 92px + gap 10px） */
+  --char-w: 760px;         /* キャラエリア幅 */
+  --desk-h: 300px;         /* 机の高さ（お題帯 138px 込みで下 28% を占有、天板見え幅 ≒ 160px） */
+  --desk-tilt: -0.5deg;    /* 机のパース傾き（RadioBoothWarm の学び: 定数化） */
+  --topic-step: 46px;      /* お題1行の送り高 */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1920px; height: 1080px; overflow: hidden;
+  background: #0a0d0b;
+  color: var(--ink);
+  font-family: var(--sans);
+  position: relative;
+  perspective: 1600px; /* テレビの rotateY 用 */
+}
+
+/* ============ 奥層: 部屋（Ken Burns） + LEDの呼吸 ============ */
+.room {
+  position: absolute; inset: 0; z-index: 0;
+  background: url("room-bg.png") center / cover no-repeat;
+  animation: kenburns var(--spd-kenburns) ease-in-out infinite alternate;
+}
+@keyframes kenburns {
+  from { transform: scale(1.0); }
+  to   { transform: scale(1.03); }
+}
+/* 部屋のLED（天井ライン + 奥のPCデスク）に重ねる薄い呼吸グロー */
+.led-breath {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 900px 160px at 52% 8%, var(--green) 0%, transparent 70%),
+    radial-gradient(ellipse 420px 260px at 47% 55%, var(--green) 0%, transparent 70%),
+    radial-gradient(ellipse 700px 200px at 88% 20%, var(--green) 0%, transparent 70%);
+  animation: led-breath var(--spd-led) ease-in-out infinite;
+}
+@keyframes led-breath {
+  0%, 100% { opacity: 0.05; }
+  50%      { opacity: 0.16; }
+}
+
+/* ============ 中層: キャラの居場所（OBS で Live2D を別レイヤー合成） ============ */
+/* バストアップ想定。下端は机より深く沈めて腰下を机で隠す */
+.becky-layer {
+  position: absolute; z-index: 2;
+  left: 880px; bottom: 140px;
+  width: var(--char-w); height: 700px;
+  border: 2px dashed rgba(61, 220, 151, 0.45);
+  border-bottom: none;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.becky-layer .tag {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 15px; letter-spacing: 0.25em;
+  color: rgba(61, 220, 151, 0.7);
+  border: 1px solid rgba(61, 220, 151, 0.4);
+  padding: 4px 14px; background: rgba(10, 14, 12, 0.5);
+}
+.becky-layer svg { display: block; }
+
+/* ============ 左: レトロテレビ（コメント/画像 兼用窓） ============ */
+.tv {
+  position: absolute; z-index: 4;
+  left: 56px; top: 165px;
+  width: var(--tv-w); height: 600px;
+  transform: rotateY(3deg);            /* 壁に沿ってわずかに外向き */
+  transform-origin: left center;
+  background: linear-gradient(160deg, #4a4238 0%, #2e2820 45%, #1c1712 100%);
+  border-radius: 22px;
+  padding: 18px 18px 46px;             /* 下ベゼル厚め=レトロ感 */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 2px 4px rgba(0,0,0,.5),
+    0 18px 40px rgba(0,0,0,.55),
+    18px 30px 80px rgba(0,0,0,.45),
+    0 0 90px rgba(61, 220, 151, 0.14);  /* 画面発光が壁に落ちる */
+}
+/* 下ベゼルの銘板 + 電源LED */
+.tv .brand {
+  position: absolute; bottom: 14px; left: 30px;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.3em;
+  color: rgba(255, 240, 210, 0.45);
+}
+.tv .power {
+  position: absolute; bottom: 18px; right: 30px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--green-hi);
+  box-shadow: 0 0 8px 2px rgba(92, 255, 176, 0.6);
+}
+/* テレビの脚（机の縁に立つ） */
+.tv .leg {
+  position: absolute; bottom: -32px; width: 22px; height: 34px;
+  background: linear-gradient(180deg, #2e2820, #14100c);
+  border-radius: 0 0 5px 5px;
+}
+.tv .leg.l { left: 60px; transform: skewX(6deg); }
+.tv .leg.r { right: 60px; transform: skewX(-6deg); }
+
+/* 画面部分 */
+.tv-screen {
+  position: relative; width: 100%; height: 100%;
+  background: rgba(6, 12, 9, 0.92);
+  border-radius: 14px;
+  border: 1px solid #101a14;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.8), inset 0 0 60px rgba(61, 220, 151, 0.08);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+/* タブヘッダ（見た目だけ。COMMENT がアクティブ） */
+.tv-tabs {
+  flex-shrink: 0; display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--panel-border);
+  font-family: var(--mono); font-size: 13px; letter-spacing: 0.18em;
+}
+.tv-tabs .tab {
+  padding: 12px 20px; color: var(--ink-dim);
+}
+.tv-tabs .tab.active {
+  color: var(--green);
+  border-bottom: 2px solid var(--green);
+  text-shadow: 0 0 8px rgba(61, 220, 151, 0.6);
+}
+/* コメントフィード（前作の feed-up 流用） */
+.feed-clip { flex: 1; overflow: hidden; position: relative; }
+.feed {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 0 14px 14px;
+  animation: feed-up var(--spd-feed) linear infinite;
+}
+/* 6件 × 6s。各ステップ: 5s 静止 → 1s で 1件分せり上がる */
+@keyframes feed-up {
+  0%      { transform: translateY(0); }
+  13.9%   { transform: translateY(0); }
+  16.66%  { transform: translateY(calc(-1 * var(--comment-step))); }
+  30.5%   { transform: translateY(calc(-1 * var(--comment-step))); }
+  33.33%  { transform: translateY(calc(-2 * var(--comment-step))); }
+  47.2%   { transform: translateY(calc(-2 * var(--comment-step))); }
+  50%     { transform: translateY(calc(-3 * var(--comment-step))); }
+  63.9%   { transform: translateY(calc(-3 * var(--comment-step))); }
+  66.66%  { transform: translateY(calc(-4 * var(--comment-step))); }
+  80.5%   { transform: translateY(calc(-4 * var(--comment-step))); }
+  83.33%  { transform: translateY(calc(-5 * var(--comment-step))); }
+  97.2%   { transform: translateY(calc(-5 * var(--comment-step))); }
+  100%    { transform: translateY(calc(-6 * var(--comment-step))); }
+}
+.comment {
+  height: 92px; flex-shrink: 0;
+  background: rgba(14, 22, 17, 0.7);
+  border: 1px solid var(--panel-border);
+  border-left: 3px solid rgba(61, 220, 151, 0.5);
+  padding: 10px 12px;
+  overflow: hidden;
+}
+.comment .name {
+  font-family: var(--mono); font-size: 12px; color: var(--green);
+  margin-bottom: 5px;
+}
+.comment .body { font-size: 16px; line-height: 1.45; color: var(--ink); }
+.comment.hot { border-left-color: var(--red); }
+.comment.hot .name { color: var(--red); }
+/* 走査線 + ちらつき */
+.tv-scanlines {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg,
+    rgba(0,0,0,.16) 0 2px, transparent 2px 4px);
+  animation: tv-flicker var(--spd-tvflicker) steps(1) infinite;
+}
+@keyframes tv-flicker {
+  0%, 100% { opacity: 0.5; }
+  91%      { opacity: 0.5; }
+  92%      { opacity: 0.78; }
+  93%      { opacity: 0.5; }
+  96%      { opacity: 0.68; }
+  97%      { opacity: 0.5; }
+}
+/* ゆっくり降りるスキャンバー */
+.tv-scanbar {
+  position: absolute; left: 0; right: 0; height: 60px; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(92, 255, 176, 0.06), transparent);
+  animation: tv-scanbar var(--spd-tvscan) linear infinite;
+}
+@keyframes tv-scanbar {
+  from { top: -60px; }
+  to   { top: 100%; }
+}
+/* ガラス反射 */
+.tv-glass {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg,
+    transparent 30%, rgba(255,255,255,.07) 42%, rgba(255,255,255,.02) 50%, transparent 60%);
+}
+/* テレビ発光が机に落ちる床グロー */
+.tv-floorglow {
+  position: absolute; z-index: 3; pointer-events: none;
+  left: 30px; top: 730px; width: 580px; height: 120px;
+  background: radial-gradient(ellipse at center, rgba(61, 220, 151, 0.18) 0%, transparent 70%);
+  animation: led-breath var(--spd-led) ease-in-out infinite;
+}
+
+/* ============ 前層: 自宅デスク（腰下隠し） ============ */
+/* 全体を --desk-tilt でまとめて回転 → 天板エッジも小物も同じパースに乗る */
+.desk {
+  position: absolute; z-index: 5;
+  left: -40px; right: -40px; bottom: -26px;
+  height: var(--desk-h);
+  transform: rotate(var(--desk-tilt));
+  transform-origin: center top;
+  background:
+    /* 部屋の緑LEDが当たる色味 */
+    linear-gradient(180deg, rgba(61, 220, 151, 0.2) 0%, transparent 40%),
+    /* 木目グレイン */
+    repeating-linear-gradient(92deg,
+      transparent 0 90px, rgba(0,0,0,.18) 90px 93px, transparent 93px 160px),
+    /* 天板本体 */
+    linear-gradient(180deg, var(--wood0) 0%, #2c2016 30%, var(--wood1) 100%);
+  box-shadow:
+    0 -2px 0 rgba(120, 220, 180, 0.22),   /* 奥エッジのLEDハイライト */
+    0 -6px 18px rgba(0,0,0,.55),
+    0 -20px 50px rgba(0,0,0,.4);
+}
+
+/* --- 机上の小物（生活感）。.desk 内なので同じ傾きを継承 --- */
+/* マグカップ（B ロゴ） */
+.mug {
+  position: absolute; left: 700px; top: -74px;
+  width: 92px; height: 84px;
+  background: linear-gradient(180deg, #2a3d33 0%, #16241d 100%);
+  border-radius: 8px 8px 14px 14px;
+  box-shadow:
+    inset 0 6px 0 rgba(0,0,0,.5),          /* 口の落ち込み */
+    inset -8px 0 14px rgba(0,0,0,.35),
+    inset 4px 0 8px rgba(61, 220, 151, 0.15),
+    0 10px 14px rgba(0,0,0,.5);
+}
+.mug::before { /* 取っ手 */
+  content: ""; position: absolute; right: -26px; top: 16px;
+  width: 30px; height: 42px;
+  border: 9px solid #1d2f26; border-left: none;
+  border-radius: 0 20px 20px 0;
+}
+.mug::after { /* B ロゴ */
+  content: "B"; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -46%);
+  font-family: var(--mono); font-size: 34px; font-weight: 700;
+  color: var(--green); text-shadow: 0 0 8px rgba(61, 220, 151, 0.5);
+}
+/* 湯気 */
+.steam {
+  position: absolute; left: 736px; top: -120px;
+  width: 4px; height: 40px; border-radius: 4px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.25));
+  animation: steam 3.4s ease-in-out infinite;
+}
+.steam.s2 { left: 756px; animation-delay: -1.7s; height: 32px; }
+@keyframes steam {
+  0%   { transform: translateY(0) scaleY(0.6); opacity: 0; }
+  40%  { opacity: 0.7; }
+  100% { transform: translateY(-26px) scaleY(1.15); opacity: 0; }
+}
+/* 小さいぬいぐるみ（緑のまるいやつ） */
+.plush {
+  position: absolute; left: 560px; top: -62px;
+  width: 78px; height: 68px;
+  background: radial-gradient(circle at 38% 32%, #57c99a 0%, #2c6e52 70%, #1d4a37 100%);
+  border-radius: 48% 48% 44% 44%;
+  box-shadow: 0 8px 12px rgba(0,0,0,.5);
+}
+.plush::before, .plush::after { /* 耳 */
+  content: ""; position: absolute; top: -14px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #57c99a, #234f3b);
+}
+.plush::before { left: 8px; }
+.plush::after  { right: 8px; }
+.plush .face {
+  position: absolute; left: 22px; top: 26px;
+  width: 34px; height: 10px;
+  color: #10281d; font-size: 13px; line-height: 10px; text-align: center;
+  letter-spacing: 8px; text-indent: 8px;
+}
+.plush .face::before { content: "• •"; letter-spacing: 14px; }
+/* キーボードの端（右下、画面端で切れる） */
+.keyboard {
+  position: absolute; right: 20px; top: 14px;
+  width: 560px; height: 110px;
+  background: linear-gradient(180deg, #1b1b20 0%, #101014 100%);
+  border-radius: 10px;
+  transform: rotate(-2deg);
+  box-shadow: 0 8px 14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.keyboard .keys {
+  position: absolute; inset: 12px;
+  background:
+    repeating-linear-gradient(90deg,
+      #26262e 0 44px, #0d0d11 44px 50px),
+    repeating-linear-gradient(0deg,
+      transparent 0 30px, #0d0d11 30px 36px);
+  border-radius: 6px;
+  box-shadow: inset 0 0 20px rgba(61, 220, 151, 0.12); /* 緑LEDの照り返し */
+}
+/* スマホ（伏せ置き、通知LEDだけ光る） */
+.phone {
+  position: absolute; left: 1310px; top: -10px;
+  width: 150px; height: 74px;
+  background: linear-gradient(180deg, #23232a, #101014);
+  border-radius: 12px;
+  transform: rotate(4deg);
+  box-shadow: 0 8px 12px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.phone::after { /* 通知 LED */
+  content: ""; position: absolute; right: 14px; top: 10px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green-hi);
+  box-shadow: 0 0 6px 2px rgba(92, 255, 176, 0.5);
+  animation: live-pulse 2.4s steps(1) infinite;
+}
+
+/* ============ 下端: お題ルーレット帯 ============ */
+.topic-band {
+  position: absolute; z-index: 6;
+  left: 0; right: 0; bottom: 0; height: 138px;
+  background: rgba(8, 13, 10, 0.78);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 2px solid var(--green);
+  box-shadow: 0 -8px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(92, 255, 176, 0.25);
+  display: flex; align-items: center;
+}
+.topic-label {
+  flex-shrink: 0; align-self: stretch;
+  display: flex; align-items: center;
+  background: var(--green); color: #0a0d0b;
+  font-size: 16px; font-weight: 800; letter-spacing: 0.16em;
+  padding: 0 26px;
+}
+/* ルーレット窓: 3行見え、中央が現在。上下は mask で薄く（前後のお題） */
+.topic-clip {
+  flex: 1; overflow: hidden;
+  height: calc(var(--topic-step) * 3);
+  -webkit-mask-image: linear-gradient(180deg,
+    transparent 0%, rgba(0,0,0,.35) 18%, #000 40%, #000 60%, rgba(0,0,0,.35) 82%, transparent 100%);
+  mask-image: linear-gradient(180deg,
+    transparent 0%, rgba(0,0,0,.35) 18%, #000 40%, #000 60%, rgba(0,0,0,.35) 82%, transparent 100%);
+}
+.topic-roll {
+  display: flex; flex-direction: column;
+  animation: topic-roll var(--spd-roulette) linear infinite;
+}
+.topic-roll .t {
+  height: var(--topic-step); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 800; letter-spacing: 0.04em;
+  color: var(--ink);
+  text-shadow: 0 0 14px rgba(61, 220, 151, 0.35);
+}
+/* 5題 × 6s。各ステップ: 5.2s 静止 → 0.8s で 1行送り */
+@keyframes topic-roll {
+  0%      { transform: translateY(0); }
+  17.3%   { transform: translateY(0); }
+  20%     { transform: translateY(calc(-1 * var(--topic-step))); }
+  37.3%   { transform: translateY(calc(-1 * var(--topic-step))); }
+  40%     { transform: translateY(calc(-2 * var(--topic-step))); }
+  57.3%   { transform: translateY(calc(-2 * var(--topic-step))); }
+  60%     { transform: translateY(calc(-3 * var(--topic-step))); }
+  77.3%   { transform: translateY(calc(-3 * var(--topic-step))); }
+  80%     { transform: translateY(calc(-4 * var(--topic-step))); }
+  97.3%   { transform: translateY(calc(-4 * var(--topic-step))); }
+  100%    { transform: translateY(calc(-5 * var(--topic-step))); }
+}
+/* 中央行マーカー（現在のお題の左右に緑チップ） */
+.topic-marker {
+  position: absolute; pointer-events: none;
+  top: 50%; transform: translateY(-50%);
+  width: 10px; height: 26px; background: var(--green);
+  box-shadow: 0 0 10px rgba(61, 220, 151, 0.7);
+}
+.topic-marker.l { left: 210px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.topic-marker.r { right: 40px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+
+/* ============ 上部左: LIVE + タイトル ============ */
+.header {
+  position: absolute; z-index: 7; top: 32px; left: 44px;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--panel-border);
+  border-left: 4px solid var(--green);
+  padding: 11px 22px 11px 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.45), 0 18px 40px rgba(0,0,0,.35);
+}
+.live {
+  background: var(--live-red); color: #fff;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.12em;
+  padding: 3px 10px;
+  animation: live-pulse var(--spd-live) steps(1) infinite;
+}
+@keyframes live-pulse {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0.35; }
+}
+.title { font-size: 21px; font-weight: 900; letter-spacing: 0.02em; }
+.title .ep { color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- ============ 奥層: 部屋 ============ -->
+<div class="room"></div>
+<div class="led-breath"></div>
+
+<!-- ============ 中層: キャラの居場所 ============ -->
+<div class="becky-layer">
+  <span class="tag">BECKY LAYER — Live2D (OBS 別レイヤー)</span>
+  <!-- 緑髪ツインテのバストアップシルエット（配置ガイド。腰下は机で隠れる） -->
+  <svg width="620" height="640" viewBox="0 0 620 640">
+    <g fill="rgba(61,220,151,0.10)" stroke="rgba(61,220,151,0.45)" stroke-width="2">
+      <!-- 頭 -->
+      <circle cx="310" cy="185" r="110"/>
+      <!-- ツインテール左右 -->
+      <path d="M 210 142 C 130 175, 100 330, 122 480 C 130 525, 112 570, 95 592 C 138 576, 170 528, 172 462 C 186 344, 188 226, 210 142 Z"/>
+      <path d="M 410 142 C 490 175, 520 330, 498 480 C 490 525, 508 570, 525 592 C 482 576, 450 528, 448 462 C 434 344, 432 226, 410 142 Z"/>
+      <!-- 肩〜胸（下端は机の裏へ） -->
+      <path d="M 310 295 C 232 302, 192 368, 180 462 C 172 526, 168 584, 168 640 L 452 640 C 452 584, 448 526, 440 462 C 428 368, 388 302, 310 295 Z"/>
+    </g>
+  </svg>
+</div>
+
+<!-- テレビ発光の机への落ち（テレビより奥、机より手前に見せる） -->
+<div class="tv-floorglow"></div>
+
+<!-- ============ 左: レトロテレビ ============ -->
+<div class="tv">
+  <div class="tv-screen">
+    <div class="tv-tabs">
+      <span class="tab active">📺 COMMENT</span>
+      <span class="tab">IMAGE</span>
+    </div>
+    <div class="feed-clip">
+      <div class="feed" id="feed"></div>
+    </div>
+    <div class="tv-scanbar"></div>
+    <div class="tv-scanlines"></div>
+    <div class="tv-glass"></div>
+  </div>
+  <span class="brand">BK-1983</span>
+  <span class="power"></span>
+  <span class="leg l"></span>
+  <span class="leg r"></span>
+</div>
+
+<!-- ============ 前層: 自宅デスク ============ -->
+<div class="desk">
+  <div class="plush"><span class="face"></span></div>
+  <div class="mug"></div>
+  <div class="steam"></div>
+  <div class="steam s2"></div>
+  <div class="keyboard"><div class="keys"></div></div>
+  <div class="phone"></div>
+</div>
+
+<!-- ============ 下端: お題ルーレット帯 ============ -->
+<div class="topic-band">
+  <div class="topic-label">お題</div>
+  <div class="topic-clip">
+    <div class="topic-roll" id="topics"></div>
+  </div>
+  <span class="topic-marker l"></span>
+  <span class="topic-marker r"></span>
+</div>
+
+<!-- ============ 上部左: LIVE + タイトル ============ -->
+<div class="header">
+  <span class="live">● LIVE</span>
+  <span class="title">ベキたん家から雑談 <span class="ep">#000</span></span>
+</div>
+
+<script>
+// --- コメントフィード（6件を2周分。keyframe が 6 step で 1周ぶん送るのでシームレス） ---
+{
+  const comments = [
+    { n: "リスナーA", b: "部屋から配信いいじゃん、生活感ある🏠", hot: false },
+    { n: "リスナーB", b: "そのテレビ何年製？レトロすぎるw", hot: false },
+    { n: "リスナーC", b: "マグカップの B ロゴ、グッズ化して✨", hot: true },
+    { n: "リスナーD", b: "Cast 今朝も聴いたよ〜通勤のお供☕", hot: false },
+    { n: "リスナーE", b: "ゆうさん今日は見にきてる？👀", hot: false },
+    { n: "リスナーF", b: "初見です！AIの自宅ってどういうこと…？🤖", hot: true },
+  ];
+  const html = comments.map(c =>
+    `<div class="comment${c.hot ? " hot" : ""}"><div class="name">${c.n}</div><div class="body">${c.b}</div></div>`
+  ).join("");
+  document.getElementById("feed").innerHTML = html + html;
+}
+
+// --- お題ルーレット（5題）。窓は3行見え、中央=現在 ---
+// 並び: [最後の題, 全5題, 先頭2題] → 5 step 送って先頭状態と同じ絵になりループが繋がる
+{
+  const topics = [
+    "最近ハマってる技術は？",
+    "AI に身体は必要？",
+    "今日の失敗談",
+    "深夜テンションの正体",
+    "最近読んだ本の話",
+  ];
+  const seq = [topics[topics.length - 1], ...topics, topics[0], topics[1]];
+  document.getElementById("topics").innerHTML =
+    seq.map(t => `<div class="t">${t}</div>`).join("");
+}
+</script>
+</body>
+</html>
