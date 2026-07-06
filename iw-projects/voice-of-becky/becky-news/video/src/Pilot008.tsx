@@ -40,10 +40,13 @@ const loadCore = (): Promise<void> =>
     document.head.appendChild(s);
   });
 
+// 笑顔は手を振り始めてから（ゆうFB）: バイバイ手振り開始の 0.3s 後に立ち上げる
+const SMILE_S = OPEN_END + WAVE_REL + 0.3;
+
 const expressionAt = (t: number) => {
   const XF = 0.5;
   const kom = t < BODY_S ? 0 : t < BODY_S + XF ? (t - BODY_S) / XF : t < END_S ? 1 : t < END_S + XF ? 1 - (t - END_S) / XF : 0;
-  const ega = t < END_S ? 0 : t < END_S + XF ? (t - END_S) / XF : 1;
+  const ega = t < SMILE_S ? 0 : t < SMILE_S + XF ? (t - SMILE_S) / XF : 1;
   return { komarigao: kom * 0.4, egao: ega * 0.8 };
 };
 
@@ -102,11 +105,14 @@ export const Pilot008: React.FC = () => {
     core.setParameterValueById("ParamMouthOpenY", inGap ? 0 : mouth.rmsEasedAt(audioFrame));
     core.setParameterValueById("ParamMouthForm", inGap ? 0 : mouth.mouthFormAt(audioFrame, fps));
     const ex = expressionAt(frame / fps);
-    // egao の笑い目と eyeOpenAt の開き目がブレンドされると半目になる（ゆう発見）。
-    // 笑顔の分だけ開き目を引っ込め、egao 全開時は笑い目だけを出す。
-    const eye = eyeOpenAt(frame) * (1 - ex.egao / 0.8);
+    // 笑顔の目 = EyeSmile（笑い弧）を立てつつ開き目を引っ込める。
+    // EyeOpen を消すだけだと「ただの目閉じ」、開き目と混ぜると「半目」になる（ゆう発見×2）。
+    const egaoN = ex.egao / 0.8;
+    const eye = eyeOpenAt(frame) * (1 - egaoN);
     core.setParameterValueById("ParamEyeLOpen", eye);
     core.setParameterValueById("ParamEyeROpen", eye);
+    core.setParameterValueById("ParamEyeLSmile", egaoN);
+    core.setParameterValueById("ParamEyeRSmile", egaoN);
     const e = eyeBallAt(frame, fps);
     core.setParameterValueById("ParamEyeBallX", e.x);
     core.setParameterValueById("ParamEyeBallY", e.y);
