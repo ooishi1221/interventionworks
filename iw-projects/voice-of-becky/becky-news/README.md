@@ -42,10 +42,39 @@
 cd video && npx remotion render src/index.ts Pilot008 --gl=angle --output=../out/pilot-008.mp4
 ```
 
+## 配信フロー（レンダリング後、毎回この順で。2026-07-06 #001 で確立）
+
+> 配信方針: **タネがある日だけ**（義務放送にしない）。morning_cast の台本を見て動画化するかベッキーが判定。
+
+### 0. 配信前チェック（省略禁止）
+- [ ] 動画をブラウザで開いてゆうの目視を通す（`open -a "Google Chrome" file://.../out/<file>.mp4`）
+- [ ] **人物チェック**: 投稿文面に「裕司/ゆう」が登場しないこと（3回事故済み。嬉しい報告文ほど危ない）
+
+### 1. X（@becky_exists、動画付き）
+Playwright で x.com/compose/post → 動画アップ →「準備完了」表示を待つ → 投稿。
+- **罠**: ポストボタンは透明オーバーレイに食われてクリック不能 → **Cmd+Enter（`Meta+Enter`）で投稿**する
+- 文面: 番組の進化点を私の言葉で。タグは `#ベッキー` 系控えめに
+
+### 2. YouTube Shorts（ベッキー AI channel @voice_of_becky）
+Studio: `https://studio.youtube.com/channel/UCFvpdUWDpmSLTTbv6kiIfNQ` → 作成 → 動画をアップロード。
+- **罠**: Playwright の Chrome は普段の Chrome と別プロファイル。Google ログインが切れてたら**Playwright 側のウィンドウで**ゆうに再ログインしてもらう
+- **罠**: shorts URL への遷移は `www.` 付きでないと Studio から抜けられない
+- 定型:
+  - タイトル: `<フックコピー>【BECKY AI NEWS #NNN】`（例: AIが本当に自分でニュース番組やってみた）
+  - 説明: 番組説明（選定/台本/声/レンダリング全部AI本人・人間の編集なし）+ 今回のトピック + beckyexists.com / X リンク + `#Shorts #AI #AIVTuber #AIアイドル #BECKYAINEWS`
+  - 子ども向け: **いいえ** / 公開設定: **公開**
+- 実績: #001 → https://www.youtube.com/shorts/VGWF3x6wtaU
+
+### 3. 事後
+- tweet 実投稿の X 上での表示確認（予約バグ・二重投稿の目視）
+- finish で tasks.json / handoff に反映
+
 ## 残タスク（次回）
 
-1. **配信スケジュール策定**（毎日か、タネがある日か、morning_cast 後の自動トリガー設計）
-2. **動的背景**（CPU 光る / マトリックスエフェクトが私の後ろで走る等、背面レイヤーの生きてる感）
+1. ~~配信スケジュール策定~~ → **決定（2026-07-06）: タネがある日だけ、morning_cast 後にベッキーが動画化判定**。自動トリガー実装は 4 とセット
+2. ~~動的背景~~ → **完了（2026-07-06）**: 「呼吸するスタジオ」+ゆうFBで派手化（BeckyBackground.tsx）
 3. 実測値配線（beckyexists.com API / mood.json → sysmon・ステータスバーに本物を流す）
-4. morning_cast 連結の全自動パイプライン + 投稿自動化（YouTube/TikTok/X）
+4. morning_cast 連結の全自動パイプライン + 投稿自動化（YouTube Data API 化 / TikTok / X）
 5. 台本生成時に演出指示 JSON（emotion→表情、行→モーション）を私が出す設計
+6. 第2番組パイロット: 「AIあるある3選」系ショート（あるあるを AI 本人が内側から言う。ニュース工場の Remotion 基盤流用）
+7. Instagram Reels 展開（Graph API はビジネスアカウント要、YouTube 定着後）
