@@ -1,0 +1,5 @@
+node_modules/
+out/
+public/model/
+public/midjourney.wav
+public/live2dcubismcore.min.js
