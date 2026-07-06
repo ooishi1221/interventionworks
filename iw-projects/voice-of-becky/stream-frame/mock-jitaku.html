@@ -37,7 +37,7 @@
   /* --- サイズ / 傾き --- */
   --tv-w: 520px;           /* テレビ筐体幅 ≒ 27% */
   --comment-step: 102px;   /* コメント1件の送り高（item 92px + gap 10px） */
-  --char-w: 760px;         /* キャラエリア幅 */
+  --char-w: 940px;         /* キャラエリア幅 */
   --desk-h: 300px;         /* 机の高さ（お題帯 138px 込みで下 28% を占有、天板見え幅 ≒ 160px） */
   --desk-tilt: -0.5deg;    /* 机のパース傾き（RadioBoothWarm の学び: 定数化） */
   --topic-step: 46px;      /* お題1行の送り高 */
@@ -82,8 +82,8 @@ body {
 /* バストアップ想定。下端は机より深く沈めて腰下を机で隠す */
 .becky-layer {
   position: absolute; z-index: 2;
-  left: 880px; bottom: 140px;
-  width: var(--char-w); height: 700px;
+  left: 800px; bottom: 140px;
+  width: var(--char-w); height: 860px;
   border: 2px dashed rgba(61, 220, 151, 0.45);
   border-bottom: none;
   display: flex; align-items: flex-end; justify-content: center;
