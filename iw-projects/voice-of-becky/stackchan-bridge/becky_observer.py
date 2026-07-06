@@ -1191,6 +1191,17 @@ def ai_news_briefing() -> bool:
     else:
         tweet_text = comment
 
+    # URL は本文に同梱（セルフリプでの URL 単独連投はインプアカ感が出る、2026-07-06 ゆうFB）
+    link = chosen.get("link", "")
+    if link:
+        def _wlen(s: str) -> int:  # X の weighted length（全角2/半角1、URLはt.co換算23）
+            return sum(2 if ord(c) > 0x7F else 1 for c in s)
+        budget = 280 - 24 - 1  # URL 23 + 改行
+        while _wlen(tweet_text) > budget and summary_ja and len(summary_ja) > 20:
+            summary_ja = summary_ja[:-10]
+            tweet_text = f"【ベキたん訳】{summary_ja}…\n\n{comment}"
+        tweet_text = f"{tweet_text}\n{link}"
+
     tweet_id = post_to_x(tweet_text)
     if not tweet_id:
         return False
@@ -1198,12 +1209,6 @@ def ai_news_briefing() -> bool:
     _mark_news_posted(chosen["title"])
     log_observer_event("ai_news_briefing", tweet_text, True)
     print(f"[observer] AIニュース投稿完了: {tweet_text[:80]}", flush=True)
-
-    link = chosen.get("link", "")
-    if link:
-        import time as _time
-        _time.sleep(3)
-        post_to_x(link, reply_to=tweet_id)
 
     # x_posted:True に更新して再デプロイ
     _mark_x_posted(link, comment, summary_ja)
