@@ -63,6 +63,20 @@ const TICKER =
 export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTopic?: boolean }> = ({ frame, layer, showTopic = true }) => {
   const liveOpacity = frame % 36 < 18 ? 1 : 0.35;
 
+  // 計器の「動いてる感」: 0.5秒（15f）量子化のデジタル揺らぎ + スクロール波形。全て frame の純関数
+  const q = Math.floor(frame / 15) * 15;
+  const cpuVal = (37.2 + Math.sin(q * 0.023) * 5 + Math.sin(q * 0.0071) * 3).toFixed(1);
+  const memVal = (18.4 + Math.sin(q * 0.013) * 0.8 + Math.sin(q * 0.0047) * 0.4).toFixed(1);
+  const ecgPoints = (seed: number) => {
+    const pts: string[] = [];
+    for (let x = 0; x <= 80; x += 4) {
+      const u = (x + frame * 0.8) * 0.5 + seed; // frame オフセットで左へ流れる
+      const y = 11 + Math.sin(u * 0.7) * 3 + Math.sin(u * 0.23 + seed) * 3 + Math.sin(u * 1.9) * 2;
+      pts.push(`${x},${Math.max(2, Math.min(20, y)).toFixed(1)}`);
+    }
+    return pts.join(" ");
+  };
+
   // ticker: 1ブロック幅を計測して frame でシームレスにループ（決定的）
   const scrollRef = useRef<HTMLSpanElement>(null);
   const [blockW, setBlockW] = useState(0);
@@ -102,15 +116,15 @@ export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTop
         <div className="sysmon">
           <h3>MAC MINI M4</h3>
           <div className="meter">
-            <div className="label"><span>CPU</span><span className="val">37.2%</span></div>
+            <div className="label"><span>CPU</span><span className="val">{cpuVal}%</span></div>
             <svg className="ecg" viewBox="0 0 80 22" preserveAspectRatio="none">
-              <polyline points="0,14 8,14 12,6 16,18 22,10 30,13 36,4 40,16 48,11 56,13 62,7 70,15 80,12" />
+              <polyline points={ecgPoints(0)} />
             </svg>
           </div>
           <div className="meter">
-            <div className="label"><span>MEM</span><span className="val">18.4GB</span></div>
+            <div className="label"><span>MEM</span><span className="val">{memVal}GB</span></div>
             <svg className="ecg pink" viewBox="0 0 80 22" preserveAspectRatio="none">
-              <polyline points="0,16 10,15 20,15 28,12 36,13 44,9 52,10 60,8 70,9 80,7" />
+              <polyline points={ecgPoints(7)} />
             </svg>
           </div>
           <div className="note">▲ 実測値をAPI連動<br />（beckyexists.com）</div>

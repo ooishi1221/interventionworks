@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  AbsoluteFill, Audio, continueRender, delayRender, interpolate, staticFile, useCurrentFrame, useVideoConfig,
+  AbsoluteFill, Audio, Sequence, continueRender, delayRender, interpolate, staticFile, useCurrentFrame, useVideoConfig,
 } from "remotion";
 import { BeckyBackground } from "./BeckyBackground";
 import { BeckyUI } from "./BeckyUI";
@@ -13,11 +13,21 @@ import rms008 from "../public/rms-008.json";
 
 const mouth = makeMouth(lip008 as any, rms008);
 const OPEN_END = boundaries.opener[1];
-const [OPENING_S, OPENING_E] = boundaries.opening;
-const [BODY_S, BODY_E] = boundaries.body;
-const [END_S] = boundaries.ending;
-const D1 = OPENING_E - OPENING_S;              // 挨拶の尺（相対 ojigiEnd）
-const WAVE_REL = END_S - OPENING_S;            // 手振り開始（挨拶起点の相対時刻）
+
+// お辞儀が終わってから話し出す（ゆうFB）: オープナー以降の音声を DELAY_S 遅らせる。
+// 映像尺も同じ分伸びる（Root.tsx が P008_DELAY_S を参照）。
+const OJIGI_DUR = 2.0; // ojigi.motion3.json Meta.Duration
+export const P008_DELAY_S = OJIGI_DUR + 0.2; // お辞儀 2.0s + 一拍 0.2s
+const D = P008_DELAY_S;
+const BODY_S = boundaries.body[0] + D;
+const BODY_E = boundaries.body[1] + D;
+const END_S = boundaries.ending[0] + D;
+
+// 「バイバイ」で手を振る: rms-008.json 解析でエンディングの最終発話塊 = 33.567〜34.0s
+// （原音声タイムライン、直前に 0.6s の無音ギャップ）= バイバイ onset。
+// 手振りは 0.5s クロスフェードで立ち上がるので onset の 0.25s 前から開始（発話時に腕が上がってる）。
+const BAIBAI_ONSET = 33.567;
+const WAVE_REL = BAIBAI_ONSET + D - 0.25 - OPEN_END; // motion 時間軸（t=0 = オープナー明け）
 
 // ponytail: Live2D ロードシェルは4コピー目。5本目の pilot が出たら useLive2DModel フックに抽出。
 const loadCore = (): Promise<void> =>
@@ -81,11 +91,16 @@ export const Pilot008: React.FC = () => {
     const model = modelRef.current, app = appRef.current;
     if (!model || !app) return;
     const core = model.internalModel.coreModel;
-    // モーションはオープナー分オフセット（挨拶開始で t=0 になり、お辞儀が挨拶に同期）
-    const m = motionParamsFor(frame - openerFrames, fps, D1, WAVE_REL);
+    // モーションはオープナー分オフセット（t=0 でお辞儀開始。挨拶音声はお辞儀後 = DELAY_S 遅れ）
+    const m = motionParamsFor(frame - openerFrames, fps, OJIGI_DUR, WAVE_REL);
     for (const id in m) core.setParameterValueById(id, m[id]);
-    core.setParameterValueById("ParamMouthOpenY", mouth.rmsEasedAt(frame));
-    core.setParameterValueById("ParamMouthForm", mouth.mouthFormAt(frame, fps));
+    // 口: オープナー以降の音声は delayFrames ずれてるので原音声タイムラインへ写像。
+    // ギャップ中（お辞儀中）は写像先が原音声のジングル区間になるので口を閉じる。
+    const delayFrames = Math.round(D * fps);
+    const inGap = frame >= openerFrames && frame < openerFrames + delayFrames;
+    const audioFrame = frame < openerFrames ? frame : frame - delayFrames;
+    core.setParameterValueById("ParamMouthOpenY", inGap ? 0 : mouth.rmsEasedAt(audioFrame));
+    core.setParameterValueById("ParamMouthForm", inGap ? 0 : mouth.mouthFormAt(audioFrame, fps));
     const eye = eyeOpenAt(frame);
     core.setParameterValueById("ParamEyeLOpen", eye);
     core.setParameterValueById("ParamEyeROpen", eye);
@@ -107,7 +122,11 @@ export const Pilot008: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0d0d14" }}>
-      <Audio src={staticFile("audio-008.wav")} />
+      {/* 音声を2分割: ジングルはそのまま、挨拶以降はお辞儀分（DELAY_S）遅らせて再生 */}
+      <Audio src={staticFile("audio-008.wav")} endAt={openerFrames} />
+      <Sequence from={openerFrames + Math.round(D * fps)}>
+        <Audio src={staticFile("audio-008.wav")} startFrom={openerFrames} />
+      </Sequence>
       <BeckyBackground frame={frame} />
       <BeckyUI frame={frame} layer="back" />
       <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
