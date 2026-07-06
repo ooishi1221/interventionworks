@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import {
   AbsoluteFill, Audio, continueRender, delayRender, interpolate, staticFile, useCurrentFrame, useVideoConfig,
 } from "remotion";
+import { BeckyBackground } from "./BeckyBackground";
 import { BeckyUI } from "./BeckyUI";
 import { Opener } from "./Opener";
 import { eyeBallAt, eyeOpenAt, makeMouth } from "./lipsync";
@@ -107,6 +108,7 @@ export const Pilot008: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#0d0d14" }}>
       <Audio src={staticFile("audio-008.wav")} />
+      <BeckyBackground frame={frame} />
       <BeckyUI frame={frame} layer="back" />
       <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
       <BeckyUI frame={frame} layer="front" showTopic={showTopic} />
