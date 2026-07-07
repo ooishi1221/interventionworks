@@ -55,6 +55,7 @@ cd brain && python3 becky_brain.py --max-calls 5 --interval 10
 - **JDK26 × spark(async-profiler) は SIGSEGV でサーバごと落ちる** → `server/config/paper-global.yml` の `spark.enabled: false` が正本（`-Dspark.disableBackgroundProfiler=true` は効かない）
 - **prismarine-viewer の上限は MC 1.21.4**（mineflayer 自体は 1.21.11 まで対応）。Paper を上げるときは viewer の supportedVersions を先に確認
 - **viewer のスクショは headless Chrome だと真っ白**（WebGL）。Playwright（browser_navigate → 10秒待ち → screenshot）で撮る
+- **headless Chromium の既定は SwiftShader（CPU描画）で 26fps** → 録画がカクつく。`--enable-gpu --use-angle=metal --ignore-gpu-blocklist` で Apple Metal 60fps（実測 2.3倍、record-episode.py 適用済み）
 - **プロンプトキャッシュ**: system が短い（Sonnet 5 の最小キャッシュ 2048 tokens 未満）ため今は cache_read=0。人格プロンプトを本番化して長くなれば自動で効く
 - **mineflayer 4.37 × 1.21.4 は作業台クラフトが無言で失敗する**（done を返すのに材料が減らない）→ bot の craft はインベントリ実数を検証し、失敗時はレシピの delta 通りに /clear+/give で等価実行（正直な素材不足エラーも返す）
 - 素手で石を掘るとドロップしない → dig_nearest が bestHarvestTool を自動装備

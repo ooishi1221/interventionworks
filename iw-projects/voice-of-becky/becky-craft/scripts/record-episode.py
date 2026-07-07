@@ -244,7 +244,8 @@ def main():
 
     events = []
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        # headless の既定は SwiftShader(CPU) で 26fps に落ちる → Metal GPU 有効化で 60fps（2026-07-07 実測）
+        browser = p.chromium.launch(args=["--enable-gpu", "--use-angle=metal", "--ignore-gpu-blocklist"])
         ctx = browser.new_context(
             viewport={"width": 1280, "height": 720},
             record_video_dir=str(video_dir),
