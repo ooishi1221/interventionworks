@@ -43,6 +43,20 @@ cd brain && python3 becky_brain.py --max-calls 5 --interval 10
 - 声の演技: LLM が毎ターン voice{volume,speed,pitch} を出力 → `becky_voice.voice_to_aivis()` で写像（正本: `../docs/voice-tone-design.md`）
 - 思考先読み（lookahead=True デフォルト）: 行動をスレッド実行し、bot が動いている間に次を考える。EP.001 の直列カクカクに戻すには `lookahead=False`
 
+## ワイプ（Live2Dバストアップ、EP.006〜）
+
+```bash
+# 1. 収録後、events を Remotion へ渡す
+python3 -c "import json; ev=json.load(open('out/episode_audio.json')); json.dump([{'t':e['t'],'dur':e['dur'],'vol':e.get('vol',1.0)} for e in ev], open('../becky-news/video/public/craft-events.json','w'))"
+# 2. 透過ワイプをレンダ（VP8+alpha。ProRes 4444 は Remotion 4.0.290 で alpha 不可）
+cd ../becky-news/video && npx remotion render CraftWipe /tmp/wipe.webm --codec=vp8 --pixel-format=yuva420p --gl=angle --concurrency 10
+# 3. 本編に右下合成（libvpx 指定必須、無いと alpha が黒落ち）
+ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_complex "[1:v]scale=300:-1[w];[0:v][w]overlay=W-w-12:H-h-8[v]" -map "[v]" -map 0:a -c:v libx264 -pix_fmt yuv420p -c:a copy out/becky-craft-epXXX-wiped.mp4
+# 4. wiped.mp4 を build_youtube_cut に渡して完全版を組む
+```
+
+口パクは簡易正弦（Rhubarb化はCraftWipe.tsxのmouthAt差し替え）。表情=voice.volume写像。正本: `becky-news/video/src/CraftWipe.tsx`
+
 ## 公開エピソード
 
 | EP | タイトル | URL | 備考 |
