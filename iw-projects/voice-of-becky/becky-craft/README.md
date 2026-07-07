@@ -39,7 +39,7 @@ cd brain && python3 becky_brain.py --max-calls 5 --interval 10
 - **エピソード番号/タイトル/GOAL は `record-episode.py` 冒頭の `EP_NUM` / `EP_TITLE` / `GOAL` / `HUD_GOAL` を書き換える**（OP/ED カードに自動焼き込み）
 - time_budget 指定で毎ターン「残り秒」が観測に注入され、ベッキーが残り90秒で自分から締めて「バイバイ」+stop で終わる
 - ED リザルト（生存時間/デス数+一言/ハイライト/次回煽り）は収録ログから LLM 1コールで自動生成
-- **収録前クリーンアップ**（Becky は ops 登録済み）: `/kill @e[type=item]` → `/clear` → `/fill <範囲> air replace crafting_table` → `/tp` → `/time set 3000`（朝スタート=終盤に夕暮れの時間割）
+- **収録前クリーンアップ**（Becky は ops 登録済み）: `/kill @e[type=item]` → **`/kill @e[type=!player,type=!item,distance=..48]`（敵mob掃除。忘れるとTP先で即死する——EP.004で鉄5個全ロスの実績）** → `/clear` → `/fill <範囲> air replace crafting_table` → `/tp` → `/time set 3000`（朝スタート=終盤に夕暮れの時間割）
 - 声の演技: LLM が毎ターン voice{volume,speed,pitch} を出力 → `becky_voice.voice_to_aivis()` で写像（正本: `../docs/voice-tone-design.md`）
 - 思考先読み（lookahead=True デフォルト）: 行動をスレッド実行し、bot が動いている間に次を考える。EP.001 の直列カクカクに戻すには `lookahead=False`
 
