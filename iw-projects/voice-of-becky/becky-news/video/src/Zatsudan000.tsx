@@ -37,7 +37,7 @@ const trackAt = (t: number, keys: [number, number][]): number => {
 const EGAO_FULL = 0.8; // Pilot008 と同じ「フル」
 const expressionAt = (t: number) => ({
   // A: お辞儀明けに薄く egao 0.3 → B で素に。D 後半 0.5。F でフル。
-  egao: trackAt(t, [[0, 0], [A_S + 2.2, 0.3], [B_S, 0], [D_MID, 0.5], [E_S, 0], [F_S, EGAO_FULL]]),
+  egao: trackAt(t, [[0, 0], [A_S + 2.2, 0.3], [B_S, 0], [D_MID, EGAO_FULL], [E_S, 0], [F_S, EGAO_FULL]]),
   doyagao: trackAt(t, [[0, 0], [C_S, 0.4], [D_S, 0]]),
   odorokigao: trackAt(t, [[0, 0], [E_S, 0.7], [E_MID, 0]]),
   teregao: trackAt(t, [[0, 0], [E_MID, 0.5], [F_S, 0]]),
@@ -124,11 +124,15 @@ export const Zatsudan000: React.FC = () => {
     // 笑顔の目 = EyeSmile（笑い弧）を立てつつ開き目を引っ込める（Pilot008 の学びそのまま。
     // EyeOpen を消すだけだと目閉じ、混ぜると半目になる）
     const egaoN = ex.egao / EGAO_FULL;
-    const eye = eyeOpenAt(frame) * (1 - egaoN);
+    // 弱い egao の持続が半目を作る（2026-07-07 ゆう発見の同型3件目）。
+    // 目への寄与は閾値つき: egaoN<0.5 は目に効かせず口・頬だけ、0.5→0.85 で一気に笑い弧へ。
+    const s = Math.min(1, Math.max(0, (egaoN - 0.5) / 0.35));
+    const eyeSmileN = s * s * (3 - 2 * s);
+    const eye = eyeOpenAt(frame) * (1 - eyeSmileN);
     core.setParameterValueById("ParamEyeLOpen", eye);
     core.setParameterValueById("ParamEyeROpen", eye);
-    core.setParameterValueById("ParamEyeLSmile", egaoN);
-    core.setParameterValueById("ParamEyeRSmile", egaoN);
+    core.setParameterValueById("ParamEyeLSmile", eyeSmileN);
+    core.setParameterValueById("ParamEyeRSmile", eyeSmileN);
     const e = eyeBallAt(frame, fps);
     core.setParameterValueById("ParamEyeBallX", e.x);
     core.setParameterValueById("ParamEyeBallY", e.y);
