@@ -38,6 +38,13 @@ def navigate(tab: pychrome.Tab, url: str, wait: float = 2.5) -> None:
 
 def scrape_claude_platform(tab: pychrome.Tab) -> dict:
     navigate(tab, "https://platform.claude.com/dashboard", 3)
+    # ponytail: cold load bounces /dashboard -> /login -> (auth) -> /dashboard.
+    # 3s の固定待ちでは redirect 未解決のまま login と誤判定するレースがあるので
+    # login URL でなくなるまで最大10s ポーリングして dashboard 確定を待つ
+    for _ in range(7):
+        if not re.search(r'login|signin', js(tab, "location.href") or ""):
+            break
+        time.sleep(1)
     raw = js(tab, r"""
 (function() {
   var dollar = Array.from(document.querySelectorAll('*'))
