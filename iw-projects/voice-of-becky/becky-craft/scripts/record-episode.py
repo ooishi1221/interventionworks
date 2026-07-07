@@ -80,9 +80,33 @@ def main():
         page.goto(VIEWER_URL)
         page.wait_for_timeout(10_000)  # WebGL 描画待ち（headless は初回真っ白対策）
 
-        def on_turn(turn, decision):
+        # HUD 注入 + 初期状態（goal と現在の observe を先に描く）
+        page.add_script_tag(path=str(HERE / "hud.js"))
+
+        def hud(d):
+            try:
+                page.evaluate("d => window.beckyHud && window.beckyHud.update(d)", d)
+            except Exception as e:
+                print(f"[hud] update 失敗: {e}", flush=True)
+
+        def hud_obs(obs):
+            hud({"health": obs.get("health"), "food": obs.get("food"),
+                 "inventory": obs.get("inventory", []),
+                 "pos": obs.get("position"), "time": obs.get("time")})
+
+        hud({"goal": GOAL})
+        try:
+            with urllib.request.urlopen("http://localhost:3008/observe", timeout=10) as r:
+                hud_obs(json.loads(r.read()))
+        except Exception as e:
+            print(f"[hud] 初期 observe 失敗: {e}", flush=True)
+
+        def on_thinking(flag):
+            hud({"thinking": flag})
+
+        def on_turn(turn, decision, obs):
+            hud_obs(obs)
             speech = (decision.get("speech") or "").strip()
-            t = time.monotonic() - t0  # speech 確定時刻。TTS 生成時間は含めない
             if not speech:
                 return 10.0
             wav = wav_dir / f"turn_{turn:03d}.wav"
@@ -92,11 +116,16 @@ def main():
             except Exception as e:
                 print(f"[tts] turn {turn} 失敗、スキップ: {e}", flush=True)
                 return 10.0
+            # t は字幕表示と同時刻に取る（合成音声の adelay と字幕が揃う）
+            t = time.monotonic() - t0
+            hud({"speech": speech, "inner": (decision.get("inner") or "").strip(),
+                 "speechDur": dur})
             events.append({"t": round(t, 3), "wav_path": str(wav),
                            "speech": speech, "dur": round(dur, 3)})
             return max(dur + 2.0, 10.0)  # セリフ被り防止
 
-        run_episode(max_calls=args.max_calls, goal=GOAL, on_turn=on_turn)
+        run_episode(max_calls=args.max_calls, goal=GOAL, on_turn=on_turn,
+                    on_thinking=on_thinking)
 
         # 最後のセリフが映像内で言い終わるまで録画を延長
         if events:
@@ -123,10 +152,10 @@ def main():
         parts = []
         for i, e in enumerate(events, start=1):
             ms = int(e["t"] * 1000)
-            parts.append(f"[{i}:a]adelay={ms}:all=1,volume=2.0[a{i}]")
+            parts.append(f"[{i}:a]adelay={ms}:all=1,volume=1.5[a{i}]")
         mix_in = "".join(f"[a{i}]" for i in range(1, len(events) + 1))
-        # ponytail: amix normalize=0 で減衰回避。セリフは間隔保証済みでクリップしない前提
-        parts.append(f"{mix_in}amix=inputs={len(events)}:normalize=0[aout]")
+        # ponytail: amix normalize=0 で減衰回避 + alimiter でクリップ保険（前回の音量課題対応）
+        parts.append(f"{mix_in}amix=inputs={len(events)}:normalize=0,alimiter=limit=0.9[aout]")
         cmd += ["-filter_complex", ";".join(parts), "-map", "0:v", "-map", "[aout]"]
     else:
         cmd += ["-map", "0:v"]

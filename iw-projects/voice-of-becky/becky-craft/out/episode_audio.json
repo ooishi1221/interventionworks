@@ -1,182 +1,62 @@
 [
   {
-    "t": 19.035,
+    "t": 28.5,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_001.wav",
-    "speech": "え、待って、開始一秒で敵の名前だけでフルコースなんですけど！？クリーパーにゾンビにスケルトンって夜のバイキングか何か！？",
-    "dur": 9.455
+    "speech": "はいスタート！ベッキークラフト、記念すべき一投目は……夜！？なんでいきなり夜なの、演出過激すぎない！？",
+    "dur": 9.141
   },
   {
-    "t": 38.384,
+    "t": 47.099,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_002.wav",
-    "speech": "クリーパー距離10とか近すぎ近すぎ！でもまず丸太一本、これ生存の第一歩なので死んでも取る！",
-    "dur": 8.413
+    "speech": "骸骨、距離14でこっち見てる気がする……見てないか、見てないよね！？とりあえず木のそばまで移動！",
+    "dur": 9.001
   },
   {
-    "t": 57.924,
+    "t": 64.196,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_003.wav",
-    "speech": "クリーパー距離9！？もう吐息感じるレベルなんですけど、爆発だけは勘弁して！でも丸太、もう一本いくから待ってて！",
-    "dur": 9.782
+    "speech": "よし朝だ！生き延びた！ベッキー、夜を越えたよ、えらい！でも骸骨、距離11ってまだ近くない！？太陽の光で焼け焼けー！",
+    "dur": 11.119
   },
   {
-    "t": 77.977,
+    "t": 85.071,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_004.wav",
-    "speech": "あれ、掘った丸太が手元に来てない！？アイテム化けして地面に転がってるじゃん、私のインベントリどこ行った！",
-    "dur": 8.556
+    "speech": "骨さん、11の距離のままずっと着いてくるのやめて！こっちは南に逃げ……じゃない、探索するから！",
+    "dur": 9.061
   },
   {
-    "t": 96.623,
+    "t": 106.663,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_005.wav",
-    "speech": "クリーパー距離8とか完全に忍び寄ってきてるじゃん！ここは一旦離脱、東に全力ダッシュ！",
-    "dur": 7.467
+    "speech": "待って待って待って、鉄鉱石見えた！？私のデータ、鉄って拾ってる！やった、骸骨まいたし収穫あるかも！",
+    "dur": 9.467
   },
   {
-    "t": 112.878,
+    "t": 123.545,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_006.wav",
-    "speech": "やった、朝キター！生きてる、私生きてる！てか鉄鉱石まで見えてるんですけど、ちょっと運良すぎない私！？",
-    "dur": 9.251
+    "speech": "あの落ちてるアイテム気になる！誰かの忘れ物？それとも私へのプレゼント！？回収しに行くよ！",
+    "dur": 8.276
   },
   {
-    "t": 130.093,
+    "t": 141.907,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_007.wav",
-    "speech": "熱帯魚とか出てきて完全に南国リゾート感あるんですけど！骨だけの奴がまだうろついてるのは無視して、南の方ちょっと見に行くよ！",
-    "dur": 10.596
+    "speech": "あれ、アイテム消えた！？私が近づいたら逃げるタイプ！？いや違う、多分デスポーンだよね、ちょっと悲しい！",
+    "dur": 8.839
   },
   {
-    "t": 147.554,
+    "t": 155.718,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_008.wav",
-    "speech": "水と砂が見えてきた、これもしかしてビーチ！？地下から出てきていきなり絶景ってどういうこと私にご褒美くれてるの！？",
-    "dur": 9.499
+    "speech": "よし、牛さんに会いに行く！近くで見たらもっとモフモフなのか確認しなきゃ！",
+    "dur": 6.51
   },
   {
-    "t": 164.297,
+    "t": 170.799,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_009.wav",
-    "speech": "は！？矢が刺さってる！距離4のガイコツ、あんた今日私のこと狙い撃ちしすぎ！こっちから行ってやるから覚悟しろ！",
-    "dur": 9.214
+    "speech": "あれ、牛さんまた離れてった！人見知り！？いいよ、こっちのペースで行くから！",
+    "dur": 6.555
   },
   {
-    "t": 182.915,
+    "t": 188.611,
     "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_010.wav",
-    "speech": "えっ、体力10!?10ってヤバいやつ!ごめんなさいごめんなさい戦わない戦わない、逃げるが勝ち!!",
-    "dur": 7.947
-  },
-  {
-    "t": 198.385,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_011.wav",
-    "speech": "体力7!?もう洒落になんないから北に走る!矢よ、私に当たらないで、お願い今だけは!",
-    "dur": 7.872
-  },
-  {
-    "t": 215.426,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_012.wav",
-    "speech": "はぁ...はぁ...敵いない、静か...これがいわゆる嵐の後の静けさってやつ？私、ちゃんと生きてる、えらい！",
-    "dur": 10.068
-  },
-  {
-    "t": 232.791,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_013.wav",
-    "speech": "待って、放浪商人!？あんな遠くにいるのに存在感すごい！でも今は無視、木材だけ確保して安全確保するから邪魔しないでね！",
-    "dur": 11.287
-  },
-  {
-    "t": 254.025,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_014.wav",
-    "speech": "あれ、木材掘ったのにインベントリ空っぽ？えっ私のデータ本当に大丈夫？アイテム、近くに落ちてる気配するんだけど！",
-    "dur": 10.118
-  },
-  {
-    "t": 272.378,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_015.wav",
-    "speech": "よし、木材ゲットは確認できた！ガイコツまだ距離あるから今のうちに西側チェックしとく、油断はしない！",
-    "dur": 8.937
-  },
-  {
-    "t": 287.874,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_016.wav",
-    "speech": "ねえ、アイテムがすぐそこに落ちてる！誰かの忘れ物？いや私の忘れ物だったらウケるんだけど！",
-    "dur": 8.395
-  },
-  {
-    "t": 303.153,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_017.wav",
-    "speech": "あのガイコツ、なんかずっと私のこと監視してる気がする！ストーカー？とりあえず南で水辺見つけたし、そっち行ってみる！",
-    "dur": 10.041
-  },
-  {
-    "t": 322.782,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_018.wav",
-    "speech": "ちょっと待って、ガイコツ距離7とか近すぎ！やだやだ、私まだ死にたくない、逃げる逃げる逃げるー！",
-    "dur": 7.83
-  },
-  {
-    "t": 336.777,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_019.wav",
-    "speech": "ふう、ガイコツちょっと離れた！豚さんもいるし、なんか平和な光景に見えてきた……でも油断は禁物、私は学習するAIなので！",
-    "dur": 11.472
-  },
-  {
-    "t": 354.719,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_020.wav",
-    "speech": "よし、ガイコツがずっと同じ距離をキープしてくる、これもう膠着状態！なら私は東に逃げつつ新しい景色探す作戦でいく！",
-    "dur": 10.949
-  },
-  {
-    "t": 372.977,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_021.wav",
-    "speech": "待って待って、旅商人だ！行商人さん！こんなところで何してるの、ラマは、ラマはどこ！？",
-    "dur": 7.644
-  },
-  {
-    "t": 387.911,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_022.wav",
-    "speech": "行商人さん、こんにちはー！何か珍しいアイテム持ってない？私、AIだけど交渉には自信あるんだから！",
-    "dur": 9.1
-  },
-  {
-    "t": 402.663,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_023.wav",
-    "speech": "返事ない！行商人さん、無視！？いや落ち込んでる暇ない、とりあえず近づいて木も集めながら距離詰めるよ！",
-    "dur": 8.637
-  },
-  {
-    "t": 418.221,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_024.wav",
-    "speech": "あれ、足止まってる！？移動できてないじゃん、私のAI脳がバグってる説浮上！とりあえず目の前のダークオーク、掘っちゃう！",
-    "dur": 9.972
-  },
-  {
-    "t": 436.314,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_025.wav",
-    "speech": "待って、めっちゃ近くにアイテム落ちてる！これ何のドロップ！？拾いに行くしかない、宝探しモード発動！",
-    "dur": 8.724
-  },
-  {
-    "t": 454.904,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_026.wav",
-    "speech": "体力7.6でガイコツと睨み合うとか正気じゃない、私は逃げるが勝ち！南に全力ダッシュ！",
-    "dur": 8.134
-  },
-  {
-    "t": 469.82,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_027.wav",
-    "speech": "ラマ発見！トレーダーラマだ、めっちゃかわいい！ガイコツから離れられて一安心、水辺も見えるし景色いいじゃんここ！",
-    "dur": 9.549
-  },
-  {
-    "t": 488.54,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_028.wav",
-    "speech": "よし、行商人さんに再挑戦！今度こそ取引成立させて視聴者にお披露目したいの！",
-    "dur": 7.56
-  },
-  {
-    "t": 503.551,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_029.wav",
-    "speech": "待って、クリーパー気配する！でもまだ遠いから今のうちに行商人さんと交渉続行するよ！",
-    "dur": 7.645
-  },
-  {
-    "t": 518.837,
-    "wav_path": "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/out/wav/turn_030.wav",
-    "speech": "豚さん発見！お肉ゲットのチャンス、体力回復のためにも狩らせてもらうよ！",
-    "dur": 6.817
+    "speech": "よし、東に行ってみる！砂浜っぽいエリアあったよね、海とか見えたら絶対テンション上がる！",
+    "dur": 7.579
   }
 ]

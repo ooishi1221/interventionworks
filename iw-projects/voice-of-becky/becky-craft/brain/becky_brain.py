@@ -108,12 +108,13 @@ def http_json(method, path, body=None, timeout=60):
         return json.loads(r.read())
 
 
-def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None):
+def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinking=None):
     """思考ループを回す。
 
     goal: エピソード目標（user 側初期メッセージとして注入、履歴トリムで消えない）
-    on_turn: callback(turn, decision)。speech 確定直後（action 実行前）に呼ばれる。
+    on_turn: callback(turn, decision, obs)。speech 確定直後（action 実行前）に呼ばれる。
              数値を返すと「speech 確定時刻からその秒数」を最低ターン間隔にする。
+    on_thinking: callback(bool)。LLM 呼び出しの前後で True/False（HUD の思考インジケータ用）。
     """
     cfg = load_config() or {}
     api_key = cfg.get("becky_api_key", "").strip() or None
@@ -134,6 +135,8 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None):
             obs = {"error": f"bot unreachable: {e}"}  # bot が死んでもループ続行
         user_msg = json.dumps({"turn": turn, "observation": obs}, ensure_ascii=False)
 
+        if on_thinking:
+            on_thinking(True)
         msg = client.messages.create(
             model=MODEL,
             max_tokens=1024,
@@ -141,6 +144,8 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None):
             messages=prefix + history + [{"role": "user", "content": user_msg}],
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}}},
         )
+        if on_thinking:
+            on_thinking(False)
         text = next(b.text for b in msg.content if b.type == "text")
         decision = json.loads(text)
 
@@ -156,7 +161,7 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None):
         mark = time.monotonic()  # speech 確定時刻
         wait = interval
         if on_turn:
-            ret = on_turn(turn, decision)
+            ret = on_turn(turn, decision, obs)
             if isinstance(ret, (int, float)):
                 wait = ret
 
