@@ -174,12 +174,16 @@ def run_tts_vvcompat(
     out_dir = workdir / "wav"
     out_dir.mkdir(parents=True, exist_ok=True)
     wavs: list[Path] = []
-    for i, text in enumerate(chunks, start=1):
+    for i, item in enumerate(chunks, start=1):
+        # チャンクは str または (text, 追加params) タプル（声のトンマナ演技用）
+        text, extra = item if isinstance(item, tuple) else (item, None)
         q = urllib.parse.urlencode({"text": text, "speaker": speaker})
         req = urllib.request.Request(f"{base_url}/audio_query?{q}", method="POST")
         with urllib.request.urlopen(req, timeout=30) as res:
             query = json.loads(res.read())
         query.update(params)
+        if extra:
+            query.update(extra)
         q2 = urllib.parse.urlencode({"speaker": speaker})
         req2 = urllib.request.Request(
             f"{base_url}/synthesis?{q2}",
@@ -327,7 +331,19 @@ def main() -> None:
         body = clean_for_tts(Path(args.script_file).read_text(encoding="utf-8"))
         source_url = FEED_LINK
         print(f"[cast] 台本: {args.script_file}（{len(body)} 字）", flush=True)
-        chunks = split_chunks(body)
+        # 声のトンマナ: [voice:プリセット名] タグでセグメントごとに演技パラメータを付ける
+        # （正本: docs/voice-tone-design.md。タグなし台本は従来どおり全編通常）
+        sys.path.insert(0, str(HERE.parent / "stackchan-bridge"))
+        from becky_voice import PRESETS, parse_voice_segments, voice_to_aivis
+        chunks = []
+        n_voiced = 0
+        for preset, seg_text in parse_voice_segments(body):
+            extra = voice_to_aivis(PRESETS[preset]) if preset != "通常" else None
+            if extra:
+                n_voiced += 1
+            chunks += [(c, extra) for c in split_chunks(seg_text)]
+        if n_voiced:
+            print(f"[cast] 声の演技セグメント: {n_voiced} 箇所", flush=True)
     else:
         if not args.url:
             parser.error("URL か --script-file のどちらかが必要")
@@ -355,7 +371,8 @@ def main() -> None:
         elif args.engine == "voicevox":
             wavs = run_tts_vvcompat(chunks, workdir, VOICEVOX_URL, VOICEVOX_SPEAKER, VOICEVOX_PARAMS, "voicevox")
         else:
-            wavs = run_tts(chunks, workdir)
+            # irodori は演技パラメータ非対応（VOICEVOX互換でない）→ テキストだけに落とす
+            wavs = run_tts([c[0] if isinstance(c, tuple) else c for c in chunks], workdir)
         mp3_path = HERE / "out" / mp3_name
         mp3_path.parent.mkdir(exist_ok=True)
         dur = concat_to_mp3(wavs, mp3_path, workdir)
