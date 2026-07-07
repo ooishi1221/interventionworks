@@ -27,21 +27,24 @@ AIVIS_URL = "http://localhost:10101"
 AIVIS_SPEAKER = 1878365376  # コハク / ノーマル（becky-cast/cast.py と同じ）
 AIVIS_PARAMS = {"speedScale": 1.0, "prePhonemeLength": 0.18, "postPhonemeLength": 0.18}
 
-EP_NUM = "002"
-EP_TITLE = "はじめてのクラフト — 道具を持った日"
-GOAL = ("今日はエピソード2の本番収録。前回（EP.001）は丸太と鉄鉱石を見つけて初日を生き延び、"
-        "最後に「次回はもっと深く潜る」と予告した。"
-        "今日の目標は「はじめてのクラフト」——道具を作って、深く潜る準備を整える回。"
-        "手順: oak_log を掘って拾う → craft oak_planks（丸太1→板4）→ craft crafting_table（板4）→ "
-        "craft stick（板2→棒4）→ craft wooden_pickaxe（板3+棒2、作業台は自動設置される）。"
-        "ツルハシが完成したら、それで石(stone)か石炭(coal_ore)を掘ってみて締めに向かう。"
-        "画作りを意識すること: 狭い穴や壁際に長居しない。開けた見晴らしのいい場所で行動し、"
-        "動物や景色が見えたら反応する。地下に潜るのは今日はまだ我慢（次回の楽しみ）。"
+EP_NUM = "003"
+EP_TITLE = "深く潜る — 地下世界と、はじめての鉄"
+GOAL = ("今日はエピソード3の本番収録。"
+        "【前回までのあらすじ】EP.001: 初日を生き延びた（丸太集め、夜の土シェルター）。"
+        "EP.002: はじめてのクラフトで木のツルハシを完成させた（何度もツルハシが消える怪現象に"
+        "「ラグ！絶対ラグ！」と騒いだ末に完成）。夜にドラウンド3体に囲まれて体力7まで削られた。"
+        "EDで「次回、私が本当に深く潜る」と視聴者に宣言済み——今日はその約束を果たす回。"
+        "【今日の目標】地下へ潜って、はじめての鉄(iron_ore)を掘る。"
+        "手順の目安: 石(stone)を掘って cobblestone を集める → craft stone_pickaxe（丸石3+棒2）→ "
+        "地下や洞窟へ潜る → iron_ore を見つけて掘る。深さは y が観測に出ている（y<40 が地下の目安）。"
+        "溶岩(lava)は即死級、見えたら全力で騒いで避ける。"
+        "【オープニングの定型】一言目は必ず「はろー、ベキたんです！ベッキークラフト、第3回、いっくよー！」"
+        "から始めて、前回の約束（深く潜る）に触れてから出発する。"
         "観測の broadcast.remaining_sec が放送の残り秒数。残り90秒を切ったら今日の成果を"
         "振り返って締めに入り、最後のセリフは必ず「バイバイ」で終えて action は stop を選ぶこと。"
-        "それまでは絶対に締めない。オープニングの一言目は「さー始まりました」の空気で元気よく、"
-        "前回の予告（深く潜る）に軽く触れてから今日の目標を宣言する")
-HUD_GOAL = "はじめてのクラフトで道具を作れ"
+        "それまでは絶対に締めない")
+HUD_GOAL = "深く潜って、はじめての鉄を掘れ"
+SE_FILES = {"jajan": "jajan.wav", "dodon": "dodon.wav", "pico": "pico.wav", "chin": "chin.wav"}
 SE_DIR = CRAFT.parent / "becky-news" / "episodes" / "zatsudan-000"
 OPED_DIR = CRAFT / "assets" / "op-ed"
 
@@ -85,10 +88,14 @@ def episode_summary(events: list, deaths: int) -> dict:
     speeches = "\n".join(e["speech"] for e in events)
     schema = {"type": "object", "properties": {
         "highlight": {"type": "string"}, "death_comment": {"type": "string"},
-        "next_tease": {"type": "string"}},
-        "required": ["highlight", "death_comment", "next_tease"], "additionalProperties": False}
+        "next_tease": {"type": "string"},
+        "youtube_titles": {"type": "array", "items": {"type": "string"},
+                           "minItems": 3, "maxItems": 3}},
+        "required": ["highlight", "death_comment", "next_tease", "youtube_titles"],
+        "additionalProperties": False}
     fallback = {"highlight": "今日も生きて冒険した", "death_comment": "ノーコメント",
-                "next_tease": "つづく。たぶん明日"}
+                "next_tease": "つづく。たぶん明日",
+                "youtube_titles": ["【BECKY CRAFT】今日も生きて冒険した"] * 3}
     try:
         msg = client.messages.create(
             model="claude-sonnet-5", max_tokens=1000,
@@ -96,7 +103,9 @@ def episode_summary(events: list, deaths: int) -> dict:
                        f"ベッキーのマイクラ実況エピソードの全セリフ:\n{speeches}\n\nデス数: {deaths}回\n\n"
                        "エンディングのリザルト画面用に、highlight（今日のハイライト、15字以内）、"
                        "death_comment（デス数の後ろに付ける一言、10字以内、括弧なし。0回なら強がり、1回以上なら言い訳）、"
-                       "next_tease（次回エピソードの煽りタイトル、18字以内、番号は書かない、ベッキーの一人称は私）をJSONで返して"}],
+                       "next_tease（次回エピソードの煽りタイトル、18字以内、番号は書かない、ベッキーの一人称は私）、"
+                       "youtube_titles（YouTube動画タイトル案3つ。ゲーム実況らしくキャッチーに、"
+                       "『【BECKY CRAFT】』で始めて、名場面やヘタレ・絶叫を煽り文句に使う。実在の人名禁止）をJSONで返して"}],
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": schema}}},
         )
         text = next((b.text for b in msg.content if b.type == "text"), None)
@@ -147,29 +156,75 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
             pg.screenshot(path=str(dst))
         b.close()
 
-    # 2) 頭トリミング位置（初セリフの3秒前）
+    # 2) ジャンプカット: セリフ区間（前1.0s/後1.8s パッド）を保護し、長い無言ギャップを捨てる
+    probe = json.loads(subprocess.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(webm_mp4)],
+        check=True, capture_output=True).stdout)
+    total = float(probe["format"]["duration"])
     lead = max(0.0, events[0]["t"] - 3.0)
-    print(f"[oped] 頭 {lead:.1f}s をトリミング", flush=True)
+    segs = []
+    for e in events:
+        s = max(lead, e["t"] - 1.0)
+        t = min(total, e["t"] + e["dur"] + 1.8)
+        if segs and s - segs[-1][1] <= 2.5:  # 短いギャップは繋げたまま（カット感を出さない）
+            segs[-1][1] = max(segs[-1][1], t)
+        else:
+            segs.append([s, t])
+    kept = sum(t - s for s, t in segs)
+    print(f"[cut] 本編 {total - lead:.0f}s → {kept:.0f}s（{len(segs)}セグメント、"
+          f"{total - lead - kept:.0f}s をジャンプカット）", flush=True)
 
-    # 3) OP(5s) + 本編 + ED(6s) を一発 concat（音声は 44.1k stereo に揃える）
+    def remap(t_orig):
+        """元動画の時刻 → ジャンプカット後の時刻"""
+        acc = 0.0
+        for s, e_ in segs:
+            if t_orig <= e_:
+                return acc + max(0.0, t_orig - s)
+            acc += e_ - s
+        return acc
+
+    # 3) OP(5s) + カット済み本編 + ED(6s) を concat し、SE をリマップ位置に重ねる
     jingle = SE_DIR / "se_jingle.wav"
+    se_events = [e for e in events if e.get("se")]
+    se_dir = CRAFT / "assets" / "se"
     af = "aformat=sample_rates=44100:channel_layouts=stereo"
     cmd = ["ffmpeg", "-y",
            "-loop", "1", "-t", "5", "-i", str(op_png),
            "-i", str(jingle),
-           "-ss", f"{lead:.3f}", "-i", str(webm_mp4),
-           "-loop", "1", "-t", "6", "-i", str(ed_png),
-           "-filter_complex",
-           f"[0:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=4.5:d=0.5[v0];"
-           f"[1:a]{af},apad=whole_dur=5,asplit=2[a0][aed];"
-           f"[2:v]scale=1280:720,setsar=1,fps=25[v1];[2:a]{af}[a1];"
-           f"[3:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=5.5:d=0.5[v2];"
-           f"[aed]atrim=0:6,apad=whole_dur=6,volume=0.6[a2];"
-           f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[v][a]",
-           "-map", "[v]", "-map", "[a]",
-           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out_path)]
+           "-i", str(webm_mp4),
+           "-loop", "1", "-t", "6", "-i", str(ed_png)]
+    for e in se_events:
+        cmd += ["-i", str(se_dir / SE_FILES[e["se"]])]
+
+    parts = [
+        f"[0:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=4.5:d=0.5[v0]",
+        f"[1:a]{af},apad=whole_dur=5,asplit=2[a0][aed]",
+        f"[3:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=5.5:d=0.5[v2]",
+        f"[aed]atrim=0:6,apad=whole_dur=6,volume=0.6[a2]",
+    ]
+    for i, (s, t) in enumerate(segs):
+        parts.append(f"[2:v]trim={s:.3f}:{t:.3f},setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=25[sv{i}]")
+        parts.append(f"[2:a]atrim={s:.3f}:{t:.3f},asetpts=PTS-STARTPTS,{af}[sa{i}]")
+    seg_in = "".join(f"[sv{i}][sa{i}]" for i in range(len(segs)))
+    parts.append(f"{seg_in}concat=n={len(segs)}:v=1:a=1[v1][a1]")
+    parts.append(f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vc][ac]")
+    if se_events:
+        se_labels = []
+        for i, e in enumerate(se_events):
+            ms = int((5.0 + remap(e["t"])) * 1000)  # OP 5秒 + カット後位置
+            parts.append(f"[{4 + i}:a]{af},volume=0.55,adelay={ms}:all=1[se{i}]")
+            se_labels.append(f"[se{i}]")
+        parts.append(f"[ac]{''.join(se_labels)}amix=inputs={1 + len(se_events)}:normalize=0,"
+                     f"alimiter=limit=0.9[aout]")
+    else:
+        parts.append("[ac]anull[aout]")
+    cmd += ["-filter_complex", ";".join(parts), "-map", "[vc]", "-map", "[aout]",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out_path)]
     subprocess.run(cmd, check=True, capture_output=True)
-    print(f"[oped] YouTube cut 完成: {out_path}", flush=True)
+    print(f"[oped] YouTube cut 完成: {out_path}（SE {len(se_events)}発）", flush=True)
+    print("[oped] タイトル案:", flush=True)
+    for t_ in summary.get("youtube_titles", []):
+        print(f"  - {t_}", flush=True)
 
 
 def main():
@@ -242,6 +297,9 @@ def main():
             except Exception:
                 pass
 
+        thumb_dir = out_dir / "thumbs"
+        thumb_dir.mkdir(exist_ok=True)
+
         def on_turn(turn, decision, obs):
             hud_obs(obs)
             speech = (decision.get("speech") or "").strip()
@@ -258,8 +316,16 @@ def main():
             t = time.monotonic() - t0
             hud({"speech": speech, "inner": (decision.get("inner") or "").strip(),
                  "speechDur": dur})
+            se = decision.get("se") or "none"
             events.append({"t": round(t, 3), "wav_path": str(wav),
-                           "speech": speech, "dur": round(dur, 3)})
+                           "speech": speech, "dur": round(dur, 3),
+                           "se": se if se in SE_FILES else None})
+            # サムネ候補: 大絶叫（volume>=1.7）の瞬間のフレームを保存
+            if float((decision.get("voice") or {}).get("volume", 1.0)) >= 1.7:
+                try:
+                    page.screenshot(path=str(thumb_dir / f"ep{EP_NUM}_turn{turn:03d}.png"))
+                except Exception:
+                    pass
             return max(dur + 2.0, 10.0)  # セリフ被り防止
 
         run_episode(max_calls=args.max_calls, goal=GOAL, on_turn=on_turn,
