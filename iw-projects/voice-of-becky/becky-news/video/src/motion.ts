@@ -1,4 +1,5 @@
 import idleJson from "../public/model/motions/becky_idle.motion3.json";
+import odorokuJson from "../public/model/odoroku.motion3.json";
 import ojigiJson from "../public/model/ojigi.motion3.json";
 import waveJson from "../public/model/tewohuru.motion3.json";
 
@@ -17,6 +18,7 @@ const parse = (j: any): Motion => ({
 const OJIGI = parse(ojigiJson);
 const IDLE = parse(idleJson);
 const WAVE = parse(waveJson);
+const ODOROKU = parse(odorokuJson);
 
 // セグメント配列: [t0,v0, type, ...pts, type, ...pts]。
 // type 0=Linear,1=Bezier(cp1,cp2,end=6値),2=Stepped,3=InverseStepped。
@@ -78,11 +80,16 @@ export const motionParamsAt = (frame: number, fps: number): Record<string, numbe
 };
 
 // 台本の境界時刻でモーションを配置する版（通しサンプル用）: opening=ojigi / body=idle / ending=手振り
-export const motionParamsFor = (frame: number, fps: number, ojigiEnd: number, waveStart: number): Record<string, number> => {
+// odorokuStart: 驚きモーションを1回だけ再生する開始秒（省略時なし）。
+// odoroku は AngleX/Y 等 idle と同じパラメータを動かすので、再生中は idle の重みを引く（加算で二重に揺れない）。
+export const motionParamsFor = (frame: number, fps: number, ojigiEnd: number, waveStart: number, odorokuStart = Infinity): Record<string, number> => {
   const t = frame / fps;
   const wOjigi = t < ojigiEnd ? 1 : t < ojigiEnd + XF ? 1 - (t - ojigiEnd) / XF : 0;
   const wWave = t < waveStart ? 0 : t < waveStart + XF ? (t - waveStart) / XF : 1;
-  const wIdle = Math.max(0, 1 - wOjigi);
+  const oT = t - odorokuStart; // odoroku ローカル時刻
+  const oD = ODOROKU.duration;
+  const wOdo = oT < 0 ? 0 : oT < XF ? oT / XF : oT < oD - XF ? 1 : oT < oD ? (oD - oT) / XF : 0;
+  const wIdle = Math.max(0, 1 - wOjigi - wOdo);
   const acc: Record<string, number> = {};
   const add = (d: Record<string, number>, w: number) => {
     if (w <= 0) return;
@@ -91,5 +98,6 @@ export const motionParamsFor = (frame: number, fps: number, ojigiEnd: number, wa
   add(sample(OJIGI, Math.min(t, OJIGI.duration)), wOjigi);
   add(sample(IDLE, t % IDLE.duration), wIdle);
   add(sample(WAVE, Math.max(0, t - waveStart) % WAVE.duration), wWave);
+  add(sample(ODOROKU, Math.min(Math.max(0, oT), oD)), wOdo);
   return acc;
 };
