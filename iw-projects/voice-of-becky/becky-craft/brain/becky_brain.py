@@ -190,18 +190,28 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         if on_thinking:
             on_thinking(True)
         t_think = time.monotonic()
-        msg = client.messages.create(
-            model=MODEL,
-            max_tokens=1024,
-            system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-            messages=prefix + history + [{"role": "user", "content": user_msg}],
-            extra_body={"output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}}},
-        )
+        last_err = None
+        for attempt in range(2):  # max_tokens 切断等で JSON が壊れたら1回だけ引き直す
+            msg = client.messages.create(
+                model=MODEL,
+                max_tokens=2048,
+                system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+                messages=prefix + history + [{"role": "user", "content": user_msg}],
+                extra_body={"output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}}},
+            )
+            text = next((b.text for b in msg.content if b.type == "text"), "")
+            try:
+                decision = json.loads(text)
+                break
+            except json.JSONDecodeError as e:
+                last_err = e
+                print(f"[brain] turn {turn} JSON壊れ (stop={msg.stop_reason}, attempt {attempt + 1}) → リトライ", flush=True)
+        else:
+            raise last_err
         think_sec = time.monotonic() - t_think
         if on_thinking:
             on_thinking(False)
-        text = next(b.text for b in msg.content if b.type == "text")
-        return user_msg, text, json.loads(text), msg.usage, think_sec
+        return user_msg, text, decision, msg.usage, think_sec
 
     def start_action(action):
         """行動を別スレッドで実行（bot が動いている間に次の思考を回すため）。"""
