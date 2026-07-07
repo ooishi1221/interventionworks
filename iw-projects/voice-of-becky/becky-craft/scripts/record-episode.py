@@ -288,17 +288,30 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
             segs[-1][1] = max(segs[-1][1], t)
         else:
             segs.append([s, t])
+    FAST = 8  # ギャップは捨てずに8倍速（ワープに見える問題対策、2026-07-07 ゆうFB）
     kept = sum(t - s for s, t in segs)
-    print(f"[cut] 本編 {total - lead:.0f}s → {kept:.0f}s（{len(segs)}セグメント、"
-          f"{total - lead - kept:.0f}s をジャンプカット）", flush=True)
+    gaps = []
+    for i in range(len(segs) - 1):
+        g0, g1 = segs[i][1], segs[i + 1][0]
+        if g1 - g0 > 0.3:
+            gaps.append((g0, g1))
+    fast_total = sum((g1 - g0) / FAST for g0, g1 in gaps)
+    print(f"[cut] 本編 {total - lead:.0f}s → {kept + fast_total:.0f}s"
+          f"（通常{len(segs)}区間 + 早送り{len(gaps)}区間×{FAST}倍速）", flush=True)
 
     def remap(t_orig):
-        """元動画の時刻 → ジャンプカット後の時刻"""
+        """元動画の時刻 → 編集後の時刻（keep等速 + gap 1/FAST 圧縮）"""
         acc = 0.0
-        for s, e_ in segs:
+        for i, (s, e_) in enumerate(segs):
             if t_orig <= e_:
                 return acc + max(0.0, t_orig - s)
             acc += e_ - s
+            if i < len(segs) - 1:
+                nxt = segs[i + 1][0]
+                if nxt - e_ > 0.3:
+                    if t_orig < nxt:
+                        return acc + (t_orig - e_) / FAST
+                    acc += (nxt - e_) / FAST
         return acc
 
     # 3) アバン（最大絶叫の5秒先出し）+ OP(5s) + カット済み本編 + ED(6s) を concat し、SE をリマップ位置に重ねる
@@ -328,11 +341,21 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
         f"[3:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=5.5:d=0.5[v2]",
         f"[aed]atrim=0:6,apad=whole_dur=6,volume=0.6[a2]",
     ]
+    chain = []  # keep と早送り gap を交互に並べる
     for i, (s, t) in enumerate(segs):
         parts.append(f"[2:v]trim={s:.3f}:{t:.3f},setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=25[sv{i}]")
         parts.append(f"[2:a]atrim={s:.3f}:{t:.3f},asetpts=PTS-STARTPTS,{af}[sa{i}]")
-    seg_in = "".join(f"[sv{i}][sa{i}]" for i in range(len(segs)))
-    parts.append(f"{seg_in}concat=n={len(segs)}:v=1:a=1[v1][a1]")
+        chain.append(f"[sv{i}][sa{i}]")
+        if i < len(segs) - 1:
+            g0, g1 = t, segs[i + 1][0]
+            if g1 - g0 > 0.3:
+                gd = (g1 - g0) / FAST
+                parts.append(f"[2:v]trim={g0:.3f}:{g1:.3f},setpts=(PTS-STARTPTS)/{FAST},"
+                             f"scale=1280:720,setsar=1,fps=25[gv{i}]")
+                parts.append(f"[2:a]atrim={g0:.3f}:{g1:.3f},asetpts=PTS-STARTPTS,"
+                             f"atempo=2.0,atempo=2.0,atempo=2.0,volume=0.35,{af}[ga{i}]")
+                chain.append(f"[gv{i}][ga{i}]")
+    parts.append(f"{''.join(chain)}concat=n={len(chain)}:v=1:a=1[v1][a1]")
     if avan:
         # アバン→OP の継ぎ目はフェードで落とす（映像+音声 0.6s、ぶつ切り対策 2026-07-07 ゆうFB）
         fst = max(0.0, avan_len - 0.6)

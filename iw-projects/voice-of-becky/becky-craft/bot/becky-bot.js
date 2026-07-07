@@ -26,19 +26,30 @@ bot.once('spawn', () => {
   console.log('[bot] viewer on http://localhost:3007')
 })
 
-// ---- 視線演出（思考中のキョロキョロ + 作業後の水平リセット）----
-let gazeTimer = null
-function gazeScanStart() {
-  if (gazeTimer) return
-  gazeTimer = setInterval(() => {
-    // 現在の向きから ±40° ランダムに首を振る（考えてるっぽい仕草）
-    const yaw = bot.entity.yaw + (Math.random() - 0.5) * 1.4
-    bot.look(yaw, (Math.random() - 0.5) * 0.3, false).catch(() => {})
-  }, 1100)
-}
-function gazeScanStop() {
-  if (gazeTimer) { clearInterval(gazeTimer); gazeTimer = null }
-}
+// ---- 視線システム（優先度: 敵 > ドロップ > 思考中キョロキョロ。移動中は進行方向に任せる）----
+let gazeScanning = false
+function gazeScanStart() { gazeScanning = true }
+function gazeScanStop() { gazeScanning = false }
+
+setInterval(() => {
+  if (!ready) return
+  try {
+    if (bot.pathfinder.isMoving && bot.pathfinder.isMoving()) return  // 移動中は進行方向
+    const p = bot.entity.position
+    const hostile = bot.nearestEntity(e => e.type === 'hostile' && e.position.distanceTo(p) < 14)
+    const drop = hostile ? null : bot.nearestEntity(e => e.name === 'item' && e.position.distanceTo(p) < 10)
+    const target = hostile || drop
+    if (target) {
+      // 敵・アイテムを注視（カメラが「話題の対象」を向く、2026-07-07 ゆうFB）
+      bot.lookAt(target.position.offset(0, (target.height || 0.5) * 0.8, 0), false).catch(() => {})
+      return
+    }
+    if (gazeScanning) {
+      const yaw = bot.entity.yaw + (Math.random() - 0.5) * 1.4
+      bot.look(yaw, (Math.random() - 0.5) * 0.3, false).catch(() => {})
+    }
+  } catch (e) { /* 視線は演出、失敗しても本体に影響させない */ }
+}, 1200)
 async function lookHorizon() {
   // ドアップの壁から解放: 視線を水平に戻す
   await bot.look(bot.entity.yaw, 0, false).catch(() => {})
@@ -294,7 +305,7 @@ app.post('/gaze', (req, res) => {
   if (!ready) return res.status(503).json({ error: 'bot not spawned yet' })
   if (req.body && req.body.scan) gazeScanStart()
   else gazeScanStop()
-  res.json({ done: true, scanning: !!gazeTimer })
+  res.json({ done: true, scanning: gazeScanning })
 })
 
 app.post('/action', async (req, res) => {
