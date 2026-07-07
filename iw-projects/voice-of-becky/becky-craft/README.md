@@ -63,6 +63,13 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 |---|---|---|---|
 | 001 | はじまりの日 | https://www.youtube.com/watch?v=NIf3LvNo6io | 直列思考のカクカク=成長アークの初期値として意図的に保存 |
 | 002 | はじめてのクラフト | https://www.youtube.com/watch?v=xkK8iFGtmkQ | クラフト解禁+並列思考+自動回収。ドラウンド3体夜戦 |
+| 003 | 深く潜る | https://www.youtube.com/watch?v=gGkHr_ssCKo | 初の鉄5個。ジャンプカット/SE/サムネ初搭載。サムネ『初・鉄、5個。』 |
+| 004 | 全ロス回 | https://www.youtube.com/watch?v=lfyQpG6tB5E | ドラウンドに殺され鉄5個ロスト（敗北回として公開）。サムネ『全ロス。』 |
+| 005 | 石職人回 | https://www.youtube.com/watch?v=yf_9GfEm2fQ | y45の鉄に届かず石装備フルコンプ。アバン/感情HUD初搭載。サムネ『鉄、遠すぎ。』 |
+| 006 | 4連敗回 | https://www.youtube.com/watch?v=yaJYvGCgxds | ワイプ完全体第1号。ドラウンド6体に敗走、dig_down温存。サムネ『全ロス、絶叫。』 |
+
+Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
+**シリーズ現在地: 鉄をめぐって4連敗中。EP.007 = dig_down 解放+5度目の挑戦（新頭の初仕事）**
 
 ## 罠
 
