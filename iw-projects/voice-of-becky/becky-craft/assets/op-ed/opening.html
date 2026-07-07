@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>BECKY CRAFT — Opening</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #ff5c8a;
+    --cyan: #40e0d0;
+    --gold: #ffd54a;
+    --night: #0b0e1a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 720px; overflow: hidden;
+    background: linear-gradient(180deg, #070a14 0%, #0e1430 55%, #1a2148 78%, #253060 100%);
+    font-family: 'DotGothic16', sans-serif;
+    position: relative;
+    color: #fff;
+  }
+  /* 星空 */
+  .star { position: absolute; background: #fff; }
+  /* ピクセル雲 */
+  .cloud { position: absolute; display: grid; grid-auto-flow: column; opacity: .18; }
+  .cloud i { width: 26px; height: 26px; background: #fff; }
+  /* 地面（草ブロック列） */
+  .ground { position: absolute; bottom: 0; left: 0; right: 0; height: 96px; display: flex; }
+  .block { width: 64px; height: 96px; position: relative; background:
+      linear-gradient(180deg, #5cb54a 0 26px, #7a5230 26px 100%); }
+  .block::before { content:""; position:absolute; top:0; left:0; right:0; height:26px;
+      background-image:
+        linear-gradient(90deg, transparent 0 8px, #6ecf58 8px 16px, transparent 16px 40px, #4a9e3c 40px 52px, transparent 52px 64px);
+  }
+  .block::after { content:""; position:absolute; top:34px; left:10px; width:14px; height:14px; background:#5d3f24;
+      box-shadow: 30px 22px 0 #8a6038, 6px 40px 0 #684628; }
+
+  /* 中央タイトル */
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding-bottom: 70px; }
+  .kicker { font-size: 22px; letter-spacing: .35em; color: var(--cyan); margin-bottom: 26px; }
+  .logo { font-family: 'Press Start 2P', monospace; font-size: 88px; line-height: 1.15;
+      color: var(--pink); text-align: center;
+      text-shadow: 0 8px 0 #8d2547, 0 0 42px rgba(255,92,138,.55); }
+  .logo .craft { color: var(--gold); text-shadow: 0 8px 0 #8a6a12, 0 0 42px rgba(255,213,74,.5); }
+  .sub { margin-top: 34px; font-size: 34px; letter-spacing: .14em; color: #e8ecff; }
+  .ep { margin-top: 30px; display: inline-flex; align-items: center; gap: 18px;
+      border: 4px solid var(--cyan); padding: 14px 34px; font-size: 30px;
+      background: rgba(64,224,208,.08); box-shadow: 0 0 26px rgba(64,224,208,.25); }
+  .ep .num { font-family: 'Press Start 2P', monospace; font-size: 24px; color: var(--cyan); }
+
+  /* ピクセルツルハシ（オリジナル） */
+  .pick { position: absolute; right: 130px; top: 120px; width: 176px; height: 176px;
+      transform: rotate(18deg); opacity: .9; }
+  .pick i { position: absolute; width: 16px; height: 16px; }
+  .rec { position: absolute; top: 34px; left: 40px; display: flex; align-items: center; gap: 12px;
+      font-size: 24px; letter-spacing: .2em; color: #ffb3c8; }
+  .rec .dot { width: 16px; height: 16px; background: #ff4059; border-radius: 0; box-shadow: 0 0 14px #ff4059; }
+  .credit { position: absolute; bottom: 116px; right: 36px; font-size: 18px; color: #9aa4d0; letter-spacing: .12em; }
+</style>
+</head>
+<body>
+  <!-- 星 -->
+  <script>
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('div'); s.className = 'star';
+      const sz = [2,2,3,4][i % 4];
+      s.style.cssText = `left:${(i*211)%1280}px; top:${(i*97)%400}px; width:${sz}px; height:${sz}px; opacity:${0.3+(i%5)*0.14}`;
+      document.body.appendChild(s);
+    }
+    // 雲
+    const clouds = [[90,120,7],[820,70,9],[420,180,5],[1050,210,6]];
+    clouds.forEach(([x,y,n]) => {
+      const c = document.createElement('div'); c.className = 'cloud';
+      c.style.left = x+'px'; c.style.top = y+'px';
+      for (let j=0;j<n;j++) c.appendChild(document.createElement('i'));
+      document.body.appendChild(c);
+    });
+    // 地面
+    const g = document.createElement('div'); g.className = 'ground';
+    for (let i=0;i<20;i++){ const b=document.createElement('div'); b.className='block'; g.appendChild(b); }
+    document.body.appendChild(g);
+    // ピクセルハート（HP モチーフ）
+    const pick = document.createElement('div'); pick.className='pick';
+    const R = '#ff5c8a', HL = '#ffb3c8';
+    const HEART = [
+      ".XX.XX.",
+      "XXXXXXX",
+      "XXXXXXX",
+      ".XXXXX.",
+      "..XXX..",
+      "...X...",
+    ];
+    HEART.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch !== 'X') return;
+      const i = document.createElement('i');
+      const col = (y === 1 && (x === 1 || x === 2)) ? HL : R;  // ハイライト
+      i.style.cssText = `left:${x*22}px; top:${y*22}px; width:22px; height:22px; background:${col}`;
+      pick.appendChild(i);
+    }));
+    document.body.appendChild(pick);
+  </script>
+  <div class="rec"><div class="dot"></div>BECKY ON PLAY</div>
+  <div class="stage">
+    <div class="kicker">VOICE OF BECKY — 第3番組</div>
+    <div class="logo">BECKY<br><span class="craft">CRAFT</span></div>
+    <div class="sub">AI、はじめてのマインクラフト。</div>
+    <div class="ep"><span class="num">EP.001</span><span>はじまりの日 — 初日を生き延びろ</span></div>
+  </div>
+  <div class="credit">beckyexists.com</div>
+</body>
+</html>

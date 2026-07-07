@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>BECKY CRAFT — Ending</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #ff5c8a;
+    --cyan: #40e0d0;
+    --gold: #ffd54a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 720px; overflow: hidden;
+    background: linear-gradient(180deg, #05070f 0%, #0a0f22 60%, #131a38 100%);
+    font-family: 'DotGothic16', sans-serif; color: #fff; position: relative;
+  }
+  .star { position: absolute; background: #fff; }
+  /* たいまつの灯り */
+  .torch { position: absolute; bottom: 96px; width: 14px; height: 44px; background: #7a5230; }
+  .torch::before { content:""; position:absolute; top:-16px; left:-2px; width:18px; height:18px;
+      background:#ffae2a; box-shadow: 0 0 34px 14px rgba(255,160,40,.35); }
+  .ground { position: absolute; bottom: 0; left: 0; right: 0; height: 96px; display: flex; }
+  .block { width: 64px; height: 96px; background: #2a2f3b; position: relative; }
+  .block::before { content:""; position:absolute; top:0; left:0; right:0; height:26px; background:#3d4351; }
+  .block::after { content:""; position:absolute; top:40px; left:12px; width:14px; height:14px; background:#20242e;
+      box-shadow: 28px 24px 0 #343a49, 4px 42px 0 #1c202a; }
+
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding-bottom: 60px; }
+  .headline { font-size: 58px; letter-spacing: .22em; color: #f2f5ff;
+      text-shadow: 0 0 30px rgba(255,255,255,.25); }
+  .headline b { color: var(--pink); font-weight: normal; }
+
+  .result { margin-top: 44px; width: 660px; border: 4px solid #56608c; background: rgba(10,14,32,.75);
+      padding: 26px 38px; }
+  .result h2 { font-family: 'Press Start 2P', monospace; font-size: 17px; color: var(--gold);
+      letter-spacing: .1em; margin-bottom: 22px; text-align: center; }
+  .row { display: flex; justify-content: space-between; font-size: 27px; padding: 9px 4px;
+      border-bottom: 2px dashed #333c5e; }
+  .row:last-child { border-bottom: none; }
+  .row .v { color: var(--cyan); }
+  .row .v.death { color: var(--pink); }
+
+  .cta { margin-top: 40px; display: flex; align-items: center; gap: 22px; font-size: 27px; color: #e8ecff; }
+  .btn { border: 4px solid var(--pink); background: rgba(255,92,138,.12); color: var(--pink);
+      padding: 12px 28px; font-size: 25px; letter-spacing: .1em;
+      box-shadow: 0 0 24px rgba(255,92,138,.3); }
+  .next { margin-top: 26px; font-size: 22px; color: #9aa4d0; letter-spacing: .12em; }
+  .next b { color: var(--gold); font-weight: normal; }
+  .logo-s { position: absolute; top: 36px; right: 40px; font-family: 'Press Start 2P', monospace;
+      font-size: 18px; color: var(--pink); opacity: .85; }
+  .logo-s span { color: var(--gold); }
+</style>
+</head>
+<body>
+  <script>
+    for (let i = 0; i < 50; i++) {
+      const s = document.createElement('div'); s.className = 'star';
+      const sz = [2,2,3][i % 3];
+      s.style.cssText = `left:${(i*257)%1280}px; top:${(i*83)%360}px; width:${sz}px; height:${sz}px; opacity:${0.25+(i%5)*0.13}`;
+      document.body.appendChild(s);
+    }
+    const g = document.createElement('div'); g.className = 'ground';
+    for (let i=0;i<20;i++){ const b=document.createElement('div'); b.className='block'; g.appendChild(b); }
+    document.body.appendChild(g);
+    [180, 1080].forEach(x => { const t=document.createElement('div'); t.className='torch'; t.style.left=x+'px';
+      document.body.appendChild(t); });
+  </script>
+  <div class="logo-s">BECKY <span>CRAFT</span></div>
+  <div class="stage">
+    <div class="headline">今日も、この世界に<b>いた。</b></div>
+    <div class="result">
+      <h2>SURVIVAL RESULT</h2>
+      <div class="row"><span>生き延びた時間</span><span class="v">10分32秒</span></div>
+      <div class="row"><span>デス数</span><span class="v death">1回（クリーパー、許さない）</span></div>
+      <div class="row"><span>今日のハイライト</span><span class="v">初めての鉄鉱石</span></div>
+    </div>
+    <div class="cta"><div class="btn">チャンネル登録</div><span>で、次の冒険も見届けて</span></div>
+    <div class="next">NEXT ▶ <b>EP.002</b> 道具を作りたい私、レシピを知らない</div>
+  </div>
+</body>
+</html>
