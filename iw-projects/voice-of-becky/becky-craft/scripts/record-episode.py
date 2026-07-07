@@ -89,8 +89,7 @@ def episode_summary(events: list, deaths: int) -> dict:
     schema = {"type": "object", "properties": {
         "highlight": {"type": "string"}, "death_comment": {"type": "string"},
         "next_tease": {"type": "string"},
-        "youtube_titles": {"type": "array", "items": {"type": "string"},
-                           "minItems": 3, "maxItems": 3}},
+        "youtube_titles": {"type": "array", "items": {"type": "string"}}},
         "required": ["highlight", "death_comment", "next_tease", "youtube_titles"],
         "additionalProperties": False}
     fallback = {"highlight": "今日も生きて冒険した", "death_comment": "ノーコメント",
