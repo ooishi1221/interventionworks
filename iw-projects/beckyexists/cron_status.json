@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-07T22:18:35",
+  "updated_at": "2026-07-07T23:05:00",
   "jobs": [
     {
       "name": "becky-memory-tidy 週次自動実行",
@@ -18,10 +18,10 @@
       "schedule_raw": "*/30 * * * *",
       "command_short": "status_update.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-status.log",
-      "last_run": "2026-07-07T22:00:31",
-      "next_run": "2026-07-07T22:30:00",
-      "status": "error",
-      "last_error_snippet": "npm error A complete log of this run can be found in: /Users/yuji.ooishi/.npm/_logs/2026-07-07T09_30_04_094Z-debug-0.log"
+      "last_run": "2026-07-07T23:00:31",
+      "next_run": "2026-07-07T23:30:00",
+      "status": "ok",
+      "last_error_snippet": null
     },
     {
       "name": "朝ラジオ自動収録・配信",
@@ -62,8 +62,8 @@
       "schedule_raw": "0 * * * *",
       "command_short": "becky_mood.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-mood.log",
-      "last_run": "2026-07-07T22:00:00",
-      "next_run": "2026-07-07T23:00:00",
+      "last_run": "2026-07-07T23:00:00",
+      "next_run": "2026-07-08T00:00:00",
       "status": "ok",
       "last_error_snippet": null
     },
@@ -84,8 +84,8 @@
       "schedule_raw": "*/20 * * * *",
       "command_short": "becky-reconnect.sh",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-reconnect.log",
-      "last_run": "2026-07-07T22:00:01",
-      "next_run": "2026-07-07T22:20:00",
+      "last_run": "2026-07-07T23:00:04",
+      "next_run": "2026-07-07T23:20:00",
       "status": "ok",
       "last_error_snippet": null
     },
@@ -172,8 +172,8 @@
       "schedule_raw": "30 22 * * *",
       "command_short": "becky_night_review.py",
       "log_path": "/tmp/becky_night_review.log",
-      "last_run": "2026-07-06T22:30:12",
-      "next_run": "2026-07-07T22:30:00",
+      "last_run": "2026-07-07T22:30:11",
+      "next_run": "2026-07-08T22:30:00",
       "status": "ok",
       "last_error_snippet": null
     },
@@ -238,8 +238,19 @@
       "schedule_raw": "5 * * * *",
       "command_short": "cron_status.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/cron-status.log",
+      "last_run": "2026-07-07T23:05:00",
+      "next_run": "2026-07-08T00:05:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "shorts_queue — Shorts自動投稿",
+      "schedule_human": "毎日 19:00",
+      "schedule_raw": "0 19 * * *",
+      "command_short": "shorts_queue.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/shorts-queue.log",
       "last_run": null,
-      "next_run": "2026-07-07T23:05:00",
+      "next_run": "2026-07-08T19:00:00",
       "status": "never_ran",
       "last_error_snippet": null
     }

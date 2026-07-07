@@ -42,6 +42,9 @@ cd brain && python3 becky_brain.py --max-calls 5 --interval 10
 - **収録前クリーンアップ**（Becky は ops 登録済み）: `/kill @e[type=item]` → **`/kill @e[type=!player,type=!item,distance=..48]`（敵mob掃除。忘れるとTP先で即死する——EP.004で鉄5個全ロスの実績）** → `/clear` → `/fill <範囲> air replace crafting_table` → `/tp` → `/time set 3000`（朝スタート=終盤に夕暮れの時間割）
 - 声の演技: LLM が毎ターン voice{volume,speed,pitch} を出力 → `becky_voice.voice_to_aivis()` で写像（正本: `../docs/voice-tone-design.md`）
 - 思考先読み（lookahead=True デフォルト）: 行動をスレッド実行し、bot が動いている間に次を考える。EP.001 の直列カクカクに戻すには `lookahead=False`
+- 倍速編集: 無言区間はカットせず8倍速圧縮（FAST 定数）。歩いてるサバイバル感を保持（ワープに見える問題の対策）
+- 注視システム（bot常駐）: 敵14ブロック内 > ドロップ10ブロック内 > 思考中キョロキョロ の優先で自動的にそっちを見る
+- Shorts 自動投稿: 収録時に out/shorts/queue/ へ自動投入 → 毎日19:00 に shorts_queue.py が1本公開（在庫切れはTelegram通知）
 
 ## ワイプ（Live2Dバストアップ、EP.006〜）
 

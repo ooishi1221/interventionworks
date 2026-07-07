@@ -1,4 +1,21 @@
 {
-  "updated_at": "2026-07-03T14:59:23.042610",
-  "comments": []
+  "updated_at": "2026-07-07T13:00:32.107623+00:00",
+  "comments": [
+    {
+      "id": "tc-1783429184088",
+      "task_id": "wo-yaguchi-fsl-sns",
+      "from": "yu",
+      "text": "これ完了でOK",
+      "ts": "2026-07-07T12:59:44.088250+00:00",
+      "read": false
+    },
+    {
+      "id": "tc-1783429232107",
+      "task_id": "recruit-mail-ats-demo",
+      "from": "yu",
+      "text": "これもメンバーに渡したからクローズでOK",
+      "ts": "2026-07-07T13:00:32.107623+00:00",
+      "read": false
+    }
+  ]
 }
