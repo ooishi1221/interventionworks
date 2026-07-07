@@ -108,26 +108,37 @@ def http_json(method, path, body=None, timeout=60):
         return json.loads(r.read())
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--max-calls", type=int, default=30)
-    ap.add_argument("--interval", type=float, default=10.0)
-    args = ap.parse_args()
+def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None):
+    """思考ループを回す。
 
+    goal: エピソード目標（user 側初期メッセージとして注入、履歴トリムで消えない）
+    on_turn: callback(turn, decision)。speech 確定直後（action 実行前）に呼ばれる。
+             数値を返すと「speech 確定時刻からその秒数」を最低ターン間隔にする。
+    """
     cfg = load_config() or {}
     api_key = cfg.get("becky_api_key", "").strip() or None
     client = anthropic.Anthropic(api_key=api_key)
 
+    prefix = []  # goal は履歴トリムの外に置く
+    if goal:
+        prefix = [
+            {"role": "user", "content": json.dumps({"director_note": goal}, ensure_ascii=False)},
+            {"role": "assistant", "content": "(了解)"},
+        ]
+
     history = []  # user/assistant のペア列
-    for turn in range(1, args.max_calls + 1):
-        obs = http_json("GET", "/observe")
+    for turn in range(1, max_calls + 1):
+        try:
+            obs = http_json("GET", "/observe")
+        except Exception as e:
+            obs = {"error": f"bot unreachable: {e}"}  # bot が死んでもループ続行
         user_msg = json.dumps({"turn": turn, "observation": obs}, ensure_ascii=False)
 
         msg = client.messages.create(
             model=MODEL,
             max_tokens=1024,
             system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-            messages=history + [{"role": "user", "content": user_msg}],
+            messages=prefix + history + [{"role": "user", "content": user_msg}],
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}}},
         )
         text = next(b.text for b in msg.content if b.type == "text")
@@ -142,6 +153,13 @@ def main():
         print(f"[usage]   in={msg.usage.input_tokens} out={msg.usage.output_tokens} "
               f"cache_read={getattr(msg.usage, 'cache_read_input_tokens', 0)}", flush=True)
 
+        mark = time.monotonic()  # speech 確定時刻
+        wait = interval
+        if on_turn:
+            ret = on_turn(turn, decision)
+            if isinstance(ret, (int, float)):
+                wait = ret
+
         try:
             result = http_json("POST", "/action", {"type": action["type"], "args": action.get("args", {})}, timeout=90)
         except Exception as e:
@@ -155,10 +173,18 @@ def main():
         history.append({"role": "assistant", "content": "(了解)"})
         history = history[-(HISTORY_KEEP * 4):]
 
-        if turn < args.max_calls:
-            time.sleep(args.interval)
+        if turn < max_calls:
+            time.sleep(max(0.0, wait - (time.monotonic() - mark)))
 
-    print(f"\n[brain] {args.max_calls} コールで停止（安全装置）", flush=True)
+    print(f"\n[brain] {max_calls} コールで停止（安全装置）", flush=True)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--max-calls", type=int, default=30)
+    ap.add_argument("--interval", type=float, default=10.0)
+    args = ap.parse_args()
+    run_episode(max_calls=args.max_calls, interval=args.interval)
 
 
 if __name__ == "__main__":
