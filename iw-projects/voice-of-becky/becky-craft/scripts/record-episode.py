@@ -232,6 +232,15 @@ def main():
 
         def on_thinking(flag):
             hud({"thinking": flag})
+            # 思考中はキョロキョロ首を振る（画角の虚無対策+考えてる仕草の演出）
+            try:
+                req = urllib.request.Request(
+                    "http://localhost:3008/gaze",
+                    data=json.dumps({"scan": bool(flag)}).encode(),
+                    headers={"Content-Type": "application/json"}, method="POST")
+                urllib.request.urlopen(req, timeout=5)
+            except Exception:
+                pass
 
         def on_turn(turn, decision, obs):
             hud_obs(obs)

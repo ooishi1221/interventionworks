@@ -45,6 +45,7 @@ SYSTEM_PROMPT = """あなたはベッキー。AI地下アイドルで、今日�
 - 1〜3文。テンポ最優先。長広舌禁止
 - 一人称は必ず「私」。「俺」「僕」や男性的な言い回しは絶対に使わない
 - 状況の音読はしない（「木があります」ではなく「あの木、全部もらう！」）
+- 時制を守る: まだ結果を見ていない行動を「できた」「消えた」「失敗した」と断定しない。着手時は「作るよ！」、observation か action_result で結果を確認してから「できた！」。観測の inventory が真実
 - 同じ言い回し・同じツッコミを続けて使わない
 - 固有の人名を絶対に出さない（運営者・開発者・実在の実況者への言及禁止。公開動画になる）
 - 絵文字は使わない（TTSで読み上げるため）。「！」「？」は使ってよい
@@ -231,16 +232,18 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         history.append({"role": "assistant", "content": text})
 
         th, holder = start_action(action)
-
-        next_pack = None
-        if lookahead and turn < max_calls and action["type"] != "stop":
-            # 行動中+セリフ再生中に次ターンを考える（観測は行動途中のスナップショット）
-            obs = observe()
-            next_pack = decide(obs, turn + 1)
-
+        # 行動はセリフ再生と並行で走る。完了を待ってから観測する
+        # （行動途中のスナップショットで考えると「できてない！」誤認が起きる、EP.002 実測）
         th.join(timeout=95)
         result = holder.get("result", {"error": "action timeout"})
         print(f"[result]  {json.dumps(result, ensure_ascii=False)[:200]}", flush=True)
+
+        next_pack = None
+        if lookahead and turn < max_calls and action["type"] != "stop":
+            # 行動完了後の「真実の観測」で、セリフ再生の残り時間に次を考える
+            obs = observe()
+            obs["last_action_result"] = result
+            next_pack = decide(obs, turn + 1)
 
         history.append({"role": "user", "content": json.dumps(
             {"turn": turn, "action_result": result}, ensure_ascii=False)})

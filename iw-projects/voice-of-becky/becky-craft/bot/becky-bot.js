@@ -20,11 +20,29 @@ bot.once('spawn', () => {
   ready = true
   console.log('[bot] spawned at', bot.entity.position)
   bot.pathfinder.setMovements(new Movements(bot))
-  // 一人称視点 viewer
+  // viewer（FIRST_PERSON=1 で一人称。デフォルトは三人称=画角の虚無対策、2026-07-07）
   const { mineflayer: mineflayerViewer } = require('prismarine-viewer')
-  mineflayerViewer(bot, { port: 3007, firstPerson: true })
+  mineflayerViewer(bot, { port: 3007, firstPerson: process.env.FIRST_PERSON === '1' })
   console.log('[bot] viewer on http://localhost:3007')
 })
+
+// ---- 視線演出（思考中のキョロキョロ + 作業後の水平リセット）----
+let gazeTimer = null
+function gazeScanStart() {
+  if (gazeTimer) return
+  gazeTimer = setInterval(() => {
+    // 現在の向きから ±40° ランダムに首を振る（考えてるっぽい仕草）
+    const yaw = bot.entity.yaw + (Math.random() - 0.5) * 1.4
+    bot.look(yaw, (Math.random() - 0.5) * 0.3, false).catch(() => {})
+  }, 1100)
+}
+function gazeScanStop() {
+  if (gazeTimer) { clearInterval(gazeTimer); gazeTimer = null }
+}
+async function lookHorizon() {
+  // ドアップの壁から解放: 視線を水平に戻す
+  await bot.look(bot.entity.yaw, 0, false).catch(() => {})
+}
 
 // ---- 観測 ----
 function observe() {
@@ -92,6 +110,7 @@ const actions = {
     bot.pathfinder.setGoal(new goals.GoalBlock(block.position.x, block.position.y, block.position.z))
     await waitGoal(8000)
     await new Promise(r => setTimeout(r, 600))
+    await lookHorizon()  // 掘り跡の壁ドアップから解放
     return { done: true, dug: blockName, at: block.position, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
   },
   async craft({ item }) {
@@ -135,6 +154,7 @@ const actions = {
     bot.chat(`/give Becky ${item} ${recipe.result.count}`)
     await sleep(800)
     if (countOf() <= before) return { error: `craft失敗: ${item}（fallbackも不発）`, inventory: inv() }
+    await lookHorizon()  // クラフト後は顔を上げる
     return { done: true, crafted: item, inventory: inv() }
   },
   async attack_nearest() {
@@ -195,6 +215,14 @@ app.use(express.json())
 app.get('/observe', (req, res) => {
   if (!ready) return res.status(503).json({ error: 'bot not spawned yet' })
   res.json(observe())
+})
+
+// 思考中の首振り演出 ON/OFF（brain の on_thinking から呼ばれる）
+app.post('/gaze', (req, res) => {
+  if (!ready) return res.status(503).json({ error: 'bot not spawned yet' })
+  if (req.body && req.body.scan) gazeScanStart()
+  else gazeScanStop()
+  res.json({ done: true, scanning: !!gazeTimer })
 })
 
 app.post('/action', async (req, res) => {
