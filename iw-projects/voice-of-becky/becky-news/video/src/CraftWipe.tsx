@@ -16,8 +16,8 @@ export const CRAFT_WIPE_DURATION = EVENTS.length
   : 10;
 
 const W = 480, H = 520;
-const MODEL_SCALE = 1.35;  // バストアップ（顔〜胸あたり）
-const MODEL_X = 240, MODEL_Y = 430;
+const MODEL_SCALE = 1.22;  // バストアップ（頭上に余白、2026-07-07 ゆうFB: 頭見切れ）
+const MODEL_X = 240, MODEL_Y = 450;
 
 // 現在（または直近 0.8s 以内に終わった）セリフ
 const eventAt = (t: number): Ev | undefined =>

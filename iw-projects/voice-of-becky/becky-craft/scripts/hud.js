@@ -26,8 +26,8 @@
   #bh-goal::before { content: "GOAL // "; color: var(--red); }
   #bh-meter { padding: 4px 10px; font-size: 11px; letter-spacing: 1px; }
 
-  /* 左下（EMOTION の上）: THINKING。右下はワイプ（CraftWipe）の指定席 */
-  #bh-think { position: absolute; left: 16px; bottom: 238px; padding: 5px 12px;
+  /* 右下ワイプ（CraftWipe、高さ~325px）の頭の上: THINKING（考えてる本人の真上に出る） */
+  #bh-think { position: absolute; right: 16px; bottom: 348px; padding: 5px 12px;
     font-size: 12px; letter-spacing: 2px; color: var(--red);
     border-color: rgba(255,77,94,0.5); display: none;
     animation: bh-pulse 0.8s ease-in-out infinite; text-shadow: 0 0 8px rgba(255,77,94,0.7); }
@@ -52,7 +52,8 @@
 
   /* 下部中央スタック */
   #bh-bottom { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 6px; width: 720px; }
+    display: flex; flex-direction: column; align-items: center; gap: 6px; width: 630px; }
+  /* 字幕幅はワイプ（右下 x≈980〜）と被らない 630px 上限（2026-07-07 ゆうFB） */
 
   #bh-sub { text-align: center; width: 100%; margin-bottom: 2px; min-height: 0; }
   #bh-inner { font-size: 11px; color: rgba(61,220,151,0.55); font-style: italic;
