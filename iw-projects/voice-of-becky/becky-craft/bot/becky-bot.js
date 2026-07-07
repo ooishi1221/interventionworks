@@ -97,8 +97,11 @@ const actions = {
   async craft({ item }) {
     const itemType = bot.registry.itemsByName[item]
     if (!itemType) return { error: `unknown item: ${item}` }
+    const inv = () => bot.inventory.items().map(i => `${i.name}x${i.count}`)
+    const countOf = () => bot.inventory.count(itemType.id, null)
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms))
     const tableId = bot.registry.blocksByName.crafting_table.id
-    let table = bot.findBlock({ matching: tableId, maxDistance: 8 })
+    let table = bot.findBlock({ matching: tableId, maxDistance: 16 })
     let recipes = bot.recipesFor(itemType.id, null, 1, table)
     if (recipes.length === 0 && !table) {
       // 作業台必須レシピかも → 手持ちの作業台を足元近くに置いて再試行
@@ -109,16 +112,30 @@ const actions = {
       }
     }
     if (recipes.length === 0) {
-      return { error: `craft不可: ${item}（素材不足 or 作業台なし）`, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
+      return { error: `craft不可: ${item}（素材不足 or 作業台なし）`, inventory: inv() }
     }
-    if (table) {
-      bot.pathfinder.setGoal(new goals.GoalLookAtBlock(table.position, bot.world))
-      await waitGoal(10000)
+    const recipe = recipes[0]
+    if (recipe.requiresTable && table) {
+      await bot.pathfinder.goto(new goals.GoalNear(table.position.x, table.position.y, table.position.z, 2)).catch(() => {})
     }
-    await bot.craft(recipes[0], 1, table || undefined)
-    // craft 直後はインベントリ同期が遅れる（連続 craft で desync するのを実測）→ settle 待ち
-    await new Promise(r => setTimeout(r, 1200))
-    return { done: true, crafted: item, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
+    const before = countOf()
+    try {
+      await bot.craft(recipe, 1, table || undefined)
+    } catch (e) { /* fallback で拾う */ }
+    await sleep(1200)  // craft 直後はインベントリ同期が遅れる（実測）
+    if (countOf() > before) return { done: true, crafted: item, inventory: inv() }
+    // mineflayer 4.37 は 1.21.4 の作業台クラフトが無言で失敗する（実測）
+    // → レシピの材料消費と成果物をコマンドで等価実行（素材検証は recipesFor 通過済み）
+    for (const d of recipe.delta) {
+      if (d.count < 0) {
+        bot.chat(`/clear Becky ${bot.registry.items[d.id].name} ${-d.count}`)
+        await sleep(150)
+      }
+    }
+    bot.chat(`/give Becky ${item} ${recipe.result.count}`)
+    await sleep(800)
+    if (countOf() <= before) return { error: `craft失敗: ${item}（fallbackも不発）`, inventory: inv() }
+    return { done: true, crafted: item, inventory: inv() }
   },
   async attack_nearest() {
     const target = bot.nearestEntity(e => e.type === 'hostile' || e.type === 'animal' || e.type === 'mob')

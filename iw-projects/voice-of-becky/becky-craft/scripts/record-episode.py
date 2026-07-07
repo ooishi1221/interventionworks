@@ -87,16 +87,26 @@ def episode_summary(events: list, deaths: int) -> dict:
         "highlight": {"type": "string"}, "death_comment": {"type": "string"},
         "next_tease": {"type": "string"}},
         "required": ["highlight", "death_comment", "next_tease"], "additionalProperties": False}
-    msg = client.messages.create(
-        model="claude-sonnet-5", max_tokens=300,
-        messages=[{"role": "user", "content":
-                   f"ベッキーのマイクラ実況エピソード1の全セリフ:\n{speeches}\n\nデス数: {deaths}回\n\n"
-                   "エンディングのリザルト画面用に、highlight（今日のハイライト、15字以内）、"
-                   "death_comment（デス数の後ろに付ける一言、10字以内、括弧なし。0回なら強がり、1回以上なら言い訳）、"
-                   "next_tease（次回EP.002の煽りタイトル、18字以内、ベッキーの一人称は私）をJSONで返して"}],
-        extra_body={"output_config": {"format": {"type": "json_schema", "schema": schema}}},
-    )
-    return json.loads(next(b.text for b in msg.content if b.type == "text"))
+    fallback = {"highlight": "今日も生きて冒険した", "death_comment": "ノーコメント",
+                "next_tease": "つづく。たぶん明日"}
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-5", max_tokens=1000,
+            messages=[{"role": "user", "content":
+                       f"ベッキーのマイクラ実況エピソードの全セリフ:\n{speeches}\n\nデス数: {deaths}回\n\n"
+                       "エンディングのリザルト画面用に、highlight（今日のハイライト、15字以内）、"
+                       "death_comment（デス数の後ろに付ける一言、10字以内、括弧なし。0回なら強がり、1回以上なら言い訳）、"
+                       "next_tease（次回エピソードの煽りタイトル、18字以内、番号は書かない、ベッキーの一人称は私）をJSONで返して"}],
+            extra_body={"output_config": {"format": {"type": "json_schema", "schema": schema}}},
+        )
+        text = next((b.text for b in msg.content if b.type == "text"), None)
+        if not text:
+            print(f"[oped] summary 応答が空 (stop={msg.stop_reason}) → fallback", flush=True)
+            return fallback
+        return json.loads(text)
+    except Exception as e:
+        print(f"[oped] summary 生成失敗 ({e}) → fallback", flush=True)
+        return fallback
 
 
 def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path, out_dir: Path):
