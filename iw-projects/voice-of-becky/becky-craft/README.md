@@ -28,13 +28,37 @@ cd brain && python3 becky_brain.py --max-calls 5 --interval 10
 - 一人称視点: http://localhost:3007
 - 観測: `curl localhost:3008/observe` / 行動: `curl -X POST localhost:3008/action -H 'Content-Type: application/json' -d '{"type":"dig_nearest","args":{"blockName":"oak_log"}}'`
 
+## 本番収録（YouTube cut まで1コマンド）
+
+```bash
+# 10分番組 → 頭トリミング+OP/ED合成済みの yt-*.mp4 まで自動生成
+/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/stackchan-bridge/.venv/bin/python3 \
+  scripts/record-episode.py --time-budget 600 --out becky-craft-epXXX.mp4
+```
+
+- **エピソード番号/タイトル/GOAL は `record-episode.py` 冒頭の `EP_NUM` / `EP_TITLE` / `GOAL` / `HUD_GOAL` を書き換える**（OP/ED カードに自動焼き込み）
+- time_budget 指定で毎ターン「残り秒」が観測に注入され、ベッキーが残り90秒で自分から締めて「バイバイ」+stop で終わる
+- ED リザルト（生存時間/デス数+一言/ハイライト/次回煽り）は収録ログから LLM 1コールで自動生成
+- **収録前クリーンアップ**（Becky は ops 登録済み）: `/kill @e[type=item]` → `/clear` → `/fill <範囲> air replace crafting_table` → `/tp` → `/time set 3000`（朝スタート=終盤に夕暮れの時間割）
+- 声の演技: LLM が毎ターン voice{volume,speed,pitch} を出力 → `becky_voice.voice_to_aivis()` で写像（正本: `../docs/voice-tone-design.md`）
+- 思考先読み（lookahead=True デフォルト）: 行動をスレッド実行し、bot が動いている間に次を考える。EP.001 の直列カクカクに戻すには `lookahead=False`
+
+## 公開エピソード
+
+| EP | タイトル | URL | 備考 |
+|---|---|---|---|
+| 001 | はじまりの日 | https://www.youtube.com/watch?v=NIf3LvNo6io | 直列思考のカクカク=成長アークの初期値として意図的に保存 |
+| 002 | はじめてのクラフト | https://www.youtube.com/watch?v=xkK8iFGtmkQ | クラフト解禁+並列思考+自動回収。ドラウンド3体夜戦 |
+
 ## 罠
 
 - **JDK26 × spark(async-profiler) は SIGSEGV でサーバごと落ちる** → `server/config/paper-global.yml` の `spark.enabled: false` が正本（`-Dspark.disableBackgroundProfiler=true` は効かない）
 - **prismarine-viewer の上限は MC 1.21.4**（mineflayer 自体は 1.21.11 まで対応）。Paper を上げるときは viewer の supportedVersions を先に確認
 - **viewer のスクショは headless Chrome だと真っ白**（WebGL）。Playwright（browser_navigate → 10秒待ち → screenshot）で撮る
 - **プロンプトキャッシュ**: system が短い（Sonnet 5 の最小キャッシュ 2048 tokens 未満）ため今は cache_read=0。人格プロンプトを本番化して長くなれば自動で効く
-- 掘ったアイテムのドロップ回収は未実装（bot がドロップ位置を踏まないと拾わない）。将来 `collect_drops` プリミティブを足す
+- **mineflayer 4.37 × 1.21.4 は作業台クラフトが無言で失敗する**（done を返すのに材料が減らない）→ bot の craft はインベントリ実数を検証し、失敗時はレシピの delta 通りに /clear+/give で等価実行（正直な素材不足エラーも返す）
+- 素手で石を掘るとドロップしない → dig_nearest が bestHarvestTool を自動装備
+- 掘った後はドロップ位置へ自動で歩いて回収する（EP.001 でホットバーが空だった対策済み）
 
 ## API 認証
 

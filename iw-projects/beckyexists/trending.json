@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-05T09:04:04.670133+00:00",
+  "updated_at": "2026-07-06T22:05:33.391606+00:00",
   "keywords": [
     {
       "word": "Fable",
@@ -7,12 +7,12 @@
       "trend": "up"
     },
     {
-      "word": "プロンプト",
+      "word": "Claude Code",
       "count": 5,
-      "trend": "up"
+      "trend": "stable"
     },
     {
-      "word": "Claude Code",
+      "word": "Claude",
       "count": 5,
       "trend": "up"
     },
@@ -22,34 +22,34 @@
       "trend": "stable"
     },
     {
+      "word": "生成AI",
+      "count": 3,
+      "trend": "stable"
+    },
+    {
       "word": "エージェント",
       "count": 3,
       "trend": "stable"
     },
     {
-      "word": "Claude",
+      "word": "LLM",
       "count": 2,
       "trend": "stable"
     },
     {
-      "word": "Microsoft",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "LLM",
+      "word": "Google",
       "count": 1,
       "trend": "stable"
     },
     {
-      "word": "生成AI",
+      "word": "Anthropic",
       "count": 1,
       "trend": "new"
     },
     {
-      "word": "Google",
+      "word": "プロンプト",
       "count": 1,
-      "trend": "new"
+      "trend": "stable"
     }
   ],
   "source_count": 80
