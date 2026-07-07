@@ -47,6 +47,7 @@ def main():
     p.add_argument("--description", default="")
     p.add_argument("--tags", default="", help="カンマ区切り")
     p.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
+    p.add_argument("--thumbnail", default=None, help="カスタムサムネイル画像（png/jpg、2MB以下）")
     p.add_argument("--dry-run", action="store_true", help="リクエスト内容を表示して終了（アップロードしない）")
     a = p.parse_args()
 
@@ -81,6 +82,9 @@ def main():
         status, res = req.next_chunk()
         if status:
             print(f"upload {int(status.progress() * 100)}%", file=sys.stderr)
+    if a.thumbnail and os.path.isfile(a.thumbnail):
+        youtube.thumbnails().set(videoId=res["id"], media_body=MediaFileUpload(a.thumbnail)).execute()
+        print(f"thumbnail set: {a.thumbnail}", file=sys.stderr)
     print(f"https://www.youtube.com/watch?v={res['id']}")
 
 

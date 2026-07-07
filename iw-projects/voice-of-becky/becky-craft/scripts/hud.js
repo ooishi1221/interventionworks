@@ -33,6 +33,23 @@
     animation: bh-pulse 0.8s ease-in-out infinite; text-shadow: 0 0 8px rgba(255,77,94,0.7); }
   #bh-think.on { display: block; }
 
+  /* 左下: 感情ステータス（voice パラメータの可視化） */
+  #bh-emotion { position: absolute; left: 16px; bottom: 118px; padding: 7px 12px;
+    font-size: 10px; letter-spacing: 1px; min-width: 168px; }
+  #bh-emo-label { font-size: 14px; font-weight: bold; letter-spacing: 2px;
+    margin-bottom: 5px; color: var(--green); text-shadow: 0 0 8px rgba(61,220,151,0.6); }
+  #bh-emo-label.hot { color: var(--red); text-shadow: 0 0 10px rgba(255,77,94,0.8);
+    animation: bh-pulse 0.5s ease-in-out infinite; }
+  #bh-emo-label.low { color: #7fb4ff; text-shadow: 0 0 8px rgba(127,180,255,0.6); }
+  .bh-emo-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .bh-emo-row .lb { width: 28px; color: rgba(61,220,151,0.6); }
+  .bh-bar { flex: 1; height: 7px; background: rgba(61,220,151,0.12); border-radius: 2px;
+    overflow: hidden; }
+  .bh-bar i { display: block; height: 100%; width: 0; border-radius: 2px;
+    background: var(--green); transition: width 0.35s ease, background 0.35s; }
+  .bh-bar i.hot { background: var(--red); box-shadow: 0 0 8px rgba(255,77,94,0.8); }
+  .bh-emo-row .vl { width: 30px; text-align: right; color: #cfeee0; }
+
   /* 下部中央スタック */
   #bh-bottom { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
     display: flex; flex-direction: column; align-items: center; gap: 6px; width: 720px; }
@@ -42,7 +59,13 @@
     margin-bottom: 3px; display: none; }
   #bh-speech { display: none; padding: 6px 14px; font-size: 16px; line-height: 1.6;
     color: #eafff5; background: var(--bg); border-radius: 4px;
-    text-shadow: 0 0 6px rgba(61,220,151,0.4); }
+    text-shadow: 0 0 6px rgba(61,220,151,0.4);
+    transition: font-size 0.2s, color 0.2s; }
+  #bh-speech.scream { font-size: 21px; color: #ffd7dc; font-weight: bold;
+    text-shadow: 0 0 10px rgba(255,77,94,0.9), 0 0 20px rgba(255,77,94,0.5);
+    border: 1px solid rgba(255,77,94,0.5); }
+  #bh-speech.weak { font-size: 15px; color: #bcd4ff; font-style: italic;
+    text-shadow: 0 0 8px rgba(127,180,255,0.5); }
 
   /* バイタル */
   #bh-vitals { display: flex; gap: 18px; align-items: center; padding: 5px 14px;
@@ -89,6 +112,13 @@
   el('div', 'bh-goal', right, '').className = 'bh-panel';
   el('div', 'bh-meter', right, '').className = 'bh-panel bh-glow';
   el('div', 'bh-think', root, '&#129504; THINKING...').className = 'bh-panel';
+  const emo = el('div', 'bh-emotion', root);
+  emo.className = 'bh-panel';
+  emo.innerHTML =
+    '<div id="bh-emo-label">EMOTION // 通常</div>' +
+    '<div class="bh-emo-row"><span class="lb">VOL</span><span class="bh-bar"><i id="bh-bar-vol"></i></span><span class="vl" id="bh-val-vol">1.0</span></div>' +
+    '<div class="bh-emo-row"><span class="lb">SPD</span><span class="bh-bar"><i id="bh-bar-spd"></i></span><span class="vl" id="bh-val-spd">1.0</span></div>' +
+    '<div class="bh-emo-row"><span class="lb">PIT</span><span class="bh-bar"><i id="bh-bar-pit"></i></span><span class="vl" id="bh-val-pit">0.0</span></div>';
 
   const bottom = el('div', 'bh-bottom', root);
   const sub = el('div', 'bh-sub', bottom);
@@ -166,12 +196,40 @@
       });
     }
 
+    if (d.voice) {
+      // 感情ステータス（声の演技パラメータをそのまま可視化）
+      const v = +d.voice.volume || 1.0, s = +d.voice.speed || 1.0, p = +d.voice.pitch || 0;
+      const label = document.getElementById('bh-emo-label');
+      let emoName = '通常', cls = '';
+      if (v >= 1.6) { emoName = p >= 0.2 ? '大興奮！！' : 'パニック！'; cls = 'hot'; }
+      else if (v <= 0.5) { emoName = 'ひそひそ…'; cls = 'low'; }
+      else if (v <= 0.8) { emoName = 'しんみり'; cls = 'low'; }
+      else if (v >= 1.2) { emoName = 'うれしい'; }
+      label.textContent = `EMOTION // ${emoName}`;
+      label.className = cls;
+      const setBar = (id, ratio, hot) => {
+        const bar = document.getElementById('bh-bar-' + id);
+        bar.style.width = `${Math.max(3, Math.min(100, ratio * 100))}%`;
+        bar.className = hot ? 'hot' : '';
+      };
+      setBar('vol', v / 2, v >= 1.6);
+      setBar('spd', (s - 0.5) / 1.5, s >= 1.25);
+      setBar('pit', (p + 0.5) / 1.0, p >= 0.25);
+      document.getElementById('bh-val-vol').textContent = v.toFixed(1);
+      document.getElementById('bh-val-spd').textContent = s.toFixed(2);
+      document.getElementById('bh-val-pit').textContent = (p >= 0 ? '+' : '') + p.toFixed(2);
+      state.voice = d.voice;
+    }
+
     if (d.speech !== undefined) {
       const sp = document.getElementById('bh-speech');
       const inn = document.getElementById('bh-inner');
       clearTimeout(speechTimer);
       if (d.speech) {
         sp.textContent = d.speech;
+        // 字幕の感情装飾: 絶叫=赤デカ / ヘタレ・ひそひそ=青斜体
+        const vol = state.voice ? +state.voice.volume : 1.0;
+        sp.className = vol >= 1.6 ? 'scream' : vol <= 0.8 ? 'weak' : '';
         sp.style.display = 'inline-block';
         inn.textContent = d.inner ? `(${d.inner})` : '';
         inn.style.display = d.inner ? 'block' : 'none';

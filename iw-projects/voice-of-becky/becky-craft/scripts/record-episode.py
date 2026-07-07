@@ -90,12 +90,14 @@ def episode_summary(events: list, deaths: int) -> dict:
     schema = {"type": "object", "properties": {
         "highlight": {"type": "string"}, "death_comment": {"type": "string"},
         "next_tease": {"type": "string"},
-        "youtube_titles": {"type": "array", "items": {"type": "string"}}},
-        "required": ["highlight", "death_comment", "next_tease", "youtube_titles"],
+        "youtube_titles": {"type": "array", "items": {"type": "string"}},
+        "thumb_word": {"type": "string"}},
+        "required": ["highlight", "death_comment", "next_tease", "youtube_titles", "thumb_word"],
         "additionalProperties": False}
     fallback = {"highlight": "今日も生きて冒険した", "death_comment": "ノーコメント",
                 "next_tease": "つづく。たぶん明日",
-                "youtube_titles": ["【BECKY CRAFT】今日も生きて冒険した"] * 3}
+                "youtube_titles": ["【BECKY CRAFT】今日も生きて冒険した"] * 3,
+                "thumb_word": "生きた。"}
     try:
         msg = client.messages.create(
             model="claude-sonnet-5", max_tokens=1000,
@@ -105,7 +107,9 @@ def episode_summary(events: list, deaths: int) -> dict:
                        "death_comment（デス数の後ろに付ける一言、10字以内、括弧なし。0回なら強がり、1回以上なら言い訳）、"
                        "next_tease（次回エピソードの煽りタイトル、18字以内、番号は書かない、ベッキーの一人称は私）、"
                        "youtube_titles（YouTube動画タイトル案3つ。ゲーム実況らしくキャッチーに、"
-                       "『【BECKY CRAFT】』で始めて、名場面やヘタレ・絶叫を煽り文句に使う。実在の人名禁止）をJSONで返して"}],
+                       "『【BECKY CRAFT】』で始めて、名場面やヘタレ・絶叫を煽り文句に使う。実在の人名禁止）、"
+                       "thumb_word（サムネイル用の超短い煽りワード、3〜8字。例:『ガチで全ロス。』『AI、絶望。』"
+                       "一瞬で読めて感情が伝わるもの）をJSONで返して"}],
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": schema}}},
         )
         text = next((b.text for b in msg.content if b.type == "text"), None)
@@ -116,6 +120,103 @@ def episode_summary(events: list, deaths: int) -> dict:
     except Exception as e:
         print(f"[oped] summary 生成失敗 ({e}) → fallback", flush=True)
         return fallback
+
+
+def make_thumbnail(events: list, out_dir: Path, summary: dict, becky_png: Path | None = None):
+    """サムネ自動生成（定型1パターン×可変差し替え）:
+    背景=最大絶叫の瞬間のゲームスクショ / 中央=座布団つき極太煽りワード（LLM生成）
+    becky_png: 表情立ち絵（透過PNG）ができたら左側に差し込む口。今は None 運用。
+    """
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+    thumb_dir = out_dir / "thumbs"
+    shots = sorted(thumb_dir.glob(f"ep{EP_NUM}_turn*.png"))
+    if not shots:
+        print("[thumb] 絶叫スクショなし → スキップ", flush=True)
+        return None
+    # 絶叫イベント（vol最大）に一番近いターンのスクショを選ぶ
+    screams = [e for e in events if e.get("vol", 0) >= 1.6 and e.get("turn")]
+    base_path = shots[0]
+    if screams:
+        top_turn = max(screams, key=lambda e: e["vol"])["turn"]
+        base_path = min(shots, key=lambda p: abs(int(p.stem.split("turn")[1]) - top_turn))
+    img = Image.open(base_path).convert("RGB").resize((1280, 720))
+    img = ImageEnhance.Brightness(img).enhance(0.82)  # 少し落として文字を立てる
+    img = ImageEnhance.Contrast(img).enhance(1.12)
+
+    word = (summary.get("thumb_word") or "").strip() or "生きた。"
+    font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc"
+    if not Path(font_path).exists():
+        font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
+    size = 190 if len(word) <= 5 else 150 if len(word) <= 7 else 120
+    font = ImageFont.truetype(font_path, size)
+
+    # 座布団（赤帯・少し回転）+ 極太白文字（黒縁）を別レイヤーで合成
+    layer = Image.new("RGBA", (1600, 500), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(layer)
+    tw = ld.textlength(word, font=font)
+    bx, by = (1600 - tw) / 2, 130
+    ld.rectangle([bx - 44, by - 26, bx + tw + 44, by + size + 30], fill=(200, 16, 46, 235))
+    ld.text((bx, by), word, font=font, fill="#ffffff", stroke_width=10, stroke_fill="#14060a")
+    layer = layer.rotate(2.5, expand=False, resample=Image.BICUBIC)
+    img = img.convert("RGBA")
+    img.alpha_composite(layer, (int((1280 - 1600) / 2), 40))
+
+    if becky_png and Path(becky_png).exists():  # 表情立ち絵の差し込み口（素材パック待ち）
+        becky = Image.open(becky_png).convert("RGBA")
+        becky.thumbnail((560, 560))
+        img.alpha_composite(becky, (20, 720 - becky.height))
+
+    d = ImageDraw.Draw(img)
+    logo_font = ImageFont.truetype(font_path, 44)
+    d.text((28, 640), f"BECKY CRAFT  EP.{EP_NUM}", font=logo_font,
+           fill="#ffd54a", stroke_width=6, stroke_fill="#14060a")
+    out = out_dir / f"thumb_ep{EP_NUM}.png"
+    img.convert("RGB").save(out, quality=92)
+    print(f"[thumb] {out.name}（word=『{word}』 base={base_path.name}）", flush=True)
+    return out
+
+
+def make_shorts(webm_mp4: Path, events: list, out_dir: Path, max_count: int = 2):
+    """絶叫（vol>=1.8）の前後を縦型 1080x1920 の Shorts 素材に自動切り出す。"""
+    cands = sorted([e for e in events if e.get("vol", 0) >= 1.8],
+                   key=lambda e: -e["vol"])[:max_count]
+    if not cands:
+        print("[shorts] 絶叫（vol>=1.8）なし → スキップ", flush=True)
+        return
+    shorts_dir = out_dir / "shorts"
+    shorts_dir.mkdir(exist_ok=True)
+    # Homebrew ffmpeg は drawtext 非搭載（freetypeなし）→ PIL で字幕PNGを作って overlay
+    from PIL import Image, ImageDraw, ImageFont
+    font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc"
+    if not Path(font_path).exists():
+        font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
+    for i, e in enumerate(sorted(cands, key=lambda x: x["t"]), start=1):
+        s = max(0.0, e["t"] - 4.0)
+        t_end = e["t"] + e["dur"] + 3.0
+        sp = e["speech"]
+        lines = [sp[j:j + 13] for j in range(0, min(len(sp), 52), 13)]
+        # 字幕PNG（1080幅・透過、絶叫カラー: ピンク文字+ワイン縁取り）
+        font = ImageFont.truetype(font_path, 62)
+        img = Image.new("RGBA", (1080, 110 * len(lines) + 20), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        for li, line in enumerate(lines):
+            w = draw.textlength(line, font=font)
+            x, y = (1080 - w) // 2, 10 + li * 100
+            draw.text((x, y), line, font=font, fill="#ffd7dc",
+                      stroke_width=5, stroke_fill="#7a1420")
+        sub_png = shorts_dir / f"short{i}_sub.png"
+        img.save(sub_png)
+        out = shorts_dir / f"ep{EP_NUM}_short{i}.mp4"
+        cmd = ["ffmpeg", "-y", "-i", str(webm_mp4), "-i", str(sub_png),
+               "-filter_complex",
+               f"[0:v]trim={s:.3f}:{t_end:.3f},setpts=PTS-STARTPTS,scale=1080:608,setsar=1,"
+               f"pad=1080:1920:0:300:color=0x0d0d14[b];"
+               f"[b][1:v]overlay=(W-w)/2:1000[v];"
+               f"[0:a]atrim={s:.3f}:{t_end:.3f},asetpts=PTS-STARTPTS[a]",
+               "-map", "[v]", "-map", "[a]",
+               "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out)]
+        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"[shorts] {out.name}（{t_end - s:.0f}s）「{sp[:30]}」", flush=True)
 
 
 def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path, out_dir: Path):
@@ -183,7 +284,15 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
             acc += e_ - s
         return acc
 
-    # 3) OP(5s) + カット済み本編 + ED(6s) を concat し、SE をリマップ位置に重ねる
+    # 3) アバン（最大絶叫の5秒先出し）+ OP(5s) + カット済み本編 + ED(6s) を concat し、SE をリマップ位置に重ねる
+    avan = None
+    screams = [e for e in events if e.get("vol", 0) >= 1.6]
+    if screams:
+        top = max(screams, key=lambda e: e["vol"])
+        avan = (max(0.0, top["t"] - 0.4), min(total, top["t"] + min(top["dur"], 5.2)))
+        print(f"[avan] 冒頭に先出し: 「{top['speech'][:40]}」（{avan[1] - avan[0]:.1f}s）", flush=True)
+    avan_len = (avan[1] - avan[0]) if avan else 0.0
+
     jingle = SE_DIR / "se_jingle.wav"
     se_events = [e for e in events if e.get("se")]
     se_dir = CRAFT / "assets" / "se"
@@ -207,11 +316,16 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
         parts.append(f"[2:a]atrim={s:.3f}:{t:.3f},asetpts=PTS-STARTPTS,{af}[sa{i}]")
     seg_in = "".join(f"[sv{i}][sa{i}]" for i in range(len(segs)))
     parts.append(f"{seg_in}concat=n={len(segs)}:v=1:a=1[v1][a1]")
-    parts.append(f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vc][ac]")
+    if avan:
+        parts.append(f"[2:v]trim={avan[0]:.3f}:{avan[1]:.3f},setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=25[va]")
+        parts.append(f"[2:a]atrim={avan[0]:.3f}:{avan[1]:.3f},asetpts=PTS-STARTPTS,{af}[aa]")
+        parts.append(f"[va][aa][v0][a0][v1][a1][v2][a2]concat=n=4:v=1:a=1[vc][ac]")
+    else:
+        parts.append(f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vc][ac]")
     if se_events:
         se_labels = []
         for i, e in enumerate(se_events):
-            ms = int((5.0 + remap(e["t"])) * 1000)  # OP 5秒 + カット後位置
+            ms = int((avan_len + 5.0 + remap(e["t"])) * 1000)  # アバン + OP 5秒 + カット後位置
             parts.append(f"[{4 + i}:a]{af},volume=0.55,adelay={ms}:all=1[se{i}]")
             se_labels.append(f"[se{i}]")
         parts.append(f"[ac]{''.join(se_labels)}amix=inputs={1 + len(se_events)}:normalize=0,"
@@ -221,7 +335,10 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     cmd += ["-filter_complex", ";".join(parts), "-map", "[vc]", "-map", "[aout]",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out_path)]
     subprocess.run(cmd, check=True, capture_output=True)
-    print(f"[oped] YouTube cut 完成: {out_path}（SE {len(se_events)}発）", flush=True)
+    print(f"[oped] YouTube cut 完成: {out_path}（SE {len(se_events)}発 / アバン{'あり' if avan else 'なし'}）", flush=True)
+
+    make_thumbnail(events, out_dir, summary)
+    make_shorts(webm_mp4, events, out_dir)
     print("[oped] タイトル案:", flush=True)
     for t_ in summary.get("youtube_titles", []):
         print(f"  - {t_}", flush=True)
@@ -316,11 +433,12 @@ def main():
             # t は字幕表示と同時刻に取る（合成音声の adelay と字幕が揃う）
             t = time.monotonic() - t0
             hud({"speech": speech, "inner": (decision.get("inner") or "").strip(),
-                 "speechDur": dur})
+                 "speechDur": dur, "voice": decision.get("voice")})
             se = decision.get("se") or "none"
             events.append({"t": round(t, 3), "wav_path": str(wav),
-                           "speech": speech, "dur": round(dur, 3),
-                           "se": se if se in SE_FILES else None})
+                           "speech": speech, "dur": round(dur, 3), "turn": turn,
+                           "se": se if se in SE_FILES else None,
+                           "vol": float((decision.get("voice") or {}).get("volume", 1.0))})
             # サムネ候補: 大絶叫（volume>=1.7）の瞬間のフレームを保存
             if float((decision.get("voice") or {}).get("volume", 1.0)) >= 1.7:
                 try:
