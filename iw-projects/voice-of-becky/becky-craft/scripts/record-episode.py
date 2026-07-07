@@ -221,6 +221,19 @@ def make_shorts(webm_mp4: Path, events: list, out_dir: Path, max_count: int = 2)
                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out)]
         subprocess.run(cmd, check=True, capture_output=True)
         print(f"[shorts] {out.name}（{t_end - s:.0f}s）「{sp[:30]}」", flush=True)
+        # 自動投稿キューへ（毎日19:00 に shorts_queue.py が1本ずつ公開する）
+        import shutil
+        queue_dir = shorts_dir / "queue"
+        queue_dir.mkdir(exist_ok=True)
+        qv = queue_dir / out.name
+        shutil.copy(out, qv)
+        qv.with_suffix(".json").write_text(json.dumps({
+            "title": sp[:24].rstrip("、。！!？? ") + " #shorts",
+            "description": ("AIが自分でマイクラを操作して実況する番組『BECKY CRAFT』の切り抜き。\n"
+                            "チャンネル: https://www.youtube.com/@voice_of_becky\n"
+                            "#マインクラフト #AI実況 #BECKYCRAFT")},
+            ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"[shorts] → 投稿キューに追加: {qv.name}", flush=True)
 
 
 def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path, out_dir: Path):
@@ -472,6 +485,9 @@ def main():
 
     audio_json = out_dir / "episode_audio.json"
     audio_json.write_text(json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
+    # エピソード別にも保存（上書きで過去回の events が消える問題の対策、EP.001〜005は消失済み）
+    (out_dir / f"episode_audio_ep{EP_NUM}.json").write_text(
+        json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[rec] 録画完了 webm={webm} events={len(events)} → {audio_json}", flush=True)
 
     # 合成: webm→mp4 + 各 wav を adelay して amix(normalize=0)
