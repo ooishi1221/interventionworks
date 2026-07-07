@@ -104,7 +104,7 @@ def episode_summary(events: list, deaths: int) -> dict:
                 "thumb_word": "生きた。"}
     try:
         msg = client.messages.create(
-            model="claude-sonnet-5", max_tokens=1000,
+            model="claude-sonnet-5", max_tokens=2500,
             messages=[{"role": "user", "content":
                        f"ベッキーのマイクラ実況エピソードの全セリフ:\n{speeches}\n\nデス数: {deaths}回\n\n"
                        "エンディングのリザルト画面用に、highlight（今日のハイライト、15字以内）、"

@@ -21,6 +21,7 @@ import pychrome
 
 CDP_URL = "http://localhost:9223"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
+YT_CHANNEL_ID = "UCFvpdUWDpmSLTTbv6kiIfNQ"  # @voice_of_becky
 
 
 def js(tab: pychrome.Tab, code: str):
@@ -257,6 +258,55 @@ def scrape_x_dev(tab: pychrome.Tab) -> dict:
         return {"credit_remaining": 0.0}
 
 
+# ── YouTube (@voice_of_becky) ─────────────────────────────────────────────────
+
+def scrape_youtube(tab=None) -> dict:
+    """動画別リストは公開RSS（認証もAPIキーも不要）。登録者数・総再生数は
+    APIキーがある時だけ埋める（channels.list は公開データ、OAuth不要）。
+    ponytail: RSS が最新15本しか返さないのは仕様。全件履歴が要るなら Data API へ。"""
+    import urllib.request
+    import xml.etree.ElementTree as ET
+
+    ns = {
+        "a": "http://www.w3.org/2005/Atom",
+        "m": "http://search.yahoo.com/mrss/",
+        "yt": "http://www.youtube.com/xml/schemas/2015",
+    }
+    out = {"subscribers": None, "total_views": None, "latest_video_id": None, "videos": []}
+
+    url = f"https://www.youtube.com/feeds/videos.xml?channel_id={YT_CHANNEL_ID}"
+    raw = urllib.request.urlopen(url, timeout=15).read()
+    root = ET.fromstring(raw)
+    for e in root.findall("a:entry", ns)[:10]:
+        grp = e.find("m:group", ns)
+        stats = grp.find("m:community/m:statistics", ns) if grp is not None else None
+        rating = grp.find("m:community/m:starRating", ns) if grp is not None else None
+        vid_el = e.find("yt:videoId", ns)
+        title = (e.find("a:title", ns).text or "")[:120]
+        vid = vid_el.text if vid_el is not None else None
+        out["videos"].append({
+            "video_id": vid,
+            "title": title,
+            "views": int(stats.get("views")) if stats is not None and stats.get("views") else 0,
+            "likes": int(rating.get("count")) if rating is not None and rating.get("count") else 0,
+            "published": (e.find("a:published", ns).text or "")[:10],
+        })
+        # ponytail: Shorts 判定はタイトルの #shorts のみ。RSS に縦横比は無く、
+        # 厳密判定は videos.list(part=contentDetails) で duration<=60s が要る（APIキー時）。
+        if out["latest_video_id"] is None and vid and "#shorts" not in title.lower():
+            out["latest_video_id"] = vid
+
+    key = os.environ.get("YOUTUBE_API_KEY")
+    if key:
+        api = (f"https://www.googleapis.com/youtube/v3/channels"
+               f"?id={YT_CHANNEL_ID}&part=statistics&key={key}")
+        d = json.loads(urllib.request.urlopen(api, timeout=15).read())
+        st = d["items"][0]["statistics"]
+        out["subscribers"] = int(st.get("subscriberCount", 0))
+        out["total_views"] = int(st.get("viewCount", 0))
+    return out
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -269,6 +319,7 @@ def main() -> None:
     tab.Page.enable()
 
     tasks = [
+        ("youtube",      scrape_youtube),
         ("claude_api",   scrape_claude_platform),
         ("note",         scrape_note),
         ("kdp",          scrape_kdp),

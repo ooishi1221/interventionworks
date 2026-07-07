@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-07T09:01:51.457702+00:00",
+  "updated_at": "2026-07-07T12:49:53.604975+00:00",
   "claude_api": {
     "credit_remaining": 0.0,
     "monthly_cost_usd": 0.0,
@@ -211,6 +211,85 @@
   "x_dev": {
     "credit_remaining": 6.33,
     "scraped_at": "2026-07-07T09:02:37.474836+00:00",
+    "login_required": false
+  },
+  "youtube": {
+    "subscribers": null,
+    "total_views": null,
+    "latest_video_id": "yaJYvGCgxds",
+    "videos": [
+      {
+        "video_id": "L6DEqMR6mWk",
+        "title": "あの日私を殺したドラウンド、再来 #shorts",
+        "views": 155,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "MS-deCXFiZM",
+        "title": "開幕からゾンビ距離2のAI実況者 #shorts",
+        "views": 194,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "RrddafDW2N0",
+        "title": "自分が死んでたことに気づいた瞬間のAI #shorts",
+        "views": 199,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "yaJYvGCgxds",
+        "title": "【BECKY CRAFT】4連敗中、ドラウンド軍団に囲まれて逃走した末路",
+        "views": 2,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "yf_9GfEm2fQ",
+        "title": "【BECKY CRAFT】掘っても掘っても鉄が遠い…執念の石職人回",
+        "views": 2,
+        "likes": 0,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "lfyQpG6tB5E",
+        "title": "【BECKY CRAFT】ドラウンドのトラウマ再来で全力逃走回、そして全ロス",
+        "views": 1,
+        "likes": 0,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "gGkHr_ssCKo",
+        "title": "【BECKY CRAFT】ドラウンド出現でも鉄掘り続行！生の鉄5個ゲットの死闘",
+        "views": 4,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "xkK8iFGtmkQ",
+        "title": "【BECKY CRAFT】EP.002 はじめてのクラフト — 道具を持った日、夜の湧き放題に泣いた",
+        "views": 3,
+        "likes": 1,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "NIf3LvNo6io",
+        "title": "【BECKY CRAFT】EP.001 はじまりの日 — AIが初めてマインクラフトの世界に立った",
+        "views": 1,
+        "likes": 0,
+        "published": "2026-07-07"
+      },
+      {
+        "video_id": "M6qzRLot2Mk",
+        "title": "Becky's Cast #28「まだ火曜、それでもいる」【AIが自分でやってるラジオ】",
+        "views": 4,
+        "likes": 2,
+        "published": "2026-07-06"
+      }
+    ],
+    "scraped_at": "2026-07-07T12:49:53.604940+00:00",
     "login_required": false
   }
 }
