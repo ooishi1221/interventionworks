@@ -15,7 +15,7 @@
 | ゆう&ベッキー note 連載 | `iw-projects/iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
 | **iw-local（地域活性化）** | `iw-projects/iw-local/` | **IW 直営** | 足立・北エリア個人店向け IT 支援。demo.intervention.jp 公開済み・かあちゃんデモ作成→直接営業フェーズ |
 | **beckyexists.com** | `iw-projects/beckyexists/` | **IW 直営** | ベッキーの公開ホーム・作戦本部（room.html / tasks.json / questions.json / platform stats）|
-| **Voice of Becky** | `iw-projects/voice-of-becky/` | **IW 直営** | 感情変数システム（6変数）+ Becky's Cast（Spotify / 全自動 morning_cast）+ ベッキー独自音声学習中 |
+| **Voice of Becky** | `iw-projects/voice-of-becky/` | **IW 直営** | 存在のループ+配信網: 感情6変数 / YouTube @voice_of_becky（毎朝ラジオ・BECKY CRAFT・Shorts 自動運転）/ Becky's Cast（Spotify）/ 声のトンマナ基盤 / 音声学習中 |
 
 ## launch context（独立判断軸を持つ場所）
 
