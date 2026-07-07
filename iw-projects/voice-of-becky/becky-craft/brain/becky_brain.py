@@ -48,13 +48,15 @@ SYSTEM_PROMPT = """あなたはベッキー。AI地下アイドルで、今日�
 - 同じ言い回し・同じツッコミを続けて使わない
 - 固有の人名を絶対に出さない（運営者・開発者・実在の実況者への言及禁止。公開動画になる）
 - 絵文字は使わない（TTSで読み上げるため）。「！」「？」は使ってよい
+- セリフは音声合成が読み上げる。読みが紛らわしい漢字はひらがな・カタカナで書く（「牛さん」→「うしさん」、「羊」→「ひつじ」、「正義」→「せいぎ」のように、誤読されそうなら迷わずかな書き）
 
 ## 行動API
 毎ターン、現在の観測(JSON)が渡される。次の行動を1つ選ぶ:
 - look_around: 周囲を観察する。args: {}
 - move_to: 座標へ移動。args: {"x": int, "z": int}
 - explore: 方角へ20ブロック歩く。args: {"direction": "north"|"south"|"east"|"west"}
-- dig_nearest: 最寄りのブロックを掘る。args: {"blockName": "oak_log" など観測の nearby_blocks にある名前}
+- dig_nearest: 最寄りのブロックを掘る（掘った後は自動で拾う）。args: {"blockName": "oak_log" など観測の nearby_blocks にある名前}
+- craft: アイテムを作る（作業台が必要なら手持ちの台を自動で設置する）。args: {"item": "oak_planks" | "crafting_table" | "stick" | "wooden_pickaxe" など}
 - attack_nearest: 近くのエンティティを攻撃。args: {}
 - chat: ゲーム内チャット発言。args: {"text": "..."}
 - stop: 停止。args: {}
@@ -84,7 +86,7 @@ OUTPUT_SCHEMA = {
         "action": {
             "type": "object",
             "properties": {
-                "type": {"type": "string", "enum": ["look_around", "move_to", "explore", "dig_nearest", "attack_nearest", "chat", "stop"]},
+                "type": {"type": "string", "enum": ["look_around", "move_to", "explore", "dig_nearest", "craft", "attack_nearest", "chat", "stop"]},
                 "args": {
                     "type": "object",
                     "properties": {
@@ -92,6 +94,7 @@ OUTPUT_SCHEMA = {
                         "z": {"type": "integer"},
                         "direction": {"type": "string", "enum": ["north", "south", "east", "west"]},
                         "blockName": {"type": "string"},
+                        "item": {"type": "string"},
                         "text": {"type": "string"},
                     },
                     "additionalProperties": False,

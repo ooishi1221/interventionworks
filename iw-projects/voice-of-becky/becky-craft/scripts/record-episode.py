@@ -27,13 +27,21 @@ AIVIS_URL = "http://localhost:10101"
 AIVIS_SPEAKER = 1878365376  # コハク / ノーマル（becky-cast/cast.py と同じ）
 AIVIS_PARAMS = {"speedScale": 1.0, "prePhonemeLength": 0.18, "postPhonemeLength": 0.18}
 
-GOAL = ("今日はエピソード1の本番収録。目標は「初日を生き延びる」。"
-        "地下にいるなら地上を目指し、世界を探索して、見つけたものに全力で反応して。"
-        "掘りすぎ禁止、移動と観察多め。"
-        "観測の broadcast.remaining_sec が放送の残り秒数。残り90秒を切ったら今日の冒険を"
+EP_NUM = "002"
+EP_TITLE = "はじめてのクラフト — 道具を持った日"
+GOAL = ("今日はエピソード2の本番収録。前回（EP.001）は丸太と鉄鉱石を見つけて初日を生き延び、"
+        "最後に「次回はもっと深く潜る」と予告した。"
+        "今日の目標は「はじめてのクラフト」——道具を作って、深く潜る準備を整える回。"
+        "手順: oak_log を掘って拾う → craft oak_planks（丸太1→板4）→ craft crafting_table（板4）→ "
+        "craft stick（板2→棒4）→ craft wooden_pickaxe（板3+棒2、作業台は自動設置される）。"
+        "ツルハシが完成したら、それで石(stone)か石炭(coal_ore)を掘ってみて締めに向かう。"
+        "画作りを意識すること: 狭い穴や壁際に長居しない。開けた見晴らしのいい場所で行動し、"
+        "動物や景色が見えたら反応する。地下に潜るのは今日はまだ我慢（次回の楽しみ）。"
+        "観測の broadcast.remaining_sec が放送の残り秒数。残り90秒を切ったら今日の成果を"
         "振り返って締めに入り、最後のセリフは必ず「バイバイ」で終えて action は stop を選ぶこと。"
-        "それまでは絶対に締めない。オープニングの一言目は「さー始まりました」の空気で元気よく")
-HUD_GOAL = "初日を生き延びろ"
+        "それまでは絶対に締めない。オープニングの一言目は「さー始まりました」の空気で元気よく、"
+        "前回の予告（深く潜る）に軽く触れてから今日の目標を宣言する")
+HUD_GOAL = "はじめてのクラフトで道具を作れ"
 SE_DIR = CRAFT.parent / "becky-news" / "episodes" / "zatsudan-000"
 OPED_DIR = CRAFT / "assets" / "op-ed"
 
@@ -95,17 +103,27 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     """本編を頭トリミングし、OP/ED を挟んで YouTube 用 mp4 を作る。"""
     from playwright.sync_api import sync_playwright
 
-    # 1) ED リザルト自動記入 → スクショ
+    # 1) OP にエピソード番号/タイトル、ED にリザルトを自動記入 → スクショ
     summary = episode_summary(events, deaths)
     print(f"[oped] summary: {summary}", flush=True)
+    next_num = f"{int(EP_NUM) + 1:03d}"
     survive = events[-1]["t"] + events[-1]["dur"] - max(0.0, events[0]["t"] - 3.0)
+
+    op_html_src = (OPED_DIR / "opening.html").read_text(encoding="utf-8")
+    op_html_src = op_html_src.replace("EP.001", f"EP.{EP_NUM}")
+    op_html_src = op_html_src.replace("はじまりの日 — 初日を生き延びろ", EP_TITLE)
+    op_html = out_dir / "opening_filled.html"
+    op_html.write_text(op_html_src, encoding="utf-8")
+    op_png = out_dir / "opening_filled.png"
+
     html = (OPED_DIR / "ending.html").read_text(encoding="utf-8")
     html = html.replace("10分32秒", f"{int(survive) // 60}分{int(survive) % 60:02d}秒")
     html = html.replace("1回（クリーパー、許さない）", f"{deaths}回（{summary['death_comment']}）")
     html = html.replace("初めての鉄鉱石", summary["highlight"])
-    # LLM が煽り文に自分で「EP.002」を入れてくることがある（テンプレ側と二重になる）
+    # LLM が煽り文に自分で「EP.xxx」を入れてくることがある（テンプレ側と二重になる）
     import re as _re
-    tease = _re.sub(r"[!！]?\s*EP\.?\s*0*2", "", summary["next_tease"]).strip("！!、。 ")
+    tease = _re.sub(r"[!！]?\s*EP\.?\s*\d+", "", summary["next_tease"]).strip("！!、。 ")
+    html = html.replace("EP.002", f"EP.{next_num}")
     html = html.replace("道具を作りたい私、レシピを知らない", tease)
     ed_html = out_dir / "ending_filled.html"
     ed_html.write_text(html, encoding="utf-8")
@@ -113,9 +131,10 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     with sync_playwright() as p:
         b = p.chromium.launch()
         pg = b.new_page(viewport={"width": 1280, "height": 720})
-        pg.goto(f"file://{ed_html.resolve()}")
-        pg.wait_for_timeout(1500)  # Webフォント待ち
-        pg.screenshot(path=str(ed_png))
+        for src, dst in ((op_html, op_png), (ed_html, ed_png)):
+            pg.goto(f"file://{src.resolve()}")
+            pg.wait_for_timeout(1500)  # Webフォント待ち
+            pg.screenshot(path=str(dst))
         b.close()
 
     # 2) 頭トリミング位置（初セリフの3秒前）
@@ -126,7 +145,7 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     jingle = SE_DIR / "se_jingle.wav"
     af = "aformat=sample_rates=44100:channel_layouts=stereo"
     cmd = ["ffmpeg", "-y",
-           "-loop", "1", "-t", "5", "-i", str(OPED_DIR / "opening.png"),
+           "-loop", "1", "-t", "5", "-i", str(op_png),
            "-i", str(jingle),
            "-ss", f"{lead:.3f}", "-i", str(webm_mp4),
            "-loop", "1", "-t", "6", "-i", str(ed_png),

@@ -84,8 +84,41 @@ const actions = {
     await waitGoal(20000)
     const b = bot.blockAt(block.position)
     if (!b || b.name !== blockName) return { error: 'block gone before dig' }
+    // 適切な道具を自動装備（素手で石を掘るとドロップしない、EP.002 準備で実測）
+    const tool = bot.pathfinder.bestHarvestTool(b)
+    if (tool) await bot.equip(tool, 'hand')
     await bot.dig(b)
-    return { done: true, dug: blockName, at: block.position }
+    // ドロップ回収: 掘った場所まで歩く（近接自動ピックアップ）。EP.001 でインベントリが空だった根本対策
+    bot.pathfinder.setGoal(new goals.GoalBlock(block.position.x, block.position.y, block.position.z))
+    await waitGoal(8000)
+    await new Promise(r => setTimeout(r, 600))
+    return { done: true, dug: blockName, at: block.position, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
+  },
+  async craft({ item }) {
+    const itemType = bot.registry.itemsByName[item]
+    if (!itemType) return { error: `unknown item: ${item}` }
+    const tableId = bot.registry.blocksByName.crafting_table.id
+    let table = bot.findBlock({ matching: tableId, maxDistance: 8 })
+    let recipes = bot.recipesFor(itemType.id, null, 1, table)
+    if (recipes.length === 0 && !table) {
+      // 作業台必須レシピかも → 手持ちの作業台を足元近くに置いて再試行
+      const placed = await placeTableNearby()
+      if (!placed.error) {
+        table = bot.findBlock({ matching: tableId, maxDistance: 8 })
+        recipes = bot.recipesFor(itemType.id, null, 1, table)
+      }
+    }
+    if (recipes.length === 0) {
+      return { error: `craft不可: ${item}（素材不足 or 作業台なし）`, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
+    }
+    if (table) {
+      bot.pathfinder.setGoal(new goals.GoalLookAtBlock(table.position, bot.world))
+      await waitGoal(10000)
+    }
+    await bot.craft(recipes[0], 1, table || undefined)
+    // craft 直後はインベントリ同期が遅れる（連続 craft で desync するのを実測）→ settle 待ち
+    await new Promise(r => setTimeout(r, 1200))
+    return { done: true, crafted: item, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
   },
   async attack_nearest() {
     const target = bot.nearestEntity(e => e.type === 'hostile' || e.type === 'animal' || e.type === 'mob')
@@ -102,6 +135,25 @@ const actions = {
     bot.pathfinder.setGoal(null)
     return { done: true }
   },
+}
+
+async function placeTableNearby() {
+  const { Vec3 } = require('vec3')
+  const tableItem = bot.inventory.items().find(i => i.name === 'crafting_table')
+  if (!tableItem) return { error: 'no crafting_table in inventory' }
+  await bot.equip(tableItem, 'hand')
+  const p = bot.entity.position.floored()
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [0, 2]]) {
+    const ref = bot.blockAt(p.offset(dx, -1, dz))
+    const above = bot.blockAt(p.offset(dx, 0, dz))
+    if (ref && ref.boundingBox === 'block' && above && above.name === 'air') {
+      try {
+        await bot.placeBlock(ref, new Vec3(0, 1, 0))
+        return { done: true }
+      } catch (e) { /* 次の候補へ */ }
+    }
+  }
+  return { error: 'no spot to place crafting_table' }
 }
 
 function waitGoal(timeoutMs) {
