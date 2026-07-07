@@ -297,6 +297,12 @@ def scrape_youtube(tab=None) -> dict:
             out["latest_video_id"] = vid
 
     key = os.environ.get("YOUTUBE_API_KEY")
+    if not key:
+        try:  # gitignore 済みの config.yaml から（既存の becky_api_key と同じ置き場）
+            import yaml
+            key = (yaml.safe_load(open(Path(__file__).parent / "config.yaml")) or {}).get("youtube_api_key")
+        except Exception:
+            key = None
     if key:
         api = (f"https://www.googleapis.com/youtube/v3/channels"
                f"?id={YT_CHANNEL_ID}&part=statistics&key={key}")
