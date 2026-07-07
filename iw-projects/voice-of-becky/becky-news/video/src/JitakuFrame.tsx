@@ -20,11 +20,11 @@ const SANS = "'Hiragino Sans', 'Noto Sans JP', sans-serif";
 const TV_W = 520; // テレビ筐体幅
 const DESK_H = 300; // 机の高さ
 const DESK_TILT = -0.5; // 机パース傾き(deg)
-const TOPIC = "最近ハマってる技術は？"; // ponytail: ルーレットは動画では静止1題（主役の邪魔）
+const DEFAULT_TOPIC = "最近ハマってる技術は？"; // ponytail: ルーレットは動画では静止1題（主役の邪魔）
 
 export type TvContent = "off" | "img1" | "img2";
 
-const TV_IMG: Record<string, string> = { img1: "img1-radiobooth.png", img2: "img2-news.png" };
+const DEFAULT_TV_IMG: Record<string, string> = { img1: "img1-radiobooth.png", img2: "img2-news.png" };
 
 // mock の @keyframes を frame 純関数に
 const kenburnsScale = (frame: number) => {
@@ -60,7 +60,10 @@ export const JitakuFrame: React.FC<{
   tvContent?: TvContent;
   tvFlash?: number; // 0..1 切替フラッシュ
   topicEmphasis?: number; // 0..1 お題帯の強調（Bブロック）
-}> = ({ frame, layer, tvContent = "off", tvFlash = 0, topicEmphasis = 0 }) => {
+  topic?: string;
+  epNum?: string;
+  tvImg?: Record<string, string>;
+}> = ({ frame, layer, tvContent = "off", tvFlash = 0, topicEmphasis = 0, topic = DEFAULT_TOPIC, epNum = "#000", tvImg = DEFAULT_TV_IMG }) => {
   if (layer === "back") {
     return (
       <div style={{ position: "absolute", top: 0, left: 0, width: W, height: H, overflow: "hidden", background: "#0a0d0b" }}>
@@ -143,7 +146,7 @@ export const JitakuFrame: React.FC<{
           {/* 中身 */}
           <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
             {tvContent !== "off" ? (
-              <Img src={staticFile(TV_IMG[tvContent])} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              <Img src={staticFile(tvImg[tvContent])} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
               /* 消えてる画面: 中央にぼんやり残光だけ */
               <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(61,220,151,0.05) 0%, transparent 60%)" }} />
@@ -334,7 +337,7 @@ export const JitakuFrame: React.FC<{
             textShadow: `0 0 14px rgba(61, 220, 151, ${0.35 + emph * 0.45})`,
           }}
         >
-          {TOPIC}
+          {topic}
         </div>
         <span style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", left: 210, width: 10, height: 26, background: GREEN, boxShadow: "0 0 10px rgba(61, 220, 151, 0.7)", clipPath: "polygon(0 0, 100% 50%, 0 100%)" }} />
         <span style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", right: 40, width: 10, height: 26, background: GREEN, boxShadow: "0 0 10px rgba(61, 220, 151, 0.7)", clipPath: "polygon(100% 0, 0 50%, 100% 100%)" }} />
@@ -360,7 +363,7 @@ export const JitakuFrame: React.FC<{
           ● LIVE
         </span>
         <span style={{ fontSize: 21, fontWeight: 900, letterSpacing: "0.02em" }}>
-          ベキたん家から雑談 <span style={{ color: GREEN }}>#000</span>
+          ベキたん家から雑談 <span style={{ color: GREEN }}>{epNum}</span>
         </span>
       </div>
     </div>
