@@ -26,8 +26,8 @@
   #bh-goal::before { content: "GOAL // "; color: var(--red); }
   #bh-meter { padding: 4px 10px; font-size: 11px; letter-spacing: 1px; }
 
-  /* 右下: THINKING */
-  #bh-think { position: absolute; right: 16px; bottom: 118px; padding: 5px 12px;
+  /* 左下（EMOTION の上）: THINKING。右下はワイプ（CraftWipe）の指定席 */
+  #bh-think { position: absolute; left: 16px; bottom: 238px; padding: 5px 12px;
     font-size: 12px; letter-spacing: 2px; color: var(--red);
     border-color: rgba(255,77,94,0.5); display: none;
     animation: bh-pulse 0.8s ease-in-out infinite; text-shadow: 0 0 8px rgba(255,77,94,0.7); }
