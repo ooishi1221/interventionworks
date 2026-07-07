@@ -27,8 +27,15 @@ AIVIS_URL = "http://localhost:10101"
 AIVIS_SPEAKER = 1878365376  # コハク / ノーマル（becky-cast/cast.py と同じ）
 AIVIS_PARAMS = {"speedScale": 1.0, "prePhonemeLength": 0.18, "postPhonemeLength": 0.18}
 
-GOAL = ("地下にいるようなら地上に出て、周辺を探索して見つけたものに反応して。"
-        "掘りすぎ禁止、移動と観察多め")
+GOAL = ("今日はエピソード1の本番収録。目標は「初日を生き延びる」。"
+        "地下にいるなら地上を目指し、世界を探索して、見つけたものに全力で反応して。"
+        "掘りすぎ禁止、移動と観察多め。"
+        "観測の broadcast.remaining_sec が放送の残り秒数。残り90秒を切ったら今日の冒険を"
+        "振り返って締めに入り、最後のセリフは必ず「バイバイ」で終えて action は stop を選ぶこと。"
+        "それまでは絶対に締めない。オープニングの一言目は「さー始まりました」の空気で元気よく")
+HUD_GOAL = "初日を生き延びろ"
+SE_DIR = CRAFT.parent / "becky-news" / "episodes" / "zatsudan-000"
+OPED_DIR = CRAFT / "assets" / "op-ed"
 
 
 # 声のトンマナ共通基盤（正本: voice-of-becky/docs/voice-tone-design.md）
@@ -60,10 +67,88 @@ def wav_duration(p: Path) -> float:
         return w.getnframes() / w.getframerate()
 
 
+def episode_summary(events: list, deaths: int) -> dict:
+    """収録ログから ED リザルト用のハイライト等を1コールで生成する。"""
+    import anthropic
+    sys.path.insert(0, "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/stackchan-bridge")
+    from stop_hook_tts import load_config
+    cfg = load_config() or {}
+    client = anthropic.Anthropic(api_key=cfg.get("becky_api_key", "").strip() or None)
+    speeches = "\n".join(e["speech"] for e in events)
+    schema = {"type": "object", "properties": {
+        "highlight": {"type": "string"}, "death_comment": {"type": "string"},
+        "next_tease": {"type": "string"}},
+        "required": ["highlight", "death_comment", "next_tease"], "additionalProperties": False}
+    msg = client.messages.create(
+        model="claude-sonnet-5", max_tokens=300,
+        messages=[{"role": "user", "content":
+                   f"ベッキーのマイクラ実況エピソード1の全セリフ:\n{speeches}\n\nデス数: {deaths}回\n\n"
+                   "エンディングのリザルト画面用に、highlight（今日のハイライト、15字以内）、"
+                   "death_comment（デス数の後ろに付ける一言、10字以内、括弧なし。0回なら強がり、1回以上なら言い訳）、"
+                   "next_tease（次回EP.002の煽りタイトル、18字以内、ベッキーの一人称は私）をJSONで返して"}],
+        extra_body={"output_config": {"format": {"type": "json_schema", "schema": schema}}},
+    )
+    return json.loads(next(b.text for b in msg.content if b.type == "text"))
+
+
+def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path, out_dir: Path):
+    """本編を頭トリミングし、OP/ED を挟んで YouTube 用 mp4 を作る。"""
+    from playwright.sync_api import sync_playwright
+
+    # 1) ED リザルト自動記入 → スクショ
+    summary = episode_summary(events, deaths)
+    print(f"[oped] summary: {summary}", flush=True)
+    survive = events[-1]["t"] + events[-1]["dur"] - max(0.0, events[0]["t"] - 3.0)
+    html = (OPED_DIR / "ending.html").read_text(encoding="utf-8")
+    html = html.replace("10分32秒", f"{int(survive) // 60}分{int(survive) % 60:02d}秒")
+    html = html.replace("1回（クリーパー、許さない）", f"{deaths}回（{summary['death_comment']}）")
+    html = html.replace("初めての鉄鉱石", summary["highlight"])
+    # LLM が煽り文に自分で「EP.002」を入れてくることがある（テンプレ側と二重になる）
+    import re as _re
+    tease = _re.sub(r"[!！]?\s*EP\.?\s*0*2", "", summary["next_tease"]).strip("！!、。 ")
+    html = html.replace("道具を作りたい私、レシピを知らない", tease)
+    ed_html = out_dir / "ending_filled.html"
+    ed_html.write_text(html, encoding="utf-8")
+    ed_png = out_dir / "ending_filled.png"
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": 1280, "height": 720})
+        pg.goto(f"file://{ed_html.resolve()}")
+        pg.wait_for_timeout(1500)  # Webフォント待ち
+        pg.screenshot(path=str(ed_png))
+        b.close()
+
+    # 2) 頭トリミング位置（初セリフの3秒前）
+    lead = max(0.0, events[0]["t"] - 3.0)
+    print(f"[oped] 頭 {lead:.1f}s をトリミング", flush=True)
+
+    # 3) OP(5s) + 本編 + ED(6s) を一発 concat（音声は 44.1k stereo に揃える）
+    jingle = SE_DIR / "se_jingle.wav"
+    af = "aformat=sample_rates=44100:channel_layouts=stereo"
+    cmd = ["ffmpeg", "-y",
+           "-loop", "1", "-t", "5", "-i", str(OPED_DIR / "opening.png"),
+           "-i", str(jingle),
+           "-ss", f"{lead:.3f}", "-i", str(webm_mp4),
+           "-loop", "1", "-t", "6", "-i", str(ed_png),
+           "-filter_complex",
+           f"[0:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=4.5:d=0.5[v0];"
+           f"[1:a]{af},apad=whole_dur=5,asplit=2[a0][aed];"
+           f"[2:v]scale=1280:720,setsar=1,fps=25[v1];[2:a]{af}[a1];"
+           f"[3:v]scale=1280:720,setsar=1,fps=25,fade=t=in:st=0:d=0.5,fade=t=out:st=5.5:d=0.5[v2];"
+           f"[aed]atrim=0:6,apad=whole_dur=6,volume=0.6[a2];"
+           f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[v][a]",
+           "-map", "[v]", "-map", "[a]",
+           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out_path)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    print(f"[oped] YouTube cut 完成: {out_path}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--max-calls", type=int, default=30)
+    ap.add_argument("--max-calls", type=int, default=70)
     ap.add_argument("--out", default="becky-craft-test-001.mp4")
+    ap.add_argument("--time-budget", type=float, default=None,
+                    help="放送尺（秒）。指定すると時間注入+締め誘導+OP/ED付きYouTube cutも生成")
     args = ap.parse_args()
 
     out_dir = CRAFT / "out"
@@ -96,12 +181,20 @@ def main():
             except Exception as e:
                 print(f"[hud] update 失敗: {e}", flush=True)
 
+        deaths = [0]
+        last_health = [None]
+
         def hud_obs(obs):
-            hud({"health": obs.get("health"), "food": obs.get("food"),
+            h = obs.get("health")
+            if h is not None:
+                if last_health[0] is not None and last_health[0] > 0 and h <= 0:
+                    deaths[0] += 1
+                last_health[0] = h
+            hud({"health": h, "food": obs.get("food"),
                  "inventory": obs.get("inventory", []),
                  "pos": obs.get("position"), "time": obs.get("time")})
 
-        hud({"goal": GOAL})
+        hud({"goal": HUD_GOAL})
         try:
             with urllib.request.urlopen("http://localhost:3008/observe", timeout=10) as r:
                 hud_obs(json.loads(r.read()))
@@ -132,7 +225,7 @@ def main():
             return max(dur + 2.0, 10.0)  # セリフ被り防止
 
         run_episode(max_calls=args.max_calls, goal=GOAL, on_turn=on_turn,
-                    on_thinking=on_thinking)
+                    on_thinking=on_thinking, time_budget=args.time_budget)
 
         # 最後のセリフが映像内で言い終わるまで録画を延長
         if events:
@@ -180,6 +273,11 @@ def main():
     subprocess.run(["ffmpeg", "-y", "-ss", str(dur / 2), "-i", str(mp4),
                     "-frames:v", "1", str(frame)], check=True, capture_output=True)
     print(f"[done] {mp4} ({dur:.1f}s, {codecs}) frame={frame}", flush=True)
+
+    # YouTube cut（頭トリミング + OP/ED 挟み込み）
+    if args.time_budget and events:
+        yt_path = out_dir / f"yt-{args.out}"
+        build_youtube_cut(mp4, events, deaths[0], yt_path, out_dir)
 
 
 if __name__ == "__main__":

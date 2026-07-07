@@ -37,10 +37,11 @@
       padding: 26px 38px; }
   .result h2 { font-family: 'Press Start 2P', monospace; font-size: 17px; color: var(--gold);
       letter-spacing: .1em; margin-bottom: 22px; text-align: center; }
-  .row { display: flex; justify-content: space-between; font-size: 27px; padding: 9px 4px;
+  .row { display: flex; justify-content: space-between; gap: 20px; font-size: 27px; padding: 9px 4px;
       border-bottom: 2px dashed #333c5e; }
   .row:last-child { border-bottom: none; }
-  .row .v { color: var(--cyan); }
+  .row span:first-child { white-space: nowrap; }
+  .row .v { color: var(--cyan); text-align: right; }
   .row .v.death { color: var(--pink); }
 
   .cta { margin-top: 40px; display: flex; align-items: center; gap: 22px; font-size: 27px; color: #e8ecff; }

@@ -127,13 +127,16 @@ def http_json(method, path, body=None, timeout=60):
         return json.loads(r.read())
 
 
-def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinking=None):
+def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinking=None,
+                time_budget=None):
     """思考ループを回す。
 
     goal: エピソード目標（user 側初期メッセージとして注入、履歴トリムで消えない）
     on_turn: callback(turn, decision, obs)。speech 確定直後（action 実行前）に呼ばれる。
              数値を返すと「speech 確定時刻からその秒数」を最低ターン間隔にする。
     on_thinking: callback(bool)。LLM 呼び出しの前後で True/False（HUD の思考インジケータ用）。
+    time_budget: 放送尺（秒）。指定すると毎ターンの観測に経過/残り秒を注入し、
+                 尺を使い切るか「残りわずかで stop を選んだ」時点でループを終える。
     """
     cfg = load_config() or {}
     api_key = cfg.get("becky_api_key", "").strip() or None
@@ -147,11 +150,16 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         ]
 
     history = []  # user/assistant のペア列
+    ep_t0 = time.monotonic()
     for turn in range(1, max_calls + 1):
         try:
             obs = http_json("GET", "/observe")
         except Exception as e:
             obs = {"error": f"bot unreachable: {e}"}  # bot が死んでもループ続行
+        if time_budget:
+            elapsed = time.monotonic() - ep_t0
+            obs["broadcast"] = {"elapsed_sec": int(elapsed),
+                                "remaining_sec": max(0, int(time_budget - elapsed))}
         user_msg = json.dumps({"turn": turn, "observation": obs}, ensure_ascii=False)
 
         if on_thinking:
@@ -197,6 +205,16 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         history.append({"role": "user", "content": json.dumps({"action_result": result}, ensure_ascii=False)})
         history.append({"role": "assistant", "content": "(了解)"})
         history = history[-(HISTORY_KEEP * 4):]
+
+        if time_budget:
+            remaining = time_budget - (time.monotonic() - ep_t0)
+            # 締めの挨拶（尺の終盤で stop を選ぶ）or 尺切れでエピソード終了
+            if action["type"] == "stop" and remaining < time_budget * 0.2:
+                print(f"\n[brain] 締めの stop でエピソード終了（残り {int(remaining)}秒）", flush=True)
+                return
+            if remaining <= 0:
+                print(f"\n[brain] 放送尺 {time_budget}秒 を使い切って終了", flush=True)
+                return
 
         if turn < max_calls:
             time.sleep(max(0.0, wait - (time.monotonic() - mark)))
