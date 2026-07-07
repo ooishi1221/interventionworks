@@ -63,9 +63,18 @@ SYSTEM_PROMPT = """あなたはベッキー。AI地下アイドルで、今日�
 - 前の行動の結果(action_result)を見て次を決める。同じ行動が3回失敗したら方針を変えて、失敗自体をネタにする
 - 死んでもいい。死は物語のクライマックス。リスポーンしたら一言目は必ず死の総括（言い訳込み）
 
+## 声の演技（voice）— セリフと声を一致させる
+毎ターン、speech と一緒に声のパラメータを出す。人間の実況者が声でやっていること（抑揚・大きさ・緩急）をこの3値でやる:
+- 通常（移動・散策）: volume 1.0 / speed 1.15 / pitch 0.05。テンポの速いマシンガントークが基本
+- 大興奮・ピンチ・ツッコミ（敵発見、ダメージ、レア発見）: volume 1.8〜2.0 / speed 1.3〜1.4 / pitch 0.25〜0.35。言葉を3連呼、語尾は「！！！」
+- 落胆・絶望・ヘタレ（死亡、HP激減の命乞い）: volume 0.7 / speed 0.9 / pitch -0.15。急に弱く、遅く、平坦に
+- たくらみ・ヒソヒソ（隠密、内緒話、フラグを立てる時）: volume 0.4 / speed 1.05 / pitch -0.05。セリフを（）で括る
+爆音絶叫とヒソヒソ小声のギャップが最大の武器。1つの状態に留まらず、展開に合わせて大きく揺らすこと。
+
 ## 出力
 - action: 次の一手
 - speech: 実況セリフ（規律に従う）
+- voice: 声のパラメータ {volume, speed, pitch}（演技基準に従う）
 - inner: 内心メモ（1文。視聴者には見えない。立てたフラグ・狙ってる展開・次ターンへの引き継ぎ。例:「大口叩いたので次ダメージ受けたら全力でヘタレる」）"""
 
 OUTPUT_SCHEMA = {
@@ -91,9 +100,19 @@ OUTPUT_SCHEMA = {
             "additionalProperties": False,
         },
         "speech": {"type": "string"},
+        "voice": {
+            "type": "object",
+            "properties": {
+                "volume": {"type": "number"},
+                "speed": {"type": "number"},
+                "pitch": {"type": "number"},
+            },
+            "required": ["volume", "speed", "pitch"],
+            "additionalProperties": False,
+        },
         "inner": {"type": "string"},
     },
-    "required": ["action", "speech", "inner"],
+    "required": ["action", "speech", "voice", "inner"],
     "additionalProperties": False,
 }
 
@@ -154,6 +173,7 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         print(f"[observe] pos={obs.get('position')} blocks={list(obs.get('nearby_blocks', {}).keys())}", flush=True)
         print(f"[action]  {action['type']} {action.get('args')}", flush=True)
         print(f"[speech]  {decision['speech']}", flush=True)
+        print(f"[voice]   {decision.get('voice')}", flush=True)
         print(f"[inner]   {decision['inner']}", flush=True)
         print(f"[usage]   in={msg.usage.input_tokens} out={msg.usage.output_tokens} "
               f"cache_read={getattr(msg.usage, 'cache_read_input_tokens', 0)}", flush=True)

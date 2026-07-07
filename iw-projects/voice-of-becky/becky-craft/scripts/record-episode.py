@@ -31,12 +31,35 @@ GOAL = ("地下にいるようなら地上に出て、周辺を探索して見�
         "掘りすぎ禁止、移動と観察多め")
 
 
-def tts(text: str, out_path: Path):
+def _clamp(v, lo, hi):
+    return max(lo, min(hi, v))
+
+
+def voice_to_aivis(voice: dict) -> dict:
+    """感情音声パラメータ（声非依存の概念値）→ AivisSpeech 写像。
+    正本: becky-news/episodes/becky-craft-persona.md の写像テーブル。
+    - volume: コハクは素で 0dB 近いため基準 0.85 に下げてヘッドルーム確保
+    - pitch: AivisSpeech は pitchScale 非対応 → 抑揚(intonation)とテンポ緩急に写像
+    """
+    vol = float(voice.get("volume", 1.0))
+    spd = float(voice.get("speed", 1.0))
+    pit = float(voice.get("pitch", 0.0))
+    return {
+        "volumeScale": _clamp(vol * 0.85, 0.3, 1.4),
+        "speedScale": _clamp(spd, 0.8, 1.5),
+        "intonationScale": _clamp(1.0 + pit * 1.2, 0.6, 1.6),
+        "tempoDynamicsScale": _clamp(1.0 + pit * 0.8, 0.7, 1.4),
+    }
+
+
+def tts(text: str, out_path: Path, voice: dict | None = None):
     q = urllib.parse.urlencode({"text": text, "speaker": AIVIS_SPEAKER})
     req = urllib.request.Request(f"{AIVIS_URL}/audio_query?{q}", method="POST")
     with urllib.request.urlopen(req, timeout=30) as res:
         query = json.loads(res.read())
     query.update(AIVIS_PARAMS)
+    if voice:
+        query.update(voice_to_aivis(voice))
     q2 = urllib.parse.urlencode({"speaker": AIVIS_SPEAKER})
     req2 = urllib.request.Request(
         f"{AIVIS_URL}/synthesis?{q2}",
@@ -111,7 +134,7 @@ def main():
                 return 10.0
             wav = wav_dir / f"turn_{turn:03d}.wav"
             try:
-                tts(speech, wav)
+                tts(speech, wav, decision.get("voice"))
                 dur = wav_duration(wav)
             except Exception as e:
                 print(f"[tts] turn {turn} 失敗、スキップ: {e}", flush=True)
