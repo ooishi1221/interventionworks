@@ -224,14 +224,32 @@
     .stat-imp { font-family: var(--mono); font-size: 12px; color: var(--sub); white-space: nowrap; }
     .stat-likes { font-family: var(--mono); font-size: 12px; color: var(--green); white-space: nowrap; }
 
-    /* 定期タスク（MEDIA 内） */
-    .task-table { display: grid; gap: 2px; margin-top: 8px; }
-    .task-row { display: grid; grid-template-columns: 26px 1fr 72px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; transition: background 0.15s; }
-    .task-row:hover { background: var(--panel2); }
-    .task-icon { font-size: 14px; text-align: center; }
-    .task-label { font-size: 13px; font-weight: 600; }
-    .task-freq { font-size: 11px; color: var(--sub2); font-family: var(--mono); }
-    .task-time { font-size: 11.5px; color: var(--sub); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 定期タスク（cron 実態、MEDIA 内） */
+    .cron-summary { display: flex; gap: 16px; flex-wrap: wrap; margin: 2px 0 14px; }
+    .cron-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sub); font-family: var(--mono); }
+    .cron-tag b { color: var(--text); font-weight: 700; }
+    .cron-list { display: grid; gap: 2px; }
+    .cron-item { padding: 9px 12px; border-radius: 10px; transition: background 0.15s; }
+    .cron-item:hover { background: var(--panel2); }
+    .cron-line { display: grid; grid-template-columns: 10px 1fr auto 56px; align-items: center; gap: 12px; }
+    .cron-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .cron-dot.ok    { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+    .cron-dot.error { background: var(--red); }
+    .cron-dot.stale { background: var(--amber); }
+    .cron-dot.never { background: var(--sub2); }
+    .cron-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .cron-sched { font-size: 11.5px; color: var(--sub); font-family: var(--mono); white-space: nowrap; }
+    .cron-last { font-size: 11px; color: var(--sub2); font-family: var(--mono); white-space: nowrap; text-align: right; }
+    .cron-err { margin-top: 6px; }
+    .cron-err summary { cursor: pointer; font-size: 11px; color: var(--red); font-family: var(--mono); list-style: none; }
+    .cron-err summary::-webkit-details-marker { display: none; }
+    .cron-err summary::before { content: '▸ '; }
+    .cron-err[open] summary::before { content: '▾ '; }
+    .cron-err pre { margin: 6px 0 0; padding: 8px 10px; background: var(--red-dim); border-radius: 8px; font-size: 11px; color: var(--sub); white-space: pre-wrap; word-break: break-all; font-family: var(--mono); }
+    @media (max-width: 560px) {
+      .cron-line { grid-template-columns: 10px 1fr auto; }
+      .cron-last { display: none; }
+    }
 
     /* コストセクション */
     .cost-row { grid-template-columns: repeat(3, 1fr); }
@@ -643,17 +661,17 @@
       </div>
     </div>
 
-    <div class="grid note-row" style="margin-top:16px;">
-      <div class="card">
-        <h2><svg data-lucide="notebook-pen"></svg>note 記事一覧</h2>
-        <div class="sub-note">全期間 PV 順 — <span id="noteTotals">読み込み中...</span></div>
-        <div class="article-list" id="articleList"><div class="empty">loading...</div></div>
-      </div>
-      <div class="card">
-        <h2><svg data-lucide="calendar-check"></svg>定期タスク</h2>
-        <div class="sub-note" style="margin-bottom:0"></div>
-        <div class="task-table" id="schedList"><div class="empty">loading...</div></div>
-      </div>
+    <div class="card" style="margin-top:16px;">
+      <h2><svg data-lucide="notebook-pen"></svg>note 記事一覧</h2>
+      <div class="sub-note">全期間 PV 順 — <span id="noteTotals">読み込み中...</span></div>
+      <div class="article-list" id="articleList"><div class="empty">loading...</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2><svg data-lucide="settings"></svg>定期タスク <span id="cronMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">ベキたんの自動運行 — 何が・いつ・ちゃんと動いてるか（cron 実態、1時間毎更新 / 次に動く順）</div>
+      <div class="cron-summary" id="cronSummary"></div>
+      <div class="cron-list" id="cronList"><div class="empty">loading...</div></div>
     </div>
 
     <div class="card" style="margin-top:16px;" id="xPostsCard">
@@ -842,8 +860,35 @@ function buildSideActivities(status) {
   }).join('');
 }
 
+function buildCronStatus(cron) {
+  const el = $('cronList');
+  if (!el) return;
+  const jobs = (cron?.jobs || []).slice().sort((a, b) => (a.next_run || '~').localeCompare(b.next_run || '~'));
+  if (!jobs.length) { el.innerHTML = '<div class="empty">cron 情報なし</div>'; return; }
+
+  const dotCls = { ok: 'ok', error: 'error', stale: 'stale', never_ran: 'never' };
+  const cnt = { ok: 0, error: 0, stale: 0, never_ran: 0 };
+  jobs.forEach(j => { cnt[j.status] = (cnt[j.status] || 0) + 1; });
+
+  if ($('cronMeta') && cron?.updated_at) $('cronMeta').textContent = fmtAgo(cron.updated_at);
+  $('cronSummary').innerHTML = [['ok', '稼働', cnt.ok], ['error', 'エラー', cnt.error], ['stale', '遅延', cnt.stale], ['never_ran', '未実行', cnt.never_ran]]
+    .map(([k, label, n]) => `<span class="cron-tag"><span class="cron-dot ${dotCls[k]}"></span>${label} <b>${n}</b></span>`).join('');
+
+  const lastTxt = j => j.status === 'never_ran' ? '未実行' : (j.last_run ? fmtAgo(j.last_run) : '--');
+  el.innerHTML = jobs.map(j => `
+    <div class="cron-item">
+      <div class="cron-line">
+        <span class="cron-dot ${dotCls[j.status] || 'never'}"></span>
+        <span class="cron-name" title="${esc(j.name)} — ${esc(j.command_short)}">${esc(j.name)}</span>
+        <span class="cron-sched">${esc(j.schedule_human)}</span>
+        <span class="cron-last">${lastTxt(j)}</span>
+      </div>
+      ${j.last_error_snippet ? `<details class="cron-err"><summary>エラー詳細</summary><pre>${esc(j.last_error_snippet)}</pre></details>` : ''}
+    </div>`).join('');
+}
+
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets, wallet] = await Promise.all([
+  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets, wallet, cron] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/trending.json'),
     fetchJson('/news.json'),
@@ -854,6 +899,7 @@ async function loadAll() {
     fetchJson('/media_report.json'),
     fetchJson('/grok_tweets.json'),
     fetchJson('/wallet.json'),
+    fetchJson('/cron_status.json'),
   ]);
 
   const needsLogin = s => !!s?.login_required;
@@ -926,30 +972,8 @@ async function loadAll() {
       </div>`).join('');
   }
 
-  // ── 定期タスク ──
-  const sched = status?.schedule;
-  if (sched) {
-    const fmtDate = (iso) => { if (!iso) return '--'; try { const d = new Date(iso); return isNaN(d) ? iso : fmtAgo(iso); } catch { return iso; } };
-    const tasks = [
-      { icon: '🎙️', label: 'ラジオ配信', freq: '毎日', d: sched.radio, time: () => sched.radio?.last_run ? fmtDate(sched.radio.last_run) : '--' },
-      { icon: '𝕏', label: '朝投稿', freq: '毎朝 7-9時', d: sched.x_morning, time: () => sched.x_morning?.last_run_date || '--' },
-      { icon: '𝕏', label: '夜投稿', freq: '毎夜 18-22時', d: sched.x_evening, time: () => sched.x_evening?.last_run_date || '--' },
-      { icon: '📝', label: 'note 連載', freq: '木曜週次', d: sched.note, time: () => sched.note?.next_run_date ? `次回: ${sched.note.next_run_date}` : '--' },
-    ];
-    $('schedList').innerHTML = tasks.map(({ icon, label, freq, d, time }) => {
-      const ok = d?.ok;
-      const warn = d?.warn;
-      const cls = ok === true ? 'up' : ok === false ? (warn ? 'flat' : 'down') : 'flat';
-      const txt = ok === true ? '正常' : ok === false ? (warn ? '遅延' : '未実施') : '記録なし';
-      return `<div class="task-row">
-        <span class="task-icon">${icon}</span>
-        <span class="task-label">${esc(label)}</span>
-        <span class="task-freq">${esc(freq)}</span>
-        <span class="task-time">${esc(time())}</span>
-        <span class="delta ${cls}" style="flex-shrink:0">${txt}</span>
-      </div>`;
-    }).join('');
-  }
+  // ── 定期タスク（cron 実態） ──
+  buildCronStatus(cron);
 
   // ── Claude API コスト（Console → 切れてたら wallet.json ローカル計測 fallback） ──
   const ca = platform?.claude_api;

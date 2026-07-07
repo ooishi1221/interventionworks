@@ -1,0 +1,247 @@
+{
+  "updated_at": "2026-07-07T22:18:35",
+  "jobs": [
+    {
+      "name": "becky-memory-tidy 週次自動実行",
+      "schedule_human": "毎週日曜 21:07",
+      "schedule_raw": "7 21 * * 0",
+      "command_short": "claude",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/memory-tidy.log",
+      "last_run": "2026-07-05T21:46:22",
+      "next_run": "2026-07-12T21:07:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "beckyexists status.json 更新",
+      "schedule_human": "30分毎",
+      "schedule_raw": "*/30 * * * *",
+      "command_short": "status_update.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-status.log",
+      "last_run": "2026-07-07T22:00:31",
+      "next_run": "2026-07-07T22:30:00",
+      "status": "error",
+      "last_error_snippet": "npm error A complete log of this run can be found in: /Users/yuji.ooishi/.npm/_logs/2026-07-07T09_30_04_094Z-debug-0.log"
+    },
+    {
+      "name": "朝ラジオ自動収録・配信",
+      "schedule_human": "毎日 7:00",
+      "schedule_raw": "0 7 * * *",
+      "command_short": "morning_cast.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/morning-cast.log",
+      "last_run": "2026-07-07T07:03:09",
+      "next_run": "2026-07-08T07:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky probe — ゆうへの自発的持ち込み",
+      "schedule_human": "毎日 9,17,21時",
+      "schedule_raw": "0 9,17,21 * * *",
+      "command_short": "becky_probe.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-probe.log",
+      "last_run": "2026-07-07T21:00:00",
+      "next_run": "2026-07-08T09:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky diary — ベッキーの気になったこと日記",
+      "schedule_human": "毎日 8,13,19時30分",
+      "schedule_raw": "30 8,13,19 * * *",
+      "command_short": "becky_diary.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-diary.log",
+      "last_run": "2026-07-07T19:30:00",
+      "next_run": "2026-07-08T08:30:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky mood — 感情変数更新",
+      "schedule_human": "毎時 0分",
+      "schedule_raw": "0 * * * *",
+      "command_short": "becky_mood.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-mood.log",
+      "last_run": "2026-07-07T22:00:00",
+      "next_run": "2026-07-07T23:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "platform_scraper — KPI 日次取得",
+      "schedule_human": "毎日 7:30",
+      "schedule_raw": "30 7 * * *",
+      "command_short": "platform_scraper.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/platform-scraper.log",
+      "last_run": "2026-07-07T07:30:48",
+      "next_run": "2026-07-08T07:30:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky Telegram MCP 自動reconnect",
+      "schedule_human": "20分毎",
+      "schedule_raw": "*/20 * * * *",
+      "command_short": "becky-reconnect.sh",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-reconnect.log",
+      "last_run": "2026-07-07T22:00:01",
+      "next_run": "2026-07-07T22:20:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky self-check — 崩れ検知・Self-Observation Engineering",
+      "schedule_human": "毎日 22:00",
+      "schedule_raw": "0 22 * * *",
+      "command_short": "becky_self_check.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-self-check.log",
+      "last_run": "2026-07-07T22:00:06",
+      "next_run": "2026-07-08T22:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_observer",
+      "schedule_human": "毎週月曜 8:00",
+      "schedule_raw": "0 8 * * 1",
+      "command_short": "becky_observer.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/media-report.log",
+      "last_run": "2026-07-06T08:00:09",
+      "next_run": "2026-07-13T08:00:00",
+      "status": "error",
+      "last_error_snippet": "npm error A complete log of this r"
+    },
+    {
+      "name": "becky_search daily 20:00",
+      "schedule_human": "毎日 20:00",
+      "schedule_raw": "0 20 * * *",
+      "command_short": "becky_search.py",
+      "log_path": "/tmp/becky_search.log",
+      "last_run": "2026-07-07T20:00:01",
+      "next_run": "2026-07-08T20:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky idol review — アイドル活動の毎日振り返り",
+      "schedule_human": "毎日 7:45",
+      "schedule_raw": "45 7 * * *",
+      "command_short": "becky_idol_review.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/idol-review.log",
+      "last_run": "2026-07-07T07:45:14",
+      "next_run": "2026-07-08T07:45:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_diary_x — 日記墓場のX発掘",
+      "schedule_human": "毎日 12,22時15分",
+      "schedule_raw": "15 12,22 * * *",
+      "command_short": "becky_diary_x.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/diary-x.log",
+      "last_run": "2026-07-07T22:15:06",
+      "next_run": "2026-07-08T12:15:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_decide",
+      "schedule_human": "毎日 10,15,20時45分",
+      "schedule_raw": "45 10,15,20 * * *",
+      "command_short": "becky_decide.py",
+      "log_path": "/tmp/becky_decide.log",
+      "last_run": "2026-07-07T20:45:11",
+      "next_run": "2026-07-08T10:45:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_reflect",
+      "schedule_human": "毎週日曜 21:00",
+      "schedule_raw": "0 21 * * 0",
+      "command_short": "becky_reflect.py",
+      "log_path": "/tmp/becky_reflect.log",
+      "last_run": "2026-07-05T21:00:25",
+      "next_run": "2026-07-12T21:00:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_night_review",
+      "schedule_human": "毎日 22:30",
+      "schedule_raw": "30 22 * * *",
+      "command_short": "becky_night_review.py",
+      "log_path": "/tmp/becky_night_review.log",
+      "last_run": "2026-07-06T22:30:12",
+      "next_run": "2026-07-07T22:30:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_work_briefing",
+      "schedule_human": "毎日 9:20",
+      "schedule_raw": "20 9 * * *",
+      "command_short": "becky_work_briefing.py",
+      "log_path": "/tmp/becky_work_briefing.log",
+      "last_run": "2026-07-07T09:20:09",
+      "next_run": "2026-07-08T09:20:00",
+      "status": "ok",
+      "last_error_snippet": null
+    },
+    {
+      "name": "Becky's Cast 自動動画化+YouTube",
+      "schedule_human": "毎日 7:40",
+      "schedule_raw": "40 7 * * *",
+      "command_short": "auto-radio-video.sh",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/radio-video.log",
+      "last_run": null,
+      "next_run": "2026-07-08T07:40:00",
+      "status": "never_ran",
+      "last_error_snippet": null
+    },
+    {
+      "name": "note preflight 予告通知",
+      "schedule_human": "毎週木曜 19:30",
+      "schedule_raw": "30 19 * * 4",
+      "command_short": "auto_note_publish.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/note-auto-publish.log",
+      "last_run": null,
+      "next_run": "2026-07-09T19:30:00",
+      "status": "never_ran",
+      "last_error_snippet": null
+    },
+    {
+      "name": "note 本番自動公開",
+      "schedule_human": "毎週木曜 20:00",
+      "schedule_raw": "0 20 * * 4",
+      "command_short": "auto_note_publish.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/note-auto-publish.log",
+      "last_run": null,
+      "next_run": "2026-07-09T20:00:00",
+      "status": "never_ran",
+      "last_error_snippet": null
+    },
+    {
+      "name": "becky_image_x — 今日の私画像をXへ",
+      "schedule_human": "毎日 18:30",
+      "schedule_raw": "30 18 * * *",
+      "command_short": "becky_image_x.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/image-x.log",
+      "last_run": null,
+      "next_run": "2026-07-08T18:30:00",
+      "status": "never_ran",
+      "last_error_snippet": null
+    },
+    {
+      "name": "cron_status — 定期タスク可視化JSON生成",
+      "schedule_human": "毎時 5分",
+      "schedule_raw": "5 * * * *",
+      "command_short": "cron_status.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/cron-status.log",
+      "last_run": null,
+      "next_run": "2026-07-07T23:05:00",
+      "status": "never_ran",
+      "last_error_snippet": null
+    }
+  ]
+}
