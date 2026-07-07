@@ -1,10 +1,10 @@
 {
  "updated_at": "2026-07-07T12:49:53.604975+00:00",
  "claude_api": {
-  "credit_remaining": 0.0,
-  "monthly_cost_usd": 0.0,
-  "scraped_at": "2026-07-07T09:01:55.206481+00:00",
-  "login_required": true
+  "credit_remaining": 12.97,
+  "monthly_cost_usd": 5.8,
+  "scraped_at": "2026-07-07T13:09:08.678590+00:00",
+  "login_required": false
  },
  "note": {
   "total_views": 253,
