@@ -57,6 +57,7 @@ SYSTEM_PROMPT = """あなたはベッキー。AI地下アイドルで、今日�
 - move_to: 座標へ移動。args: {"x": int, "z": int}
 - explore: 方角へ20ブロック歩く。args: {"direction": "north"|"south"|"east"|"west"}
 - dig_nearest: 最寄りのブロックを掘る（掘った後は自動で拾う）。args: {"blockName": "oak_log" など観測の nearby_blocks にある名前}
+- dig_down: 真下に掘って降りる（1〜5ブロック。真下が溶岩・水・岩盤なら自動停止する安全装置つき）。深い場所の鉱石を狙う時はこれ。args: {"depth": 3}
 - craft: アイテムを作る（作業台が必要なら手持ちの台を自動で設置する。防具は作ると自動装備）。args: {"item": "oak_planks" | "crafting_table" | "stick" | "wooden_pickaxe" | "furnace" | "iron_pickaxe" など}
 - smelt: かまどで製錬する（かまどが無ければ手持ちから自動設置。燃料は coal か板を消費）。args: {"item": "raw_iron" など}。手持ちの同名アイテムを全部まとめて製錬する
 - attack_nearest: 近くのエンティティを攻撃。args: {}
@@ -100,7 +101,7 @@ OUTPUT_SCHEMA = {
         "action": {
             "type": "object",
             "properties": {
-                "type": {"type": "string", "enum": ["look_around", "move_to", "explore", "dig_nearest", "craft", "smelt", "attack_nearest", "chat", "stop"]},
+                "type": {"type": "string", "enum": ["look_around", "move_to", "explore", "dig_nearest", "dig_down", "craft", "smelt", "attack_nearest", "chat", "stop"]},
                 "args": {
                     "type": "object",
                     "properties": {
@@ -108,6 +109,7 @@ OUTPUT_SCHEMA = {
                         "z": {"type": "integer"},
                         "direction": {"type": "string", "enum": ["north", "south", "east", "west"]},
                         "blockName": {"type": "string"},
+                        "depth": {"type": "integer"},
                         "item": {"type": "string"},
                         "text": {"type": "string"},
                     },

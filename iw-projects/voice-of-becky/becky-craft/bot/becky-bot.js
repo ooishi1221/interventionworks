@@ -113,6 +113,27 @@ const actions = {
     await lookHorizon()  // 掘り跡の壁ドアップから解放
     return { done: true, dug: blockName, at: block.position, inventory: bot.inventory.items().map(i => `${i.name}x${i.count}`) }
   },
+  async dig_down({ depth = 3 } = {}) {
+    // 真下掘り（EP.005 の敗因「掘っても深さが変わらない」対策）。溶岩・水・奈落は自動停止
+    const inv = () => bot.inventory.items().map(i => `${i.name}x${i.count}`)
+    const dug = []
+    for (let i = 0; i < Math.min(depth, 5); i++) {
+      const below = bot.blockAt(bot.entity.position.offset(0, -1.2, 0))
+      if (!below || below.name === 'air') { dug.push('(空洞)'); break }
+      if (below.name === 'bedrock') return { done: true, dug, note: '岩盤に到達、これ以上掘れない', y: Math.round(bot.entity.position.y), inventory: inv() }
+      const below2 = bot.blockAt(bot.entity.position.offset(0, -2.2, 0))
+      if (below2 && (below2.name === 'lava' || below2.name === 'water')) {
+        return { done: true, dug, warning: `この下は ${below2.name}！掘るのを止めた`, y: Math.round(bot.entity.position.y), inventory: inv() }
+      }
+      const tool = bot.pathfinder.bestHarvestTool(below)
+      if (tool) await bot.equip(tool, 'hand')
+      await bot.dig(below)
+      await new Promise(r => setTimeout(r, 900))  // 落下+回収待ち
+      dug.push(below.name)
+    }
+    await lookHorizon()
+    return { done: true, dug, y: Math.round(bot.entity.position.y), inventory: inv() }
+  },
   async craft({ item }) {
     const itemType = bot.registry.itemsByName[item]
     if (!itemType) return { error: `unknown item: ${item}` }
