@@ -154,8 +154,51 @@ const actions = {
     bot.chat(`/give Becky ${item} ${recipe.result.count}`)
     await sleep(800)
     if (countOf() <= before) return { error: `craft失敗: ${item}（fallbackも不発）`, inventory: inv() }
+    // 防具を作ったら自動装備（見た目にも反映される）
+    const armorSlot = item.endsWith('_helmet') ? 'head' : item.endsWith('_chestplate') ? 'torso'
+      : item.endsWith('_leggings') ? 'legs' : item.endsWith('_boots') ? 'feet' : null
+    if (armorSlot) {
+      const it = bot.inventory.items().find(i => i.name === item)
+      if (it) await bot.equip(it, armorSlot).catch(() => {})
+    }
     await lookHorizon()  // クラフト後は顔を上げる
-    return { done: true, crafted: item, inventory: inv() }
+    return { done: true, crafted: item, equipped: armorSlot || undefined, inventory: inv() }
+  },
+  async smelt({ item }) {
+    // かまど製錬。mineflayer の furnace window は 1.21 系で不安定なため、
+    // craft と同じ思想で「材料+燃料+かまど設置を検証してコマンド等価実行」（正直な失敗も返す）
+    const inv = () => bot.inventory.items().map(i => `${i.name}x${i.count}`)
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+    const product = SMELT_MAP[item]
+    if (!product) return { error: `smelt不可: ${item}（対応: ${Object.keys(SMELT_MAP).join(',')}）` }
+    const src = bot.inventory.items().find(i => i.name === item)
+    if (!src) return { error: `素材がない: ${item}`, inventory: inv() }
+    const n = src.count
+    // かまどが近くに必要（なければ手持ちから設置）
+    const furnaceId = bot.registry.blocksByName.furnace.id
+    let furnace = bot.findBlock({ matching: furnaceId, maxDistance: 8 })
+    if (!furnace) {
+      const placed = await placeBlockNearby('furnace')
+      if (placed.error) return { error: `かまどがない（${placed.error}）`, inventory: inv() }
+      furnace = bot.findBlock({ matching: furnaceId, maxDistance: 8 })
+    }
+    // 燃料: coal 優先（1個=8製錬）、なければ板（1枚=1.5製錬）
+    const coal = bot.inventory.items().find(i => i.name === 'coal')
+    const planks = bot.inventory.items().find(i => i.name.endsWith('_planks'))
+    let fuelCmd = null
+    if (coal && coal.count >= Math.ceil(n / 8)) fuelCmd = `/clear Becky coal ${Math.ceil(n / 8)}`
+    else if (planks && planks.count >= Math.ceil(n / 1.5)) fuelCmd = `/clear Becky ${planks.name} ${Math.ceil(n / 1.5)}`
+    else return { error: `燃料が足りない（coal か 板が必要）`, inventory: inv() }
+    if (furnace) {
+      bot.pathfinder.setGoal(new goals.GoalLookAtBlock(furnace.position, bot.world))
+      await waitGoal(10000)
+    }
+    bot.chat(fuelCmd); await sleep(200)
+    bot.chat(`/clear Becky ${item} ${n}`); await sleep(200)
+    await sleep(Math.min(8000, 1200 * n))  // 製錬してる時間（かまどの前で待つ画）
+    bot.chat(`/give Becky ${product} ${n}`); await sleep(800)
+    await lookHorizon()
+    return { done: true, smelted: `${item}x${n}`, got: `${product}x${n}`, inventory: inv() }
   },
   async attack_nearest() {
     const target = bot.nearestEntity(e => e.type === 'hostile' || e.type === 'animal' || e.type === 'mob')
@@ -174,11 +217,11 @@ const actions = {
   },
 }
 
-async function placeTableNearby() {
+async function placeBlockNearby(itemName) {
   const { Vec3 } = require('vec3')
-  const tableItem = bot.inventory.items().find(i => i.name === 'crafting_table')
-  if (!tableItem) return { error: 'no crafting_table in inventory' }
-  await bot.equip(tableItem, 'hand')
+  const item = bot.inventory.items().find(i => i.name === itemName)
+  if (!item) return { error: `no ${itemName} in inventory` }
+  await bot.equip(item, 'hand')
   const p = bot.entity.position.floored()
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [0, 2]]) {
     const ref = bot.blockAt(p.offset(dx, -1, dz))
@@ -190,7 +233,15 @@ async function placeTableNearby() {
       } catch (e) { /* 次の候補へ */ }
     }
   }
-  return { error: 'no spot to place crafting_table' }
+  return { error: `no spot to place ${itemName}` }
+}
+
+function placeTableNearby() { return placeBlockNearby('crafting_table') }
+
+// 製錬レシピ（原料 → 産物）。燃料は coal 優先、なければ板（coal 1=8個 / 板 1=1.5個）
+const SMELT_MAP = {
+  raw_iron: 'iron_ingot', raw_gold: 'gold_ingot', raw_copper: 'copper_ingot',
+  cobblestone: 'stone', sand: 'glass', beef: 'cooked_beef', porkchop: 'cooked_porkchop',
 }
 
 function waitGoal(timeoutMs) {
