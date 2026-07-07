@@ -319,8 +319,12 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     seg_in = "".join(f"[sv{i}][sa{i}]" for i in range(len(segs)))
     parts.append(f"{seg_in}concat=n={len(segs)}:v=1:a=1[v1][a1]")
     if avan:
-        parts.append(f"[2:v]trim={avan[0]:.3f}:{avan[1]:.3f},setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=25[va]")
-        parts.append(f"[2:a]atrim={avan[0]:.3f}:{avan[1]:.3f},asetpts=PTS-STARTPTS,{af}[aa]")
+        # アバン→OP の継ぎ目はフェードで落とす（映像+音声 0.6s、ぶつ切り対策 2026-07-07 ゆうFB）
+        fst = max(0.0, avan_len - 0.6)
+        parts.append(f"[2:v]trim={avan[0]:.3f}:{avan[1]:.3f},setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=25,"
+                     f"fade=t=out:st={fst:.3f}:d=0.6[va]")
+        parts.append(f"[2:a]atrim={avan[0]:.3f}:{avan[1]:.3f},asetpts=PTS-STARTPTS,{af},"
+                     f"afade=t=out:st={fst:.3f}:d=0.6[aa]")
         parts.append(f"[va][aa][v0][a0][v1][a1][v2][a2]concat=n=4:v=1:a=1[vc][ac]")
     else:
         parts.append(f"[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vc][ac]")
