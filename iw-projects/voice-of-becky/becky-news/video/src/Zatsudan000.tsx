@@ -150,10 +150,10 @@ export const Zatsudan000: React.FC = () => {
       {/* 本編音声（連結済みフル尺） */}
       <Audio src={staticFile("audio-zatsudan000.wav")} />
       {/* SE は映像側から（音声トラックに焼き込まない = タイミング調整が効く） */}
-      <Sequence from={0} durationInFrames={sec(1.0)}><Audio src={staticFile("se_jingle.wav")} /></Sequence>
-      <Sequence from={sec(C_S)} durationInFrames={sec(0.4)}><Audio src={staticFile("se_pop.wav")} /></Sequence>
-      <Sequence from={sec(D_S)} durationInFrames={sec(0.4)}><Audio src={staticFile("se_pop.wav")} /></Sequence>
-      <Sequence from={sec(E_S)} durationInFrames={sec(0.7)}><Audio src={staticFile("se_dadan.wav")} /></Sequence>
+      <Sequence from={0} durationInFrames={sec(1.0)}><Audio src={staticFile("se_jingle.wav")} volume={1.8} /></Sequence>
+      <Sequence from={sec(C_S)} durationInFrames={sec(0.4)}><Audio src={staticFile("se_pop.wav")} volume={1.8} /></Sequence>
+      <Sequence from={sec(D_S)} durationInFrames={sec(0.4)}><Audio src={staticFile("se_pop.wav")} volume={1.8} /></Sequence>
+      <Sequence from={sec(E_S)} durationInFrames={sec(0.7)}><Audio src={staticFile("se_dadan.wav")} volume={1.6} /></Sequence>
       <JitakuFrame frame={frame} layer="back" />
       <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
       <JitakuFrame frame={frame} layer="front" tvContent={tvContentAt(t)} tvFlash={tvFlashAt(t)} topicEmphasis={emphasisAt(t)} />

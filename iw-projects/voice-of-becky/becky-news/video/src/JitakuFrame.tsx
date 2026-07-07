@@ -327,7 +327,7 @@ export const JitakuFrame: React.FC<{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 30 + emph * 3,
+            fontSize: 46 + emph * 4,
             fontWeight: 800,
             letterSpacing: "0.04em",
             color: INK,

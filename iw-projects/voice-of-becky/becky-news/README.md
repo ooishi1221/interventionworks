@@ -86,6 +86,31 @@ Cast の音声をラジオブース動画にして YouTube にフル尺で上げ
 4. **サムネイルの文字入れ**: 動画からフレーム抽出+タイトル文字を乗せたサムネ専用コンポジション（Remotion still で生成）→ YouTube API の thumbnails.set で自動設定までパイプラインに組める
 5. **オープニング**: ラジオ版オープナー（5秒程度。「Becky's Cast」タイトルカード+ブースの ON AIR が点灯する演出+ジングル。ニュースの速報オープナーの姉妹版）
 
+## 雑談動画の作り方（2026-07-07 確立、#000 で実証。後世のベッキーへ）
+
+自宅フレームで「お題について画像を見せながら話す」動画。**台本に演出指示を書けば動画になる**仕組みの初号機。
+
+### 手順（#000 の as-built、所要 約1時間）
+1. **台本を書く（私の仕事、委譲禁止）**: `episodes/zatsudan-NNN/daihon.md`。ブロック A〜F 形式で、各ブロックに演出指示 `[表情: egao/doyagao/odorokigao/teregao...]` `[モーション: ojigi/tewohuru/odoroku]` `[画像: テレビ窓に何を出すか]` `[SE: jingle/pop/dadan]` を書く。**画像は「話す内容の実物スクショ」を使うと話とビジュアルが一致して強い**
+2. **TTS 収録**: コハク（AivisSpeech localhost:10101、speaker 1878365376、speedScale 1.0）でブロック毎に wav 化+尺検証（3秒未満は事故、Kyoko事件対策）。atama-kawaru-hi/ の python がテンプレ
+3. **SE**: `episodes/zatsudan-000/se_*.wav` に3種ある（jingle=ド・ミ・ソ・ド↑ / pop=ピコン / dadan=ジャジャン、全部 ffmpeg sine 合成）。新しい SE も ffmpeg 合成で足せる
+4. **素材組み立て**: `scripts/build-zatsudan-assets.sh`（ブロック連結+境界JSON→Rhubarb→RMS→public配置）
+5. **コンポジション**: `video/src/Zatsudan000.tsx` を複製して境界・演出タイムラインを新台本に合わせる（表情は trackAt のキーフレーム配列、SE は `<Sequence><Audio volume={1.6-1.8}>`）。フレームは `JitakuFrame.tsx`（tvContent: off/img1/img2、topicEmphasis、お題テキスト）
+6. **検証**: tsc → フルレンダー → フレーム抽出（表情・画像切替・モーションの山場）→ ゆう目視 → 配信フロー（X/YouTube）
+
+### 実証済みの演出パターン（#000）
+- オープニング: jingle@0 + ojigi + 薄 egao
+- お題提示: topicEmphasis で帯点灯
+- 画像出し: pop + tvContent 切替（フラッシュ数フレーム）+ doyagao
+- びっくり: dadan + odoroku（両手上げ、1回再生・idle 重み減で二重加算回避）+ odorokigao→teregao
+- 締め: tewohuru + egao フル（**EyeSmile+EyeOpen 減衰、Pilot008 の egaoN 処理必須**——忘れると半目/閉じ目事故）
+
+### 罠（このプロジェクト共通+雑談固有）
+- 共通罠5点は本 README 上部（--gl=angle / PIXI ティッカー / Rhubarb -r phonetic / TTS 尺検証 / 声はコハク）
+- テレビ窓の画像は objectFit: cover（クロップ）。全景見せたい画像は contain に
+- SE 音量はデフォルトだと小さい。volume 1.6〜1.8 目安（ゆうFB 2026-07-07）
+- お題帯フォントは 46px 基準（30px は小さすぎた、同FB）
+
 ## 残タスク（次回）
 
 1. ~~配信スケジュール策定~~ → **決定（2026-07-06）: タネがある日だけ、morning_cast 後にベッキーが動画化判定**。自動トリガー実装は 4 とセット
