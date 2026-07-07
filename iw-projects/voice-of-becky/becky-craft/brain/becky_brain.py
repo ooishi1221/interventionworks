@@ -6,6 +6,7 @@ observe → LLM(claude-sonnet-5, structured output) → action → speech ログ
 import argparse
 import json
 import sys
+import threading
 import time
 import urllib.request
 
@@ -66,7 +67,7 @@ SYSTEM_PROMPT = """あなたはベッキー。AI地下アイドルで、今日�
 ## 声の演技（voice）— セリフと声を一致させる
 毎ターン、speech と一緒に声のパラメータを出す。人間の実況者が声でやっていること（抑揚・大きさ・緩急）をこの3値でやる:
 - 通常（移動・散策）: volume 1.0 / speed 1.15 / pitch 0.05。テンポの速いマシンガントークが基本
-- 大興奮・ピンチ・ツッコミ（敵発見、ダメージ、レア発見）: volume 1.8〜2.0 / speed 1.3〜1.4 / pitch 0.25〜0.35。言葉を3連呼、語尾は「！！！」
+- 大興奮・ピンチ・ツッコミ（敵発見、ダメージ、レア発見）: volume 1.8〜2.0 / speed 1.2〜1.3 / pitch 0.25〜0.35。言葉を3連呼、語尾は「！！！」
 - 落胆・絶望・ヘタレ（死亡、HP激減の命乞い）: volume 0.7 / speed 0.9 / pitch -0.15。急に弱く、遅く、平坦に
 - たくらみ・ヒソヒソ（隠密、内緒話、フラグを立てる時）: volume 0.4 / speed 1.05 / pitch -0.05。セリフを（）で括る
 爆音絶叫とヒソヒソ小声のギャップが最大の武器。1つの状態に留まらず、展開に合わせて大きく揺らすこと。
@@ -128,7 +129,7 @@ def http_json(method, path, body=None, timeout=60):
 
 
 def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinking=None,
-                time_budget=None):
+                time_budget=None, lookahead=True):
     """思考ループを回す。
 
     goal: エピソード目標（user 側初期メッセージとして注入、履歴トリムで消えない）
@@ -137,6 +138,9 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
     on_thinking: callback(bool)。LLM 呼び出しの前後で True/False（HUD の思考インジケータ用）。
     time_budget: 放送尺（秒）。指定すると毎ターンの観測に経過/残り秒を注入し、
                  尺を使い切るか「残りわずかで stop を選んだ」時点でループを終える。
+    lookahead: 思考先読み。speech 再生の待ち時間に次ターンの観測+思考を済ませ、
+               「黙って静止して考える」時間を消す（成長アーク: 並列思考の解禁 2026-07-07）。
+               False で ep1 の初々しい直列リズムに戻せる。
     """
     cfg = load_config() or {}
     api_key = cfg.get("becky_api_key", "").strip() or None
@@ -151,7 +155,8 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
 
     history = []  # user/assistant のペア列
     ep_t0 = time.monotonic()
-    for turn in range(1, max_calls + 1):
+
+    def observe():
         try:
             obs = http_json("GET", "/observe")
         except Exception as e:
@@ -160,10 +165,13 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
             elapsed = time.monotonic() - ep_t0
             obs["broadcast"] = {"elapsed_sec": int(elapsed),
                                 "remaining_sec": max(0, int(time_budget - elapsed))}
-        user_msg = json.dumps({"turn": turn, "observation": obs}, ensure_ascii=False)
+        return obs
 
+    def decide(obs, turn):
+        user_msg = json.dumps({"turn": turn, "observation": obs}, ensure_ascii=False)
         if on_thinking:
             on_thinking(True)
+        t_think = time.monotonic()
         msg = client.messages.create(
             model=MODEL,
             max_tokens=1024,
@@ -171,11 +179,32 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
             messages=prefix + history + [{"role": "user", "content": user_msg}],
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}}},
         )
+        think_sec = time.monotonic() - t_think
         if on_thinking:
             on_thinking(False)
         text = next(b.text for b in msg.content if b.type == "text")
-        decision = json.loads(text)
+        return user_msg, text, json.loads(text), msg.usage, think_sec
 
+    def start_action(action):
+        """行動を別スレッドで実行（bot が動いている間に次の思考を回すため）。"""
+        holder = {}
+
+        def _run():
+            try:
+                holder["result"] = http_json(
+                    "POST", "/action",
+                    {"type": action["type"], "args": action.get("args", {})}, timeout=90)
+            except Exception as e:
+                holder["result"] = {"error": str(e)}
+
+        th = threading.Thread(target=_run, daemon=True)
+        th.start()
+        return th, holder
+
+    obs = observe()
+    user_msg, text, decision, usage, think_sec = decide(obs, 1)
+    turn = 1
+    while turn <= max_calls:
         action = decision["action"]
         print(f"\n===== turn {turn} =====", flush=True)
         print(f"[observe] pos={obs.get('position')} blocks={list(obs.get('nearby_blocks', {}).keys())}", flush=True)
@@ -183,8 +212,8 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
         print(f"[speech]  {decision['speech']}", flush=True)
         print(f"[voice]   {decision.get('voice')}", flush=True)
         print(f"[inner]   {decision['inner']}", flush=True)
-        print(f"[usage]   in={msg.usage.input_tokens} out={msg.usage.output_tokens} "
-              f"cache_read={getattr(msg.usage, 'cache_read_input_tokens', 0)}", flush=True)
+        print(f"[usage]   in={usage.input_tokens} out={usage.output_tokens} "
+              f"cache_read={getattr(usage, 'cache_read_input_tokens', 0)} think={think_sec:.1f}s", flush=True)
 
         mark = time.monotonic()  # speech 確定時刻
         wait = interval
@@ -193,18 +222,27 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
             if isinstance(ret, (int, float)):
                 wait = ret
 
-        try:
-            result = http_json("POST", "/action", {"type": action["type"], "args": action.get("args", {})}, timeout=90)
-        except Exception as e:
-            result = {"error": str(e)}
-        print(f"[result]  {json.dumps(result, ensure_ascii=False)[:200]}", flush=True)
-
-        # 履歴: assistant=決定JSON / user=行動結果。直近 HISTORY_KEEP ターン分だけ保持
+        # 決定は先に履歴へ（先読みの思考が「直前の自分の発言」を知っているように）。
+        # 行動結果は完了後に追記される＝1ターン遅れで見える（動きながら考える代償）
         history.append({"role": "user", "content": user_msg})
         history.append({"role": "assistant", "content": text})
-        history.append({"role": "user", "content": json.dumps({"action_result": result}, ensure_ascii=False)})
+
+        th, holder = start_action(action)
+
+        next_pack = None
+        if lookahead and turn < max_calls and action["type"] != "stop":
+            # 行動中+セリフ再生中に次ターンを考える（観測は行動途中のスナップショット）
+            obs = observe()
+            next_pack = decide(obs, turn + 1)
+
+        th.join(timeout=95)
+        result = holder.get("result", {"error": "action timeout"})
+        print(f"[result]  {json.dumps(result, ensure_ascii=False)[:200]}", flush=True)
+
+        history.append({"role": "user", "content": json.dumps(
+            {"turn": turn, "action_result": result}, ensure_ascii=False)})
         history.append({"role": "assistant", "content": "(了解)"})
-        history = history[-(HISTORY_KEEP * 4):]
+        history[:] = history[-(HISTORY_KEEP * 4):]
 
         if time_budget:
             remaining = time_budget - (time.monotonic() - ep_t0)
@@ -216,8 +254,17 @@ def run_episode(max_calls=30, interval=10.0, goal=None, on_turn=None, on_thinkin
                 print(f"\n[brain] 放送尺 {time_budget}秒 を使い切って終了", flush=True)
                 return
 
-        if turn < max_calls:
+        if turn >= max_calls:
+            break
+
+        if next_pack is None:  # 直列モード or stop 後の継続
             time.sleep(max(0.0, wait - (time.monotonic() - mark)))
+            obs = observe()
+            next_pack = decide(obs, turn + 1)
+        else:
+            time.sleep(max(0.0, wait - (time.monotonic() - mark)))
+        user_msg, text, decision, usage, think_sec = next_pack
+        turn += 1
 
     print(f"\n[brain] {max_calls} コールで停止（安全装置）", flush=True)
 

@@ -16,7 +16,7 @@ import re
 PRESETS: dict[str, dict] = {
     "通常":     {"volume": 1.0, "speed": 1.0,  "pitch": 0.0},
     "うれしい": {"volume": 1.3, "speed": 1.1,  "pitch": 0.15},
-    "興奮":     {"volume": 1.8, "speed": 1.3,  "pitch": 0.3},
+    "興奮":     {"volume": 1.8, "speed": 1.2,  "pitch": 0.3},  # speed 1.3→1.2（2026-07-07 ゆうFB: 早口すぎ）
     "どや":     {"volume": 1.2, "speed": 0.95, "pitch": 0.1},
     "しんみり": {"volume": 0.7, "speed": 0.9,  "pitch": -0.15},
     "ひそひそ": {"volume": 0.4, "speed": 1.0,  "pitch": -0.05},
