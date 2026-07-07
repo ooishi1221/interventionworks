@@ -48,6 +48,8 @@ def main():
     p.add_argument("--tags", default="", help="カンマ区切り")
     p.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
     p.add_argument("--thumbnail", default=None, help="カスタムサムネイル画像（png/jpg、2MB以下）")
+    p.add_argument("--publish-at", default=None,
+                   help="予約公開の日時（JST、例: 2026-07-08T17:00）。指定すると非公開でアップされ、その時刻に自動公開される")
     p.add_argument("--dry-run", action="store_true", help="リクエスト内容を表示して終了（アップロードしない）")
     a = p.parse_args()
 
@@ -63,6 +65,13 @@ def main():
         },
         "status": {"privacyStatus": a.privacy, "selfDeclaredMadeForKids": False},
     }
+    if a.publish_at:
+        # 予約公開: JST → UTC ISO8601。YouTube 側の仕様で privacyStatus は private 必須
+        from datetime import datetime, timedelta, timezone
+        jst = timezone(timedelta(hours=9))
+        dt = datetime.fromisoformat(a.publish_at).replace(tzinfo=jst)
+        body["status"]["privacyStatus"] = "private"
+        body["status"]["publishAt"] = dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     if a.dry_run:
         print("[dry-run] videos.insert part=snippet,status")
