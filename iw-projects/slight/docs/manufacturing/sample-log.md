@@ -76,6 +76,21 @@ Stella より「red circle position にインジケーターを入れる変更�
 
 ---
 
+## 2026-07-08 — Stella から新サンプル完成報告（M/S サイズ改善）
+
+**Stella からのメール（原文英語）:**
+> The latest glove samples are all finished. I will send out one piece each of size M and S today, and keep one of each as a reference for mass production sizing.
+> This cycle was delayed because we remade two new samples. We have improved the sizing for both M and S.
+
+**要点:**
+- M / S サイズのグローブサンプルが完成、各1点ずつ本日発送
+- 参照用に各1点ずつ Stella 側で量産サイジング用に保管
+- 今サイクルは2サンプルの作り直しにより遅延、M/S 両サイズのサイジングを改善済み
+
+**次のアクション:** サンプル到着待ち。到着後、身長別着用感チェック（アンナ視点の身体感覚含む）を実施し、この下に追記する。
+
+---
+
 ## サンプル第 1 弾 — 受領済（日付未記録）
 
 CLAUDE.md に「サンプル第一弾 到着済」の記載のみ。詳細ログは未整備。
