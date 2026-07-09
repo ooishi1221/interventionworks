@@ -576,6 +576,11 @@
       <div class="updated" id="lastUpdated">SYNC: --</div>
     </div>
 
+    <!-- ── エラーバナー：稼働してないジョブがあれば1st viewで即わかるように（2026-07-10 追加） ── -->
+    <div id="errorBanner" style="display:none;background:#3a1414;border:1px solid #a33;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#f5b5b5;font-size:13px;cursor:pointer;" onclick="if (document.getElementById('sec-media').classList.contains('closed')) toggleSec('media'); document.getElementById('cronList').scrollIntoView({behavior:'smooth', block:'center'});">
+      <span id="errorBannerText"></span>
+    </div>
+
     <!-- mobile shortcuts（サイドバーが隠れるスマホ用） -->
     <div class="mobile-consoles">
       <a href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener"><svg data-lucide="bar-chart-3"></svg>X Analytics</a>
@@ -733,7 +738,8 @@
     </div>
     </div><!-- /sec-cost -->
 
-    <!-- ── Section: AI動向 ── -->
+    <!-- ── Section: AI動向（2026-07-10 一旦オフ、ゆうFB「有用なデータになってない」。復活は下記コメント解除 ── -->
+    <!--
     <button class="sec-label" aria-expanded="false" aria-controls="sec-intel" onclick="toggleSec('intel')">AI動向<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-intel">
 
@@ -755,7 +761,9 @@
       <div id="grokTweetsList" style="margin-top:14px;"><div class="empty">loading...</div></div>
     </div>
 
-    </div><!-- /sec-intel -->
+    </div>
+    -->
+    <!-- /sec-intel -->
 
     <!-- ── Section: TOOLS ── -->
     <button class="sec-label" aria-expanded="false" aria-controls="sec-tools" onclick="toggleSec('tools')">TOOLS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
@@ -873,6 +881,17 @@ function buildCronStatus(cron) {
   if ($('cronMeta') && cron?.updated_at) $('cronMeta').textContent = fmtAgo(cron.updated_at);
   $('cronSummary').innerHTML = [['ok', '稼働', cnt.ok], ['error', 'エラー', cnt.error], ['stale', '遅延', cnt.stale], ['never_ran', '未実行', cnt.never_ran]]
     .map(([k, label, n]) => `<span class="cron-tag"><span class="cron-dot ${dotCls[k]}"></span>${label} <b>${n}</b></span>`).join('');
+
+  const banner = $('errorBanner');
+  if (banner) {
+    const broken = cnt.error || 0;
+    if (broken > 0) {
+      $('errorBannerText').textContent = `⚠ 定期タスク ${broken}件がエラー状態 — クリックで詳細へ`;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
 
   const lastTxt = j => j.status === 'never_ran' ? '未実行' : (j.last_run ? fmtAgo(j.last_run) : '--');
   el.innerHTML = jobs.map(j => `
@@ -1088,7 +1107,8 @@ async function loadAll() {
     $('sysBrain').textContent = (status.brain_main || '').replace('Claude ', '');
   }
 
-  // ── マイケルレポート ──
+  // ── マイケルレポート / grok 突撃候補（2026-07-10 AI動向セクション一旦オフにつき無効化） ──
+  /*
   const report = news?.michael_report;
   if (report) {
     $('michaelReport').textContent = report;
@@ -1097,7 +1117,6 @@ async function loadAll() {
     $('michaelReport').innerHTML = '<div class="empty">レポートなし（次回Observer実行時に生成）</div>';
   }
 
-  // ── grok 突撃候補 ──
   if (grokTweets?.candidates?.length) {
     const items = grokTweets.candidates;
     $('grokTweetsAt').textContent = fmtAgo(grokTweets.updated_at);
@@ -1115,6 +1134,7 @@ async function loadAll() {
   } else {
     $('grokTweetsList').innerHTML = '<div class="empty">候補なし（次回 becky_search.py 実行時に更新）</div>';
   }
+  */
 
   // ── メディア週次分析レポート ──
   if (mediaReport?.report) {
