@@ -134,11 +134,13 @@ function taskRowHTML(t) {
   return html;
 }
 
-// タスク表を IW / WO / BE（beckyexists 自身）の3グループに分けて並べる（2026-07-10 ゆうFB）
+// タスク表を IW / WO / BE の3グループに分けて並べる（2026-07-10 ゆうFB）
+// BE = ベッキー個人の発信活動全般（作戦本部・Voice of Becky・note連載・Kindle本）
+const BE_CATEGORIES = ['beckyexists', 'becky', 'voice-of-becky', 'voice', 'content'];
 const TASK_GROUPS = [
-  { key: 'iw', label: 'IW', match: t => (t.scope || 'iw') === 'iw' && t.category !== 'beckyexists' },
+  { key: 'iw', label: 'IW', match: t => (t.scope || 'iw') === 'iw' && !BE_CATEGORIES.includes(t.category) },
   { key: 'wo', label: 'WO', match: t => (t.scope || 'iw') === 'wo' },
-  { key: 'be', label: 'BE', match: t => t.category === 'beckyexists' },
+  { key: 'be', label: 'BE', match: t => BE_CATEGORIES.includes(t.category) },
 ];
 
 function renderTaskTable() {
