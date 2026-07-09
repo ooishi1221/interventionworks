@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-09T00:22:00+00:00",
+  "updated_at": "2026-07-09T04:26:00+00:00",
   "tasks": [
     {
       "id": "wo-yaguchi-fsl-sns",
@@ -14,6 +14,19 @@
       "note": "7/3バンナムX自動化として着手→7/6方針転換: 自動化ツールじゃなく矢口さん本人にClaude Code相棒を配る（WO初の非エンジニアAI-native onboarding）。handover/SETUP.md+相棒CLAUDE.md v2完成（監修資料pptx実物で検証、赤字特殊指示表・4大ミス先回り・改善ヒアリング内蔵）、7/6ゆうがChatwork送付済み。ゆうの温度「わからなければ連絡くるやろ」=待ち。次: 矢口さんの初回起動フォロー / 定着したらチーム横展開パターン化。commit 0b5f8ab / 7/7ゆう「これ完了でOK」でクローズ",
       "icon": "🤝",
       "completed_at": "2026-07-08"
+    },
+    {
+      "id": "wo-yaguchi-sheets-access",
+      "scope": "wo",
+      "label": "矢口さん Claude Code — Google Sheets 参照アクセス設計",
+      "category": "wo",
+      "status": "in_progress",
+      "priority": "low",
+      "start": "2026-07-09",
+      "updated_at": "2026-07-09",
+      "due": null,
+      "note": "矢口さんが自分のClaude Codeで「SNS投稿施策」シートを常時最新で読めるようにする検討（自動投稿パイプラインとは別、read-only参照用）。OAuth案は却下——ウィットワンはGoogle Workspace/Cloud Identity未契約（admin.google.com確認済み）でTesting状態は7日でトークン失効。サービスアカウント方式に決定（アンディ設計、mcp-google-sheets使用、矢口さんは共有設定にメアド追加のみ・個人ログイン不要）。ゆうが「アカウント違うから待って」でGCP発行作業を中断、正しいGCPアカウント確認中。次: ゆうの確認待ち→サービスアカウント発行→矢口さんに共有依頼→SETUP.md/README.md追記。設計詳細: wo-projects/yaguchi/README.md",
+      "icon": "📊"
     },
     {
       "id": "becky-craft",
