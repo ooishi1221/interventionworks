@@ -134,20 +134,32 @@ function taskRowHTML(t) {
   return html;
 }
 
+// タスク表を IW / WO / BE（beckyexists 自身）の3グループに分けて並べる（2026-07-10 ゆうFB）
+const TASK_GROUPS = [
+  { key: 'iw', label: 'IW', match: t => (t.scope || 'iw') === 'iw' && t.category !== 'beckyexists' },
+  { key: 'wo', label: 'WO', match: t => (t.scope || 'iw') === 'wo' },
+  { key: 'be', label: 'BE', match: t => t.category === 'beckyexists' },
+];
+
 function renderTaskTable() {
-  const sorted = sortTaskList(_taskActive);
   const ind = (col) => _sortCol !== col ? '' : (_sortDir === 1 ? ' asc' : ' desc');
-  $('taskTable').innerHTML = `<div style="overflow-x:auto"><table class="task-tbl">
-      <thead><tr>
+  const head = `<thead><tr>
         <th class="sortable" onclick="doSort('label')">タスク<span class="sort-ind${ind('label')}"></span></th>
         <th class="sortable" onclick="doSort('status')">状態<span class="sort-ind${ind('status')}"></span></th>
         <th class="sortable" onclick="doSort('due')">期限<span class="sort-ind${ind('due')}"></span></th>
         <th class="sortable" onclick="doSort('updated')">更新<span class="sort-ind${ind('updated')}"></span></th>
         <th class="sortable" onclick="doSort('elapsed')">経過<span class="sort-ind${ind('elapsed')}"></span></th>
         <th>備考 / クリックでコメント</th>
-      </tr></thead>
-      <tbody>${sorted.map(taskRowHTML).join('')}</tbody>
-    </table></div>`;
+      </tr></thead>`;
+  $('taskTable').innerHTML = TASK_GROUPS.map(g => {
+    const tasks = _taskActive.filter(g.match);
+    if (!tasks.length) return '';
+    const sorted = sortTaskList(tasks);
+    return `<div class="task-group">
+      <div class="task-group-h">${g.label}<span class="task-group-count">${tasks.length}</span></div>
+      <div style="overflow-x:auto"><table class="task-tbl">${head}<tbody>${sorted.map(taskRowHTML).join('')}</tbody></table></div>
+    </div>`;
+  }).join('');
   if (window.lucide) lucide.createIcons();
 }
 
