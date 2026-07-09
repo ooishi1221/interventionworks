@@ -13,11 +13,25 @@ Usage:
 import json
 import os
 import re
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pychrome
+
+# ponytail: タブを閉じる際に pychrome の _recv_loop が閉じたソケットから読もうとして
+# 無害な例外を吐く（処理自体は完了済み）。cron_status の直近ログ判定が誤検知するので黙らせる
+_default_excepthook = threading.excepthook
+
+
+def _quiet_pychrome_recv_loop(args):
+    if "_recv_loop" in (args.thread.name if args.thread else ""):
+        return
+    _default_excepthook(args)
+
+
+threading.excepthook = _quiet_pychrome_recv_loop
 
 CDP_URL = "http://localhost:9223"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
