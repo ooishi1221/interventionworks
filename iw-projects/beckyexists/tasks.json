@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-08T01:10:00+00:00",
+  "updated_at": "2026-07-09T00:22:00+00:00",
   "tasks": [
     {
       "id": "wo-yaguchi-fsl-sns",
@@ -143,9 +143,9 @@
       "status": "waiting",
       "priority": "high",
       "start": "2026-06-24",
-      "updated_at": "2026-06-25",
+      "updated_at": "2026-07-09",
       "due": "2026-07-07",
-      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。池田さんに「朝会データで欲しかった正解の出力イメージ」もらう予定。面談データも使えるといい話あり。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf",
+      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。池田さんに「朝会データで欲しかった正解の出力イメージ」もらう予定。面談データも使えるといい話あり。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf / 7/9 裕司が池田さんFBを自分で確認中に動いた（催促フェーズ）",
       "icon": "🧠"
     },
     {
