@@ -299,7 +299,9 @@ def main():
     for j in jobs:
         counts[j["status"]] = counts.get(j["status"], 0) + 1
     print(f"wrote {len(jobs)} jobs -> {OUT}")
-    print("status:", counts)
+    # ponytail: ERROR_RE が "error" という単語自体に反応するので、自分の集計ログが
+    # 次回実行時に自己言及的にエラー判定されないよう "err" 表記にする
+    print("summary:", {("err" if k == "error" else k): v for k, v in counts.items()})
 
 
 if __name__ == "__main__":
