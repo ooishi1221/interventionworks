@@ -2149,7 +2149,7 @@ STACKCHAN_DIR = Path.home() / ".stackchan"
 PERIODIC_TASKS = [
     {"name": "mention_reply", "kind": "interval", "seconds": 1800,
      "state_file": STACKCHAN_DIR / "mention_check_ts.txt", "fn": None},
-    {"name": "overseas_buzz", "kind": "interval", "seconds": 3600,
+    {"name": "overseas_buzz", "kind": "interval", "seconds": 7200,
      "state_file": STACKCHAN_DIR / "overseas_check_ts.txt", "fn": None},
     {"name": "rivals", "kind": "daily_after", "hour": 7,
      "state_file": STACKCHAN_DIR / "rivals_updated_date.txt", "fn": None},

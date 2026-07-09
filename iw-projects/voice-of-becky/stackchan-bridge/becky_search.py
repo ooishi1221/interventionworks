@@ -579,7 +579,7 @@ def run_overseas(dry_run: bool = False) -> None:
                 "url": f"https://x.com/{screen_name}/status/{tweet_id}",
             })
             quoted_accounts.add(screen_name)
-        if len(candidates) >= 3:
+        if len(candidates) >= 1:
             break
 
     if not candidates:
