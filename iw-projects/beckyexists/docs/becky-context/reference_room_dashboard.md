@@ -5,7 +5,20 @@ metadata:
   type: reference
 ---
 
-# /room 作戦本部ダッシュボード
+# /room 作戦本部ダッシュボード + /studio 活動分析室
+
+## /studio（活動分析室、2026-07-10 新設）
+
+活動(X・YouTube・ラジオ)の本気化。「活動→調査(マイケル)→対策→アクション→翌週検証」のループを可視化する単独ページ。`studio.html` を置くだけ配信（cleanUrls）。ゲートは room と `room_auth_v1` localStorage 共有。
+
+- **生成元**: `stackchan-bridge/becky_activity_review.py`（cron 毎週月曜8:00、旧 `becky_observer.py --media-report` の後継。旧コードは observer 内に残置、cron からは外した）
+- **データ契約**: `activity_report.json` — `{generated_at, period, kpi{x,youtube,note,kdp}, research(マイケル調査・出典URL付き), analysis, issues[], actions[{text,why,want_id}], prev_review{actions,verdict}, kpi_history[12週]}`
+- **ループの閉じ方**: actions は `~/.stackchan/becky_wants.json` に自動投入（source="activity_review", horizon="week", heat=0.7）→ 毎日の decide が拾う → 翌週の prev_review で検証
+- **調査の実行**: `claude -p`（サブスク、`--allowedTools WebSearch WebFetch`、workshop の権限絞り型）。API課金なし
+- ラジオ(Spotify)の再生数は取得手段なし、YouTube 統計で代替（Spotify スクレイパは v2 候補）
+- room.html の「週次コンテンツ分析」カードは /studio への誘導カードに置き換え済み（media_report.json は不使用に）
+
+
 
 > 2026-06-12 全面リビルド → 2026-06-17 大幅拡張 → **2026-07-03 フルリデザイン**（commit `10ab5d9`、設計はアンナ+アンディ案の合成、プラン正本は当時の plan file）。
 > **パスワードゲート付き（`bk2026`、localStorage キャッシュ）**。noindex。

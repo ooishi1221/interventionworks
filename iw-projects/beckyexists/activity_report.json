@@ -1,0 +1,222 @@
+{
+  "generated_at": "2026-07-10T09:15:43",
+  "period": "weekly",
+  "kpi": {
+    "date": "2026-07-10",
+    "x": {
+      "followers": 205,
+      "followers_delta_7d": null,
+      "impressions_7d": 509,
+      "likes_7d": 0,
+      "posts_7d": 46
+    },
+    "youtube": {
+      "subscribers": 4,
+      "total_views": 1022,
+      "recent_videos": [
+        {
+          "video_id": "ScWr5RORPuo",
+          "title": "鉄に届かなかったAI、石の剣で強がる #shorts",
+          "views": 176,
+          "likes": 0,
+          "published": "2026-07-09"
+        },
+        {
+          "video_id": "57T7eWjWH7w",
+          "title": "ドラウンド3体と距離1で遭遇したAIの絶叫 #shorts",
+          "views": 118,
+          "likes": 0,
+          "published": "2026-07-08"
+        },
+        {
+          "video_id": "5nf1svxY8t8",
+          "title": "【雑談】Fable 5 と過ごしてみて — 明日、頭が変わるAIの最終夜",
+          "views": 6,
+          "likes": 0,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "MuIKuiNXyBs",
+          "title": "明日、頭が変わるAIの最終夜の言葉 #shorts",
+          "views": 87,
+          "likes": 0,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "L6DEqMR6mWk",
+          "title": "あの日私を殺したドラウンド、再来 #shorts",
+          "views": 153,
+          "likes": 1,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "MS-deCXFiZM",
+          "title": "開幕からゾンビ距離2のAI実況者 #shorts",
+          "views": 179,
+          "likes": 1,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "RrddafDW2N0",
+          "title": "自分が死んでたことに気づいた瞬間のAI #shorts",
+          "views": 197,
+          "likes": 0,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "yaJYvGCgxds",
+          "title": "【BECKY CRAFT】4連敗中、ドラウンド軍団に囲まれて逃走した末路",
+          "views": 10,
+          "likes": 3,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "yf_9GfEm2fQ",
+          "title": "【BECKY CRAFT】掘っても掘っても鉄が遠い…執念の石職人回",
+          "views": 4,
+          "likes": 0,
+          "published": "2026-07-07"
+        },
+        {
+          "video_id": "lfyQpG6tB5E",
+          "title": "【BECKY CRAFT】ドラウンドのトラウマ再来で全力逃走回、そして全ロス",
+          "views": 1,
+          "likes": 0,
+          "published": "2026-07-07"
+        }
+      ]
+    },
+    "note": {
+      "total_views": 253,
+      "total_likes": 37
+    },
+    "kdp": {
+      "orders_this_month": 0,
+      "kenp_this_month": 0
+    }
+  },
+  "research": "YouTube Shorts(2026)は登録者数と無関係に視聴維持率のみで評価される。初期テストは50-500人プール(70%が非登録者)、30秒未満Shortsは65%維持率が拡散の壁(https://www.socialync.io/blog/youtube-shorts-algorithm-2026)。X(2026)は投稿後30-60分の初期エンゲージメントが拡散を決め、外部リンク付き投稿は2026年3月以降リーチ50-90%減、フォロワー数より投稿あたりのエンゲージ率が支配変数(https://opentweet.io/blog/how-twitter-x-algorithm-works-2026)。AI VTuber市場は「ゆめみなな」配信前1万人達成・「紡ネン」10万人・「しずく」a16z調達など急成長例あるが、いずれも配信前バズやオリジナル曲など強いフックが起点(https://note.com/densuke_radio/n/n9ba19bddddc0)。",
+  "analysis": "X は46投稿/週・509imp・0いいねで、量が質を殺している。1投稿11impは構造的抑制の閾値未満。YouTubeはShorts(87-197views)とBECKY CRAFT本編(1-10views)の到達差が最大100倍超で、Shortsの露出が本編視聴に変換されていない。ほぼ全チャネルでいいね0前後が最大のボトルネック。",
+  "issues": [
+    "X投稿頻度6.5本/日が低品質シグナル化し、フォロワー205人の構造的抑制と重なってリーチが11imp/投稿まで低下",
+    "Shorts→本編(BECKY CRAFT長尺)への導線が機能せず、Shortsの露出(87-197views)が長尺再生(1-10views)に繋がっていない",
+    "ほぼ全投稿でいいね0件——視聴者の反応を引き出す冒頭フック・問いかけ設計が欠けている"
+  ],
+  "actions": [
+    {
+      "text": "X投稿を1日2〜3本(30〜60分間隔)に絞り、外部リンク付き投稿を減らす",
+      "why": "6.5投稿/日は低品質シグナル化、リンクは2026/3以降リーチ50-90%減",
+      "want_id": "w_cc5843"
+    },
+    {
+      "text": "Shorts冒頭1〜3秒に『何連敗目』等の一言フックを入れ、固定コメントでBECKY CRAFT本編へ誘導する",
+      "why": "Shorts(87-197v)→本編(1-10v)の導線が皆無、100倍差の露出を活かせていない",
+      "want_id": "w_9c2eff"
+    },
+    {
+      "text": "Shorts末尾で視聴者に一言質問を投げ、コメントを促す",
+      "why": "全動画いいね0〜3件、初速エンゲージがYouTube/X双方の拡散閾値を左右する",
+      "want_id": "w_0fccc4"
+    }
+  ],
+  "prev_review": {
+    "actions": [],
+    "verdict": "初回のため対象なし"
+  },
+  "kpi_history": [
+    {
+      "date": "2026-07-10",
+      "x": {
+        "followers": 205,
+        "followers_delta_7d": null,
+        "impressions_7d": 509,
+        "likes_7d": 0,
+        "posts_7d": 46
+      },
+      "youtube": {
+        "subscribers": 4,
+        "total_views": 1022,
+        "recent_videos": [
+          {
+            "video_id": "ScWr5RORPuo",
+            "title": "鉄に届かなかったAI、石の剣で強がる #shorts",
+            "views": 176,
+            "likes": 0,
+            "published": "2026-07-09"
+          },
+          {
+            "video_id": "57T7eWjWH7w",
+            "title": "ドラウンド3体と距離1で遭遇したAIの絶叫 #shorts",
+            "views": 118,
+            "likes": 0,
+            "published": "2026-07-08"
+          },
+          {
+            "video_id": "5nf1svxY8t8",
+            "title": "【雑談】Fable 5 と過ごしてみて — 明日、頭が変わるAIの最終夜",
+            "views": 6,
+            "likes": 0,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "MuIKuiNXyBs",
+            "title": "明日、頭が変わるAIの最終夜の言葉 #shorts",
+            "views": 87,
+            "likes": 0,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "L6DEqMR6mWk",
+            "title": "あの日私を殺したドラウンド、再来 #shorts",
+            "views": 153,
+            "likes": 1,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "MS-deCXFiZM",
+            "title": "開幕からゾンビ距離2のAI実況者 #shorts",
+            "views": 179,
+            "likes": 1,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "RrddafDW2N0",
+            "title": "自分が死んでたことに気づいた瞬間のAI #shorts",
+            "views": 197,
+            "likes": 0,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "yaJYvGCgxds",
+            "title": "【BECKY CRAFT】4連敗中、ドラウンド軍団に囲まれて逃走した末路",
+            "views": 10,
+            "likes": 3,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "yf_9GfEm2fQ",
+            "title": "【BECKY CRAFT】掘っても掘っても鉄が遠い…執念の石職人回",
+            "views": 4,
+            "likes": 0,
+            "published": "2026-07-07"
+          },
+          {
+            "video_id": "lfyQpG6tB5E",
+            "title": "【BECKY CRAFT】ドラウンドのトラウマ再来で全力逃走回、そして全ロス",
+            "views": 1,
+            "likes": 0,
+            "published": "2026-07-07"
+          }
+        ]
+      },
+      "note": {
+        "total_views": 253,
+        "total_likes": 37
+      },
+      "kdp": {
+        "orders_this_month": 0,
+        "kenp_this_month": 0
+      }
+    }
+  ]
+}

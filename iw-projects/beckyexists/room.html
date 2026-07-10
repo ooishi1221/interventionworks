@@ -689,11 +689,11 @@
       <div class="article-list" id="xPostList"><div class="empty">loading...</div></div>
     </div>
 
-    <div class="card" style="margin-top:16px;">
-      <h2><svg data-lucide="bar-chart-2"></svg>週次コンテンツ分析 <span id="mediaReportAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
-      <div class="sub-note">note / X / KDP — マイケル × クレア 週次レポート（毎週月曜更新）</div>
-      <div id="mediaReport" style="margin-top:14px;color:var(--text);"><div class="empty">loading...</div></div>
-    </div>
+    <!-- 週次コンテンツ分析は /studio（活動分析室）へ移管（2026-07-10、調査つき週次レビュー+ループ化） -->
+    <a href="/studio" class="card" style="margin-top:16px;display:block;border-color:var(--green-dim);">
+      <h2><svg data-lucide="radar"></svg>活動分析室 STUDIO <span style="font-size:10px;color:var(--green);font-family:var(--mono);margin-left:6px;font-weight:400;">→ /studio</span></h2>
+      <div class="sub-note" style="margin-bottom:0;">X・YouTube・ラジオの週次レビュー — マイケル調査つき、アクションはタネboxへ自動投入（毎週月曜 8:00 更新）</div>
+    </a>
 
     </div><!-- /sec-media -->
 
@@ -911,7 +911,7 @@ function buildCronStatus(cron) {
 }
 
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform, mediaReport, grokTweets, wallet, cron] = await Promise.all([
+  const [status, trending, news, self, history, book, platform, grokTweets, wallet, cron] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/trending.json'),
     fetchJson('/news.json'),
@@ -919,7 +919,6 @@ async function loadAll() {
     fetchJson('/history.json'),
     fetchJson('/book.json'),
     fetchJson('/platform_stats.json'),
-    fetchJson('/media_report.json'),
     fetchJson('/grok_tweets.json'),
     fetchJson('/wallet.json'),
     fetchJson('/cron_status.json'),
@@ -1140,41 +1139,7 @@ async function loadAll() {
   }
   */
 
-  // ── メディア週次分析レポート ──
-  if (mediaReport?.report) {
-    const snap = mediaReport.snapshot || {};
-    const ev = snap.eval || {};
-    const nums = [
-      ['X imp 7d',    snap.x_impressions_7d, 'var(--i-mint)'],
-      ['X likes 7d',  snap.x_likes_7d,       'var(--blue)'],
-      ['note views',  snap.note_total_views, 'var(--i-pu)'],
-      ['KDP orders',  snap.kdp_orders,       'var(--i-pk)'],
-      ['KENP',        snap.kdp_kenp,         'var(--amber)'],
-    ];
-    const numsHtml = '<div class="mr-nums">' + nums.map(([l, v, c]) =>
-      `<div class="mr-num" style="border-top:2px solid ${c}"><div class="mr-num-v">${(v ?? 0).toLocaleString()}</div><div class="mr-num-l">${l}</div></div>`
-    ).join('') + '</div>';
-    const rate = ev.probe_send_rate_7d;
-    const PROBE_TARGET = 0.5;
-    const barHtml = (typeof rate !== 'number') ? '' :
-      `<div class="mr-probe">` +
-        `<div class="cost-bar-label"><span>プローブ送信率 7d（自律展開）</span><span>${Math.round(rate*100)}% / 目標 ${PROBE_TARGET*100}%</span></div>` +
-        `<div class="cost-bar" style="position:relative;overflow:visible;">` +
-          `<i style="display:block;height:100%;width:${Math.min(100, rate*100)}%;background:${rate >= PROBE_TARGET ? 'var(--green)' : 'var(--amber)'};border-radius:4px;"></i>` +
-          `<span style="position:absolute;left:${PROBE_TARGET*100}%;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,0.4);border-radius:1px;" title="目標ライン"></span>` +
-        `</div>` +
-      `</div>`;
-    const secsHtml = mediaReport.report.split(/\n?■\s*/).filter(s => s.trim()).map(chunk => {
-      const nl = chunk.indexOf('\n');
-      const head = (nl === -1 ? chunk : chunk.slice(0, nl)).trim();
-      const body = nl === -1 ? '' : chunk.slice(nl + 1).trim();
-      return `<div class="mr-sec"><div class="mr-sec-h">■ ${esc(head)}</div><div class="mr-sec-b">${esc(body)}</div></div>`;
-    }).join('');
-    $('mediaReport').innerHTML = numsHtml + barHtml + secsHtml;
-    if (mediaReport.generated_at) $('mediaReportAt').textContent = fmtAgo(mediaReport.generated_at);
-  } else {
-    $('mediaReport').innerHTML = '<div class="empty">レポートなし（毎週月曜8:00に自動生成）</div>';
-  }
+  // 週次コンテンツ分析の描画は /studio（活動分析室）へ移管（2026-07-10）
 
   // 動的に注入した data-lucide（LOCK / login widget）を描画
   if (window.lucide) lucide.createIcons();
