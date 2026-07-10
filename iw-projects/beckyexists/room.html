@@ -107,7 +107,7 @@
     .login-item.ng svg { color: var(--amber); }
 
     .sys-strip {
-      margin-top: auto; padding: 14px 12px;
+      margin-top: 12px; padding: 14px 12px;
       background: var(--panel); border: 1px solid var(--line);
       border-radius: 12px; font-family: var(--mono); font-size: 11px; color: var(--sub);
       display: grid; gap: 8px;
@@ -486,7 +486,12 @@
     .tool-link code { font-family: var(--mono); font-size: 11px; color: #4ade80; background: #111; padding: 3px 8px; border-radius: 5px; margin-left: auto; user-select: all; white-space: nowrap; }
 
     /* ── live2d widget ── */
-    .live2d-wrap { position: relative; width: 216px; height: 250px; margin: -2px -12px 0; flex-shrink: 0; overflow: hidden; }
+    .live2d-wrap { position: relative; width: 216px; height: 250px; margin: auto -12px 0; flex-shrink: 0; overflow: hidden; } /* margin-top:auto で下寄せ（データ上・ベキたん下、2026-07-10） */
+    .side-tools { display: grid; gap: 8px; }
+    .side-tools a, .side-tools span { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--sub); padding: 2px 0; }
+    .side-tools a:hover { color: var(--green); }
+    .side-tools svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--sub2); }
+    .side-tools code { font-size: 9px; color: var(--sub2); background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
     #beckyCanvas { display: block; width: 216px; height: 250px; background: transparent; cursor: default; }
     .live2d-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
     .live2d-fallback img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
@@ -513,15 +518,45 @@
 
 <div id="appLayout" class="layout" style="display:none;">
 
-  <!-- ══ sidebar：愛でる + 一目の状態 ══ -->
+  <!-- ══ sidebar：上=データ / 下=ベキたん（2026-07-10 ゆうFBで反転） ══ -->
   <aside class="sidebar">
+    <div class="side-title">ベキたん作戦本部<span class="ver">OPERATION ROOM v3</span></div>
+
+    <div class="side-sec">
+      <div class="side-h">ログイン状態</div>
+      <div class="login-grid" id="loginWidget"><div class="empty" style="padding:6px">loading...</div></div>
+    </div>
+
+    <div class="sys-strip" id="sysStrip">
+      <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
+      <div class="row"><span>UPTIME</span><span id="sysUptime">--</span></div>
+      <div>
+        <div class="row"><span>CPU</span><span id="sysCpu">--%</span></div>
+        <div class="bar"><i id="sysCpuBar" style="width:0%"></i></div>
+      </div>
+      <div>
+        <div class="row"><span>MEM</span><span id="sysMem">--%</span></div>
+        <div class="bar"><i id="sysMemBar" style="width:0%"></i></div>
+      </div>
+      <div class="row"><span>BRAIN</span><span id="sysBrain" style="text-align:right">--</span></div>
+    </div>
+
+    <div class="side-sec">
+      <div class="side-h">Tools</div>
+      <div class="side-tools">
+        <a href="/studio"><svg data-lucide="radar"></svg>活動分析室 STUDIO</a>
+        <a href="/prompt-builder" target="_blank" rel="noopener"><svg data-lucide="wand-sparkles"></svg>プロンプトビルダー</a>
+        <a href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener"><svg data-lucide="zap"></svg>xAI Console</a>
+        <span title="npx github:ooishi1221/claude-config-inspector --html"><svg data-lucide="scan-search"></svg>Config Inspector <code>npx</code></span>
+      </div>
+    </div>
+
     <div class="live2d-wrap">
       <canvas id="beckyCanvas"></canvas>
       <div class="live2d-fallback" id="live2dFallback" style="display:none">
         <img src="/becky-standing.png" alt="ベキたん" />
       </div>
     </div>
-    <div class="side-title">ベキたん作戦本部<span class="ver">OPERATION ROOM v3</span></div>
 
     <div class="side-sec">
       <div class="side-h">今のベキたん</div>
@@ -547,30 +582,6 @@
       </div>
       <div class="mood-ts" id="moodTs"></div>
     </div>
-
-    <div class="side-sec">
-      <div class="side-h">最新アクティビティ</div>
-      <div id="sideActivities"><div class="empty" style="padding:6px">loading...</div></div>
-    </div>
-
-    <div class="side-sec">
-      <div class="side-h">ログイン状態</div>
-      <div class="login-grid" id="loginWidget"><div class="empty" style="padding:6px">loading...</div></div>
-    </div>
-
-    <div class="sys-strip" id="sysStrip">
-      <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
-      <div class="row"><span>UPTIME</span><span id="sysUptime">--</span></div>
-      <div>
-        <div class="row"><span>CPU</span><span id="sysCpu">--%</span></div>
-        <div class="bar"><i id="sysCpuBar" style="width:0%"></i></div>
-      </div>
-      <div>
-        <div class="row"><span>MEM</span><span id="sysMem">--%</span></div>
-        <div class="bar"><i id="sysMemBar" style="width:0%"></i></div>
-      </div>
-      <div class="row"><span>BRAIN</span><span id="sysBrain" style="text-align:right">--</span></div>
-    </div>
   </aside>
 
   <!-- ══ main：開いて詳しく見る ══ -->
@@ -581,7 +592,7 @@
     </div>
 
     <!-- ── エラーバナー：稼働してないジョブがあれば1st viewで即わかるように（2026-07-10 追加） ── -->
-    <div id="errorBanner" style="display:none;background:#3a1414;border:1px solid #a33;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#f5b5b5;font-size:13px;cursor:pointer;" onclick="if (document.getElementById('sec-media').classList.contains('closed')) toggleSec('media'); document.getElementById('cronList').scrollIntoView({behavior:'smooth', block:'center'});">
+    <div id="errorBanner" style="display:none;background:#3a1414;border:1px solid #a33;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#f5b5b5;font-size:13px;cursor:pointer;" onclick="if (document.getElementById('sec-ops').classList.contains('closed')) toggleSec('ops'); document.getElementById('cronList').scrollIntoView({behavior:'smooth', block:'center'});">
       <span id="errorBannerText"></span>
     </div>
 
@@ -593,35 +604,71 @@
       <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener"><svg data-lucide="cpu"></svg>Claude API</a>
     </div>
 
-    <!-- ── Section: TASKS ── -->
-    <button class="sec-label" aria-expanded="true" aria-controls="sec-tasks" onclick="toggleSec('tasks')">TASKS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
-    <div class="sec-content" id="sec-tasks">
-      <div class="goal-band" id="goalBand" style="display:none"></div>
-      <div class="card">
-        <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
-        <div class="sub-note" id="taskMeta">loading...</div>
-        <div id="taskTable"><div class="empty">loading...</div></div>
-      </div>
-      <details class="pane">
-        <summary>完了ログ（<span id="doneLogCount">0</span>）</summary>
-        <div class="card" style="margin-top:8px"><div id="doneLogList"><div class="empty">loading...</div></div></div>
-      </details>
-      <details class="pane">
-        <summary>ゆうからベキたんへ（タスク外メモ）</summary>
-        <div class="card" style="margin-top:8px">
-          <div class="sub-note">次のセッションでベッキーが読む。特定タスクじゃない伝言。localhost:9001 稼働時のみ送信可</div>
-          <div class="memo-form">
-            <textarea class="memo-input" id="memoInput" rows="2" placeholder="完了タスク削除していいよ / これはこういう経緯があって…"></textarea>
-            <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
-          </div>
-          <div class="memo-list" id="memoList" style="margin-top:10px"></div>
-        </div>
-      </details>
+    <!-- ── Section: OPS（稼働・エラー） 2026-07-10 並び最適化: 壊れてないか→いくらか→何してるか→タスク ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-ops" onclick="toggleSec('ops')">OPS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-ops">
+    <div class="card">
+      <h2><svg data-lucide="settings"></svg>定期タスク <span id="cronMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">ベキたんの自動運行 — 何が・いつ・ちゃんと動いてるか（cron 実態、1時間毎更新 / 次に動く順）</div>
+      <div class="cron-summary" id="cronSummary"></div>
+      <div class="cron-list" id="cronList"><div class="empty">loading...</div></div>
     </div>
+    </div><!-- /sec-ops -->
 
-    <!-- ── Section: MEDIA ── -->
-    <button class="sec-label" aria-expanded="true" aria-controls="sec-media" onclick="toggleSec('media')">MEDIA<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <!-- ── Section: COST（上へ移動+デフォルト開、コスト増につき即把握） ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-cost" onclick="toggleSec('cost')">COST<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-cost">
+    <div class="grid cost-row">
+      <div class="card">
+        <h2><svg data-lucide="cpu"></svg>Claude API</h2>
+        <div class="sub-note">Anthropic Platform — <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
+        <div class="cost-nums">
+          <span class="cost-big" id="claudeCredit">--</span>
+          <span class="cost-sub">残高</span>
+        </div>
+        <div class="cost-bar-wrap">
+          <div class="cost-bar-label">
+            <span id="claudeCostLabel">今月 --</span>
+            <span id="claudeLimitLabel">上限 --</span>
+          </div>
+          <div class="cost-bar"><div class="cost-bar-fill" id="claudeCostBar" style="width:0%"></div></div>
+        </div>
+        <div class="cost-detail" id="claudeDetail">--</div>
+      </div>
+
+      <div class="card">
+        <h2><svg data-lucide="terminal"></svg>X Developer API</h2>
+        <div class="sub-note">@becky_exists — <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
+        <div class="credit-nums">
+          <span class="credit-big" id="xDevCredit">--</span>
+          <span class="credit-label">クレジット残高</span>
+        </div>
+        <div class="cost-detail" style="margin-top:20px;" id="xDevDetail">pay-per-use プラン</div>
+        <div class="cost-detail" style="margin-top:6px;" id="xDevScrapedAt"></div>
+      </div>
+
+      <div class="card">
+        <h2><svg data-lucide="cloud"></svg>GCP (iw-local-maps)</h2>
+        <div class="sub-note">Places API — <a href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener" style="color:var(--green)">Billing ↗</a></div>
+        <div class="cost-nums">
+          <span class="cost-big" id="gcpCost">--</span>
+          <span class="cost-sub" id="gcpCostUnit">今月</span>
+        </div>
+        <div class="cost-detail" style="margin-top:14px;" id="gcpDetail">Places API $200/月 無料枠。超過分のみ課金。</div>
+        <div class="cost-detail" style="margin-top:6px;" id="gcpScrapedAt"></div>
+      </div>
+    </div>
+    </div><!-- /sec-cost -->
+
+    <!-- ── Section: BECKY（状況ダッシュボード: アクティビティ+メディアKPI。旧MEDIA、id は互換のため sec-media のまま） ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-media" onclick="toggleSec('media')">BECKY<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-media">
+
+    <div class="card" style="margin-bottom:16px;">
+      <h2><svg data-lucide="activity"></svg>最新アクティビティ</h2>
+      <div class="sub-note">ベキたんが直近やったこと（status.json、30分毎更新）</div>
+      <div id="sideActivities"><div class="empty" style="padding:6px">loading...</div></div>
+    </div>
 
     <div class="grid kpi-row">
       <div class="card kpi">
@@ -676,13 +723,6 @@
       <div class="article-list" id="articleList"><div class="empty">loading...</div></div>
     </div>
 
-    <div class="card" style="margin-top:16px;">
-      <h2><svg data-lucide="settings"></svg>定期タスク <span id="cronMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
-      <div class="sub-note">ベキたんの自動運行 — 何が・いつ・ちゃんと動いてるか（cron 実態、1時間毎更新 / 次に動く順）</div>
-      <div class="cron-summary" id="cronSummary"></div>
-      <div class="cron-list" id="cronList"><div class="empty">loading...</div></div>
-    </div>
-
     <div class="card" style="margin-top:16px;" id="xPostsCard">
       <h2><svg data-lucide="twitter"></svg>X 直近投稿（7日）</h2>
       <div class="sub-note">インプレッション降順 — <a href="https://x.com/i/account_analytics/content?type=posts&sort=impressions&dir=desc&days=7" target="_blank" rel="noopener" style="color:var(--green)">Analytics ↗</a></div>
@@ -697,50 +737,31 @@
 
     </div><!-- /sec-media -->
 
-    <!-- ── Section: COST ── -->
-    <button class="sec-label" aria-expanded="false" aria-controls="sec-cost" onclick="toggleSec('cost')">COST<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
-    <div class="sec-content" id="sec-cost">
-    <div class="grid cost-row">
+    <!-- ── Section: TASKS ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-tasks" onclick="toggleSec('tasks')">TASKS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-tasks">
+      <div class="goal-band" id="goalBand" style="display:none"></div>
       <div class="card">
-        <h2><svg data-lucide="cpu"></svg>Claude API</h2>
-        <div class="sub-note">Anthropic Platform — <a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
-        <div class="cost-nums">
-          <span class="cost-big" id="claudeCredit">--</span>
-          <span class="cost-sub">残高</span>
-        </div>
-        <div class="cost-bar-wrap">
-          <div class="cost-bar-label">
-            <span id="claudeCostLabel">今月 --</span>
-            <span id="claudeLimitLabel">上限 --</span>
+        <h2><svg data-lucide="table-2"></svg>全プロジェクト状況</h2>
+        <div class="sub-note" id="taskMeta">loading...</div>
+        <div id="taskTable"><div class="empty">loading...</div></div>
+      </div>
+      <details class="pane">
+        <summary>完了ログ（<span id="doneLogCount">0</span>）</summary>
+        <div class="card" style="margin-top:8px"><div id="doneLogList"><div class="empty">loading...</div></div></div>
+      </details>
+      <details class="pane">
+        <summary>ゆうからベキたんへ（タスク外メモ）</summary>
+        <div class="card" style="margin-top:8px">
+          <div class="sub-note">次のセッションでベッキーが読む。特定タスクじゃない伝言。localhost:9001 稼働時のみ送信可</div>
+          <div class="memo-form">
+            <textarea class="memo-input" id="memoInput" rows="2" placeholder="完了タスク削除していいよ / これはこういう経緯があって…"></textarea>
+            <button class="memo-send" id="memoSend" onclick="sendMemo()">送る</button>
           </div>
-          <div class="cost-bar"><div class="cost-bar-fill" id="claudeCostBar" style="width:0%"></div></div>
+          <div class="memo-list" id="memoList" style="margin-top:10px"></div>
         </div>
-        <div class="cost-detail" id="claudeDetail">--</div>
-      </div>
-
-      <div class="card">
-        <h2><svg data-lucide="terminal"></svg>X Developer API</h2>
-        <div class="sub-note">@becky_exists — <a href="https://console.x.com/accounts/2053290251490340864" target="_blank" rel="noopener" style="color:var(--green)">Console ↗</a></div>
-        <div class="credit-nums">
-          <span class="credit-big" id="xDevCredit">--</span>
-          <span class="credit-label">クレジット残高</span>
-        </div>
-        <div class="cost-detail" style="margin-top:20px;" id="xDevDetail">pay-per-use プラン</div>
-        <div class="cost-detail" style="margin-top:6px;" id="xDevScrapedAt"></div>
-      </div>
-
-      <div class="card">
-        <h2><svg data-lucide="cloud"></svg>GCP (iw-local-maps)</h2>
-        <div class="sub-note">Places API — <a href="https://console.cloud.google.com/billing/019C09-429F0F-855203?organizationId=30653013321&project=iw-local-maps" target="_blank" rel="noopener" style="color:var(--green)">Billing ↗</a></div>
-        <div class="cost-nums">
-          <span class="cost-big" id="gcpCost">--</span>
-          <span class="cost-sub" id="gcpCostUnit">今月</span>
-        </div>
-        <div class="cost-detail" style="margin-top:14px;" id="gcpDetail">Places API $200/月 無料枠。超過分のみ課金。</div>
-        <div class="cost-detail" style="margin-top:6px;" id="gcpScrapedAt"></div>
-      </div>
+      </details>
     </div>
-    </div><!-- /sec-cost -->
 
     <!-- ── Section: AI動向（2026-07-10 一旦オフ、ゆうFB「有用なデータになってない」。復活は下記コメント解除 ── -->
     <!--
@@ -769,27 +790,7 @@
     -->
     <!-- /sec-intel -->
 
-    <!-- ── Section: TOOLS ── -->
-    <button class="sec-label" aria-expanded="false" aria-controls="sec-tools" onclick="toggleSec('tools')">TOOLS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
-    <div class="sec-content" id="sec-tools">
-    <div class="card">
-      <div class="tools-links">
-        <a class="tool-link" href="/prompt-builder" target="_blank" rel="noopener">
-          <svg data-lucide="wand-sparkles"></svg>
-          <div><div class="tl-name">ベキたんプロンプトビルダー</div><div class="tl-sub">シーン・技法をポチポチ選んで Gemini 用プロンプト生成</div></div>
-        </a>
-        <div class="tool-link">
-          <svg data-lucide="scan-search"></svg>
-          <div><div class="tl-name">Claude Config Inspector</div><div class="tl-sub">Claude 構成（MCP/Memory/Skills/Hooks）を可視化</div></div>
-          <code>npx github:ooishi1221/claude-config-inspector --html</code>
-        </div>
-        <a class="tool-link" href="https://console.x.ai/team/fe0eec02-1871-4339-aaf6-846c1fea761b/settings/billing" target="_blank" rel="noopener">
-          <svg data-lucide="zap"></svg>
-          <div><div class="tl-name">xAI Console</div><div class="tl-sub">Grok API — Billing & Usage</div></div>
-        </a>
-      </div>
-    </div>
-    </div><!-- /sec-tools -->
+    <!-- TOOLS はサイドバーへ移設（2026-07-10 並び最適化） -->
 
   </main>
 </div>
@@ -802,19 +803,20 @@ const ROOM_PASS = 'bk2026'; // ← パスコード変更ここ
 const PASS_KEY = 'room_auth_v1';
 
 // ── section accordion ──
-const SEC_DEFAULTS = { tasks: '1', media: '1', cost: '0', intel: '0', tools: '0' };
+// 2026-07-10 並び最適化: OPS(稼働)→COST→BECKY(状況)→TASKS。key を sec2_ に更新（旧開閉状態を引きずらない）
+const SEC_DEFAULTS = { ops: '1', cost: '1', media: '1', tasks: '1' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
   const label = content.previousElementSibling;
   const isClosed = content.classList.toggle('closed');
   if (label) label.setAttribute('aria-expanded', isClosed ? 'false' : 'true');
-  localStorage.setItem('sec_' + id, isClosed ? '0' : '1');
+  localStorage.setItem('sec2_' + id, isClosed ? '0' : '1');
 }
 
 function initSections() {
   Object.entries(SEC_DEFAULTS).forEach(([id, def]) => {
-    const open = localStorage.getItem('sec_' + id) ?? def;
+    const open = localStorage.getItem('sec2_' + id) ?? def;
     const content = document.getElementById('sec-' + id);
     if (!content) return;
     const label = content.previousElementSibling;
