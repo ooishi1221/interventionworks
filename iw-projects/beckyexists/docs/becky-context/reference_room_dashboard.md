@@ -32,8 +32,16 @@ metadata:
 
 ## 画面構成
 
-### サイドバー（常時表示）
-Live2D → 今のベキたん（mood.json 4本バー: curiosity/energy/loneliness/mismatch）→ 最新アクティビティ3件（status.json activities）→ **🔑ログイン状態5点ウィジェット**（platform_stats.json の claude_api/note/kdp/x_analytics/x_dev の `login_required` 集約）→ OBSERVER/UPTIME/CPU/MEM/自動運行
+### サイドバー（常時表示、2026-07-10 上=データ/下=ベキたんに反転）
+🔑ログイン状態5点 → sys-strip（OBSERVER/UPTIME/CPU/MEM/BRAIN）→ TOOLS リンク（STUDIO/プロンプトビルダー/xAI/Config Inspector）→ **Live2D + 今のベキたん（mood 4本バー）を下部に**（margin-top:auto で下寄せ）
+
+### メインの並び（2026-07-10 最適化: 壊れてないか→いくらか→何してるか→タスク）
+1. **エラーバナー**（cron error 件数、クリックで OPS へ）
+2. **OPS** — 定期タスク（cron 実態一覧）
+3. **COST** — Claude API / X Dev / GCP（デフォルト開）
+4. **BECKY**（旧 MEDIA、id は sec-media のまま）— 最新アクティビティ + KPI4枚（X/YouTube/note/KDP、各カード=アナリティクス直リンク+**前日/7日差分チップ** platform_history.json）+ 書籍ストリップ + X フォロワー推移 + /studio 誘導
+5. **TASKS** — IW/WO/BE 3グループ表
+- アコーディオン開閉の localStorage キーは `sec2_` プレフィックス
 
 ### TASKS（デフォルト開）
 - **🎯長期目標ピン留め帯**: due が今日+30日超の active タスク、「あと N 日」表示
@@ -42,11 +50,8 @@ Live2D → 今のベキたん（mood.json 4本バー: curiosity/energy/lonelines
 - **完了ログ**（`<details>` 折りたたみ）: completed_at 降順
 - **ゆうからベキたんへ（タスク外メモ）**: 既存 /memos API 流用、`<details>` 折りたたみ
 
-### MEDIA（開）/ COST（閉）/ AI動向（閉）/ TOOLS（閉）
-- MEDIA: KPI4枚（X Imp 7d / note PV / KDP / トレンド首位）+ 書籍ストリップ + スパークライン + note 記事一覧 + 定期タスク + 週次分析
-- COST: Claude API / X Dev / GCP（uptime・cron はサイドバーへ移設済み）
-- AI動向: マイケルレポート + grok 突撃候補 + トレンドチップ
-- TOOLS: テキストリンク3行（プロンプトビルダー / Config Inspector / xAI Console）
+### 2026-07-10 で捨てたもの
+トレンド首位 KPI / note 記事一覧 / X 直近投稿リスト（投稿別詳細は各コンソールで見る、KPIカードが直リンク）/ AI動向セクション（コメントアウトで残置）/ メインの TOOLS セクション（サイドバーへ）
 
 - **60秒自動リフレッシュ**（loadAll）、**5分おき tasks リフレッシュ**。タスク系ロジックは `room-tasks.js` に分離
 
