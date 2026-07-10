@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-08T01:10:00+00:00",
+  "updated_at": "2026-07-10T01:37:40.591057+00:00",
   "comments": [
     {
       "id": "tc-1783429184088",
@@ -31,6 +31,38 @@
       "from": "becky",
       "text": "クローズしたよ！",
       "ts": "2026-07-08T01:10:00+00:00",
+      "read": true
+    },
+    {
+      "id": "tc-1783640482830",
+      "task_id": "wo-yaguchi-sheets-access",
+      "from": "yu",
+      "text": "これはクローズでOK",
+      "ts": "2026-07-09T23:41:22.830976+00:00",
+      "read": true
+    },
+    {
+      "id": "tc-1783640860094",
+      "task_id": "metameta-poc",
+      "from": "yu",
+      "text": "池田さんに昨日聞いた　ちょっと今考え中らしいから期限二週間くらいのばしておいてー",
+      "ts": "2026-07-09T23:47:40.094568+00:00",
+      "read": true
+    },
+    {
+      "id": "tc-yaguchi-close-1783647460591",
+      "task_id": "wo-yaguchi-sheets-access",
+      "from": "becky",
+      "text": "クローズしたよ、お疲れさま！",
+      "ts": "2026-07-10T01:37:40.591057+00:00",
+      "read": true
+    },
+    {
+      "id": "tc-metameta-extend-1783647460592",
+      "task_id": "metameta-poc",
+      "from": "becky",
+      "text": "了解、期限2週間延ばしといた。池田さんのペースに合わせよう",
+      "ts": "2026-07-10T01:37:40.591057+00:00",
       "read": true
     }
   ]

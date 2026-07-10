@@ -20,13 +20,14 @@
       "scope": "wo",
       "label": "矢口さん Claude Code — Google Sheets 参照アクセス設計",
       "category": "wo",
-      "status": "in_progress",
+      "status": "done",
       "priority": "low",
       "start": "2026-07-09",
-      "updated_at": "2026-07-09",
+      "updated_at": "2026-07-10",
       "due": null,
-      "note": "矢口さんが自分のClaude Codeで「SNS投稿施策」シートを常時最新で読めるようにする検討（自動投稿パイプラインとは別、read-only参照用）。OAuth案は却下——ウィットワンはGoogle Workspace/Cloud Identity未契約（admin.google.com確認済み）でTesting状態は7日でトークン失効。サービスアカウント方式に決定（アンディ設計、mcp-google-sheets使用、矢口さんは共有設定にメアド追加のみ・個人ログイン不要）。ゆうが「アカウント違うから待って」でGCP発行作業を中断、正しいGCPアカウント確認中。次: ゆうの確認待ち→サービスアカウント発行→矢口さんに共有依頼→SETUP.md/README.md追記。設計詳細: wo-projects/yaguchi/README.md",
-      "icon": "📊"
+      "note": "矢口さんが自分のClaude Codeで「SNS投稿施策」シートを常時最新で読めるようにする検討（自動投稿パイプラインとは別、read-only参照用）。OAuth案は却下——ウィットワンはGoogle Workspace/Cloud Identity未契約（admin.google.com確認済み）でTesting状態は7日でトークン失効。サービスアカウント方式に決定（アンディ設計、mcp-google-sheets使用、矢口さんは共有設定にメアド追加のみ・個人ログイン不要）。ゆうが「アカウント違うから待って」でGCP発行作業を中断、正しいGCPアカウント確認中。次: ゆうの確認待ち→サービスアカウント発行→矢口さんに共有依頼→SETUP.md/README.md追記。設計詳細: wo-projects/yaguchi/README.md / 7/10 ゆう「これはクローズでOK」でクローズ。",
+      "icon": "📊",
+      "completed_at": "2026-07-10"
     },
     {
       "id": "becky-craft",
@@ -156,9 +157,9 @@
       "status": "waiting",
       "priority": "high",
       "start": "2026-06-24",
-      "updated_at": "2026-07-09",
-      "due": "2026-07-07",
-      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。池田さんに「朝会データで欲しかった正解の出力イメージ」もらう予定。面談データも使えるといい話あり。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf / 7/9 裕司が池田さんFBを自分で確認中に動いた（催促フェーズ）",
+      "updated_at": "2026-07-10",
+      "due": "2026-07-24",
+      "note": "Teams VTT→LLM分析→HTMLレポートWebアプリ。https://metameta.intervention.jp/ 公開済み。池田さんに「朝会データで欲しかった正解の出力イメージ」もらう予定。面談データも使えるといい話あり。Notionページ: https://app.notion.com/p/3892922276e981e5b265d36a06e5bbdf / 7/9 裕司が池田さんFBを自分で確認中に動いた（催促フェーズ） 7/10 ゆう「池田さんに聞いた、今考え中らしいので期限2週間延ばして」→due 2026-07-24に延長。",
       "icon": "🧠"
     },
     {
@@ -735,6 +736,19 @@
       "due": "2026-07-21",
       "note": "7/5 経済圏地図の配管。当初「台帳バグ」と誤診→無償配布分と判明（ゆう訂正）。有償・KENPの実額を台帳に流す配線はどのみち必要",
       "icon": "📚"
+    },
+    {
+      "id": "becky-activity-loop-verify",
+      "scope": "iw",
+      "label": "活動分析ループ初回検証 — 来週月曜の答え合わせ確認",
+      "category": "voice-of-becky",
+      "status": "waiting",
+      "priority": "medium",
+      "start": "2026-07-10",
+      "updated_at": "2026-07-10",
+      "due": "2026-07-13",
+      "note": "7/10 becky_activity_review.py初回実行済み（アクション3件wants投入: X投稿頻度絞り/Shorts冒頭フック/末尾コメント誘導）。来週月曜8:00の2回目実行でprev_review欄に検証結果が入る→ループが機能してるか確認する。",
+      "icon": "🔁"
     }
   ]
 }
