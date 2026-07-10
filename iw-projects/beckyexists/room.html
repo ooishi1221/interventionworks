@@ -203,6 +203,16 @@
     .card h2 svg { width: 15px; height: 15px; color: var(--green); }
     .card .sub-note { font-size: 11.5px; color: var(--sub2); margin-bottom: 16px; }
 
+    /* KPI 差分チップ（前日 / 7日、2026-07-10） */
+    .kpi-link { display: block; transition: border-color 0.15s; }
+    .kpi-link:hover { border-color: var(--green); }
+    .kpi-deltas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; min-height: 18px; }
+    .dchip { font-size: 10.5px; font-weight: 700; font-family: var(--mono); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+    .dchip.up   { color: var(--green); background: var(--green-dim); }
+    .dchip.down { color: var(--red);   background: var(--red-dim); }
+    .dchip.flat { color: var(--sub2);  background: var(--panel2); }
+    .dchip.sub  { color: var(--sub);   background: var(--panel2); font-weight: 400; }
+
     /* note 記事リスト */
     .note-row { grid-template-columns: 1fr 340px; }
     .article-list { display: grid; gap: 2px; margin-top: 8px; }
@@ -670,27 +680,28 @@
       <div id="sideActivities"><div class="empty" style="padding:6px">loading...</div></div>
     </div>
 
+    <!-- KPI: 各カード=アナリティクスへのリンク + 前日/7日差分（platform_history.json、2026-07-10 改修） -->
     <div class="grid kpi-row">
-      <div class="card kpi">
+      <a class="card kpi kpi-link" href="https://x.com/i/account_analytics/overview" target="_blank" rel="noopener">
         <div class="label"><svg data-lucide="eye"></svg>X Imp 7d <span id="xAnalyticsScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
         <div class="value" id="kpiXImp">--</div>
-        <span class="delta flat" id="kpiXImpSub"><svg data-lucide="mouse-pointer-click"></svg><span>-- eng</span></span>
-      </div>
-      <div class="card kpi">
-        <div class="label"><svg data-lucide="eye"></svg>note PV <span id="noteScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
+        <div class="kpi-deltas" id="kpiXDeltas"></div>
+      </a>
+      <a class="card kpi kpi-link" href="https://studio.youtube.com/channel/UCFvpdUWDpmSLTTbv6kiIfNQ" target="_blank" rel="noopener">
+        <div class="label"><svg data-lucide="monitor-play"></svg>YouTube 総視聴</div>
+        <div class="value" id="kpiYt">--</div>
+        <div class="kpi-deltas" id="kpiYtDeltas"></div>
+      </a>
+      <a class="card kpi kpi-link" href="https://note.com/sitesettings/stats" target="_blank" rel="noopener">
+        <div class="label"><svg data-lucide="notebook-pen"></svg>note PV <span id="noteScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
         <div class="value" id="kpiNotePV">--</div>
-        <span class="delta info" id="kpiNotePVSub"><svg data-lucide="heart"></svg><span>-- likes</span></span>
-      </div>
-      <div class="card kpi">
+        <div class="kpi-deltas" id="kpiNoteDeltas"></div>
+      </a>
+      <a class="card kpi kpi-link" href="https://kdpreports.amazon.co.jp/dashboard" target="_blank" rel="noopener">
         <div class="label"><svg data-lucide="book-open"></svg>KDP 今月 <span id="kdpScrapedAt" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:4px;"></span></div>
         <div class="value" id="kpiKdpOrders">--</div>
-        <span class="delta info" id="kpiKdpKenp"><svg data-lucide="file-text"></svg><span>-- KENP</span></span>
-      </div>
-      <div class="card kpi">
-        <div class="label"><svg data-lucide="flame"></svg>トレンド首位</div>
-        <div class="value" id="kpiTrend">--</div>
-        <span class="delta up" id="kpiTrendDelta"><svg data-lucide="trending-up"></svg><span>--</span></span>
-      </div>
+        <div class="kpi-deltas" id="kpiKdpDeltas"></div>
+      </a>
     </div>
 
     <div class="card pub-strip" id="pubStrip" style="display:none; margin-top:16px;">
@@ -717,17 +728,7 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:16px;">
-      <h2><svg data-lucide="notebook-pen"></svg>note 記事一覧</h2>
-      <div class="sub-note">全期間 PV 順 — <span id="noteTotals">読み込み中...</span></div>
-      <div class="article-list" id="articleList"><div class="empty">loading...</div></div>
-    </div>
-
-    <div class="card" style="margin-top:16px;" id="xPostsCard">
-      <h2><svg data-lucide="twitter"></svg>X 直近投稿（7日）</h2>
-      <div class="sub-note">インプレッション降順 — <a href="https://x.com/i/account_analytics/content?type=posts&sort=impressions&dir=desc&days=7" target="_blank" rel="noopener" style="color:var(--green)">Analytics ↗</a></div>
-      <div class="article-list" id="xPostList"><div class="empty">loading...</div></div>
-    </div>
+    <!-- note記事一覧・X直近投稿リストは削除（2026-07-10 ゆうFB「投稿別詳細は各アナリティクスで見る、差分の方が価値」）。KPIカードが各コンソールへのリンク -->
 
     <!-- 週次コンテンツ分析は /studio（活動分析室）へ移管（2026-07-10、調査つき週次レビュー+ループ化） -->
     <a href="/studio" class="card" style="margin-top:16px;display:block;border-color:var(--green-dim);">
@@ -913,18 +914,19 @@ function buildCronStatus(cron) {
 }
 
 async function loadAll() {
-  const [status, trending, news, self, history, book, platform, grokTweets, wallet, cron] = await Promise.all([
+  const [status, news, self, history, book, platform, phist, grokTweets, wallet, cron] = await Promise.all([
     fetchJson('/status.json'),
-    fetchJson('/trending.json'),
     fetchJson('/news.json'),
     fetchJson('/self.json'),
     fetchJson('/history.json'),
     fetchJson('/book.json'),
     fetchJson('/platform_stats.json'),
+    fetchJson('/platform_history.json'),
     fetchJson('/grok_tweets.json'),
     fetchJson('/wallet.json'),
     fetchJson('/cron_status.json'),
   ]);
+  const pdays = phist?.days || [];
 
   const needsLogin = s => !!s?.login_required;
 
@@ -933,43 +935,55 @@ async function loadAll() {
   buildSideActivities(status);
 
   // ── sync time ──
-  const syncTs = platform?.updated_at || trending?.updated_at || status?.updated_at;
+  const syncTs = platform?.updated_at || status?.updated_at;
   if (syncTs) {
     $('lastUpdated').textContent = 'SYNC: ' + fmtAgo(syncTs) + ' (' + new Date(syncTs).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ')';
   }
 
+  // ── KPI 差分チップ（platform_history.json、前日 / 7日） ──
+  // 欠測(null)は飛ばして直近の有効値と比較。0はスクレイプ失敗としてscraper側でnull化済み
+  const deltaChips = (key, extra) => {
+    const valid = pdays.filter(d => d[key] != null);
+    if (valid.length < 2) return extra || '';
+    const today = valid[valid.length - 1];
+    const prev = valid[valid.length - 2];
+    const d1 = today[key] - prev[key];
+    const weekAgoDate = new Date(new Date(today.date) - 7 * 86400000).toISOString().slice(0, 10);
+    const wk = [...valid].reverse().find(d => d.date <= weekAgoDate);
+    const d7 = wk ? today[key] - wk[key] : null;
+    const chip = (label, v) => v === null ? '' :
+      `<span class="dchip ${v > 0 ? 'up' : v < 0 ? 'down' : 'flat'}">${label} ${v > 0 ? '+' : ''}${v.toLocaleString()}</span>`;
+    return chip('前日', d1) + chip('7日', d7) + (extra || '');
+  };
+  const subChip = (t) => `<span class="dchip sub">${t}</span>`;
+
   // ── KPI: note PV ──
   if (needsLogin(platform?.note)) {
     $('kpiNotePV').innerHTML = LOCK;
-    $('kpiNotePVSub').querySelector('span').textContent = 'note セッション切れ';
+    $('kpiNoteDeltas').innerHTML = subChip('note セッション切れ');
   } else if (platform?.note) {
     const n = platform.note;
     $('kpiNotePV').innerHTML = `${n.total_views.toLocaleString()}<span class="unit">views</span>`;
-    $('kpiNotePVSub').querySelector('span').textContent = `${n.total_likes} likes`;
+    $('kpiNoteDeltas').innerHTML = deltaChips('note_views', subChip(`♥ ${n.total_likes}`));
     if (n.scraped_at) $('noteScrapedAt').textContent = fmtAgo(n.scraped_at);
   }
 
   // ── KPI: KDP ──
   if (needsLogin(platform?.kdp)) {
     $('kpiKdpOrders').innerHTML = LOCK;
-    $('kpiKdpKenp').querySelector('span').textContent = 'KDP セッション切れ';
+    $('kpiKdpDeltas').innerHTML = subChip('KDP セッション切れ');
   } else if (platform?.kdp) {
     const k = platform.kdp;
     $('kpiKdpOrders').innerHTML = `${k.orders_this_month}<span class="unit">orders</span>`;
-    $('kpiKdpKenp').querySelector('span').textContent = `${k.kenp_this_month} KENP`;
+    $('kpiKdpDeltas').innerHTML = deltaChips('kdp_orders', subChip(`${k.kenp_this_month} KENP`));
     if (k.scraped_at) $('kdpScrapedAt').textContent = fmtAgo(k.scraped_at);
   }
 
-  // ── KPI: トレンド首位 + トレンドチップ ──
-  const kws = trending?.keywords || [];
-  if (kws.length) {
-    $('kpiTrend').textContent = kws[0].word;
-    $('kpiTrendDelta').querySelector('span').textContent = `${kws[0].count} 件 ${kws[0].trend === 'up' ? '↑' : kws[0].trend}`;
-  }
-  if ($('trendChips')) {
-    $('trendChips').innerHTML = kws.length
-      ? kws.slice(0, 12).map(k => `<div class="trend-chip ${k.trend || 'flat'}"><span class="word">${esc(k.word)}</span><span class="cnt">${k.count}</span></div>`).join('')
-      : '<div class="empty">トレンドなし</div>';
+  // ── KPI: YouTube ──
+  if (platform?.youtube?.total_views != null) {
+    const y = platform.youtube;
+    $('kpiYt').innerHTML = `${y.total_views.toLocaleString()}<span class="unit">views</span>`;
+    $('kpiYtDeltas').innerHTML = deltaChips('yt_views', subChip(`登録 ${y.subscribers ?? '--'}`));
   }
 
   // ── Publishing strip ──
@@ -982,18 +996,6 @@ async function loadAll() {
     st.textContent = bk.status;
     st.classList.toggle('live', bk.status === '販売中');
     $('pubPrice').textContent = `¥${bk.price_jpy}`;
-  }
-
-  // ── note 記事リスト ──
-  if (platform?.note?.articles?.length) {
-    const arts = platform.note.articles;
-    $('noteTotals').textContent = `${platform.note.total_views.toLocaleString()} views total · ${platform.note.total_likes} likes`;
-    $('articleList').innerHTML = arts.map(a => `
-      <div class="article-item">
-        <span class="article-title" title="${esc(a.title)}">${esc(a.title)}</span>
-        <span class="article-num">${a.views.toLocaleString()} pv</span>
-        <span class="article-likes">♥ ${a.likes}</span>
-      </div>`).join('');
   }
 
   // ── 定期タスク（cron 実態） ──
@@ -1022,30 +1024,15 @@ async function loadAll() {
   // ── X Analytics ──
   if (needsLogin(platform?.x_analytics)) {
     $('kpiXImp').innerHTML = LOCK;
-    $('kpiXImpSub').querySelector('span').textContent = 'X セッション切れ';
-    $('xPostList').innerHTML = '<div class="empty">X セッション切れ — スクレイパー用Chrome（gemini-chrome-profile）で再ログインしてください</div>';
+    $('kpiXDeltas').innerHTML = subChip('X セッション切れ');
   } else if (platform?.x_analytics) {
     const xa = platform.x_analytics;
     const imp = xa.total_impressions || 0;
     $('kpiXImp').innerHTML = imp >= 1000 ? `${(imp/1000).toFixed(1)}<span class="unit">K</span>` : `${imp}`;
-    $('kpiXImpSub').querySelector('span').textContent = `${(xa.total_likes||0).toLocaleString()} likes`;
+    $('kpiXDeltas').innerHTML = deltaChips('x_imp_7d', subChip(`♥ ${(xa.total_likes||0).toLocaleString()}`));
     if (xa.scraped_at) {
       const d = new Date(xa.scraped_at);
       $('xAnalyticsScrapedAt').textContent = d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    }
-    if (xa.posts?.length) {
-      const sorted = [...xa.posts].sort((a,b) => b.impressions - a.impressions).slice(0,7);
-      $('xPostList').innerHTML = sorted.map(p =>
-        `<div class="article-row">
-          <div class="article-title" style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(p.text)}</div>
-          <div class="article-stats">
-            <span class="stat-imp" title="impressions">${p.impressions.toLocaleString()}<span style="font-size:9px;color:var(--sub2);margin-left:2px;">imp</span></span>
-            <span class="stat-likes" title="likes">♥${p.likes}</span>
-          </div>
-        </div>`
-      ).join('');
-    } else {
-      $('xPostList').innerHTML = '<div class="empty">データなし</div>';
     }
   }
 

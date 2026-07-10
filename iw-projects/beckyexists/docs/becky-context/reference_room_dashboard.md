@@ -76,6 +76,7 @@ Live2D → 今のベキたん（mood.json 4本バー: curiosity/energy/lonelines
 | `rivals.json` | `update_rivals_json()`（フォロワー数自動更新） | 同上 |
 | `book.json` | **手動**。販売開始したら `status: "販売中"` + `store_url` | 状態変化時 |
 | `platform_stats.json` | platform_scraper.py（cron 7:30、`login_required` 規約） | 日次 |
+| `platform_history.json` | platform_scraper.py `_append_history()`（日次スナップショット90日、KPI前日/7日差分チップ用。累積系の0は欠測=null） | 日次 |
 | `mood.json` | becky_mood.py（cron 毎時） | 毎時 |
 | status / wallet / trending / curious / news | 既存の observer / status_update.py 経路 | 各自 |
 

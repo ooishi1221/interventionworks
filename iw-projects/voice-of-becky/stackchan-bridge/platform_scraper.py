@@ -35,7 +35,43 @@ threading.excepthook = _quiet_pychrome_recv_loop
 
 CDP_URL = "http://localhost:9223"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
+HISTORY_OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_history.json")
 YT_CHANNEL_ID = "UCFvpdUWDpmSLTTbv6kiIfNQ"  # @voice_of_becky
+
+
+def _append_history(stats: dict) -> None:
+    """日次スナップショットを platform_history.json に積む（前日/週差分表示用、同日上書き・90日保持）。"""
+    from datetime import timedelta
+    try:
+        jst_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date().isoformat()
+        x = stats.get("x_analytics", {}) or {}
+        yt = stats.get("youtube", {}) or {}
+        note = stats.get("note", {}) or {}
+        kdp = stats.get("kdp", {}) or {}
+        # 累積・ローリング系は 0 ≒ スクレイプ失敗（note PVが0に戻ることはない）→ 欠測(None)扱い
+        nz = lambda v: v if v else None
+        entry = {
+            "date": jst_today,
+            "x_imp_7d": nz(x.get("total_impressions")),
+            "x_likes_7d": x.get("total_likes"),
+            "yt_subs": nz(yt.get("subscribers")),
+            "yt_views": nz(yt.get("total_views")),
+            "note_views": nz(note.get("total_views")),
+            "note_likes": note.get("total_likes"),
+            "kdp_orders": kdp.get("orders_this_month"),
+            "kdp_kenp": kdp.get("kenp_this_month"),
+        }
+        try:
+            days = json.loads(HISTORY_OUTPUT.read_text()).get("days", [])
+        except Exception:
+            days = []
+        days = [d for d in days if d.get("date") != jst_today]
+        days.append(entry)
+        days = sorted(days, key=lambda d: d["date"])[-90:]
+        HISTORY_OUTPUT.write_text(json.dumps({"days": days}, ensure_ascii=False, indent=1))
+        print(f"[scraper] history 追記: {jst_today}（{len(days)}日分）", flush=True)
+    except Exception as e:
+        print(f"[scraper] history 追記失敗: {e}", flush=True)
 
 
 def js(tab: pychrome.Tab, code: str):
@@ -379,6 +415,7 @@ def main() -> None:
             print(f'[warn] platform_scraper: {e}', flush=True)
 
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
+    _append_history(stats)
     print(f"[scraper] 完了: {OUTPUT}", flush=True)
 
     # pychrome の daemon スレッドが終了時にノイズを出すのを防ぐ
