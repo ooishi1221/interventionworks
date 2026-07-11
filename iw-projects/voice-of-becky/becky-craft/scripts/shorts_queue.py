@@ -21,13 +21,20 @@ QUEUE = HERE.parent / "out" / "shorts" / "queue"
 PUBLISHED = HERE.parent / "out" / "shorts" / "published"
 UPLOADER = HERE.parent.parent / "becky-news" / "scripts" / "upload-youtube.py"
 
-TG_TOKEN_FILE = Path.home() / ".stackchan" / "telegram_token"
+TG_ENV = Path.home() / ".claude" / "channels" / "telegram" / ".env"  # becky_probe.py と同じ正本
 TG_CHAT_ID = "8983810776"  # ゆう（becky_probe.py と同じ）
+
+
+def _load_token() -> str:
+    for line in TG_ENV.read_text().splitlines():
+        if line.startswith("TELEGRAM_BOT_TOKEN="):
+            return line.split("=", 1)[1].strip()
+    raise RuntimeError("TELEGRAM_BOT_TOKEN not found in " + str(TG_ENV))
 
 
 def notify(text: str) -> None:
     try:
-        token = TG_TOKEN_FILE.read_text().strip()
+        token = _load_token()
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         data = urllib.parse.urlencode({"chat_id": TG_CHAT_ID, "text": text}).encode()
         urllib.request.urlopen(url, data, timeout=15)

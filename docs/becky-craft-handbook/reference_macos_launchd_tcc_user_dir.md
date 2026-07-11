@@ -88,6 +88,20 @@ done
 
 これで毎朝のスケジュール再生成時に古い plist が消える、self-unload 失敗を補正。
 
+## 追記: cron でも同じ + python3 ラッパー解（2026-07-11）
+
+cron も launchd 経由なので同じ TCC block を食らう。7/8〜7/11 に `auto-radio-video.sh`（40 7 * * *）が4日連続 `Operation not permitted` で無言死（ラジオの YouTube アップだけ止まった）。
+
+**切り分け実験の結果（2026-07-11、テスト cron 3種で実証）:**
+- ❌ `/Volumes/.../script.sh` 直接 exec → block
+- ❌ `/bin/bash /Volumes/.../script.sh` 明示 → block
+- ❌ 内蔵 dir ラッパー sh → `exec /bin/bash /Volumes/...` → block（child 継承、5/10 知見と同じ）
+- ✅ **`/opt/homebrew/bin/python3 -c "subprocess.run(['/bin/bash','/Volumes/.../script.sh'])"` → 通る**
+
+homebrew python3 には TCC 許可があり（他の cron python ジョブが動いてる理由）、**python3 を responsible process にすると子プロセスの bash まで許可が継承される**。user dir 完全 deploy より安い解。
+
+**同根の罠**: `~/.cache/uv` を `/Volumes/SSD2TB/caches/uv` に symlink 化（7/7）した直後から、cron の `uv run morning_cast.py` が `Failed to initialize cache: File exists` で3日死んだ（uv が symlink 先を読めず dangling 扱い→mkdir→EEXIST）。これも python3 ラッパーで uv を包んで解決。**cron から /Volumes を触るジョブは homebrew python3 ラッパーを標準にする。**
+
 ## 実装事例
 
 `voice-of-becky/x-tweet/`:
