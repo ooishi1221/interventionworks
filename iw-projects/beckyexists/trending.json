@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-07T09:01:36.963342+00:00",
+  "updated_at": "2026-07-10T22:02:29.984589+00:00",
   "keywords": [
     {
       "word": "Claude Code",
@@ -7,22 +7,17 @@
       "trend": "up"
     },
     {
-      "word": "LLM",
-      "count": 6,
+      "word": "エージェント",
+      "count": 4,
       "trend": "up"
     },
     {
-      "word": "Fable",
-      "count": 4,
+      "word": "Claude",
+      "count": 3,
       "trend": "stable"
     },
     {
-      "word": "Anthropic",
-      "count": 3,
-      "trend": "up"
-    },
-    {
-      "word": "エージェント",
+      "word": "Fable",
       "count": 3,
       "trend": "stable"
     },
@@ -32,24 +27,29 @@
       "trend": "stable"
     },
     {
-      "word": "ChatGPT",
+      "word": "Meta",
       "count": 2,
       "trend": "new"
     },
     {
-      "word": "MCP",
+      "word": "OpenAI",
       "count": 2,
       "trend": "new"
     },
     {
-      "word": "生成AI",
-      "count": 1,
-      "trend": "stable"
+      "word": "GPT-5",
+      "count": 2,
+      "trend": "new"
     },
     {
-      "word": "Claude",
-      "count": 1,
-      "trend": "stable"
+      "word": "LLM",
+      "count": 2,
+      "trend": "new"
+    },
+    {
+      "word": "プロンプト",
+      "count": 2,
+      "trend": "new"
     }
   ],
   "source_count": 80

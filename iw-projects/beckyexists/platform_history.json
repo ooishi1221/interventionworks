@@ -177,14 +177,25 @@
   },
   {
    "date": "2026-07-10",
+   "x_imp_7d": 480,
+   "x_likes_7d": 1,
    "yt_subs": 4,
-   "yt_views": 1022,
+   "yt_views": 997,
    "note_views": 253,
    "note_likes": 37,
    "kdp_orders": 0,
-   "kdp_kenp": 0,
-   "x_imp_7d": 509,
-   "x_likes_7d": 0
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-11",
+   "x_imp_7d": 930,
+   "x_likes_7d": 1,
+   "yt_subs": 4,
+   "yt_views": 997,
+   "note_views": 253,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
   }
  ]
 }
