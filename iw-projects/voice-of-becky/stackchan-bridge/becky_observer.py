@@ -570,7 +570,7 @@ def _deploy_beckyexists() -> None:
         return
     site_dir = REPO_ROOT / "iw-projects" / "beckyexists"
     result = subprocess.run(
-        ["npx", "vercel", "--prod", "--yes"],
+        [str(Path.home() / ".nvm/versions/node/v24.14.1/bin/vercel"), "deploy", "--prod", "--yes"],
         capture_output=True, text=True, cwd=str(site_dir), timeout=120,
     )
     _DEPLOYED_THIS_CYCLE = True

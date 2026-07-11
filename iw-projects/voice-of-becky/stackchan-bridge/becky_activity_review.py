@@ -37,7 +37,8 @@ HISTORY_JSON = BECKYEXISTS / "history.json"
 REPORT_JSON = BECKYEXISTS / "activity_report.json"
 TWEET_LOG = REPO_ROOT / "iw-projects" / "voice-of-becky" / "x-tweet" / "tweet-log.jsonl"
 
-NPX = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "npx"
+# ponytail: npx は cron(非TTY)下でハングする — vercel バイナリ直叩き
+VERCEL = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "vercel"
 CLAUDE_TIMEOUT_SEC = 15 * 60
 MAX_ACTIONS = 3
 KPI_HISTORY_WEEKS = 12
@@ -283,11 +284,11 @@ def add_actions_to_wants(actions: list[dict]) -> list[str | None]:
 
 def deploy() -> None:
     """status_update.py と同型（pgrep 多重起動ガード + npx vercel）。"""
-    if subprocess.run(["pgrep", "-f", "vercel --prod"], capture_output=True).returncode == 0:
+    if subprocess.run(["pgrep", "-f", "vercel deploy --prod"], capture_output=True).returncode == 0:
         print("[activity] 別の vercel deploy が走行中、スキップ", flush=True)
         return
     r = subprocess.run(
-        [str(NPX), "vercel", "--prod", "--yes"],
+        [str(VERCEL), "deploy", "--prod", "--yes"],
         cwd=BECKYEXISTS, capture_output=True, text=True, timeout=300,
     )
     print("[activity] デプロイ" + ("完了" if r.returncode == 0 else f"失敗: {r.stderr[-300:]}"), flush=True)

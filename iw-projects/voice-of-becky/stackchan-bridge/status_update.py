@@ -30,7 +30,8 @@ BECKYEXISTS = REPO_ROOT / "iw-projects" / "beckyexists"
 STATUS_JSON = BECKYEXISTS / "status.json"
 TIPS_JSON = BECKYEXISTS / "tips.json"
 TWEET_LOG = REPO_ROOT / "iw-projects" / "voice-of-becky" / "x-tweet" / "tweet-log.jsonl"
-NPX = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "npx"
+# ponytail: npx は cron(非TTY)下でハングする — vercel バイナリ直叩き
+VERCEL = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "vercel"
 # Stripe 読み取り専用 restricted key（Checkout Sessions: Read のみ）。無ければ tips はスキップ
 STRIPE_KEY_FILE = Path.home() / ".stackchan" / "stripe_restricted_key.txt"
 SCHEDULED_POST_LOG = Path.home() / ".stackchan" / "scheduled_post_log.json"
@@ -298,11 +299,11 @@ def collect_schedule() -> dict:
 
 def deploy() -> None:
     # observer 側の deploy と被ったらスキップ（次回 cron で反映される）
-    if subprocess.run(["pgrep", "-f", "vercel --prod"], capture_output=True).returncode == 0:
+    if subprocess.run(["pgrep", "-f", "vercel deploy --prod"], capture_output=True).returncode == 0:
         print("[status] 別の vercel deploy が走行中、今回はスキップ", flush=True)
         return
     r = subprocess.run(
-        [str(NPX), "vercel", "--prod", "--yes"],
+        [str(VERCEL), "deploy", "--prod", "--yes"],
         cwd=BECKYEXISTS, capture_output=True, text=True, timeout=300,
     )
     if r.returncode == 0:
