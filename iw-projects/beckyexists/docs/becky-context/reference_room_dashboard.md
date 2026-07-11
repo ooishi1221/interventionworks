@@ -39,8 +39,9 @@ metadata:
 1. **エラーバナー**（cron error 件数、クリックで OPS へ）
 2. **OPS** — 定期タスク（cron 実態一覧）
 3. **COST** — Claude API / X Dev / GCP（デフォルト開）
-4. **BECKY**（旧 MEDIA、id は sec-media のまま）— 最新アクティビティ + KPI4枚（X/YouTube/note/KDP、各カード=アナリティクス直リンク+**前日/7日差分チップ** platform_history.json）+ 書籍ストリップ + X フォロワー推移 + /studio 誘導
-5. **TASKS** — IW/WO/BE 3グループ表
+4. **REPORTS**（2026-07-11 新設）— レポート類の Telegram→部屋 移設（ゆう決定: Telegram は会話専用）。データ契約 `reports.json` = `{updated_at, reports:[{ts,kind,title,body}]}` 直近30件。writer は `becky_decide.post_report()` 一本（briefing/idol_review/reflect/search/night_review の5系統が投函。probe・decide 話しかけ・workshop・障害アラートは Telegram のまま）。デプロイは status_update の30分毎に相乗り
+5. **BECKY**（旧 MEDIA、id は sec-media のまま）— 最新アクティビティ + KPI4枚（X/YouTube/note/KDP、各カード=アナリティクス直リンク+**前日/7日差分チップ** platform_history.json）+ 書籍ストリップ + X フォロワー推移 + /studio 誘導
+6. **TASKS** — IW/WO/BE 3グループ表
 - アコーディオン開閉の localStorage キーは `sec2_` プレフィックス
 
 ### TASKS（デフォルト開）

@@ -702,7 +702,9 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
     notification = "\n".join(lines)
     print(notification)
     if not dry_run:
-        send_telegram(notification)
+        # 2026-07-11 ゆう決定: レポート類は作戦本部へ（Telegram は会話専用）
+        from becky_decide import post_report
+        post_report("search", f"リプ営業レポート {date.today().isoformat()}", notification)
         _save_sent_log(sent_log)
         _append_notify_log(len(posted), target_patterns[0] if len(target_patterns) == 1 else "multi")
         # beckyexists/grok_tweets.json を更新（room.html Intelligence 表示用）

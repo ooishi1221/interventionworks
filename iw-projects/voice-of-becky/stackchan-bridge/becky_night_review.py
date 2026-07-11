@@ -433,8 +433,11 @@ def _bump_seed_revisit(seed_id: str) -> str:
     if count >= SEED_PROMOTE_AT and not target.get("promoted"):
         target["promoted"] = True
         SEED_BOX_PATH.write_text(json.dumps(seeds, ensure_ascii=False, indent=2))
-        send_telegram(f"🌱 タネが育った（{count}回目・夜の総括で）: {target.get('impulse', '')[:80]}\nThread昇格候補かも。")
-        note += " → 昇格候補としてTelegram通知"
+        # 2026-07-11 ゆう決定: レポート類は作戦本部へ（becky_decide が本モジュールを import してるので関数内 import で循環回避）
+        from becky_decide import post_report
+        post_report("night_review", "タネが育った（Thread昇格候補）",
+                    f"🌱 タネが育った（{count}回目・夜の総括で）: {target.get('impulse', '')[:80]}\nThread昇格候補かも。")
+        note += " → 昇格候補として作戦本部に投函"
     return note
 
 

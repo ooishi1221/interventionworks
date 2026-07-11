@@ -96,6 +96,30 @@ def send_telegram(text: str) -> bool:
         return False
 
 
+REPORTS_PATH = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/reports.json")
+REPORTS_KEEP = 30
+
+
+def post_report(kind: str, title: str, body: str) -> bool:
+    """レポートを作戦本部（beckyexists/reports.json）へ追記する。
+    Telegram は会話専用、レポート類はこっち（2026-07-11 ゆう決定）。
+    デプロイは status_update.py の30分毎に相乗り（ここでは書くだけ）。"""
+    try:
+        data = json.loads(REPORTS_PATH.read_text()) if REPORTS_PATH.exists() else {"reports": []}
+        data["reports"].insert(0, {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "kind": kind, "title": title, "body": body,
+        })
+        data["reports"] = data["reports"][:REPORTS_KEEP]
+        data["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        REPORTS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n")
+        print(f"[report] 作戦本部へ投函: [{kind}] {title}", flush=True)
+        return True
+    except Exception as e:
+        print(f"[report] 投函失敗: {e}", flush=True)
+        return False
+
+
 # ── 1. collect_context ────────────────────────────────
 
 def _pending_tasks() -> list[dict]:

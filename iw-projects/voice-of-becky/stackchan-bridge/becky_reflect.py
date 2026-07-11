@@ -22,7 +22,7 @@ import becky_action_log
 from becky_decide import (
     load_disposition, save_disposition, format_disposition,
     load_wants, save_wants, format_wants,
-    _call_claude, send_telegram,
+    _call_claude, post_report,
 )
 
 REFLECT_SCAN_DAYS = 7
@@ -282,7 +282,8 @@ def main():
             lines.append(f"🎯✎ {x}")
         for x in wd.get("removed", []):
             lines.append(f"🎯－ {x}")
-        send_telegram("\n".join(lines))
+        # 2026-07-11 ゆう決定: レポート類は作戦本部へ（Telegram は会話専用）
+        post_report("reflect", f"週次自己観察 {date.today().isoformat()}", "\n".join(lines))
 
 
 if __name__ == "__main__":

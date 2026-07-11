@@ -215,21 +215,11 @@ def main():
         print(text, flush=True)
         return
 
-    if not becky_decide.send_telegram(text):
-        print("[work_briefing] Telegram 送信失敗", flush=True)
+    # 2026-07-11 ゆう決定: レポート類は Telegram じゃなく作戦本部（reports.json）へ。
+    # Telegram に送らなくなったので probe_latest（返信文脈の正本）への書き込みも不要になった
+    if not becky_decide.post_report("briefing", f"朝ブリーフィング {date.today().isoformat()}", text):
+        print("[work_briefing] 作戦本部への投函失敗", flush=True)
         sys.exit(1)
-
-    # Telegram セッション側が「私が送ったブリーフィングへの返信」と文脈を繋ぐ正本
-    try:
-        PROBE_LATEST.parent.mkdir(parents=True, exist_ok=True)
-        PROBE_LATEST.write_text(json.dumps({
-            "title": "仕事の朝ブリーフィング",
-            "message": text,
-            "ts": datetime.now().isoformat(),
-            "probe_type": "work_briefing",
-        }, ensure_ascii=False, indent=2))
-    except Exception as e:
-        print(f"[work_briefing] probe_latest.json 書き込み失敗: {e}", flush=True)
 
     becky_action_log.log_action(
         "work_briefing",

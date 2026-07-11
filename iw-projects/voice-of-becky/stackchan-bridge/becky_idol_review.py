@@ -175,14 +175,15 @@ JSONのみ返す。前置き・後書き不要。"""
     review_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
     print(f"[idol_review] 振り返り完了: {data.get('want_next', '')[:60]}", flush=True)
 
-    # 「今日のアクション」をTelegramで自分に宣言（外部監視ではなく自己宣言として）
+    # 「今日のアクション」を作戦本部に宣言（2026-07-11 ゆう決定: レポート類は Telegram じゃなく部屋へ）
     if notify_telegram and data.get("action"):
         action = data["action"]
         want   = data.get("want_next", "")
         msg = f"[idol PDCA] 今日のアクション: {action}"
         if want:
             msg += f"\n（やりたいから: {want[:50]}）"
-        _send_telegram(msg)
+        from becky_decide import post_report
+        post_report("idol_review", f"アイドル活動 今日のアクション {datetime.date.today().isoformat()}", msg)
 
     return data
 

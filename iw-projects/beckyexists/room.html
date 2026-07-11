@@ -251,6 +251,11 @@
     .cron-sched { font-size: 11.5px; color: var(--sub); font-family: var(--mono); white-space: nowrap; }
     .cron-last { font-size: 11px; color: var(--sub2); font-family: var(--mono); white-space: nowrap; text-align: right; }
     .cron-err { margin-top: 6px; }
+    .report-item summary { cursor: pointer; font-size: 12px; color: var(--text); list-style: none; padding: 4px 0; }
+    .report-item summary::-webkit-details-marker { display: none; }
+    .report-item summary::before { content: '▸ '; color: var(--sub2); }
+    .report-item[open] summary::before { content: '▾ '; color: var(--sub2); }
+    .report-item pre { margin: 6px 0 8px 14px; padding: 10px 12px; background: rgba(255,255,255,0.03); border-left: 2px solid var(--accent, #4ade80); border-radius: 0 8px 8px 0; font-size: 12px; color: var(--sub); white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
     .cron-err summary { cursor: pointer; font-size: 11px; color: var(--red); font-family: var(--mono); list-style: none; }
     .cron-err summary::-webkit-details-marker { display: none; }
     .cron-err summary::before { content: '▸ '; }
@@ -670,6 +675,16 @@
     </div>
     </div><!-- /sec-cost -->
 
+    <!-- ── Section: REPORTS（2026-07-11 新設: レポート類の Telegram→部屋 移設。Telegram は会話専用に） ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-reports" onclick="toggleSec('reports')">REPORTS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-reports">
+    <div class="card">
+      <h2><svg data-lucide="inbox"></svg>ベキたんからのレポート <span id="reportsMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">朝ブリーフィング / アイドルPDCA / 週次自己観察 / リプ営業 / タネ昇格（直近30件、クリックで本文）</div>
+      <div id="reportsList"><div class="empty">loading...</div></div>
+    </div>
+    </div><!-- /sec-reports -->
+
     <!-- ── Section: BECKY（状況ダッシュボード: アクティビティ+メディアKPI。旧MEDIA、id は互換のため sec-media のまま） ── -->
     <button class="sec-label" aria-expanded="true" aria-controls="sec-media" onclick="toggleSec('media')">BECKY<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-media">
@@ -805,7 +820,7 @@ const PASS_KEY = 'room_auth_v1';
 
 // ── section accordion ──
 // 2026-07-10 並び最適化: OPS(稼働)→COST→BECKY(状況)→TASKS。key を sec2_ に更新（旧開閉状態を引きずらない）
-const SEC_DEFAULTS = { ops: '1', cost: '1', media: '1', tasks: '1' };
+const SEC_DEFAULTS = { ops: '1', cost: '1', reports: '1', media: '1', tasks: '1' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
@@ -913,8 +928,24 @@ function buildCronStatus(cron) {
     </div>`).join('');
 }
 
+// ── REPORTS（2026-07-11 Telegram→部屋 移設）──
+const REPORT_KIND_LABEL = { briefing: '朝ブリーフィング', idol_review: 'アイドルPDCA', reflect: '週次自己観察', search: 'リプ営業', night_review: '夜の総括' };
+function renderReports(data) {
+  const el = $('reportsList');
+  if (!el) return;
+  const reports = data?.reports || [];
+  if (!reports.length) { el.innerHTML = '<div class="empty">レポートはまだない（次の朝ブリーフィングから届く）</div>'; return; }
+  const meta = $('reportsMeta');
+  if (meta && data.updated_at) meta.textContent = fmtAgo(data.updated_at);
+  el.innerHTML = reports.map(r => `
+    <details class="report-item">
+      <summary><span class="dchip sub">${esc(REPORT_KIND_LABEL[r.kind] || r.kind)}</span> ${esc(r.title)} <span style="color:var(--sub2);font-size:10px;font-family:var(--mono);">${fmtAgo(r.ts)}</span></summary>
+      <pre>${esc(r.body)}</pre>
+    </details>`).join('');
+}
+
 async function loadAll() {
-  const [status, news, self, history, book, platform, phist, grokTweets, wallet, cron] = await Promise.all([
+  const [status, news, self, history, book, platform, phist, grokTweets, wallet, cron, reports] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/news.json'),
     fetchJson('/self.json'),
@@ -925,7 +956,9 @@ async function loadAll() {
     fetchJson('/grok_tweets.json'),
     fetchJson('/wallet.json'),
     fetchJson('/cron_status.json'),
+    fetchJson('/reports.json'),
   ]);
+  renderReports(reports);
   const pdays = phist?.days || [];
 
   const needsLogin = s => !!s?.login_required;
