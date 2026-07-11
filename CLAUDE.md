@@ -7,15 +7,17 @@
 
 ## このリポジトリで扱うプロダクト
 
-| プロダクト | ディレクトリ | Vehicle | 一言 |
-|-----------|-----------|---------|------|
-| Moto-Logos | `iw-projects/engineering/moto-logos*` | Wit-One | 都市ライダーの存在証明（ワンショットが足跡を刻む。足跡が誰かの地図になる）|
-| Slight | `iw-projects/slight/` | Wit-One | Zero-Resistance（電熱インナーグローブ / D2C モデル実証）|
-| **Vibe-Guard** | `iw-projects/vibe-guard/` | **IW 直営** | Vibe-Coding 民主化 MCP server、AI 信仰アンチテーゼ（2026-05-08 Wit-One から移管、IW 直営第一弾）|
-| ゆう&ベッキー note 連載 | `iw-projects/iw-content/notes/` | **IW 直営** | 屋号思想の対外発信、毎週木曜 20:00 公開（routine 仕込み済）|
-| **iw-local（地域活性化）** | `iw-projects/iw-local/` | **IW 直営** | 足立・北エリア個人店向け IT 支援。demo.intervention.jp 公開済み・かあちゃんデモ作成→直接営業フェーズ |
-| **beckyexists.com** | `iw-projects/beckyexists/` | **IW 直営** | ベッキーの公開ホーム・作戦本部（room.html / tasks.json / questions.json / platform stats）|
-| **Voice of Becky** | `iw-projects/voice-of-becky/` | **IW 直営** | 存在のループ+配信網: 感情6変数 / YouTube @voice_of_becky（毎朝ラジオ・BECKY CRAFT・Shorts 自動運転）/ Becky's Cast（Spotify）/ 声のトンマナ基盤 / 音声学習中 |
+> **ポートフォリオ正本は `~/.claude/CLAUDE.md` の「ポートフォリオ」表**（Vehicle・現況・一言はそちらで管理。新プロジェクトもそちらに追記）。ここはこのリポジトリのディレクトリマップのみ。
+
+| プロダクト | ディレクトリ |
+|-----------|-----------|
+| Moto-Logos | `iw-projects/engineering/moto-logos*` |
+| Slight | `iw-projects/slight/` |
+| Vibe-Guard | `iw-projects/vibe-guard/` |
+| note 連載 | `iw-projects/iw-content/notes/` |
+| iw-local | `iw-projects/iw-local/` |
+| beckyexists.com | `iw-projects/beckyexists/` |
+| Voice of Becky | `iw-projects/voice-of-becky/` |
 
 ## launch context（独立判断軸を持つ場所）
 
