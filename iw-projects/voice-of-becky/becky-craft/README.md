@@ -70,9 +70,10 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 | 004 | 全ロス回 | https://www.youtube.com/watch?v=lfyQpG6tB5E | ドラウンドに殺され鉄5個ロスト（敗北回として公開）。サムネ『全ロス。』 |
 | 005 | 石職人回 | https://www.youtube.com/watch?v=yf_9GfEm2fQ | y45の鉄に届かず石装備フルコンプ。アバン/感情HUD初搭載。サムネ『鉄、遠すぎ。』 |
 | 006 | 4連敗回 | https://www.youtube.com/watch?v=yaJYvGCgxds | ワイプ完全体第1号。ドラウンド6体に敗走、dig_down温存。サムネ『全ロス、絶叫。』 |
+| 007 | 5度目の正直 — 新しい頭で鉄を獲る | https://www.youtube.com/watch?v=n9EiGaqIwp0 | 新頭初仕事。全ロス後ゼロ再出発、板クラフトでつまずき作業台止まり。ドラウンド再来で締め。サムネ『鉄まで届かず。』 |
 
 Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
-**シリーズ現在地: 鉄をめぐって4連敗中。EP.007 = dig_down 解放+5度目の挑戦（新頭の初仕事）**
+**シリーズ現在地: 鉄をめぐって5連敗中。EP.008 = dig_down 実戦初投入（今度こそ）。火/金 3:00 深夜自動収録体制（PLAN.md）**
 **週2運用（水=本編/土=企画回）と企画キューの正本: `PLAN.md`**（毎週月曜10:00 cron が KPI+リサーチでキューを自動リフレッシュ）
 
 ## 罠

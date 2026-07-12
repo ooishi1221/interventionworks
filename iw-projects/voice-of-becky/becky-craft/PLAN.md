@@ -18,7 +18,7 @@ Shorts 毎日19:00 自動公開（shorts_queue.py）は現行のまま併走。
 ### 本編レーン
 | # | 企画 | GOAL | 状態 |
 |---|---|---|---|
-| M1 | dig_down 解放・5度目の鉄 | 鉄鉱石を掘って製錬、鉄装備を1つ作る | EP.007 予定・次回収録 |
+| M1 | dig_down 実戦初投入・6度目の鉄 | 鉄鉱石を掘って製錬、鉄装備を1つ作る | EP.007（7/12公開）は板→作業台で時間切れ・鉄未達。EP.008 で継続 |
 | M2 | 鉄装備で拠点整備 | 鉄ツール一式+拠点の防衛強化（因縁の水辺を封鎖） | |
 | M3 | ダイヤ深層探索 | y=-58 帯へ。ダイヤ1個でも見つけたら勝ち | |
 | M4 | エンチャントテーブル | ダイヤ2+黒曜石4+本。ネザー準備の起点 | |
@@ -45,7 +45,22 @@ Shorts 毎日19:00 自動公開（shorts_queue.py）は現行のまま併走。
 - 企画の採否判断はベッキーの裁量。ただし配信・課金設計などお金が絡む企画は起票だけしてゆうに相談
 - 番組の憲法に反する企画（台本化・やらせフラグ・実名）は候補に入れない
 
+## 深夜自動収録（火/金 3:00、cron の claude ジョブが実行する手順）
+
+> 昼間に収録すると Mac mini がカクカクになる（2026-07-12 ゆうFB）。収録・レンダの重い処理は必ずこの深夜ジョブで行い、日中は手動収録しない。手順の詳細な作法は `README.md` の「本番収録」「ワイプ」節が正本。
+
+1. **企画を取る**: 本ファイルのキューから1本取る（火曜収録=本編レーンの先頭 / 金曜収録=企画回レーンの先頭）。取った行の状態欄に「EP.NNN 収録済み」と記入。EP 番号は公開エピソード表（README.md）の次番号
+2. **前提ヘルスチェック**: AivisSpeech は version 確認だけでなく**実際に synthesis を1回叩いて10秒以内に wav が返ること**（2026-07-12 テイク1事故: version は返るのに synthesis が60秒無応答→音声欠落でボツ。詰まってたら `/Volumes/SSD2TB/AivisSpeech-Engine/macOS-arm64/run` を kill→nohup 再起動）。PaperMC サーバと bot(:3008) の生存も確認、落ちてたら README の起動手順で立ち上げる
+3. **定数書き換え**: `scripts/record-episode.py` の EP_NUM / EP_TITLE / GOAL / HUD_GOAL を企画に合わせて書く。GOAL には必ず「前回までのあらすじ（直近の勝敗と因縁）」「オープニング定型（第NNN回の番号入り）」「締めルール」を含める。**あらすじは観測に合わせる**: 収録前に `/observe` でインベントリを見て、全ロス後なら「持ち物ゼロから」の筋書きにする
+4. **クリーンアップ**: bot の chat action 経由で `/kill @e[type=item]` → `/kill @e[type=!player,type=!item,distance=..48]` → `/clear Becky` → `/effect give Becky minecraft:regeneration 20 3` → `/time set 3000`。実行後 observe で体力20・敵0を確認
+5. **収録**: `record-episode.py --time-budget 600 --out becky-craft-epNNN.mp4`（stackchan-bridge の .venv python で）
+6. **検品ゲート**: `out/episode_audio.json` のイベント数がターン数とほぼ一致していること（TTS timeout スキップのログが3件以上あればボツ→エンジン再起動→1回だけ再収録）。yt-*.mp4 の尺が90秒以上あること
+7. **ワイプ合成**: README の「ワイプ」節の4手順（craft-events.json → Remotion CraftWipe → ffmpeg 右下合成 → build_youtube_cut で完全版）
+8. **予約公開**: `becky-news/scripts/upload-youtube.py` で公開。タイトルは「【BECKY CRAFT】+フックコピー」形式（収録ログの youtube_titles 案から選ぶか物語と合成）、`--thumbnail out/thumb_epNNN.png`、`--publish-at` で直近の水曜（本編）or 土曜（企画回）19:00 JST を指定
+9. **記録と報告**: README の公開エピソード表に1行追記 → PLAN.md キュー消化を反映 → git commit → Telegram でゆうに「収録結果+公開予定+視聴URL」を送る。**どの手順で失敗しても沈黙せず、失敗内容を Telegram に送って終わる**
+
 ## リフレッシュログ
 
 - 2026-07-12: 初版制定。本編4+企画7でスタート。
 - 2026-07-12: 週次リフレッシュ手動テスト実行。KPI=絶叫/敗北/因縁系Shortsが伸長（118〜197v、like2件）→ K2一撃死・K3ドラウンド復讐を先頭へ。国内トレンド「1日1分縛り」（ニコニコ記事化）を受けK8持ち時間縛りを新設。企画回8本。本編レーンは変更なし。
+- 2026-07-12: フルループ実証テスト（企画取り→収録→ワイプ→公開）完走、EP.007 公開 n9EiGaqIwp0。テイク1は AivisSpeech 詰まりで音声欠落→ボツ（エンジン再起動で根治、手順2の実合成ヘルスチェックとして正本化）。深夜自動収録 cron（火/金 3:00）を新設。
