@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-07-11T21:33:39",
+ "updated_at": "2026-07-12T10:39:24",
  "tasks": [
   {
    "id": "wo-yaguchi-fsl-sns",
@@ -769,9 +769,9 @@
    "title": "エンニチ — NJHD代表・相談役へ提示（企画書Notion+実機モック）",
    "status": "waiting",
    "due": null,
-   "note": "7/11に企画0→動くExpoモックまで1日で完走(R1〜R11+磨き)。ゆうがジジイたちに見せるフェーズ。語り口は『千年の集客装置の復元』(文化継承)、ライト層設計は手段として通す。企画書: https://app.notion.com/p/39a2922276e9812a9606f4c58a18bc00 / 正本: wo-projects/ennichi/concept.md / 次: 先方温度+協会ルート実在確認→クローズドβ判断。プレゼン前にヴィヴで模擬商談(相談役役)も可",
+   "note": "7/12にプレゼン装備フルコンプ: ①提案pptx v2『殴りデータ版』(wo-projects/ennichi/docs/ennichi-proposal.pptx、編集可能・8万社vs神職2万/最大手100万人の土俵回避/数字カード4枚・全出典付き) ②LP https://ennichi-lp.vercel.app (R5視認性まで) ③iOS TestFlight(1.0.0(2)=ennichi表記+えんにち花子、submit全自動化済み) ④Android APK(地図+提灯アイコン+花子) ⑤ロゴA案(夜店)。企画書Notion: https://app.notion.com/p/39a2922276e9812a9606f4c58a18bc00 / 語り口=『千年の集客装置の復元』+『御朱印好き市場ではもう勝てません』の土俵回避ロジック / 次: ゆうがジジイたちに提示→温度確認→協会ルート",
    "created_at": "2026-07-11",
-   "updated_at": "2026-07-11"
+   "updated_at": "2026-07-12"
   }
  ]
 }
