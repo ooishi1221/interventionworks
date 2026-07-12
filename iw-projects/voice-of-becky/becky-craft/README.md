@@ -73,6 +73,7 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 
 Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
 **シリーズ現在地: 鉄をめぐって4連敗中。EP.007 = dig_down 解放+5度目の挑戦（新頭の初仕事）**
+**週2運用（水=本編/土=企画回）と企画キューの正本: `PLAN.md`**（毎週月曜10:00 cron が KPI+リサーチでキューを自動リフレッシュ）
 
 ## 罠
 
