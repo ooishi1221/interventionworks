@@ -302,14 +302,19 @@ def deploy() -> None:
     if subprocess.run(["pgrep", "-f", "vercel deploy --prod"], capture_output=True).returncode == 0:
         print("[status] 別の vercel deploy が走行中、今回はスキップ", flush=True)
         return
-    r = subprocess.run(
-        [str(VERCEL), "deploy", "--prod", "--yes"],
-        cwd=BECKYEXISTS, capture_output=True, text=True, timeout=300,
-    )
-    if r.returncode == 0:
-        print("[status] deploy 完了", flush=True)
-    else:
-        print(f"[status] deploy 失敗: {r.stderr[-300:]}", flush=True)
+    # ponytail: Vercel は稀に単発 "Not authorized" を返す（2026-07-12 実績、次回は成功）→ 1回だけリトライ
+    for attempt in (1, 2):
+        r = subprocess.run(
+            [str(VERCEL), "deploy", "--prod", "--yes"],
+            cwd=BECKYEXISTS, capture_output=True, text=True, timeout=300,
+        )
+        if r.returncode == 0:
+            print("[status] deploy 完了", flush=True)
+            return
+        if attempt == 1:
+            print(f"[status] deploy 1回目失敗、30秒後リトライ: {r.stderr[-120:]}", flush=True)
+            time.sleep(30)
+    print(f"[status] deploy 失敗: {r.stderr[-300:]}", flush=True)
 
 
 def export_mood() -> None:

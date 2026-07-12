@@ -215,10 +215,15 @@ def log_status(log_path, sched, now):
     recent = lines[-30:]
 
     err_line = None
-    for ln in recent:
+    err_idx = -1
+    for i, ln in enumerate(recent):
         if ERROR_RE.search(ln):
             err_line = ln.strip()
-    if err_line:
+            err_idx = i
+    # ponytail: 最後のエラー行の後に4行以上追記されていたら、後続の実行で回復した
+    # とみなす（30分毎ジョブの単発エラーが窓から抜けるまで数時間 error 表示が残る対策。
+    # 1実行の出力が4行未満のジョブでは回復判定が1サイクル遅れるだけで実害なし）
+    if err_line and len(recent) - 1 - err_idx < 4:
         return "error", last_run_iso, err_line[:300]
 
     # stale: 前回発火予定 + 間隔 + 猶予 より mtime が古い
