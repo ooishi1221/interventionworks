@@ -5,6 +5,8 @@
 import json
 import re
 import time
+import urllib.error
+import urllib.request
 
 import anthropic
 
@@ -14,6 +16,10 @@ MODELS = {
     "default": "claude-haiku-4-5-20251001",  # 軽量判断タスク
     "script": "claude-sonnet-4-6",           # 台本など長文構成タスク
 }
+
+# GPT は無料枠(data sharing incentive)用の下ごしらえタスク専用。
+# ベッキーの声が乗るタスク（comment/台本/reply等）には使わない。
+GPT_MODEL = "gpt-5.4-mini"
 
 # 使用量フック: (input_tokens, output_tokens) を受ける callable を代入すると成功時に呼ばれる。
 # observer が wallet.json 更新に使う（プロセスローカル）
@@ -78,6 +84,43 @@ def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
             return msg.content[0].text.strip()
         except (IndexError, AttributeError) as e:
             print(f"[llm] error: 応答が空 ({e})", flush=True)
+            return None
+
+
+def call_gpt(prompt: str, *, max_tokens: int = 2048, retries: int = 2) -> str | None:
+    """下ごしらえタスク専用の GPT 呼び出し。最終失敗は None（呼び元は Claude にフォールバックする設計）。"""
+    cfg = load_config() or {}
+    api_key = cfg.get("openai_api_key", "").strip()
+    if not api_key:
+        return None
+
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps({
+            "model": GPT_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_completion_tokens": max_tokens,
+        }).encode(),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+    )
+
+    attempt = 0
+    while True:
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read())
+            return data["choices"][0]["message"]["content"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < retries:
+                wait = 2 * (4 ** attempt)
+                print(f"[llm] gpt retry {attempt + 1}/{retries} in {wait}s: {e}", flush=True)
+                time.sleep(wait)
+                attempt += 1
+                continue
+            print(f"[llm] gpt error: {e}", flush=True)
+            return None
+        except Exception as e:
+            print(f"[llm] gpt error: {e}", flush=True)
             return None
 
 

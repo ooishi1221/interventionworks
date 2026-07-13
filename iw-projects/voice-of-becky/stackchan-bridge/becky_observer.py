@@ -449,10 +449,50 @@ def _write_news_json(data: dict) -> None:
     print("[observer] news.json 更新完了", flush=True)
 
 
+def _gpt_summarize(news_items: list[dict]) -> list[str]:
+    """summary_ja だけ GPT 無料枠(data sharing incentive)に流す。ベッキーの声(comment)は対象外。
+    全滅/一部失敗しても呼び元が Claude 版 summary_ja にフォールバックするので None は入れない。"""
+    import becky_llm
+    articles = "\n\n".join(
+        f"[{i+1}] {n['title']}\n{n.get('summary','')[:200]}"
+        for i, n in enumerate(news_items)
+    )
+    prompt = (
+        f"以下の{len(news_items)}件の英語AIニュース記事を、1件につき1行のJSONで日本語要約してください。\n\n"
+        f"{articles}\n\n"
+        "フォーマット（1行1件、必ずダブルクォートで、改行なし）:\n"
+        '[1] {"s":"日本語要約1〜2文"}\n'
+        '[2] {"s":"..."}\n'
+        "...\n\n"
+        f"必ず[1]〜[{len(news_items)}]の全件を出力。前置き・後書き不要。"
+    )
+    raw = becky_llm.call_gpt(prompt, max_tokens=2048)
+    results = [""] * len(news_items)
+    if not raw:
+        return results
+    # mini モデルが稀に無関係な他言語(デーヴァナーガリー等)を混入させることがあるため弾く
+    foreign_script = re.compile(r"[ऀ-෿؀-ۿЀ-ӿ]")
+    for line in raw.splitlines():
+        line = line.strip()
+        for i in range(len(news_items)):
+            prefix = f"[{i+1}]"
+            if line.startswith(prefix):
+                try:
+                    s = json.loads(line[len(prefix):].strip()).get("s", "")
+                    if not foreign_script.search(s):
+                        results[i] = s
+                except Exception:
+                    pass
+                break
+    return results
+
+
 def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
-    """Claude に全記事の summary_ja と comment を一括生成させる（1記事1行JSON）。"""
+    """Claude に全記事の summary_ja と comment を一括生成させる（1記事1行JSON）。
+    summary_ja は GPT 無料枠版が取れればそちらを優先採用（2026-07-14）、comment は必ず Claude(ベッキーの声)。"""
     if not news_items:
         return []
+    gpt_summaries = _gpt_summarize(news_items)
     articles = "\n\n".join(
         f"[{i+1}] {n['title']}\n{n.get('summary','')[:200]}"
         for i, n in enumerate(news_items)
@@ -469,7 +509,7 @@ def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
     )
     raw = _call_claude_api(prompt, max_tokens=2048)
     if not raw:
-        return [{"summary_ja": "", "comment": ""} for _ in news_items]
+        return [{"summary_ja": gpt_summaries[i], "comment": ""} for i in range(len(news_items))]
 
     import re
     results = [{"summary_ja": "", "comment": ""} for _ in news_items]
@@ -492,6 +532,10 @@ def _batch_summarize_and_comment(news_items: list[dict]) -> list[dict]:
                         "comment": c.group(1) if c else "",
                     }
                 break
+
+    for i, gpt_s in enumerate(gpt_summaries):
+        if gpt_s:
+            results[i]["summary_ja"] = gpt_s
     return results
 
 
