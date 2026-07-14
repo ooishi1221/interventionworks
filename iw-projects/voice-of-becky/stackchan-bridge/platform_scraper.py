@@ -57,7 +57,7 @@ def _append_history(stats: dict) -> None:
             "yt_subs": nz(yt.get("subscribers")),
             "yt_views": nz(yt.get("total_views")),
             "note_views": nz(note.get("total_views")),
-            "note_likes": note.get("total_likes"),
+            "note_likes": nz(note.get("total_likes")),
             "kdp_orders": kdp.get("orders_this_month"),
             "kdp_kenp": kdp.get("kenp_this_month"),
         }
