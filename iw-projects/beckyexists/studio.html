@@ -95,6 +95,16 @@
     .action-why { font-size: 12px; color: var(--sub); margin: 6px 0 0 22px; }
     .action-want { display: inline-block; font-size: 10px; color: var(--green); background: var(--green-dim); font-family: var(--mono); padding: 2px 8px; border-radius: 5px; margin: 8px 0 0 22px; }
 
+    /* ── portfolio reports ── */
+    .dchip { font-size: 10.5px; font-weight: 700; font-family: var(--mono); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+    .dchip.sub { color: var(--sub); background: var(--panel2); font-weight: 400; }
+    .report-item summary { cursor: pointer; font-size: 12.5px; color: var(--text); list-style: none; padding: 5px 0; }
+    .report-item summary::-webkit-details-marker { display: none; }
+    .report-item summary::before { content: '▸ '; color: var(--sub2); }
+    .report-item[open] summary::before { content: '▾ '; color: var(--sub2); }
+    .report-item pre { margin: 6px 0 8px 14px; padding: 10px 12px; background: rgba(255,255,255,0.03); border-left: 2px solid var(--green); border-radius: 0 8px 8px 0; font-size: 12.5px; color: var(--sub); white-space: pre-wrap; word-break: break-word; line-height: 1.7; font-family: 'Inter', 'Hiragino Sans', sans-serif; }
+    .next-run { font-size: 12px; color: var(--sub); font-family: var(--mono); margin-bottom: 12px; padding: 8px 12px; background: var(--panel2); border-radius: 8px; }
+
     /* ── prev review ── */
     .prev-actions { margin-bottom: 10px; }
     .prev-actions div { font-size: 12.5px; color: var(--sub); padding: 4px 0 4px 18px; position: relative; }
@@ -185,6 +195,14 @@
     <div class="sub-note">先週のアクションは実行されたか・数字に出たか — ループの答え合わせ</div>
     <div class="prev-actions" id="prevActions"></div>
     <div class="verdict" id="prevVerdict"><div class="empty">--</div></div>
+  </div>
+
+  <!-- ポートフォリオ判断ループ -->
+  <div class="card">
+    <h2><svg data-lucide="calendar-clock"></svg>認知拡大ポートフォリオ判断</h2>
+    <div class="sub-note">X/Cast/Craft/News/note横断でベッキーが自分で判断・実行する週次ループ（正本: voice-of-becky/docs/portfolio-refresh.md）</div>
+    <div class="next-run" id="nextRun"></div>
+    <div id="portfolioReports"><div class="empty">まだ実行なし</div></div>
   </div>
 
   <!-- 週次KPIトレンド -->
@@ -314,16 +332,43 @@ function buildVideos(stats) {
     }).join('')}</tbody>`;
 }
 
+const PORTFOLIO_KIND_LABEL = { portfolio_refresh: '週次判断', portfolio_refresh_proposal: 'ゆうに相談' };
+function buildNextRun() {
+  const now = new Date();
+  const day = now.getDay(); // 0=日 ... 1=月
+  let daysAhead = (1 - day + 7) % 7;
+  const next = new Date(now);
+  next.setDate(now.getDate() + daysAhead);
+  next.setHours(9, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 7);
+  const fmt = next.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+  $('nextRun').innerHTML = `<svg data-lucide="clock" style="width:12px;height:12px;vertical-align:-2px;"></svg> 次回実行予定: ${fmt} 9:00`;
+}
+function buildPortfolioReports(data) {
+  const el = $('portfolioReports');
+  if (!el) return;
+  const reports = (data?.reports || []).filter(r => r.kind === 'portfolio_refresh' || r.kind === 'portfolio_refresh_proposal');
+  if (!reports.length) { el.innerHTML = '<div class="empty">まだ実行なし（初回は月曜9:00）</div>'; return; }
+  el.innerHTML = reports.map(r => `
+    <details class="report-item">
+      <summary><span class="dchip sub">${esc(PORTFOLIO_KIND_LABEL[r.kind] || r.kind)}</span> ${esc(r.title)} <span style="color:var(--sub2);font-size:10px;font-family:var(--mono);">${fmtAgo(r.ts)}</span></summary>
+      <pre>${esc(r.body)}</pre>
+    </details>`).join('');
+}
+
 async function loadAll() {
-  const [report, stats, history] = await Promise.all([
+  const [report, stats, history, reports] = await Promise.all([
     fetchJson('/activity_report.json'),
     fetchJson('/platform_stats.json'),
     fetchJson('/history.json'),
+    fetchJson('/reports.json'),
   ]);
   buildKpi(report, stats, history);
   buildReport(report);
   buildTrend(report);
   buildVideos(stats);
+  buildNextRun();
+  buildPortfolioReports(reports);
   if (window.lucide) lucide.createIcons();
 }
 
