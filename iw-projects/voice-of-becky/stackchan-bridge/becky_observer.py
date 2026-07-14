@@ -284,7 +284,16 @@ def pick_emotion(text: str) -> str:
 def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None, with_card: bool = False) -> str | None:
     """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。
     with_card=False（デフォルト）はテキストのみで投稿。内容と文体で勝負する方針。
+
+    全 post_to_x 呼び出し(アイドル日記/AIニュース/スケジュール投稿/雑談発話)の共通経路。
+    post-tweet-cli.mjs 側にも同じ上限チェックがあるので二重ガードだが、ここで弾けば
+    無駄なLLM呼び出し(コスト)とログ出力を先に止められる(2026-07-14)。
     """
+    daily_x_count = _becky_llm.x_posts_today()
+    x_max_per_day = _becky_llm.x_daily_budget()
+    if daily_x_count >= x_max_per_day:
+        print(f"[observer] post_to_x: 1日上限到達 ({daily_x_count}/{x_max_per_day}) → スキップ", flush=True)
+        return None
     try:
         cmd = ["node", str(X_TWEET_CLI), text]
         if reply_to:

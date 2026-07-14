@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from becky_probe import _call_claude, DIARY_DIR  # 軽量モジュール（TTS等の重い依存なし）
+import becky_llm
 
 X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs")
 LOG_PATH = Path.home() / ".stackchan" / "diary_x_log.json"
@@ -121,6 +122,9 @@ def append_log(entry: dict) -> None:
 
 def main() -> None:
     print(f"[diary_x] 起動 {datetime.now().strftime('%m-%d %H:%M')}", flush=True)
+    if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
+        print("[diary_x] 1日上限到達 → スキップ", flush=True)
+        return
     cand = pick_candidate()
     if not cand:
         print("[diary_x] 基準を満たす候補なし（score>=65 / 24h経過 / 未送信）", flush=True)

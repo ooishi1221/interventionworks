@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import becky_image  # load_mood / get_weather / get_seasonal_event / select_scene を借りる
+import becky_llm
 from becky_llm import call_llm
 
 X_TWEET_CLI = Path(
@@ -126,6 +127,10 @@ def post_to_x(text: str, image: Path) -> str | None:
 def main() -> None:
     dry_run = "--dry-run" in sys.argv
     print(f"[image_x] 起動 {datetime.datetime.now():%m-%d %H:%M} dry_run={dry_run}", flush=True)
+
+    if not dry_run and becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
+        print("[image_x] 1日上限到達 → スキップ", flush=True)
+        return
 
     image = ensure_image()
     if not image:
