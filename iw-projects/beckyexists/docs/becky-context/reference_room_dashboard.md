@@ -13,7 +13,8 @@ metadata:
 
 - **生成元**: `stackchan-bridge/becky_activity_review.py`（cron 毎週月曜8:00、旧 `becky_observer.py --media-report` の後継。旧コードは observer 内に残置、cron からは外した）
 - **データ契約**: `activity_report.json` — `{generated_at, period, kpi{x,youtube,note,kdp}, research(マイケル調査・出典URL付き), analysis, issues[], actions[{text,why,want_id}], prev_review{actions,verdict}, kpi_history[12週]}`
-- **ループの閉じ方**: actions は `~/.stackchan/becky_wants.json` に自動投入（source="activity_review", horizon="week", heat=0.7）→ 毎日の decide が拾う → 翌週の prev_review で検証
+- **ループの閉じ方(旧設計、2026-07-14時点で機能不全と判明)**: actions は `~/.stackchan/becky_wants.json` に自動投入（source="activity_review", horizon="week", heat=0.7）→ 毎日の decide が拾う → 翌週の prev_review で検証、という設計だったが、「投稿頻度を絞る」のような**ルール変更系のaction**はdecide()の7種の離散action(tweet/diary等)に対応するものがなく、実行されず2週連続で握りつぶされていたことが判明(`working/project_becky_growth_diagnosis_2026-07.md`)
+- **新設(2026-07-14)**: `voice-of-becky/docs/portfolio-refresh.md` — 毎週月曜9:00(activity_reviewの1時間後)、`claude -p`の自律セッションがKPI(activity_report.json)を読んで、X/Cast/Craft/News/note横断で「続ける/頻度変更/縮小終了/新規挑戦」を自分で判断し直接実行(頻度変更はcron/`.env`を直接編集、新規登録・課金が絡む時だけ提案止まり)。旧wants経由の設計を置き換える形で、ルール変更系の判断はこちらが担う
 - **調査の実行**: `claude -p`（サブスク、`--allowedTools WebSearch WebFetch`、workshop の権限絞り型）。API課金なし
 - ラジオ(Spotify)の再生数は取得手段なし、YouTube 統計で代替（Spotify スクレイパは v2 候補）
 - room.html の「週次コンテンツ分析」カードは /studio への誘導カードに置き換え済み（media_report.json は不使用に）
