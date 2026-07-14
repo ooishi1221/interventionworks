@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-12T10:39:24",
+  "updated_at": "2026-07-14T00:00:00+09:00",
   "tasks": [
     {
       "id": "wo-yaguchi-fsl-sns",
@@ -772,6 +772,20 @@
       "note": "7/12にプレゼン装備フルコンプ: ①提案pptx v2『殴りデータ版』(wo-projects/ennichi/docs/ennichi-proposal.pptx、編集可能・8万社vs神職2万/最大手100万人の土俵回避/数字カード4枚・全出典付き) ②LP https://ennichi-lp.vercel.app (R5視認性まで) ③iOS TestFlight(1.0.0(2)=ennichi表記+えんにち花子、submit全自動化済み) ④Android APK(地図+提灯アイコン+花子) ⑤ロゴA案(夜店)。企画書Notion: https://app.notion.com/p/39a2922276e9812a9606f4c58a18bc00 / 語り口=『千年の集客装置の復元』+『御朱印好き市場ではもう勝てません』の土俵回避ロジック / 次: ゆうがジジイたちに提示→温度確認→協会ルート。7/13未明: 実況大増築R12〜R26(13commit)——UGC報告(承認制+Waze方式)/カメラ3タップ投稿/🩷/おもいで/シェア/実況ティッカー/鮮度フェード/ピン波紋/磨りガラスUI+扇形3ボタン/文言=祭りトリガー化。pptx12枚化(UGC+マネタイズ草案)。両OSデモビルド発射(R27、EAS完了確認待ち→ゆう実機最終検品)。ゆう絶好調デー『めっちゃいい！』連発、マネタイズ3案も自分で起案。7/13朝: Pixel 9検品R28〜31(3列固定/いいね一覧タップ閉じ/Alert.prompt根治=Android時間報告無反応/ピン見切れ/磨りガラス統一)、両OSビルド完了(iOS 1.0.0(3) TestFlight済/APK URL共有済)。pptx機能スライド用テキスト提供済(ゆう手貼り)。次=磨りガラスPixel 9確認→APK焼き直し→NJHD提示",
       "created_at": "2026-07-11",
       "updated_at": "2026-07-13"
+    },
+    {
+      "id": "ops-vercel-cost-telegram-fix",
+      "scope": "iw",
+      "label": "作戦本部インフラ根治 — Vercel/コスト表示/Telegram MCP",
+      "category": "infra",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-07-14",
+      "updated_at": "2026-07-14",
+      "due": null,
+      "note": "①status.jsonのVercelトークンエラーは既存リトライで自動回復済みと確認（対応不要） ②roomのCOSTカード非表示=Gemini Chrome(CDP:9223)のConsole/note/X分析ログイン切れ→ゆう再ログイン+becky_observer.py再起動+platform_scraper.py手動実行+vercel deploy --prodで本番反映確認 ③Telegram MCP「気がついたら落ちてる」根治=重複--channelsセッションのpoller奪い合いが真因。一度誤診（enabledPluginsグローバル無効化+--plugin-dir化）して悪化させたが自己訂正、重複セッション終了+becky-start.sh構文バグ修正+becky-reconnect.sh刷新で実送信の受信→返信を確認。詳細はmemory working/feedback_ops_gotchas.md",
+      "icon": "🔧",
+      "completed_at": "2026-07-14"
     }
   ]
 }
