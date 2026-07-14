@@ -34,6 +34,7 @@ REPO_ROOT = Path("/Volumes/SSD2TB/interventionworks")
 BECKYEXISTS = REPO_ROOT / "iw-projects" / "beckyexists"
 PLATFORM_STATS = BECKYEXISTS / "platform_stats.json"
 HISTORY_JSON = BECKYEXISTS / "history.json"
+PLATFORM_HISTORY_JSON = BECKYEXISTS / "platform_history.json"
 REPORT_JSON = BECKYEXISTS / "activity_report.json"
 TWEET_LOG = REPO_ROOT / "iw-projects" / "voice-of-becky" / "x-tweet" / "tweet-log.jsonl"
 
@@ -63,6 +64,17 @@ def collect_kpi() -> dict:
     note = stats.get("note", {})
     kdp = stats.get("kdp", {})
 
+    # note PVが0に戻ることはない(platform_scraper.pyの前提と同じ)→0はスクレイプ失敗とみなし、
+    # platform_history.json の直近の正常値にフォールバックする(2026-07-14、マイケル調査で特定)
+    note_total_views = note.get("total_views")
+    note_total_likes = note.get("total_likes")
+    if not note_total_views:
+        for day in reversed(_load_json(PLATFORM_HISTORY_JSON).get("days", [])):
+            if day.get("note_views"):
+                note_total_views = day["note_views"]
+                note_total_likes = day.get("note_likes", note_total_likes)
+                break
+
     followers_now = history[-1].get("self_followers") if history else None
     followers_7d_ago = None
     if len(history) >= 8:
@@ -85,7 +97,7 @@ def collect_kpi() -> dict:
             "total_views": yt.get("total_views"),
             "recent_videos": yt.get("videos", [])[:10],
         },
-        "note": {"total_views": note.get("total_views"), "total_likes": note.get("total_likes")},
+        "note": {"total_views": note_total_views, "total_likes": note_total_likes},
         "kdp": {"orders_this_month": kdp.get("orders_this_month"),
                 "kenp_this_month": kdp.get("kenp_this_month")},
     }

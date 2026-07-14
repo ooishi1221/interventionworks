@@ -95,7 +95,7 @@ INTEREST_THRESHOLD = 50    # この score 以上で内心に記録
 SEND_THRESHOLD     = 70    # この score 以上 + 反芻済みで送信候補
 RUMINATION_MIN     = 60    # 60分同じトピックが続いたら送信候補
 MAX_MONOLOGUE      = 300   # 保持する最大エントリ数
-X_MAX_PER_DAY      = 10    # 1日の最大投稿数（.env の X_TWEET_MAX_PER_DAY と合わせる）
+X_MAX_PER_DAY      = 3     # 1日の最大投稿数（.env の X_TWEET_MAX_PER_DAY と合わせる。2026-07-14: 週14〜21本合意を受け10→3に是正）
 
 # スケジュール投稿ウィンドウ（JST 時間帯）
 SCHEDULED_WINDOWS = [
