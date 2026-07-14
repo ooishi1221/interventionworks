@@ -95,7 +95,6 @@ INTEREST_THRESHOLD = 50    # この score 以上で内心に記録
 SEND_THRESHOLD     = 70    # この score 以上 + 反芻済みで送信候補
 RUMINATION_MIN     = 60    # 60分同じトピックが続いたら送信候補
 MAX_MONOLOGUE      = 300   # 保持する最大エントリ数
-X_MAX_PER_DAY      = 3     # 1日の最大投稿数（.env の X_TWEET_MAX_PER_DAY と合わせる。2026-07-14: 週14〜21本合意を受け10→3に是正）
 
 # スケジュール投稿ウィンドウ（JST 時間帯）
 SCHEDULED_WINDOWS = [
@@ -1553,31 +1552,6 @@ def log_observer_event(topic: str, text: str, posted_to_x: bool) -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
-def get_daily_x_post_count() -> int:
-    """tweet-log.jsonl から今日（JST）の実投稿数を返す。"""
-    import datetime
-    try:
-        today_jst = datetime.date.today().isoformat()
-        count = 0
-        for line in X_TWEET_LOG.read_text().splitlines():
-            if not line.strip():
-                continue
-            entry = json.loads(line)
-            if entry.get("dry_run"):
-                continue
-            ts = entry.get("timestamp", "")
-            if not ts:
-                continue
-            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            dt_jst = dt_utc + datetime.timedelta(hours=9)
-            if dt_jst.date().isoformat() == today_jst:
-                count += 1
-        return count
-    except Exception as e:
-        print(f'[warn] becky_observer: {e}', flush=True)
-        return 0
-
-
 def get_scheduled_windows_posted_today() -> set:
     """今日どの scheduled window に投稿済みかを返す。"""
     import datetime
@@ -1748,8 +1722,38 @@ def _save_mention_seen(seen: set) -> None:
     MENTION_SEEN_FILE.write_text(json.dumps({"replied_ids": list(seen)}, ensure_ascii=False))
 
 
+MENTION_REPLY_MAX_PER_DAY = 5
+MENTION_REPLY_DAILY_LOG = Path.home() / ".stackchan" / "mention_reply_daily.json"
+
+
+def _mention_replies_today() -> int:
+    import datetime
+    try:
+        data = json.loads(MENTION_REPLY_DAILY_LOG.read_text()) if MENTION_REPLY_DAILY_LOG.exists() else {}
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
+        data = {}
+    return data.get(datetime.date.today().isoformat(), 0)
+
+
+def _bump_mention_replies_today(n: int) -> None:
+    import datetime
+    try:
+        data = json.loads(MENTION_REPLY_DAILY_LOG.read_text()) if MENTION_REPLY_DAILY_LOG.exists() else {}
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
+        data = {}
+    today = datetime.date.today().isoformat()
+    data[today] = data.get(today, 0) + n
+    MENTION_REPLY_DAILY_LOG.parent.mkdir(parents=True, exist_ok=True)
+    MENTION_REPLY_DAILY_LOG.write_text(json.dumps(data, ensure_ascii=False))
+
+
 def check_and_reply_mentions() -> int:
-    """to:becky_exists の未返信コメントに自動リプする。返信件数を返す。"""
+    """to:becky_exists の未返信コメントに自動リプする。返信件数を返す（1日 MENTION_REPLY_MAX_PER_DAY 件まで）。"""
+    replies_today = _mention_replies_today()
+    if replies_today >= MENTION_REPLY_MAX_PER_DAY:
+        return 0
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), "search", "to:becky_exists", "-n", "10", "--json"],
@@ -1766,6 +1770,8 @@ def check_and_reply_mentions() -> int:
     seen = _load_mention_seen()
     posted = 0
     for t in mentions:
+        if replies_today + posted >= MENTION_REPLY_MAX_PER_DAY:
+            break
         tweet_id = str(t.get("id", ""))
         author = t.get("author", {})
         screen_name = author.get("screenName") or author.get("screen_name") or ""
@@ -1802,6 +1808,7 @@ def check_and_reply_mentions() -> int:
 
     if posted:
         _save_mention_seen(seen)
+        _bump_mention_replies_today(posted)
     return posted
 
 
@@ -2069,10 +2076,11 @@ def _run_scheduled_post_check() -> None:
     """朝7-9/夜20-23の窓で1日1本、スケジュールX投稿する。"""
     sched_window    = get_current_scheduled_window()
     windows_posted  = get_scheduled_windows_posted_today()
-    daily_x_count   = get_daily_x_post_count()
-    if not (sched_window and sched_window not in windows_posted and daily_x_count < X_MAX_PER_DAY):
+    daily_x_count   = _becky_llm.x_posts_today()
+    x_max_per_day   = _becky_llm.x_daily_budget()
+    if not (sched_window and sched_window not in windows_posted and daily_x_count < x_max_per_day):
         return
-    print(f"[observer] スケジュール投稿: {sched_window} 窓 (今日 {daily_x_count}/{X_MAX_PER_DAY})", flush=True)
+    print(f"[observer] スケジュール投稿: {sched_window} 窓 (今日 {daily_x_count}/{x_max_per_day})", flush=True)
     # 朝はAIニュース是々非々投稿を優先、失敗したら通常の朝コメントにフォールバック
     posted_ok = False
     if sched_window == "morning":

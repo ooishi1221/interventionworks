@@ -30,6 +30,7 @@ import becky_thread_manager
 import becky_action_log
 import becky_seed_box
 import becky_night_review
+import becky_llm
 
 CONFIG_YAML      = Path(__file__).parent / "config.yaml"
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
@@ -42,8 +43,7 @@ DECIDE_NOTES_DIR = Path.home() / ".stackchan" / "decide_notes"
 DIARY_DIR        = Path.home() / ".stackchan" / "diary"
 TASKS_JSON       = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/tasks.json")
 
-# 1日の行動上限（暴走防止）
-MAX_TWEET_PER_DAY = 2
+# 1日の行動上限（暴走防止）。tweetの上限は becky_llm.x_daily_budget()(x-tweet/.env が正本)を参照する
 MAX_PROBE_PER_DAY = 1
 # 週の build 上限（希少性が「見て？」の価値を守る）
 MAX_BUILD_PER_WEEK = 2
@@ -200,7 +200,7 @@ def collect_context() -> dict:
             for s in seeds[:8]
         ],
         "pending_tasks": _pending_tasks(),
-        "tweets_today": _count_action_today("tweet"),
+        "tweets_today": becky_llm.x_posts_today(),
         "probes_today": _count_action_today("probe_yu"),
         "last_night": last_night,
         "wants": format_wants(load_wants()),
@@ -400,7 +400,7 @@ def decide(context: dict) -> dict:
         recent_actions=json.dumps(context["recent_actions"], ensure_ascii=False),
         pending_tasks=fmt_tasks(context["pending_tasks"]),
         tweets_today=context["tweets_today"], probes_today=context["probes_today"],
-        max_tweet=MAX_TWEET_PER_DAY, max_probe=MAX_PROBE_PER_DAY,
+        max_tweet=becky_llm.x_daily_budget(), max_probe=MAX_PROBE_PER_DAY,
         max_build=MAX_BUILD_PER_WEEK,
     )
 
@@ -480,7 +480,7 @@ def dispatch(decision: dict) -> str:
         return f"nurture_seed: {note}"
 
     if action == "tweet":
-        if _count_action_today("tweet") >= MAX_TWEET_PER_DAY:
+        if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
             _log_decision(decision, executed=False, extra="日次上限のため実行せず")
             return "tweet: 上限到達でスキップ"
         text = params.get("text", "").strip()

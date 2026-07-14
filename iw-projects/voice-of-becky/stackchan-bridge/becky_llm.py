@@ -2,11 +2,13 @@
 """becky_llm.py — cron スクリプト共通の LLM 呼び出し基盤（2026-07-03）
 モデル差し替え・リトライ・JSON検証をここ一箇所で管理する。
 """
+import datetime
 import json
 import re
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import anthropic
 
@@ -16,6 +18,9 @@ MODELS = {
     "default": "claude-haiku-4-5-20251001",  # 軽量判断タスク
     "script": "claude-sonnet-4-6",           # 台本など長文構成タスク
 }
+
+X_TWEET_ENV = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/.env")
+X_TWEET_LOG = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 
 # GPT は無料枠(data sharing incentive)用の下ごしらえタスク専用。
 # ベッキーの声が乗るタスク（comment/台本/reply等）には使わない。
@@ -122,6 +127,42 @@ def call_gpt(prompt: str, *, max_tokens: int = 2048, retries: int = 2) -> str | 
         except Exception as e:
             print(f"[llm] gpt error: {e}", flush=True)
             return None
+
+
+def x_daily_budget() -> int:
+    """X投稿の1日あたり予算。x-tweet/.env の X_TWEET_MAX_PER_DAY が正本(post-tweet-cli.mjs と共有)。
+    観測経路(observer/decide等)はここだけを見ることで、独自のハードコード上限を持たない(2026-07-14)。"""
+    try:
+        for line in X_TWEET_ENV.read_text().splitlines():
+            if line.strip().startswith("X_TWEET_MAX_PER_DAY="):
+                return int(line.split("=", 1)[1].strip())
+    except Exception as e:
+        print(f"[llm] x_daily_budget error: {e}", flush=True)
+    return 3
+
+
+def x_posts_today() -> int:
+    """tweet-log.jsonl(全経路共通の実投稿ログ)から今日(JST)の実投稿数を返す。"""
+    try:
+        today_jst = datetime.date.today().isoformat()
+        count = 0
+        for line in X_TWEET_LOG.read_text().splitlines():
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            if entry.get("dry_run"):
+                continue
+            ts = entry.get("timestamp", "")
+            if not ts:
+                continue
+            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dt_jst = dt_utc + datetime.timedelta(hours=9)
+            if dt_jst.date().isoformat() == today_jst:
+                count += 1
+        return count
+    except Exception as e:
+        print(f"[llm] x_posts_today error: {e}", flush=True)
+        return 0
 
 
 def call_llm_json(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
