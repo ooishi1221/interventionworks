@@ -1,18 +1,19 @@
 {
-  "updated_at": "2026-07-14T09:52:43",
+  "updated_at": "2026-07-14T09:58:29",
   "tasks": [
     {
       "id": "studio-reports-panel",
       "scope": "iw",
       "label": "/studio(活動分析室)にレポート・行動予定・振り返りを表示",
       "category": "voice-of-becky",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "start": "2026-07-14",
       "updated_at": "2026-07-14",
       "due": null,
-      "note": "ゆうの依頼(7/14): reports.json由来のレポート(portfolio_refresh等)・ベッキーの行動予定/アクション・振り返りを/studioで見えるようにしたい。room.htmlのREPORTSセクション(reports.json表示)と役割が近いので、studio側に何を新規表示すべきか(portfolio-refresh.mdのリフレッシュログ連携、activity_report.jsonのactions/prev_review表示強化など)を設計してから実装。まだ未着手。",
-      "icon": "📊"
+      "note": "ゆうの依頼(7/14): reports.json由来のレポート(portfolio_refresh等)・ベッキーの行動予定/アクション・振り返りを/studioで見えるようにしたい。room.htmlのREPORTSセクション(reports.json表示)と役割が近いので、studio側に何を新規表示すべきか(portfolio-refresh.mdのリフレッシュログ連携、activity_report.jsonのactions/prev_review表示強化など)を設計してから実装。まだ未着手。 → 実装完了(commit 7bbfd1c): studio.htmlに「認知拡大ポートフォリオ判断」カード新設(次回実行予定+reports.jsonのportfolio_refresh展開式一覧)、room.htmlのREPORTSラベルも対応。",
+      "icon": "📊",
+      "completed_at": "2026-07-14"
     },
     {
       "id": "wo-yaguchi-fsl-sns",
