@@ -226,9 +226,9 @@
       "status": "in_progress",
       "priority": "medium",
       "start": "2026-06-30",
-      "updated_at": "2026-06-30",
-      "due": "2026-07-07",
-      "note": "5フェーズ体験型チュートリアル（環境確認→CLAUDE.md設定→セキュリティ→Git→スキル/MCP）。VS Code前提。iw-projects/claude-code-starter/に作成。次: GitHubリポジトリ化 + CSの子のやりたいことを体験できるゴール追加",
+      "updated_at": "2026-07-14",
+      "due": "2026-07-21",
+      "note": "5フェーズ体験型チュートリアル（環境確認→CLAUDE.md設定→セキュリティ→Git→スキル/MCP）。VS Code前提。iw-projects/claude-code-starter/に作成。次: GitHubリポジトリ化 + CSの子のやりたいことを体験できるゴール追加 7/14棚卸し: まだ進行中、dueを7/21に延長。",
       "icon": "🎓"
     },
     {
@@ -294,9 +294,9 @@
       "status": "waiting",
       "priority": "high",
       "start": "2026-06-17",
-      "updated_at": "2026-06-17",
+      "updated_at": "2026-07-14",
       "due": "2026-06-20",
-      "note": "CCAF解禁済み・portal launch 待ち。ポータルサイト連絡きてる（試験情報などが届く予定）",
+      "note": "CCAF解禁済み・portal launch 待ち。ポータルサイト連絡きてる（試験情報などが届く予定） 7/14棚卸し: 進展あり、ポータルサイトから連絡到着済み（試験情報等待ち）、引き続きwaiting。",
       "icon": "🏆"
     },
     {
@@ -361,9 +361,9 @@
       "status": "in_progress",
       "priority": "high",
       "start": "2026-06-01",
-      "updated_at": "2026-06-16",
-      "due": "2026-06-25",
-      "note": "177 quiz 完成・drill 中、folding が next",
+      "updated_at": "2026-07-14",
+      "due": "2026-07-21",
+      "note": "177 quiz 完成・drill 中、folding が next 7/14棚卸し: drill継続中、変化なし。dueを7/21に延長。",
       "icon": "📊"
     },
     {
@@ -401,9 +401,9 @@
       "status": "waiting",
       "priority": "medium",
       "start": "2026-06-10",
-      "updated_at": "2026-06-10",
-      "due": "2026-06-30",
-      "note": "インジケーター手首下側採用・Stella 返答待ち",
+      "updated_at": "2026-07-14",
+      "due": "2026-07-16",
+      "note": "インジケーター手首下側採用・Stella 返答待ち 7/14棚卸し: 7/16(木)会社で第二弾サンプルを実際に見る予定。",
       "icon": "🧤"
     },
     {
@@ -442,9 +442,9 @@
       "status": "in_progress",
       "priority": "low",
       "start": "2026-06-15",
-      "updated_at": "2026-06-22",
+      "updated_at": "2026-07-14",
       "due": "2026-12-31",
-      "note": "port 9001 稼働中・morning_cast チェック統合済み。AIニュースコメントプロンプト → 貧乏地下AIアイドル視点（電気代・API代）に更新済み（6/22）",
+      "note": "7/14クレア監査で発覚: port 9001(health_server.py)が実際には停止していた(tasks.jsonの旧記載「稼働中」は実態と不一致、いつから止まってたかは不明)。room/studioのコメント投稿・memos機能が死んでいた可能性。手動でnohup再起動して復旧確認済み。health_server.pyは手動起動運用(launchd/cron登録なし)のため、Mac再起動後は再度手動起動が必要。監視対象8サービス中、health_server自体とAivisSpeech(TTS)が稼働中を確認、他6つ(aituber-onair/metameta/whisper_server/Applio/VC Client/n8n)はオンデマンド起動が前提のツールで停止中でも正常(常時稼働が必要なものではない)。",
       "icon": "🔍"
     },
     {
@@ -466,12 +466,12 @@
       "scope": "iw",
       "label": "IW Local ちょうどいいズボラリスト作成",
       "category": "iw-local",
-      "status": "in_progress",
-      "priority": "high",
+      "status": "pending",
+      "priority": "low",
       "start": "2026-06-17",
-      "updated_at": "2026-06-17",
+      "updated_at": "2026-07-14",
       "due": "2026-06-21",
-      "note": "ズボラTop10出した（返信0件確認済）。next: 電話あり×個人店×連絡経路あり でフィルタ→「ちょうどいいズボラ」リスト",
+      "note": "ズボラTop10出した（返信0件確認済）。next: 電話あり×個人店×連絡経路あり でフィルタ→「ちょうどいいズボラ」リスト 7/14棚卸し: IW Local自体の優先度が今は低いため保留。",
       "icon": "📊"
     },
     {
