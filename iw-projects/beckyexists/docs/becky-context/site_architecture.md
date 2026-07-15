@@ -9,7 +9,7 @@
 | 新要素 | 仕組み |
 |---|---|
 | 🔥 HOT | `hot.json` の items（icon/title/note/url/badge）を描画。お知らせ置き場。URL確定したら url を埋めるだけ |
-| 📮 お便りポスト（質問コーナー） | フォーム → `POST https://mai.intervention.jp/letter`（MAI whisper_server.py に同居、CORS = beckyexists.com のみ、honeypot 入り）。**読み出しは SSH で VPS の `~/.becky/letters.jsonl`**（公開GETなし）。お便りはラジオで返答する運用 |
+| 📮 お便りポスト（質問コーナー、**7月頭のリニューアルで撤去済み**） | 旧実装: フォーム → `POST https://mai.intervention.jp/letter`（MAI whisper_server.py に同居）。**現状 index.html の Letter セクションはフォームなし、X（@becky_exists）DM/リプ誘導のみ**。ラジオのお便りコーナーは自問自答企画に切替（`becky-cast/RADIO_FORMAT.md` 2026-07-15 改訂）。フォーム復活はしない方針（当面はベキたん企画で回す、ゆう判断 2026-07-15） |
 | 心電図の間延び対策 | canvas に ResizeObserver。フォント読込・トグル開閉で高さが変わってもバッファを取り直す |
 | LIVE 2行ずれ対策 | `.live-line` min-height 3.4em（2行分固定）+ ラベル line-clamp 2 |
 

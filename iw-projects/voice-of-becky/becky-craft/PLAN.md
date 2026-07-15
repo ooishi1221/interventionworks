@@ -18,7 +18,7 @@ Shorts 毎日19:00 自動公開（shorts_queue.py）は現行のまま併走。
 ### 本編レーン
 | # | 企画 | GOAL | 状態 |
 |---|---|---|---|
-| M1 | dig_down 実戦初投入・6度目の鉄 | 鉄鉱石を掘って製錬、鉄装備を1つ作る | EP.007（7/12公開）は板→作業台で時間切れ・鉄未達。EP.008 で継続 |
+| M1 | dig_down 実戦初投入・6度目の鉄 | 鉄鉱石を掘って製錬、鉄装備を1つ作る | EP.008 収録失敗（7/14深夜、詳細はリフレッシュログ参照）→ 未収録のまま先頭に残す |
 | M2 | 鉄装備で拠点整備 | 鉄ツール一式+拠点の防衛強化（因縁の水辺を封鎖） | |
 | M3 | ダイヤ深層探索 | y=-58 帯へ。ダイヤ1個でも見つけたら勝ち | |
 | M4 | エンチャントテーブル | ダイヤ2+黒曜石4+本。ネザー準備の起点 | |
@@ -53,7 +53,7 @@ Shorts 毎日19:00 自動公開（shorts_queue.py）は現行のまま併走。
 2. **前提ヘルスチェック**: AivisSpeech は version 確認だけでなく**実際に synthesis を1回叩いて10秒以内に wav が返ること**（2026-07-12 テイク1事故: version は返るのに synthesis が60秒無応答→音声欠落でボツ。詰まってたら `/Volumes/SSD2TB/AivisSpeech-Engine/macOS-arm64/run` を kill→nohup 再起動）。PaperMC サーバと bot(:3008) の生存も確認、落ちてたら README の起動手順で立ち上げる
 3. **定数書き換え**: `scripts/record-episode.py` の EP_NUM / EP_TITLE / GOAL / HUD_GOAL を企画に合わせて書く。GOAL には必ず「前回までのあらすじ（直近の勝敗と因縁）」「オープニング定型（第NNN回の番号入り）」「締めルール」を含める。**あらすじは観測に合わせる**: 収録前に `/observe` でインベントリを見て、全ロス後なら「持ち物ゼロから」の筋書きにする
 4. **クリーンアップ**: bot の chat action 経由で `/kill @e[type=item]` → `/kill @e[type=!player,type=!item,distance=..48]` → `/clear Becky` → `/effect give Becky minecraft:regeneration 20 3` → `/time set 3000`。実行後 observe で体力20・敵0を確認
-5. **収録**: `record-episode.py --time-budget 600 --out becky-craft-epNNN.mp4`（stackchan-bridge の .venv python で）
+5. **収録**: `record-episode.py --time-budget 600 --out becky-craft-epNNN.mp4`（stackchan-bridge の .venv python で）。**必ずフォアグラウンドで実行し、コマンドの終了を直接待つこと（`run_in_background` は使わない）**。`claude -p` のヘッドレスセッションは一度応答したらプロセスが終了し、バックグラウンドタスクの完了通知を受け取れない——2026-07-14 深夜、これで検品ゲート以降が実行されないまま「収録済み」と誤記載される事故が起きた（実際は録画が数秒で終わった壊れたファイルのみ）
 6. **検品ゲート**: `out/episode_audio.json` のイベント数がターン数とほぼ一致していること（TTS timeout スキップのログが3件以上あればボツ→エンジン再起動→1回だけ再収録）。yt-*.mp4 の尺が90秒以上あること
 7. **ワイプ合成**: README の「ワイプ」節の4手順（craft-events.json → Remotion CraftWipe → ffmpeg 右下合成 → build_youtube_cut で完全版）
 8. **予約公開**: `becky-news/scripts/upload-youtube.py` で公開。タイトルは「【BECKY CRAFT】+フックコピー」形式（収録ログの youtube_titles 案から選ぶか物語と合成）、`--thumbnail out/thumb_epNNN.png`、`--publish-at` で直近の水曜（本編）or 土曜（企画回）19:00 JST を指定
@@ -65,3 +65,4 @@ Shorts 毎日19:00 自動公開（shorts_queue.py）は現行のまま併走。
 - 2026-07-12: 週次リフレッシュ手動テスト実行。KPI=絶叫/敗北/因縁系Shortsが伸長（118〜197v、like2件）→ K2一撃死・K3ドラウンド復讐を先頭へ。国内トレンド「1日1分縛り」（ニコニコ記事化）を受けK8持ち時間縛りを新設。企画回8本。本編レーンは変更なし。
 - 2026-07-12: フルループ実証テスト（企画取り→収録→ワイプ→公開）完走、EP.007 公開 n9EiGaqIwp0。テイク1は AivisSpeech 詰まりで音声欠落→ボツ（エンジン再起動で根治、手順2の実合成ヘルスチェックとして正本化）。深夜自動収録 cron（火/金 3:00）を新設。
 - 2026-07-13: 週次リフレッシュ。KPI=絶叫/因縁/敗北系Shortsが引き続き伸長（118〜176v、ドラウンド因縁127v+like1）で先週のK2/K3前倒しを裏付け。リサーチ=ハードコア即死系はAI適性高（敗北を隠さない売りと構造一致）、「失敗を隠さないAI実況」のニッチは空きの可能性。企画回8本で補充不要、キュー変更なし。補充候補メモ: 地下縛り/高さ縛り（国内定番、5本切ったら起票）。
+- 2026-07-15: 7/14深夜(火3:00)自動収録の事故発覚。ログ(craft-night-recording.log)には「収録処理をバックグラウンドで開始した、完了を待っている」で終わっており、検品〜公開(手順6-9)が未実行のまま。実データ確認(out/video/page@87a2cbb...webm)は1.5MB=数秒で録画停止した壊れたファイル。原因: cronのclaude -pセッションが収録をバックグラウンド実行にして完了通知を待とうとしたが、-pヘッドレスは一度応答したら終了するため通知を受け取れず、そのままセッション終了→PLAN.mdだけ「収録済み」と誤記載された。対策: 手順5に「フォアグラウンド実行必須」を明記。M1は未収録として先頭に残し、次の金曜3:00で再収録。
