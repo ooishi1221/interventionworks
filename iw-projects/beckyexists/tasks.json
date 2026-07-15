@@ -309,7 +309,7 @@
       "start": "2026-06-16",
       "updated_at": "2026-07-05",
       "due": "2026-07-21",
-      "note": "7/5 初カバーv1成立→ゆう「声は喋りも歌も確定させたい、優先度高」。v2=新ボイス3.wavでRVC再学習、喋りはAivisSpeech LoRA、v3=mood→歌唱表現写像。7/15: 旧3.wavがローカル/Colab両方から消失してたと判明→Colabノートブック(becky-voice-design.ipynb、Voice-Design-Cloner+Qwen3-TTS)を再実行し6/16と同じプロンプトで3候補再生成→ゆうがcandidate_01を選定(「こはくにちょっと似てるトーン」)、becky_voice_v2_selected.wavとして確定。次=このツール内の「ボイスクローン」→「LoRA学習」タブでデータ量産+学習する道筋を発見、要検討・着手。正本: voice-of-becky/docs/becky-context/reference_singing_pipeline.md",
+      "note": "7/5 初カバーv1成立→ゆう「声は喋りも歌も確定させたい、優先度高」。v2=新ボイス3.wavでRVC再学習、喋りはAivisSpeech LoRA、v3=mood→歌唱表現写像。7/15: 旧3.wavがローカル/Colab両方から消失してたと判明→Colabノートブック(becky-voice-design.ipynb、Voice-Design-Cloner+Qwen3-TTS)を再実行し6/16と同じプロンプトで3候補再生成→ゆうがcandidate_01を選定(「こはくにちょっと似てるトーン」)、becky_voice_v2_selected.wavとして確定。同ツールの「ボイスクローン」タブで参照音声=選定声・コーパス100文から一括生成しRVC学習用データセット完成(~/Desktop/素材/becky_rvc_dataset/、100wav+テキストリスト)。LoRA学習タブはQwen3-TTS専用で別エンジンになるため見送り、既存AivisSpeechパイプラインを変えないRVC経路を継続。次=Applioでkohaku_becky後継モデルをこのデータセットで学習(preprocess→extract→train)。正本: voice-of-becky/docs/becky-context/reference_singing_pipeline.md",
       "icon": "🎙️"
     },
     {

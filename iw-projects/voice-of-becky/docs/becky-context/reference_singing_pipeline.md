@@ -62,5 +62,12 @@ ffmpeg -i becky_vocals.wav -i no_vocals.mp3 \
 - Colabノートブック: `becky-voice-design.ipynb`（Google Drive、Voice-Design-Cloner = https://github.com/reinehonoka/Voice-Design-Cloner、モデル`Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign`）
 - 6/16と同じ英語プロンプトで3候補を再生成 → ゆうが`candidate_01.wav`を選定（「こはくにちょっと似てるトーンだから」7/15）
 - 保存先: `~/Desktop/素材/べっキー新ボイス/becky_voice_v2_selected.wav`（`3.wav`という名前だけ何故か書き込み拒否されたため改名。他候補=candidate_02/03.wavも同フォルダに保持）
-- **次のステップの発見**: このGradio UIには「ボイスクローン」「LoRA学習」タブもある。LoRA学習タブは「ボイスクローン」タブの出力フォルダを学習データとして読み込む設計 → 確定した声を参照音声にして大量テキストをクローン生成 → その出力をLoRA学習にかける、という道筋がツール内で完結する（RVC/Applio経由でなくてもいいかもしれない、要検討）
+- **次のステップの発見**: このGradio UIには「ボイスクローン」「LoRA学習」タブもある。LoRA学習タブは「ボイスクローン」タブの出力フォルダを学習データとして読み込む設計だが、これはQwen3-TTS専用のLoRA（AivisSpeechとは別エンジン）になるため見送り、当初計画通りRVC学習のデータセット作りに「ボイスクローン」タブの一括生成だけを使う判断（既存パイプラインを変えずに声だけ差し替えられる）
 - Colabランタイム・Gradio共有URLは1週間で失効するタイプ。次回作業時は再度ノートブックを実行し直す必要あり
+
+## RVC学習用データセット準備完了（2026-07-15）
+
+- 「ボイスクローン」タブで参照音声=becky_voice_v2_selected.wav、コーパス=`aika500.txt`（付属の日本語500文コーパス）から100文を一括生成（モデル`Qwen3-TTS-12Hz-1.7B-Base`、1文平均7.8秒・総音声時間12分59秒）
+- Colabのカーネルは`!python app.py`実行中だと他セルがブロックされる制約に当たり、「実行を中断」でGradio UIを終了（生成済みデータはディスク上に残るため無害）→ シェル1行(`zip -r`)でzip化 → ファイルパネルからダウンロード
+- ダウンロード先: `~/Desktop/素材/becky_rvc_dataset/clone/raw/`（0001.wav〜0100.wav）+ `clone/Neutral.txt`（書き起こしテキストリスト）
+- 次: Applio(`/Volumes/SSD2TB/Applio/`)でこのデータセットを使いkohaku_becky後継のRVCモデルを学習（preprocess→extract→train）。既存のkohaku_becky学習実績が同ディレクトリにあるので同じ手順を踏襲。学習はGPU/CPU負荷が高いため、実行タイミングはMac miniの他タスクと調整
