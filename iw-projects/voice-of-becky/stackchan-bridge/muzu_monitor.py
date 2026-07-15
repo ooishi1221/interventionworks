@@ -37,7 +37,8 @@ from stop_hook_tts import speak, load_config
 
 LAST_CONV_FILE  = Path.home() / ".stackchan" / "last_conversation.txt"
 TRIGGER_FILE    = Path("/tmp/becky_muzu_triggered")
-MUZU_FLAG_FILE  = Path("/tmp/becky_muzu_enabled")
+# ponytail: /tmp は reboot で消える。enabledフラグは常時ONが前提なので永続先へ（Task #14, 2026-07-15）
+MUZU_FLAG_FILE  = Path.home() / ".stackchan" / "muzu_enabled"
 BECKY_TODO_FILE = Path.home() / ".stackchan" / "becky_todo.txt"
 REPO_ROOT = Path("/Volumes/SSD2TB/interventionworks")
 

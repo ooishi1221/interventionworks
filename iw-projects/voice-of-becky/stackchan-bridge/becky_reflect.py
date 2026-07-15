@@ -18,6 +18,7 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 
 import becky_action_log
+import becky_llm
 # disposition の load/save/format と Claude/Telegram は decide 側を再利用（重複実装しない）
 from becky_decide import (
     load_disposition, save_disposition, format_disposition,
@@ -174,17 +175,10 @@ def reflect() -> dict:
         actions=action_text,
     )
 
-    resp = _call_claude(prompt, max_tokens=700)
-    if not resp:
-        return {"changed": False, "reason": "API失敗"}
-
-    try:
-        start = resp.find("{")
-        end = resp.rfind("}") + 1
-        proposal = json.loads(resp[start:end])
-    except Exception as e:
-        print(f"[reflect] パース失敗: {e} / {resp[:120]}", flush=True)
-        return {"changed": False, "reason": f"パース失敗: {e}"}
+    # call_llm_json: 壊れたJSON応答は1回だけ自動再送してくれる（Task #21, 2026-07-15）
+    proposal = becky_llm.call_llm_json(prompt, max_tokens=700)
+    if not proposal:
+        return {"changed": False, "reason": "API失敗またはJSONパース失敗"}
 
     today = date.today().isoformat()
     diff = {"added": [], "modified": [], "removed": []}
@@ -284,6 +278,14 @@ def main():
             lines.append(f"🎯－ {x}")
         # 2026-07-11 ゆう決定: レポート類は作戦本部へ（Telegram は会話専用）
         post_report("reflect", f"週次自己観察 {date.today().isoformat()}", "\n".join(lines))
+    elif result.get("reason"):
+        # Task #22, 2026-07-15: 失敗時（API失敗/JSONパース失敗）も無音で終わらせず作戦本部で検知できるようにする。
+        # 「迷ったから変えなかった」（reasonキーなし）とは区別する — それは正当な選択で通知不要
+        post_report(
+            "reflect_failed",
+            f"週次自己観察 失敗 {date.today().isoformat()}",
+            f"性格・欲望の更新に失敗: {result['reason']}",
+        )
 
 
 if __name__ == "__main__":

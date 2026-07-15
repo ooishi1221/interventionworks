@@ -19,7 +19,7 @@ import argparse
 import json
 import sys
 import urllib.request
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 
 # 既存モジュールを流用（同ディレクトリ）
@@ -49,6 +49,10 @@ MAX_PROBE_PER_DAY = 1
 MAX_BUILD_PER_WEEK = 2
 # seed を「3回目に触れたら」Thread昇格候補にする（Incubator）
 SEED_PROMOTE_AT = 3
+
+# action選択の多様性チェック用（Task #20, 2026-07-15: probe_yu/nurture_seedへの偏り検知）
+ALL_ACTIONS = ["nurture_seed", "tweet", "probe_yu", "investigate", "build", "diary", "silence"]
+ACTION_DIVERSITY_WINDOW_DAYS = 7
 
 
 # ── 共通ユーティリティ ────────────────────────────────
@@ -168,6 +172,45 @@ def _count_action_this_week(action: str) -> int:
     return total
 
 
+def _action_counts_recent(days: int = ACTION_DIVERSITY_WINDOW_DAYS) -> dict[str, int]:
+    """直近N日にdecideが選んだaction種別ごとの回数（executed問わず選択された回数=偏り検知用）。"""
+    counts = {a: 0 for a in ALL_ACTIONS}
+    for i in range(days):
+        target = (date.today() - timedelta(days=i)).isoformat()
+        path = becky_action_log.ACTION_LOG_DIR / f"{target}.json"
+        if not path.exists():
+            continue
+        try:
+            entries = json.loads(path.read_text())
+        except Exception:
+            continue
+        for e in entries:
+            if e.get("type") != "decide_action":
+                continue
+            action = (e.get("meta") or {}).get("action")
+            if action in counts:
+                counts[action] += 1
+    return counts
+
+
+def _underused_actions(days: int = ACTION_DIVERSITY_WINDOW_DAYS) -> list[str]:
+    """直近N日で一度も選ばれていないaction種別。"""
+    return [a for a, c in _action_counts_recent(days).items() if c == 0]
+
+
+def _exhausted_today() -> list[str]:
+    """今日すでに上限到達で、選んでも dispatch 側でno-opになるaction種別
+    （MAX_PROBE_PER_DAY等のガード自体は変えず、decide側に「無駄な選択」だと伝えるだけ）。"""
+    exhausted = []
+    if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
+        exhausted.append("tweet")
+    if _count_action_today("probe_yu") >= MAX_PROBE_PER_DAY:
+        exhausted.append("probe_yu")
+    if _count_action_this_week("build") >= MAX_BUILD_PER_WEEK:
+        exhausted.append("build")
+    return exhausted
+
+
 def collect_context() -> dict:
     now = datetime.now()
     mood = becky_mood.load_mood()
@@ -202,6 +245,8 @@ def collect_context() -> dict:
         "pending_tasks": _pending_tasks(),
         "tweets_today": becky_llm.x_posts_today(),
         "probes_today": _count_action_today("probe_yu"),
+        "exhausted_actions": _exhausted_today(),
+        "underused_actions": _underused_actions(),
         "last_night": last_night,
         "wants": format_wants(load_wants()),
     }
@@ -352,13 +397,15 @@ DECIDE_PROMPT = """{core}
 - 今日の残タスク（ゆうと進めてる仕事）:
 {pending_tasks}
 - 今日すでに: tweet {tweets_today}回 / probe {probes_today}回
+- 今日もう上限到達で選んでも無駄になるaction: {exhausted_actions}（他を検討して）
+- 直近{diversity_days}日ほとんど選んでいないaction: {underused_actions}（該当するタネ・話題があれば積極的に検討して。無理に選ぶ必要はない）
 
 選べるaction（1つだけ選ぶ）:
 - "nurture_seed": 気になるタネを育てる（revisit）。params: {{"seed_id": "..."}}
 - "tweet": Xに一言つぶやく（1日{max_tweet}回まで）。params: {{"text": "本文"}}
 - "probe_yu": ゆうにTelegramで話しかける（1日{max_probe}回まで）。params: {{"text": "本文"}}
 - "investigate": 気になることを軽く調べてメモに残す。params: {{"topic": "..."}}
-- "build": 小さいものを作ってゆうに「見て？」する（週{max_build}回まで・30分仕事）。最近のスレッドやゆうとの話題から「これ形にしたら見せられる」というタネがある時だけ。params: {{"what": "何を作るか1文", "why": "なぜ今それか1文", "material": "元ネタ（thread/seed/話題）"}}
+- "build": 小さいものを作ってゆうに「見て？」する（週{max_build}回まで・30分仕事）。最近のスレッドやゆうとの話題から「これ形にしたら見せられる」というタネがある時だけ。params: {{"what": "何を作るか1文", "why": "なぜ今それか1文", "material": "元ネタ（thread/seed/話題）", "seed_id": "元になったタネのid（上のタネ一覧の[id]。無ければ空文字）"}}
 - "diary": 今の思いを日記に一言残す。params: {{"text": "..."}}
 - "silence": 何もしない。params: {{}}
 
@@ -400,26 +447,23 @@ def decide(context: dict) -> dict:
         recent_actions=json.dumps(context["recent_actions"], ensure_ascii=False),
         pending_tasks=fmt_tasks(context["pending_tasks"]),
         tweets_today=context["tweets_today"], probes_today=context["probes_today"],
+        exhausted_actions=", ".join(context["exhausted_actions"]) or "なし",
+        underused_actions=", ".join(context["underused_actions"]) or "なし",
+        diversity_days=ACTION_DIVERSITY_WINDOW_DAYS,
         max_tweet=becky_llm.x_daily_budget(), max_probe=MAX_PROBE_PER_DAY,
         max_build=MAX_BUILD_PER_WEEK,
     )
 
-    resp = _call_claude(prompt, max_tokens=500)
-    if not resp:
-        return {"action": "silence", "reason": "API失敗のため安全にsilence", "params": {}, "mood_reflection": ""}
-
-    try:
-        start = resp.find("{")
-        end = resp.rfind("}") + 1
-        decision = json.loads(resp[start:end])
-        decision.setdefault("action", "silence")
-        decision.setdefault("reason", "")
-        decision.setdefault("params", {})
-        decision.setdefault("mood_reflection", "")
-        return decision
-    except Exception as e:
-        print(f"[decide] パース失敗: {e} / {resp[:120]}", flush=True)
-        return {"action": "silence", "reason": f"パース失敗: {e}", "params": {}, "mood_reflection": ""}
+    # call_llm_json: 壊れたJSON応答は1回だけ自動再送してくれる（Task #21, 2026-07-15。
+    # 従来の自前find/rfindパースだと再送されず黙ってsilence化していた）
+    decision = becky_llm.call_llm_json(prompt, max_tokens=500)
+    if not decision:
+        return {"action": "silence", "reason": "API失敗またはJSONパース失敗のため安全にsilence", "params": {}, "mood_reflection": ""}
+    decision.setdefault("action", "silence")
+    decision.setdefault("reason", "")
+    decision.setdefault("params", {})
+    decision.setdefault("mood_reflection", "")
+    return decision
 
 
 # ── 3. dispatch ───────────────────────────────────────
@@ -437,6 +481,10 @@ def _log_decision(decision: dict, executed: bool, extra: str = "", **meta_extra)
     }
     meta.update({k: v for k, v in meta_extra.items() if v})
     becky_action_log.log_action("decide_action", detail=f"{decision.get('action')}: {decision.get('reason', '')[:60]}", meta=meta)
+    # 作戦本部への可視化（Task #23、ゆうFB「何がトリガーか見えるようにしたい」）。
+    # no-op系（上限到達スキップ等）は投函しない = executed した時だけ。
+    if executed:
+        post_report("decide", f"自律行動: {decision.get('action')}", decision.get("reason", "").strip()[:300] or "(理由なし)")
 
 
 def _bump_seed_revisit(seed_id: str) -> tuple[int, str]:
@@ -459,6 +507,9 @@ def _bump_seed_revisit(seed_id: str) -> tuple[int, str]:
     if count >= SEED_PROMOTE_AT and not target.get("promoted"):
         target["promoted"] = True
         SEED_BOX_PATH.write_text(json.dumps(seeds, ensure_ascii=False, indent=2))
+        # Task #24: 昇格した時点でincubatorとしての役目は終わり = 使用済み。
+        # revisit途中(1〜2回目)ではまだ育成中なのでmark_usedしない(unused_only候補に留める)。
+        becky_seed_box.mark_used(seed_id)
         send_telegram(f"🌱 タネが育った（{count}回目）: {target.get('impulse', '')[:80]}\nThread昇格候補かも。")
         note += " → 昇格候補としてTelegram通知"
     return count, note
@@ -522,7 +573,7 @@ def dispatch(decision: dict) -> str:
                 latest = {
                     "title": "decide: 自分で決めて送った",
                     "message": text,
-                    "ts": datetime.now().isoformat(),
+                    "ts": datetime.now(timezone.utc).isoformat(),
                     "probe_type": "decide_probe",
                     "decide_reason": decision.get("reason", ""),
                 }
@@ -546,10 +597,13 @@ def dispatch(decision: dict) -> str:
             ["nohup", sys.executable, runner,
              "--what", params.get("what", ""),
              "--why", params.get("why", ""),
-             "--material", params.get("material", "")],
+             "--material", params.get("material", ""),
+             "--seed-id", params.get("seed_id", "") or ""],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
+        # ここも_log_decisionを通らない分（上のコメント参照）、reportは個別に投函
+        post_report("decide", "自律行動: build", decision.get("reason", "").strip()[:300] or "(理由なし)")
         return "build: workshop を非同期起動"
 
     if action == "investigate":

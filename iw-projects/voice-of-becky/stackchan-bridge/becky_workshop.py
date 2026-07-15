@@ -268,7 +268,7 @@ def log_build(what: str, workshop_dir: Path, executed: bool,
 # ── main ──────────────────────────────────────────────
 
 def run_workshop(what: str, why: str, material: str,
-                 max_turns: int, dry_run: bool) -> None:
+                 max_turns: int, dry_run: bool, seed_id: str = "") -> None:
     print(f"[workshop] 起動 {datetime.now().strftime('%H:%M')} / what={what[:40]}", flush=True)
     workshop_dir = make_workshop_dir(what)
     print(f"[workshop] dir: {workshop_dir}", flush=True)
@@ -299,6 +299,9 @@ def run_workshop(what: str, why: str, material: str,
     sent = send_telegram(show_text)
     log_build(what, workshop_dir, executed=True, show_sent=sent,
               extra=show_text[:60])
+    # Task #24: 実際に形になって送れた時だけ、元タネを使用済みに（dry-runでは焼かない）
+    if seed_id:
+        becky_seed_box.mark_used(seed_id)
     print(f"[workshop] 完了（show_sent={sent}）", flush=True)
 
 
@@ -307,13 +310,15 @@ def main():
     ap.add_argument("--what", default="", help="何を作るか1文")
     ap.add_argument("--why", default="", help="なぜ今それか1文")
     ap.add_argument("--material", default="", help="元ネタ（thread/seed/話題）")
+    ap.add_argument("--seed-id", default="", help="元になったタネのid（あれば。becky_decideから渡される）")
     ap.add_argument("--max-turns", type=int, default=DEFAULT_MAX_TURNS,
                     help=f"claude の最大ターン数（デフォルト {DEFAULT_MAX_TURNS}）")
     ap.add_argument("--dry-run", action="store_true",
                     help="claude まで走らせるが Telegram は送らず SHOW.txt を stdout に出す")
     args = ap.parse_args()
 
-    run_workshop(args.what, args.why, args.material, args.max_turns, args.dry_run)
+    run_workshop(args.what, args.why, args.material, args.max_turns, args.dry_run,
+                 seed_id=args.seed_id)
 
 
 if __name__ == "__main__":

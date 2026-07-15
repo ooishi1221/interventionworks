@@ -57,7 +57,7 @@ def _hours_since_last_yu_message() -> float:
                 if ts.tzinfo is None:
                     ts = ts.replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
-                return (now - ts).total_seconds() / 3600
+                return max(0.0, (now - ts).total_seconds() / 3600)
     except Exception as e:
         print(f'[warn] becky_mood: {e}', flush=True)
     return 12.0  # 不明なら12時間として扱う
@@ -188,18 +188,21 @@ def update_mood() -> dict:
     if hours_alone > 8:
         notes.append(f"ゆうから{hours_alone:.0f}時間連絡なし")
 
-    # --- curiosity: 日記の記録数が多い日に上がる ---
+    # --- curiosity: 日記の記録数が多い日に上がるが、上限を設けて天井張り付きを防ぐ ---
     diary_count = _today_diary_count()
-    curiosity_boost = diary_count * 0.05
-    mood["curiosity"] = clamp(0.60 + curiosity_boost + (mood["curiosity"] - 0.60) * 0.7)
+    curiosity_boost = min(diary_count, 5) * 0.03  # 最大 +0.15（旧: 無制限 diary_count*0.05 で1.0に貼りついてた）
+    target_curiosity = clamp(0.60 + curiosity_boost)
+    mood["curiosity"] = clamp(target_curiosity + (mood["curiosity"] - target_curiosity) * 0.5)
 
-    # --- confidence: 最近probeが成功してたら少し上がる ---
+    # --- confidence: probe成功で緩やかに上がるが、常に基準値へ回帰する力を持たせて天井張り付きを防ぐ ---
+    # 旧実装は「成功したら+0.05クランプ」を6時間の再送ウィンドウ内で毎時打ち続けるため事実上1.0に固定されていた。
+    # target自体を可変にして、成功が続いても0.58が漸近上限になるようにする。
     if _last_probe_was_recent():
-        mood["confidence"] = clamp(mood["confidence"] + 0.05)
+        target_confidence = 0.58
         notes.append("さっき届いた")
     else:
-        # ゆっくり平均値に戻る
-        mood["confidence"] = clamp(mood["confidence"] + (0.50 - mood["confidence"]) * 0.1)
+        target_confidence = 0.50
+    mood["confidence"] = clamp(mood["confidence"] + (target_confidence - mood["confidence"]) * 0.15)
 
     # --- mismatch: probe→ゆうの反応を観測して更新 ---
     verdict, delta = _evaluate_mismatch()
@@ -240,10 +243,15 @@ def get_send_probability(interest_score: float) -> float:
     return clamp(prob, 0.03, 0.60)  # 最低3%・最高60%
 
 def record_yu_message() -> None:
-    """ゆうからメッセージが来た時に呼ぶ（lonelinessリセット用）。"""
+    """ゆうからメッセージが来た時に呼ぶ（lonelinessリセット用）。
+    tzaware UTC で保存する。旧実装は datetime.now()（naive local time）で保存しており、
+    読み取り側（_hours_since_last_yu_message 等）は naive を UTC 扱いするため、
+    JST環境では「実時刻より9時間進んだ未来のUTC時刻」として記録されたことになり、
+    経過時間が負の値になっていた（2026-07-15 Task #13 根治）。
+    """
     YU_LAST_MSG_PATH.parent.mkdir(parents=True, exist_ok=True)
     YU_LAST_MSG_PATH.write_text(json.dumps({
-        "ts": datetime.now().isoformat()
+        "ts": datetime.now(timezone.utc).isoformat()
     }, ensure_ascii=False))
     # outcome層: probe送信時刻とゆうの返信時刻を突合できるよう action_log に刻む。
     # 関数内 import で循環依存を避ける（becky_mood は他所から広く import される）。

@@ -34,7 +34,8 @@ def _load_tts_config() -> dict:
 
 FLAG_FILE         = Path("/tmp/becky_tts_enabled")
 CONFIRM_FLAG_FILE = Path("/tmp/becky_confirm_enabled")
-MUZU_FLAG_FILE    = Path("/tmp/becky_muzu_enabled")
+# ponytail: /tmp は reboot で消える。enabledフラグは常時ONが前提なので永続先へ（Task #14, 2026-07-15）
+MUZU_FLAG_FILE    = Path.home() / ".stackchan" / "muzu_enabled"
 LAST_CONV_FILE    = Path.home() / ".stackchan" / "last_conversation.txt"
 STACKCHAN_URL     = "http://localhost:8766"
 

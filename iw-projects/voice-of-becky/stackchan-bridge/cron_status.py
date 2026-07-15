@@ -18,6 +18,99 @@ from datetime import datetime, timedelta
 
 OUT = "/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/cron_status.json"
 
+# ── becky-reconnect.sh 特例（Task #26, 2026-07-15） ──────────────────
+# 2026-07-14の設計変更で、telegram MCPプロセスが生きていれば無音でexit 0する
+# 仕様になった（異常時のみログに書く）。ログmtimeベースのstale判定だと「正常に
+# 何も起きてないだけ」を誤ってstale扱いしてしまうため、このジョブだけプロセス
+# 生存確認に置き換える。他ジョブの判定ロジックには一切影響しない。
+RECONNECT_LOG_PATH = os.path.expanduser("~/.claude/logs/becky-reconnect.log")
+
+
+def telegram_mcp_alive():
+    r = subprocess.run(
+        ["pgrep", "-f", "bun run --cwd.*telegram/0.0.6"],
+        capture_output=True, text=True,
+    )
+    return r.returncode == 0
+
+# ── 自律判断パスの無音検知（Task #18, 2026-07-15） ──────────────────
+# 上のcronチェックは「プロセスが動いてエラーなく走ったか」だけを見る。
+# speak_decision/todo消化は becky_observer.py の常駐ループが内部判断で発火するもので、
+# プロセス自体は元気でも判断ロジックが機能停止してるケース（実例: idle_hours バグで
+# 2026-06-09夜から2026-07-15まで自発発話が一度も発生しなかった）を検知できない。
+# 既存ログから「最後に実際に何か起きた時刻」を出して、閾値超えなら stale エントリを足す。
+SPEAK_DECISION_LOG = os.path.expanduser("~/.stackchan/observer_sent_log.jsonl")
+BECKY_TODO_FILE = os.path.expanduser("~/.stackchan/becky_todo.txt")
+# scheduled投稿・アイドル日記・AIニュース速報は別の周期タスクで、speak_decision（interest engineの
+# 自発判断）ではないので「最後に何か起きた」の対象から除外する
+_NON_SPEAK_DECISION_TOPICS = {"idol_diary", "ai_news_briefing"}
+SPEAK_DECISION_STALE_DAYS = 3
+TODO_STALE_DAYS = 7
+
+
+def _last_speak_decision_ts(log_path=SPEAK_DECISION_LOG):
+    """observer_sent_log.jsonlから、speak_decision経由の自発発話の最後の送信時刻(unix ts)。無ければNone。"""
+    if not os.path.exists(log_path):
+        return None
+    last = None
+    try:
+        with open(log_path) as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                topic = e.get("topic", "")
+                if topic.startswith("scheduled:") or topic in _NON_SPEAK_DECISION_TOPICS:
+                    continue
+                ts = e.get("ts")
+                if ts and (last is None or ts > last):
+                    last = ts
+    except OSError:
+        return None
+    return last
+
+
+def _todo_activity_ts(todo_path=BECKY_TODO_FILE):
+    """becky_todo.txtの最終更新時刻(mtime, unix ts)。ファイルが無ければNone。
+    行数変化そのものは追わず、consume_todo()/締切アラート追記どちらでも更新されるmtimeを
+    「todo系が最後に動いた時刻」の代理指標にする（ponytail: 専用ログを新設しない）。
+    """
+    if not os.path.exists(todo_path):
+        return None
+    try:
+        return os.path.getmtime(todo_path)
+    except OSError:
+        return None
+
+
+def autonomy_stale_jobs(now, log_path=SPEAK_DECISION_LOG, todo_path=BECKY_TODO_FILE):
+    """cronプロセス監視の外側にある自律判断パスをチェックし、staleなら既存jobs形式のエントリを返す。"""
+    jobs = []
+    for name, ts, stale_days, desc in (
+        ("speak_decision", _last_speak_decision_ts(log_path), SPEAK_DECISION_STALE_DAYS,
+         "自発発話（interest engineの持ち込み）"),
+        ("todo_consume", _todo_activity_ts(todo_path), TODO_STALE_DAYS,
+         "becky_todo.txtの消化"),
+    ):
+        if ts is None:
+            continue
+        age_days = (now.timestamp() - ts) / 86400
+        if age_days < stale_days:
+            continue
+        jobs.append({
+            "name": name,
+            "schedule_human": desc,
+            "schedule_raw": None,
+            "command_short": None,
+            "log_path": None,
+            "last_run": datetime.fromtimestamp(ts).isoformat(timespec="seconds"),
+            "next_run": None,
+            "status": "stale",
+            "last_error_snippet": f"{age_days:.1f}日、{desc}が発生していない（閾値{stale_days}日）",
+        })
+    return jobs
+
 # 「stale」と見なすまでの猶予: 前回発火予定 + (発火間隔 or 90分) のさらに +猶予。
 # ログ mtime がそれより古ければ「動いてないかも」。
 STALE_GRACE_MIN = 90
@@ -282,6 +375,14 @@ def main():
             continue
 
         status, last_run, err = log_status(log_path, sched, now)
+        if log_path == RECONNECT_LOG_PATH:
+            # ponytail: 「正常なら何も起きない」ジョブなのでlog mtimeは無意味。
+            # プロセス生存確認に差し替え、last_runは判定時刻をそのまま出す。
+            if telegram_mcp_alive():
+                status, err = "ok", None
+            else:
+                status, err = "error", "telegram MCPプロセスが見つからない"
+            last_run = now.isoformat(timespec="seconds")
         nxt = next_fire(sched, now)
 
         jobs.append({
@@ -295,6 +396,8 @@ def main():
             "status": status,
             "last_error_snippet": err,
         })
+
+    jobs.extend(autonomy_stale_jobs(now))
 
     out = {"updated_at": now.isoformat(timespec="seconds"), "jobs": jobs}
     with open(OUT, "w", encoding="utf-8") as f:

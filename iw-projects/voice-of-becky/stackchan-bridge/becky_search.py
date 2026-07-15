@@ -29,6 +29,14 @@ try:
 except ImportError:
     _HAS_PSUTIL = False
 
+# cron の PATH に ~/.grok/bin, ~/.local/bin が無く grok spawn が失敗する（2026-07-15 障害、
+# status_update.py:26 と同じ流儀）。spawn.sh の `command -v grok` はこのプロセスの env を継承する。
+os.environ["PATH"] = os.environ.get("PATH", "") + f":{Path.home() / '.grok' / 'bin'}:{Path.home() / '.local' / 'bin'}"
+
+# search_tweets_grok の失敗理由（spawn失敗/タイムアウト/例外）を貯める。
+# 「grokが壊れて候補0件」と「正常実行だが候補なし」を区別するため（Task #25）。
+_GROK_ERRORS: list[str] = []
+
 TWITTER_CLI      = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
 GROK_BIN         = Path.home() / ".grok" / "bin" / "grok"
 AGMSG_SCRIPTS    = Path.home() / ".agents" / "skills" / "agmsg" / "scripts"
@@ -296,7 +304,9 @@ def search_tweets_grok(pattern_key: str) -> list[dict]:
             capture_output=True, text=True, timeout=30,
         )
         if spawn.returncode != 0:
-            print(f"[search] grok spawn 失敗: {spawn.stderr[:100]}", flush=True)
+            err = f"grok spawn失敗({pattern_key}): {spawn.stderr[:100]}"
+            print(f"[search] {err}", flush=True)
+            _GROK_ERRORS.append(err)
             return []
         time.sleep(8)  # grok 起動待ち
 
@@ -383,10 +393,14 @@ def search_tweets_grok(pattern_key: str) -> list[dict]:
                     _trigger_grok()
                 else:
                     print(f"[search] 120秒経過・grok {state} → 待機続行", flush=True)
-        print(f"[search] grok 応答タイムアウト ({pattern_key})", flush=True)
+        err = f"grok応答タイムアウト({pattern_key})"
+        print(f"[search] {err}", flush=True)
+        _GROK_ERRORS.append(err)
         return []
     except Exception as e:
-        print(f"[search] grok 検索エラー ({pattern_key}): {e}", flush=True)
+        err = f"grok検索エラー({pattern_key}): {e}"
+        print(f"[search] {err}", flush=True)
+        _GROK_ERRORS.append(err)
         return []
 
 
@@ -625,6 +639,7 @@ def run_overseas(dry_run: bool = False) -> None:
 
 def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: bool = True) -> None:
     import random
+    _GROK_ERRORS.clear()
     mood = _load_becky_mood()
     sent_log = _load_sent_log()
     all_patterns = list(SEARCH_PATTERNS.keys())
@@ -671,7 +686,14 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
             break
 
     if not candidates:
-        print("[search] 候補なし", flush=True)
+        if _GROK_ERRORS and not dry_run:
+            # grokが壊れていて候補が取れなかった場合は無言にしない（Task #25）
+            from becky_decide import post_report
+            post_report(
+                "search", f"リプ営業エラー {date.today().isoformat()}",
+                "grokが応答せず候補を取得できなかった:\n" + "\n".join(_GROK_ERRORS),
+            )
+        print(f"[search] 候補なし{'（grokエラーあり: ' + str(len(_GROK_ERRORS)) + '件）' if _GROK_ERRORS else ''}", flush=True)
         return
 
     # 自動投稿 & Telegram 事後報告

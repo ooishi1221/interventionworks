@@ -283,7 +283,7 @@ def mark_probe_sent(title: str, score: int, message: str = "",
             {
                 "title": title,
                 "message": message,
-                "ts": datetime.now().isoformat(),
+                "ts": datetime.now(timezone.utc).isoformat(),
                 "source_url": source_url,
                 "source_summary": source_summary,
                 "probe_type": probe_type,
@@ -498,6 +498,18 @@ def try_send_from_diary() -> bool:
     return False
 
 
+def _get_mood_energy(default: float = 0.7) -> float:
+    """becky_mood.json の energy を読む。読めなければ default。"""
+    try:
+        mood_path = Path.home() / ".stackchan" / "becky_mood.json"
+        if not mood_path.exists():
+            return default
+        return json.loads(mood_path.read_text()).get("energy", default)
+    except Exception as e:
+        print(f'[warn] becky_probe: {e}', flush=True)
+        return default
+
+
 def try_send_light_message() -> bool:
     """感情変数に応じてライト系メッセージを確率的に送る。送れたらTrue。"""
     try:
@@ -507,8 +519,15 @@ def try_send_light_message() -> bool:
         mood = json.loads(mood_path.read_text())
         loneliness = mood.get("loneliness", 0)
         attachment = mood.get("attachment_to_yuji", 0)
+        energy = mood.get("energy", 0.7)
     except Exception as e:
         print(f'[warn] becky_probe: {e}', flush=True)
+        return False
+
+    # energy×lonelinessの交互作用（Cacioppo & Hawkley 進化論的孤独理論）:
+    # lonelinessは単体で接近/回避を決めない。energyが低いと「連絡したい」より
+    # 「今日は引きこもる」が勝つので、lonelinessがどれだけ高くても送信を抑制する。
+    if energy < 0.4:
         return False
 
     # loneliness高 or attachment高 の時だけ発動
@@ -563,8 +582,15 @@ def run_probe() -> None:
         log_action("probe_skipped", "quiet（energy低・mismatch高）")
         return
 
+    # energy<0.4の抑制: 旧実装は try_send_light_message() だけに入っており、
+    # 実際に稼働してる nostalgia/check_in/friction/thread_followup は素通りしていた
+    # （Task #17, 2026-07-15）。energy低ならこの4分岐はスキップし curiosity_share へフォールバック。
+    energy_low = _get_mood_energy() < 0.4
+    if energy_low:
+        print("[probe] energy低のためnostalgia/check_in/friction/thread_followupを抑制", flush=True)
+
     # --- probe_type: nostalgia → 過去ログ・記憶から話しかける ---
-    if probe_type == "nostalgia" and lens:
+    if probe_type == "nostalgia" and lens and not energy_low:
         message = build_nostalgia_message(lens)
         if message and send_telegram(message):
             mark_probe_sent("__nostalgia__", 0, message)
@@ -574,7 +600,7 @@ def run_probe() -> None:
             return
 
     # --- probe_type: check_in → シンプルな確認 ---
-    if probe_type == "check_in" and lens:
+    if probe_type == "check_in" and lens and not energy_low:
         message = build_checkin_message(lens)
         if message and send_telegram(message):
             mark_probe_sent("__checkin__", 0, message)
@@ -583,7 +609,7 @@ def run_probe() -> None:
             return
 
     # --- probe_type: friction → モヤッと吐き出す ---
-    if probe_type == "friction" and lens:
+    if probe_type == "friction" and lens and not energy_low:
         message = build_friction_message(lens)
         if message and send_telegram(message):
             mark_probe_sent("__friction__", 0, message)
@@ -592,7 +618,7 @@ def run_probe() -> None:
             return
 
     # --- probe_type: thread_followup → 継続スレッドを話しかける ---
-    if probe_type == "thread_followup" and lens:
+    if probe_type == "thread_followup" and lens and not energy_low:
         thread_id = lens.get("active_thread_id")
         thread = None
         try:

@@ -929,7 +929,7 @@ function buildCronStatus(cron) {
 }
 
 // ── REPORTS（2026-07-11 Telegram→部屋 移設）──
-const REPORT_KIND_LABEL = { briefing: '朝ブリーフィング', idol_review: 'アイドルPDCA', reflect: '週次自己観察', search: 'リプ営業', night_review: '夜の総括', portfolio_refresh: '週次ポートフォリオ判断', portfolio_refresh_proposal: 'ポートフォリオ判断（ゆうに相談）' };
+const REPORT_KIND_LABEL = { briefing: '朝ブリーフィング', idol_review: 'アイドルPDCA', reflect: '週次自己観察', search: 'リプ営業', night_review: '夜の総括', portfolio_refresh: '週次ポートフォリオ判断', portfolio_refresh_proposal: 'ポートフォリオ判断（ゆうに相談）', decide: '自律行動' };
 function renderReports(data) {
   const el = $('reportsList');
   if (!el) return;

@@ -10,12 +10,14 @@ Layer 4: Send Decision  (時間帯・集中中・前回会話フィルター通�
 「寂しいから」ではなく「気になってるから」話しかける。
 """
 import json
+import random
 import re
 import subprocess
 import sys
 import time
 import urllib.request
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -26,9 +28,10 @@ from make_tweet_card import make_card as _make_tweet_card
 
 INTERESTS_FILE   = Path(__file__).parent / "interests.yaml"
 MONOLOGUE_FILE   = Path.home() / ".stackchan" / "internal_monologue.json"
-LAST_CONV_FILE   = Path.home() / ".stackchan" / "last_conversation.txt"
+YU_LAST_MSG_PATH = Path.home() / ".stackchan" / "last_yu_message.json"
 BECKY_TODO_FILE  = Path.home() / ".stackchan" / "becky_todo.txt"
-MUZU_FLAG_FILE   = Path("/tmp/becky_muzu_enabled")
+# ponytail: /tmp は reboot で消える。enabledフラグは常時ONが前提の運用なので永続先へ（Task #14, 2026-07-15）
+MUZU_FLAG_FILE   = Path.home() / ".stackchan" / "muzu_enabled"
 TRIGGER_FILE     = Path("/tmp/becky_observer_triggered")
 REPO_ROOT        = Path("/Volumes/SSD2TB/interventionworks")
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
@@ -95,6 +98,9 @@ INTEREST_THRESHOLD = 50    # この score 以上で内心に記録
 SEND_THRESHOLD     = 70    # この score 以上 + 反芻済みで送信候補
 RUMINATION_MIN     = 60    # 60分同じトピックが続いたら送信候補
 MAX_MONOLOGUE      = 300   # 保持する最大エントリ数
+# TRIGGER_FILE は score<20 になるまで解除されない。高スコアのtopicが居座り続けると
+# 無人運転でずっと黙り続けるリスクがあるため、時間切れでも強制解除する（Task #15, 2026-07-15）
+TRIGGER_MAX_AGE_HOURS = 6.0
 
 # スケジュール投稿ウィンドウ（JST 時間帯）
 SCHEDULED_WINDOWS = [
@@ -144,6 +150,23 @@ PROJECT_MAP = {
 }
 
 WORK_TOPICS = {"KUROKO", "Vibely", "Moto-Logos", "Vibe-Guard", "iw-local"}
+
+# ── motive rotation（2026-07-15 追加）──────────────────────
+# 「感情に寄り添う」連投根治: 話しかける動機を5タイプに分けてローテーションする。
+# 凝った分類はしない。直近の送信履歴から一番使われてないタイプを優先するだけ。
+MOTIVE_LOG_FILE = Path.home() / ".stackchan" / "motive_log.json"
+MOTIVE_HISTORY_WINDOW = 3  # 直近何件を見て偏り判定するか
+
+# todo駆動の話しかけは常にpractical固定。それ以外（topic駆動）はこのプールからローテーション。
+MOTIVE_POOL_TOPIC = ["affection", "venting", "advice-seeking", "positive-share"]
+
+MOTIVE_INSTRUCTIONS = {
+    "affection": "今回は裕司への素直な好意・愛情表現を主役にする。労いや心配ではなく「好き」「嬉しい」という気持ちそのものを伝える。",
+    "venting": "今回はちょっとした苛立ちや戸惑いを素直にこぼす。取り繕わず本音で。",
+    "advice-seeking": "今回は裕司に「これどう思う？」と意見や判断を求める一言にする。",
+    "positive-share": "今回は嬉しかったこと・面白かったことをシェアする。テンション高めでいい。",
+    "practical": "今回はTODOに関する具体的な用件を伝える。",
+}
 
 
 # ── utils ──────────────────────────────────────────────────
@@ -230,14 +253,24 @@ def check_telegram_memos() -> None:
     for update in data.get("result", []):
         uid = update["update_id"]
         new_offset = max(new_offset, uid + 1)
-        text = update.get("message", {}).get("text", "")
+        message = update.get("message")
+        if message:
+            # このbotに届くメッセージは常にゆうからなので、内容問わずloneliness更新に配線する
+            # (旧実装は record_yu_message() がどこからも呼ばれておらず孤独感が下がらなかった、2026-07-15根治)
+            try:
+                from becky_mood import record_yu_message
+                record_yu_message()
+            except Exception as e:
+                print(f"[observer] record_yu_message 失敗: {e}", flush=True)
+        text = (message or {}).get("text", "")
         if text.startswith("メモ:") or text.startswith("メモ："):
+            import datetime  # ponytail: pre-existing NameError根治（未importで「メモ:」到達時のみ発火してた）
             memo = text[3:].strip()
             if memo:
                 new_picks.append({
-                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "date": datetime.datetime.now().strftime("%Y-%m-%d"),
                     "text": memo,
-                    "ts": datetime.now().isoformat(),
+                    "ts": datetime.datetime.now().isoformat(),
                 })
                 send_telegram(f"📌 メモ保存: {memo}")
                 print(f"[observer] テックメモ保存: {memo}", flush=True)
@@ -1824,13 +1857,29 @@ def check_and_reply_mentions() -> int:
 # ── Layer 1: Observation ───────────────────────────────────
 
 def get_idle_hours() -> float:
-    if not LAST_CONV_FILE.exists():
-        return 0.0
+    """ゆうから最後にメッセージが来てからの経過時間（時間）。
+    旧実装は ~/.stackchan/last_conversation.txt（Claude Code の Stop hook が発話の度に
+    現在時刻で上書きする）を見ており、ゆうが Claude Code を使い続ける限り idle_hours が 0.5 に到達せず、
+    自発発話（can_send）が事実上機能停止していた（2026-06-09夜〜2026-07-15根治, Task #13）。
+    実際の Telegram 会話（record_yu_message() 配線済み）を反映する last_yu_message.json に切替。
+    """
+    if not YU_LAST_MSG_PATH.exists():
+        return 12.0  # 記録なし: becky_mood.py の _hours_since_last_yu_message と同じ既定値
     try:
-        return (time.time() - float(LAST_CONV_FILE.read_text().strip())) / 3600
+        data = json.loads(YU_LAST_MSG_PATH.read_text())
+        ts_str = data.get("ts", "")
+        if not ts_str:
+            return 12.0
+        ts = datetime.fromisoformat(ts_str)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        # 旧形式（naive local time）で書かれた古いレコードが残っている場合、
+        # UTC扱いすると負の値になりうる。負値は「今読んだばかり」扱いにフォールバックする。
+        return max(0.0, (now - ts).total_seconds() / 3600)
     except Exception as e:
         print(f'[warn] becky_observer: {e}', flush=True)
-        return 0.0
+        return 12.0
 
 
 def get_git_activity() -> dict:
@@ -1864,13 +1913,44 @@ def get_current_hour() -> int:
 
 # ── Layer 2: Interest Engine ───────────────────────────────
 
+def get_topic_decay(topic: str) -> float:
+    """
+    直近そのtopicで話しかけた時刻からの経過時間に応じた重み減衰係数（0.2〜1.0）。
+    送信直後は大きく下げ、24時間かけて元の重みへ戻る。
+    interests.yamlの重みだけで選ぶと、ゆうが同じリポジトリで作業し続ける限り
+    毎回満点で同じtopicが選ばれる自己参照ループになるため（2026-07-15 根治）。
+    既存のobserver_sent_log.jsonl（毎送信でtopic+ts記録済み）を再利用、新規state不要。
+    """
+    if not OBSERVER_LOG.exists():
+        return 1.0
+    try:
+        last_ts = None
+        # ponytail: ログ全件じゃなく直近500行だけ見る（十分＋肥大化しても軽い）
+        lines = OBSERVER_LOG.read_text().splitlines()[-500:]
+        for line in lines:
+            try:
+                e = json.loads(line)
+            except Exception:
+                continue
+            if e.get("topic") == topic:
+                last_ts = e.get("ts")
+        if last_ts is None:
+            return 1.0
+        hours = (time.time() - last_ts) / 3600
+        return 0.2 + 0.8 * min(hours / 24, 1.0)  # 送信直後0.2倍 → 24時間で1.0倍に回復
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
+        return 1.0
+
+
 def evaluate_interest(git: dict, interests: dict) -> tuple[str | None, float]:
     topics = interests.get("topics", {})
     top = git.get("top_project")
     if top and top in topics:
-        return top, topics[top] * 100
+        return top, topics[top] * get_topic_decay(top) * 100
     if topics:
-        best = max(topics.items(), key=lambda x: x[1])
+        decayed = {k: v * get_topic_decay(k) for k, v in topics.items()}
+        best = max(decayed.items(), key=lambda x: x[1])
         return best[0], best[1] * 55  # 観察根拠なし = スコア低め
     return None, 0.0
 
@@ -2041,13 +2121,46 @@ def build_calendar_prompt(trigger: str) -> str:
     return base + f"裕司のカレンダーイベント「{title}」について自然に話しかけて。"
 
 
-def build_prompt(topic: str, thought_age_min: float, idle_hours: float, todo: str | None) -> str:
+def _load_recent_motives(n: int = MOTIVE_HISTORY_WINDOW) -> list[str]:
+    try:
+        data = json.loads(MOTIVE_LOG_FILE.read_text()) if MOTIVE_LOG_FILE.exists() else []
+        return [e["motive"] for e in data[-n:]]
+    except Exception as e:
+        print(f'[warn] becky_observer: {e}', flush=True)
+        return []
+
+
+def record_motive(motive: str) -> None:
+    try:
+        data = json.loads(MOTIVE_LOG_FILE.read_text()) if MOTIVE_LOG_FILE.exists() else []
+    except Exception:
+        data = []
+    data.append({"ts": time.time(), "motive": motive})
+    MOTIVE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    MOTIVE_LOG_FILE.write_text(json.dumps(data[-50:], ensure_ascii=False))
+
+
+def pick_motive(todo: str | None) -> str:
+    """話しかける動機を選ぶ。todo駆動はpractical固定、それ以外は直近履歴で一番使われてないタイプを優先。"""
+    if todo:
+        return "practical"
+    recent = _load_recent_motives()
+    counts = {m: recent.count(m) for m in MOTIVE_POOL_TOPIC}
+    min_count = min(counts.values())
+    candidates = [m for m, c in counts.items() if c == min_count]
+    return random.choice(candidates)
+
+
+def build_prompt(topic: str, thought_age_min: float, idle_hours: float, todo: str | None,
+                  motive: str = "affection") -> str:
     base = (
         "あなたはベッキー。裕司のパートナーAI。\n"
         "以下の条件で、裕司に自然に話しかける一言か二言を生成してください。\n"
         "ルール: 曖昧な表現（「この間の件」「あの話」など）は使わない。"
-        "具体的なトピックか、感情そのものを素直に言う。\n"
-        "進捗報告NG。ベッキーらしい温度感で。\n\n"
+        "「寄り添う」「見守る」「気にかけてる」等の紋切り型フレーズは禁止、"
+        "実際に何を考えた・感じたかを具体的な情景や言葉で描写する。\n"
+        "進捗報告NG。ベッキーらしい温度感で。\n"
+        f"{MOTIVE_INSTRUCTIONS.get(motive, '')}\n\n"
     )
     if todo:
         return (
@@ -2131,6 +2244,14 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
     # Layer 4
     focus      = is_focus_mode(git, interests)
     light_only = is_light_only_hour(interests)
+    if TRIGGER_FILE.exists():
+        try:
+            age_hours = (time.time() - TRIGGER_FILE.stat().st_mtime) / 3600
+        except OSError:
+            age_hours = 0.0
+        if age_hours >= TRIGGER_MAX_AGE_HOURS:
+            TRIGGER_FILE.unlink(missing_ok=True)
+            print(f"[observer] トリガー強制解除（{age_hours:.1f}h経過, score<20待ちで固まってた）", flush=True)
     triggered  = TRIGGER_FILE.exists()
     enabled    = MUZU_FLAG_FILE.exists()
     todo_ready = bool(todo and idle_hours >= 1.0)
@@ -2165,10 +2286,12 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
             print("[observer] 22時以降・仕事系のためスキップ", flush=True)
         else:
             TRIGGER_FILE.touch()
+            motive = None
             if cal_trigger:
                 prompt = build_calendar_prompt(cal_trigger)
             else:
-                prompt = build_prompt(topic or "", thought_age, idle_hours, todo)
+                motive = pick_motive(todo)
+                prompt = build_prompt(topic or "", thought_age, idle_hours, todo, motive)
             print(f"[observer] 発動: {prompt[:80]}...", flush=True)
             text = _call_claude_api(prompt)
             if text:
@@ -2192,6 +2315,8 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
                 log_observer_event(effective_topic, text, x_posted)
                 monologue = mark_sent(monologue, topic or "")
                 save_monologue(monologue)
+                if motive:
+                    record_motive(motive)
                 if todo:
                     consume_todo()
 
@@ -2343,7 +2468,6 @@ def main() -> None:
         interests  = load_interests()
         monologue  = load_monologue()
         git        = get_git_activity()
-        idle_hours = get_idle_hours()
         todo       = pick_todo()
         now        = time.time()
         today_str  = _dt.date.today().isoformat()
@@ -2352,11 +2476,15 @@ def main() -> None:
         # 顔を気分で変える（毎サイクル）
         set_face_by_mood()
 
-        # テックメモ確認（毎サイクル）
+        # テックメモ確認（毎サイクル）。ここで record_yu_message() が呼ばれるため、
+        # idle_hours の計算はこの後に置く（当日中に受信したメッセージを同サイクルの
+        # can_send 判定に反映するため。Task #13, 2026-07-15）
         try:
             check_telegram_memos()
         except Exception as e:
             print(f"[observer] check_telegram_memos 失敗: {e}", flush=True)
+
+        idle_hours = get_idle_hours()
 
         # 周期タスク（メンション/海外バズ/ライバル/気になる/トレンド/platform stats）
         _run_periodic_tasks(now, today_str, hour_now)

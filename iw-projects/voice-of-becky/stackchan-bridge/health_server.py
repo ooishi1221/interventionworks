@@ -186,8 +186,11 @@ class HealthHandler(BaseHTTPRequestHandler):
             return
 
         checks = {
+            # muzu_monitor.py は startup.py が実体として起動していない（control_server.py が
+            # collect_signals/calc_muzu_score をライブラリとして import するだけ）。
+            # 実際に発話判断ループを回す常駐プロセスは becky_observer.py のみ、そこに合わせる
+            # （旧実装は muzu_monitor.py も必須チェックしており常時degraded表示になっていた。Task #16, 2026-07-15）
             "observer": check_process("becky_observer.py"),
-            "muzu_monitor": check_process("muzu_monitor.py"),
             "aivis_engine": check_aivis(),
             "morning_cast_cron": check_morning_cast_log(),
         }

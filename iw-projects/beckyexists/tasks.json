@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-14T09:58:29",
+  "updated_at": "2026-07-15T17:15:00",
   "tasks": [
     {
       "id": "studio-reports-panel",
@@ -800,6 +800,20 @@
       "note": "①status.jsonのVercelトークンエラーは既存リトライで自動回復済みと確認（対応不要） ②roomのCOSTカード非表示=Gemini Chrome(CDP:9223)のConsole/note/X分析ログイン切れ→ゆう再ログイン+becky_observer.py再起動+platform_scraper.py手動実行+vercel deploy --prodで本番反映確認 ③Telegram MCP「気がついたら落ちてる」根治=重複--channelsセッションのpoller奪い合いが真因。一度誤診（enabledPluginsグローバル無効化+--plugin-dir化）して悪化させたが自己訂正、重複セッション終了+becky-start.sh構文バグ修正+becky-reconnect.sh刷新で実送信の受信→返信を確認。詳細はmemory working/feedback_ops_gotchas.md",
       "icon": "🔧",
       "completed_at": "2026-07-14"
+    },
+    {
+      "id": "becky-emotion-probe-silent-bugs-fix",
+      "scope": "iw",
+      "label": "感情/probeシステムの構造的バグ8件根治(idle_hours断線・decide偏重・reflect無通知等)",
+      "category": "voice-of-becky",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-15",
+      "updated_at": "2026-07-15",
+      "due": null,
+      "note": "ゆうの「Telegram自動返信が感情に寄り添うを連投してくる」指摘から調査。probeトピック自己参照ループ/record_yu_message()未接続でloneliness入力が6/9から死亡/idle_hoursがClaude Code利用状況基準で自発発話が約36日機能停止/becky_todo.txt同期間滞留/becky_decide.pyのaction選択が13日間偏重&3回中2回実質no-op/becky_reflect.pyのJSONパース失敗時無通知沈黙/becky_seed_box.pyのmark_used()未接続(51件中0件used)/becky_search.pyのcron PATH不足でセットアップ以来空振り/OPSバナーのTelegram MCP reconnect誤検知、の8件を全て発見・修正。アンディ実装、クレアQA監査+Codex adversarial review(認証切れを自分で復旧)で裏取り。マイケルの人間感情メカニズム研究(ETL理論/capitalization理論)を設計に反映。作戦本部OPSバナーに無音検知(autonomy_stale_jobs)を新設、decideの選択理由もREPORTSに可視化。技術詳細はNotion「感情・記憶システム仕様書」https://app.notion.com/p/39e2922276e981709be0c39cf274a27b。次=次回cron実機実行で修正の効果確認+stackchan-bridge構造監査(ponytail-audit)約束済み。",
+      "icon": "🧠",
+      "completed_at": "2026-07-15"
     }
   ]
 }

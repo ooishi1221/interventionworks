@@ -433,6 +433,8 @@ def _bump_seed_revisit(seed_id: str) -> str:
     if count >= SEED_PROMOTE_AT and not target.get("promoted"):
         target["promoted"] = True
         SEED_BOX_PATH.write_text(json.dumps(seeds, ensure_ascii=False, indent=2))
+        # Task #24: becky_decide._bump_seed_revisit と同じ流儀 — 昇格時点でmark_used
+        becky_seed_box.mark_used(seed_id)
         # 2026-07-11 ゆう決定: レポート類は作戦本部へ（becky_decide が本モジュールを import してるので関数内 import で循環回避）
         from becky_decide import post_report
         post_report("night_review", "タネが育った（Thread昇格候補）",
