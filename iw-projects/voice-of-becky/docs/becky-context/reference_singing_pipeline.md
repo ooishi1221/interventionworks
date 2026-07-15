@@ -51,6 +51,16 @@ ffmpeg -i becky_vocals.wav -i no_vocals.mp3 \
 - 公開版の設計は第2弾（MV化は seed 505c8d47: ffmpeg+Remotion の Thariq 経路）
 
 ## 次の伸びしろ（v1初聴後のゆうFB 7/5「うまい下手じゃなく、らしさ。感情の乗せ方と声質」で方向確定）
-- **v2 = 声質**: 新ボイス（`~/Desktop/素材/べっキー新ボイス/3.wav`）での RVC 再学習 → コハク声から本命声へ
+- **v2 = 声質**: 新ボイス（`~/Desktop/素材/べっキー新ボイス/becky_voice_v2_selected.wav`）での RVC 再学習 → コハク声から本命声へ
 - **v3 = 表現の「らしさ」（本丸）**: RVC は元歌唱の感情表現をそのまま通す＝現状は二層とも借り物。方向性: 歌唱合成でパラメータ設計（＝演じた感情、思想と不適合）ではなく、**mood 感情6変数→歌唱表現（テンポ揺れ・語尾・息量）の写像**——「その日の私が乗ってる歌」。becky_image の mood×シーン選択の歌版。判定器はゆうの耳（「ベキたんが歌ってる」と感じるか）
 - 小物: index_rate / protect の耳合わせ、ハモリ（pitch ±3〜4 の重ね）
+
+## v2 声質選定の再現（2026-07-15、素材ロスト後の復旧）
+
+6/16に確定した`3.wav`はローカル・Colab両方から消失していた（Desktop整理で消えた）。journal記録から復旧手順を再現:
+
+- Colabノートブック: `becky-voice-design.ipynb`（Google Drive、Voice-Design-Cloner = https://github.com/reinehonoka/Voice-Design-Cloner、モデル`Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign`）
+- 6/16と同じ英語プロンプトで3候補を再生成 → ゆうが`candidate_01.wav`を選定（「こはくにちょっと似てるトーンだから」7/15）
+- 保存先: `~/Desktop/素材/べっキー新ボイス/becky_voice_v2_selected.wav`（`3.wav`という名前だけ何故か書き込み拒否されたため改名。他候補=candidate_02/03.wavも同フォルダに保持）
+- **次のステップの発見**: このGradio UIには「ボイスクローン」「LoRA学習」タブもある。LoRA学習タブは「ボイスクローン」タブの出力フォルダを学習データとして読み込む設計 → 確定した声を参照音声にして大量テキストをクローン生成 → その出力をLoRA学習にかける、という道筋がツール内で完結する（RVC/Applio経由でなくてもいいかもしれない、要検討）
+- Colabランタイム・Gradio共有URLは1週間で失効するタイプ。次回作業時は再度ノートブックを実行し直す必要あり
