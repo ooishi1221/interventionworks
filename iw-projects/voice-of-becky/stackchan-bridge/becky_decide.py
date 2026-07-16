@@ -410,7 +410,9 @@ DECIDE_PROMPT = """{core}
 - "silence": 何もしない。params: {{}}
 
 JSONのみ返す（説明不要）:
-{{"action": "...", "reason": "なぜそれを選んだか1文", "params": {{...}}, "mood_reflection": "今の気分を一言"}}"""
+{{"action": "...", "reason": "なぜそれを選んだか1文", "params": {{...}}, "mood_reflection": "今の気分を一言",
+  "expected": "この行動で何がどうなってほしいか（1〜2文、結果を見る前に書く。後付け禁止）",
+  "alternatives": [{{"id": "見送った候補のaction名 or seed/thread/wantのid", "name": "その候補の短い名前"}}]}}"""
 
 
 def decide(context: dict) -> dict:
@@ -457,12 +459,22 @@ def decide(context: dict) -> dict:
     # call_llm_json: 壊れたJSON応答は1回だけ自動再送してくれる（Task #21, 2026-07-15。
     # 従来の自前find/rfindパースだと再送されず黙ってsilence化していた）
     decision = becky_llm.call_llm_json(prompt, max_tokens=500)
+    # stats_snapshot: 新規に数字を取りに行かず、contextに既にある数値だけ（emotion-preference-design.md 1番）
+    stats_snapshot = {
+        "mood": context["mood"],
+        "tweets_today": context["tweets_today"],
+        "probes_today": context["probes_today"],
+    }
     if not decision:
-        return {"action": "silence", "reason": "API失敗またはJSONパース失敗のため安全にsilence", "params": {}, "mood_reflection": ""}
+        return {"action": "silence", "reason": "API失敗またはJSONパース失敗のため安全にsilence", "params": {}, "mood_reflection": "",
+                "expected": "", "alternatives": [], "stats_snapshot": stats_snapshot}
     decision.setdefault("action", "silence")
     decision.setdefault("reason", "")
     decision.setdefault("params", {})
     decision.setdefault("mood_reflection", "")
+    decision.setdefault("expected", "")
+    decision.setdefault("alternatives", [])
+    decision["stats_snapshot"] = stats_snapshot
     return decision
 
 
@@ -476,6 +488,9 @@ def _log_decision(decision: dict, executed: bool, extra: str = "", **meta_extra)
         "reason": decision.get("reason", ""),
         "params": decision.get("params", {}),
         "mood_reflection": decision.get("mood_reflection", ""),
+        "expected": decision.get("expected", ""),
+        "alternatives": decision.get("alternatives", []),
+        "stats_snapshot": decision.get("stats_snapshot", {}),
         "executed": executed,
         "extra": extra,
     }
