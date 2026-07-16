@@ -77,6 +77,20 @@ const client = new TwitterApi({
   accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
 });
 
+// 503/500/502/429 は X 側の一時過負荷が大半 → 指数バックオフで2回まで再試行
+// ponytail: サーキットブレーカーは不要、素朴なリトライで十分（この規模の呼び出し頻度なら）
+const RETRYABLE_CODES = [429, 500, 502, 503];
+async function tweetWithRetry(client, text, opts, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await client.v2.tweet(text, opts);
+    } catch (err) {
+      if (i === retries || !RETRYABLE_CODES.includes(err?.code)) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (i + 1))); // 2s, 4s
+    }
+  }
+}
+
 try {
   const tweetOptions = replyTo
     ? { reply: { in_reply_to_tweet_id: replyTo } }
@@ -84,11 +98,12 @@ try {
 
   if (imagePath && existsSync(imagePath)) {
     const imgBuffer = await readFile(imagePath);
-    const mediaId = await client.v1.uploadMedia(imgBuffer, { mimeType: "image/jpeg" });
+    const mimeType = imagePath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+    const mediaId = await client.v1.uploadMedia(imgBuffer, { mimeType });
     tweetOptions.media = { media_ids: [mediaId] };
   }
 
-  const result = await client.v2.tweet(text, tweetOptions);
+  const result = await tweetWithRetry(client, text, tweetOptions);
   const tweetId = result.data.id;
 
   appendFileSync(
