@@ -13,12 +13,14 @@ Usage:
 import json
 import os
 import re
+import subprocess
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pychrome
+import requests
 
 # ponytail: タブを閉じる際に pychrome の _recv_loop が閉じたソケットから読もうとして
 # 無害な例外を吐く（処理自体は完了済み）。cron_status の直近ログ判定が誤検知するので黙らせる
@@ -33,10 +35,52 @@ def _quiet_pychrome_recv_loop(args):
 
 threading.excepthook = _quiet_pychrome_recv_loop
 
-CDP_URL = "http://localhost:9223"
+CDP_PORT = 9223
+CDP_URL = f"http://localhost:{CDP_PORT}"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
 HISTORY_OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_history.json")
 YT_CHANNEL_ID = "UCFvpdUWDpmSLTTbv6kiIfNQ"  # @voice_of_becky
+CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+CHROME_PROFILE_DIR = Path.home() / ".stackchan" / "gemini-chrome-profile"
+
+
+def _cdp_alive() -> bool:
+    try:
+        return requests.get(f"{CDP_URL}/json/version", timeout=2).status_code == 200
+    except Exception:
+        return False
+
+
+def ensure_chrome() -> None:
+    """ベキたん専用Chrome（CDP :9223）が落ちてたら起動する。
+
+    Mac再起動でこのChromeは自動復帰しない（launchd/cron管理外・手動spawn前提）ため、
+    再起動後の初回cronで死んでいることがある（2026-07-16 実際に発生）。
+    """
+    if _cdp_alive():
+        return
+    print("[scraper] Chrome (CDP :9223) 応答なし、起動する", flush=True)
+    CHROME_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.Popen(
+        [
+            CHROME_BIN,
+            f"--user-data-dir={CHROME_PROFILE_DIR}",
+            f"--remote-debugging-port={CDP_PORT}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-session-crashed-bubble",
+            "https://gemini.google.com/app",
+        ],
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    for _ in range(20):
+        time.sleep(0.5)
+        if _cdp_alive():
+            print("[scraper] Chrome 起動確認", flush=True)
+            return
+    raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) が起動確認タイムアウト（10秒）")
 
 
 def _append_history(stats: dict) -> None:
@@ -376,6 +420,7 @@ def main() -> None:
     print("[scraper] 起動", flush=True)
     stats: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
+    ensure_chrome()
     browser = pychrome.Browser(url=CDP_URL)
     tab = browser.new_tab()
     tab.start()
