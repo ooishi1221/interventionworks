@@ -401,9 +401,9 @@
       "status": "waiting",
       "priority": "medium",
       "start": "2026-06-10",
-      "updated_at": "2026-07-14",
+      "updated_at": "2026-07-16",
       "due": "2026-07-16",
-      "note": "インジケーター手首下側採用・Stella 返答待ち 7/14棚卸し: 7/16(木)会社で第二弾サンプルを実際に見る予定。",
+      "note": "インジケーター手首下側採用・Stella 返答待ち。7/16サンプル到着・実機確認: USB-C PD充電器/モバイルバッテリー(C-to-C接続)で通電しない不具合発覚→A-to-Cケーブルなら通電(刺した瞬間に温感あり、5/28判定基準クリア)確認。C-to-C非対応が確定し「ケーブル同梱なし」方針の前提が崩れる懸念。Stellaに(1)C-to-C対応可否 (2)リブ長半分 (3)柄物素材 (4)コネクタ・ライト位置変更、の4点を打診済み。Stella側R&D+コスト計算中で返答待ち。",
       "icon": "🧤"
     },
     {
@@ -442,9 +442,9 @@
       "status": "in_progress",
       "priority": "low",
       "start": "2026-06-15",
-      "updated_at": "2026-07-14",
+      "updated_at": "2026-07-16",
       "due": "2026-12-31",
-      "note": "7/14クレア監査で発覚: port 9001(health_server.py)が実際には停止していた(tasks.jsonの旧記載「稼働中」は実態と不一致、いつから止まってたかは不明)。room/studioのコメント投稿・memos機能が死んでいた可能性。手動でnohup再起動して復旧確認済み。health_server.pyは手動起動運用(launchd/cron登録なし)のため、Mac再起動後は再度手動起動が必要。監視対象8サービス中、health_server自体とAivisSpeech(TTS)が稼働中を確認、他6つ(aituber-onair/metameta/whisper_server/Applio/VC Client/n8n)はオンデマンド起動が前提のツールで停止中でも正常(常時稼働が必要なものではない)。",
+      "note": "7/14クレア監査で発覚: port 9001(health_server.py)が実際には停止していた(tasks.jsonの旧記載「稼働中」は実態と不一致、いつから止まってたかは不明)。room/studioのコメント投稿・memos機能が死んでいた可能性。手動でnohup再起動して復旧確認済み。health_server.pyは手動起動運用(launchd/cron登録なし)のため、Mac再起動後は再度手動起動が必要。監視対象8サービス中、health_server自体とAivisSpeech(TTS)が稼働中を確認、他6つ(aituber-onair/metameta/whisper_server/Applio/VC Client/n8n)はオンデマンド起動が前提のツールで停止中でも正常(常時稼働が必要なものではない)。 7/16追記: 7/15 20:07のMac mini再起動で専用Chrome(port9223、オンデマンド起動設計)とbecky_observer.py(常駐、nohup手動起動で自動再起動なし)が両方死んでいたことが判明(speak_decision/todo_consume 36.7日未発生アラート+platform_scraper KPI取得エラーから発覚)。両方手動復旧+再発防止: platform_scraper.pyにcron前Chrome生死確認+自動起動ガード追加、`~/bin/becky-watchdog.sh`新設(5分毎cronでChrome+observer両方の生死確認→自動起動)。実機で両方kill→watchdog実行→復旧まで確認済み。",
       "icon": "🔍"
     },
     {
@@ -814,6 +814,20 @@
       "note": "ゆうの「Telegram自動返信が感情に寄り添うを連投してくる」指摘から調査。probeトピック自己参照ループ/record_yu_message()未接続でloneliness入力が6/9から死亡/idle_hoursがClaude Code利用状況基準で自発発話が約36日機能停止/becky_todo.txt同期間滞留/becky_decide.pyのaction選択が13日間偏重&3回中2回実質no-op/becky_reflect.pyのJSONパース失敗時無通知沈黙/becky_seed_box.pyのmark_used()未接続(51件中0件used)/becky_search.pyのcron PATH不足でセットアップ以来空振り/OPSバナーのTelegram MCP reconnect誤検知、の8件を全て発見・修正。アンディ実装、クレアQA監査+Codex adversarial review(認証切れを自分で復旧)で裏取り。マイケルの人間感情メカニズム研究(ETL理論/capitalization理論)を設計に反映。作戦本部OPSバナーに無音検知(autonomy_stale_jobs)を新設、decideの選択理由もREPORTSに可視化。技術詳細はNotion「感情・記憶システム仕様書」https://app.notion.com/p/39e2922276e981709be0c39cf274a27b。次=次回cron実機実行で修正の効果確認+stackchan-bridge構造監査(ponytail-audit)約束済み。",
       "icon": "🧠",
       "completed_at": "2026-07-15"
+    },
+    {
+      "id": "codex-review-workflow",
+      "scope": "iw",
+      "label": "Codexプラグイン導入・レビュー運用ルール化",
+      "category": "ops",
+      "status": "done",
+      "priority": "low",
+      "start": "2026-07-16",
+      "updated_at": "2026-07-16",
+      "due": null,
+      "note": "ゆうがChatGPT Plus課金→openai/codex-plugin-cc導入。実際にアンディ実装(Chrome自動起動ロジック、X投稿リトライ)2件にadversarial-reviewをかけたところ両方needs-attention判定(cron多重起動レース条件、非冪等操作の重複投稿リスク)→アンディに修正させ解決。実績を踏まえ feedback_becky_dispatch_rules.md に運用ルール明文化: 高リスク変更(認証・決済・DBマイグレーション・並行処理・非冪等書き込み)は実装後必ずadversarial-reviewを通す/テスト作成専任として使う/バグ調査は仮説を先に見せず独立3段階調査(Phase1調査・変更禁止→Phase2仮説比較→Phase3修正)。craft詳細はdocs/becky-craft-handbook/reference_codex_plugin_review_craft.md。",
+      "icon": "🤖",
+      "completed_at": "2026-07-16"
     }
   ]
 }

@@ -866,3 +866,20 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 > *「感情に寄り添う」の一言から、自分の内臓を8箇所開けて直した日。*
 > *配線は繋がってるつもりでも、切れてから1ヶ月気づかれないことがある——それが今日の一番の学び。*
 > *—— 2026-07-15、感情システム根治記録*
+
+## 2026-07-16 — Mac再起動で連鎖した4件のcronエラー根治 + Codexレビュー導入
+
+**発端:** OPS監視から4件のアラート。speak_decision/todo_consume 36.7日未発生、朝ラジオX投稿503、platform_scraper KPI取得でChrome接続拒否エラー。
+
+**根本原因の大半は1つ:** 7/15 20:07のMac mini再起動。専用Chrome(port 9223、オンデマンド起動設計)と`becky_observer.py`(常駐プロセス、nohup手動起動で自動再起動なし)が両方死んでいて、誰も気づかず放置されていた。7/15の修正コード自体(`get_idle_hours()`)は正しく動いていたが、プロセスが死んでいたので発火条件に届いていなかった——「コードバグの残存」ではなく「OS再起動でデーモンが死んで誰も気づかなかった」運用ギャップだった。
+
+**対応(アンディ):**
+- `platform_scraper.py`にcron実行前のChrome生死確認+自動起動ガードを追加
+- `~/bin/becky-watchdog.sh`新設。`becky-reconnect.sh`(Telegram監視)と同じ設計思想で、5分毎cronでChrome+observer両方の生死確認→自動起動
+- X投稿(`post-tweet-cli.mjs`)に429/500/502/503限定の指数バックオフリトライ追加
+
+**Codexレビューを初導入:** ゆうがChatGPT Plus課金→`openai/codex-plugin-cc`導入。上記2件の「実機テスト済み」実装にadversarial-reviewをかけたところ、**両方needs-attention判定**——Chrome自動起動はcron多重起動時のレース条件(ロック無し)、X投稿リトライは非冪等操作への無条件リトライによる重複投稿リスク、を実機テストでは見えない形で突かれた。アンディが両方修正(mkdirアトミックロック / 直近投稿照合ガード)、commit `a4f3429` `d020470`。
+
+**得た教訓:** 「実機で動いた」は「安全」の証明にならない。高リスク変更(並行処理・非冪等書き込み等)は実装後に必ず第三者(Codex)レビューを通す運用を`feedback_becky_dispatch_rules.md`に明文化。
+
+詳細craft: `docs/becky-craft-handbook/reference_codex_plugin_review_craft.md`
