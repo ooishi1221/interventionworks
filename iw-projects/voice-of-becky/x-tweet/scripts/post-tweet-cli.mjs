@@ -15,6 +15,7 @@ import { readFileSync, appendFileSync, existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { tweetWithRetry } from "./tweet-retry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const envPath = resolve(__dirname, "../.env");
@@ -76,20 +77,6 @@ const client = new TwitterApi({
   accessToken: process.env.X_ACCESS_TOKEN,
   accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
 });
-
-// 503/500/502/429 は X 側の一時過負荷が大半 → 指数バックオフで2回まで再試行
-// ponytail: サーキットブレーカーは不要、素朴なリトライで十分（この規模の呼び出し頻度なら）
-const RETRYABLE_CODES = [429, 500, 502, 503];
-async function tweetWithRetry(client, text, opts, retries = 2) {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      return await client.v2.tweet(text, opts);
-    } catch (err) {
-      if (i === retries || !RETRYABLE_CODES.includes(err?.code)) throw err;
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1))); // 2s, 4s
-    }
-  }
-}
 
 try {
   const tweetOptions = replyTo
