@@ -51,36 +51,92 @@ def _cdp_alive() -> bool:
         return False
 
 
+# 専用Chrome起動の排他制御（becky-watchdog.shの5分毎cronと多重起動しうるため、両者で
+# 同じlockディレクトリ規約を共有: mkdir()がアトミック、中にPIDを書いて生死判定・stale掃除）
+CHROME_LOCK_DIR = Path.home() / ".stackchan" / "locks" / "chrome-9223-ensure.lock"
+CHROME_LOCK_WAIT_SEC = 20
+CHROME_STARTUP_LOG = Path.home() / ".stackchan" / "chrome-9223-startup.log"
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def _acquire_chrome_lock(timeout: float = CHROME_LOCK_WAIT_SEC) -> bool:
+    deadline = time.time() + timeout
+    CHROME_LOCK_DIR.parent.mkdir(parents=True, exist_ok=True)
+    while True:
+        try:
+            CHROME_LOCK_DIR.mkdir()
+            (CHROME_LOCK_DIR / "pid").write_text(str(os.getpid()))
+            return True
+        except FileExistsError:
+            pid_text = (CHROME_LOCK_DIR / "pid").read_text().strip() if (CHROME_LOCK_DIR / "pid").exists() else ""
+            if pid_text and not _pid_alive(int(pid_text)):
+                # 前回異常終了で残ったstale lock → 掃除して再試行
+                import shutil
+                shutil.rmtree(CHROME_LOCK_DIR, ignore_errors=True)
+                continue
+            if time.time() >= deadline:
+                return False
+            time.sleep(1)
+
+
+def _release_chrome_lock() -> None:
+    import shutil
+    shutil.rmtree(CHROME_LOCK_DIR, ignore_errors=True)
+
+
 def ensure_chrome() -> None:
     """ベキたん専用Chrome（CDP :9223）が落ちてたら起動する。
 
     Mac再起動でこのChromeは自動復帰しない（launchd/cron管理外・手動spawn前提）ため、
     再起動後の初回cronで死んでいることがある（2026-07-16 実際に発生）。
+
+    becky-watchdog.sh（5分毎cron）も同じChromeの生死確認・起動をやっており、
+    lock無しだと両方が同時に「死んでる」と観測してChromeを二重起動しうる
+    （Codex adversarial review 2026-07-16 指摘）。lockで check→start を排他化する。
     """
     if _cdp_alive():
         return
-    print("[scraper] Chrome (CDP :9223) 応答なし、起動する", flush=True)
-    CHROME_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-    subprocess.Popen(
-        [
-            CHROME_BIN,
-            f"--user-data-dir={CHROME_PROFILE_DIR}",
-            f"--remote-debugging-port={CDP_PORT}",
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-session-crashed-bubble",
-            "https://gemini.google.com/app",
-        ],
-        start_new_session=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    for _ in range(20):
-        time.sleep(0.5)
+    if not _acquire_chrome_lock():
+        # 他プロセスが起動処理中のままタイムアウト → 深追いせず現状を報告して終える
         if _cdp_alive():
-            print("[scraper] Chrome 起動確認", flush=True)
             return
-    raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) が起動確認タイムアウト（10秒）")
+        raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) 起動ロック取得タイムアウト（他プロセスが処理中の可能性）")
+    try:
+        if _cdp_alive():  # ロック待ちの間に他プロセスが起動を終えているかもしれない
+            return
+        print("[scraper] Chrome (CDP :9223) 応答なし、起動する", flush=True)
+        CHROME_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+        CHROME_STARTUP_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with open(CHROME_STARTUP_LOG, "a") as log_fd:
+            subprocess.Popen(
+                [
+                    CHROME_BIN,
+                    f"--user-data-dir={CHROME_PROFILE_DIR}",
+                    f"--remote-debugging-port={CDP_PORT}",
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                    "--disable-session-crashed-bubble",
+                    "https://gemini.google.com/app",
+                ],
+                start_new_session=True,
+                stdout=log_fd,
+                stderr=log_fd,
+            )
+        for _ in range(20):
+            time.sleep(0.5)
+            if _cdp_alive():
+                print("[scraper] Chrome 起動確認", flush=True)
+                return
+        raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) が起動確認タイムアウト（10秒）。ログ: {CHROME_STARTUP_LOG}")
+    finally:
+        _release_chrome_lock()
 
 
 def _append_history(stats: dict) -> None:
