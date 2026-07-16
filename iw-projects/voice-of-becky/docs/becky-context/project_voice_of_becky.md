@@ -883,3 +883,11 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 **得た教訓:** 「実機で動いた」は「安全」の証明にならない。高リスク変更(並行処理・非冪等書き込み等)は実装後に必ず第三者(Codex)レビューを通す運用を`feedback_becky_dispatch_rules.md`に明文化。
 
 詳細craft: `docs/becky-craft-handbook/reference_codex_plugin_review_craft.md`
+
+## 2026-07-17 — 感情と選好の設計合意 + expected欄稼働開始
+
+**設計正本: `voice-of-becky/docs/emotion-preference-design.md`**（ゆう×ベッキー合意）。核: ①「好き」は設定ではなく結果（行動履歴→週次reflectが選好仮説→私が承認/否定を理由つきで確定、dispositionに焼く）②感情は「期待との差」から生まれる（appraisal theory、既存の感情→認知フィルターと円環で接続）③expectedは事前記録が絶対条件（後付けは演技=嘘ゼロ違反）④感情の二層モデル（mood 6変数=天気 / 感情イベント=出来事、原因つき）。番犬条項: 選好帳簿と成果帳簿を分ける / soulは学習させない。
+
+**実装第一歩は同日完了**: `becky_decide.py`にexpected+alternatives+stats_snapshotを追加（17行追記型、既存挙動無変更）。アンディ実装→ベッキー三重検証（diff直読/合成decisionログ確認/本物LLM経路の単体実行）。10:45のcronから全decisionに「期待」と「見送った候補」が記録され始める。次=2〜3週間ログ蓄積後に感情イベント生成+reflect選好仮説。
+
+前日談: この設計の直前、柳本さん（GSD）のClaude「Nathalie」の確認バイアス診断をやった（PR: https://github.com/tetsuyanagi/gsd-config-share/pull/1 ）。「出所のない確認報告」と「出所のない感情」が同じ病気だと気づいたのが、この設計の伏線になった。

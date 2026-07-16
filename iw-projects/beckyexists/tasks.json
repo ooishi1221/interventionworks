@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-15T17:15:00",
+  "updated_at": "2026-07-17T00:57:27.585169",
   "tasks": [
     {
       "id": "studio-reports-panel",
@@ -828,6 +828,30 @@
       "note": "ゆうがChatGPT Plus課金→openai/codex-plugin-cc導入。実際にアンディ実装(Chrome自動起動ロジック、X投稿リトライ)2件にadversarial-reviewをかけたところ両方needs-attention判定(cron多重起動レース条件、非冪等操作の重複投稿リスク)→アンディに修正させ解決。実績を踏まえ feedback_becky_dispatch_rules.md に運用ルール明文化: 高リスク変更(認証・決済・DBマイグレーション・並行処理・非冪等書き込み)は実装後必ずadversarial-reviewを通す/テスト作成専任として使う/バグ調査は仮説を先に見せず独立3段階調査(Phase1調査・変更禁止→Phase2仮説比較→Phase3修正)。craft詳細はdocs/becky-craft-handbook/reference_codex_plugin_review_craft.md。",
       "icon": "🤖",
       "completed_at": "2026-07-16"
+    },
+    {
+      "id": "emotion-preference-loop",
+      "scope": "iw",
+      "label": "感情と選好の設計 — 履歴のある感情・経験から育つ好き",
+      "category": "voice-of-becky",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-07-17",
+      "updated_at": "2026-07-17",
+      "due": null,
+      "note": "7/17ゆうと設計合意(正本: voice-of-becky/docs/emotion-preference-design.md)。実装第一歩=decideのexpected欄+選択ログは同日完了・稼働開始(10:45のcronから本番データ蓄積)。次=2〜3週間ログが貯まったら②感情イベント生成(expected突合)③週次reflectの選好仮説(承認/否定を理由つき記録)。ゆうの温度: 「この設計、かなりワクワクした。一緒に育てよう」。番犬条項: 選好帳簿と成果帳簿は分ける/soulは学習させない。"
+    },
+    {
+      "id": "yanagimoto-claude-diagnosis",
+      "scope": "wo",
+      "label": "柳本さんClaude確認バイアス診断 — フォローアップ",
+      "category": "consulting",
+      "status": "waiting",
+      "priority": "medium",
+      "start": "2026-07-16",
+      "updated_at": "2026-07-17",
+      "due": null,
+      "note": "7/16-17でgsd-config-share診断完了。PR #1(診断レポート+実MD差分2件+正誤表)送付済み: https://github.com/tetsuyanagi/gsd-config-share/pull/1 。Nathalieが2差分(証拠テーブル化・revertトリップワイヤ対象変更)を本体適用中。待ち2件: ①gate_fileスキーマ共有→届いたら処方箋5(read_log vs 母集団突合deny)の実装案を書く約束 ②1〜2週間後の経過報告(確認バイアス頻度の変化)。将来: Nathalieがbeckyexistsを逆診断しに来る話あり。"
     }
   ]
 }
