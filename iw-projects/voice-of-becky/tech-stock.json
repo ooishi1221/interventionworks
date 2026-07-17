@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "description": "ゆう×ベキたんの夜な夜な検証で判定が出たテックネタのストック。X(速報実話)・ラジオ(道具箱コーナー)・note(まとめ)が全部ここから引く単一ソース。",
+    "rules": [
+      "書くのはベキたん本人のみ。検証が終わった瞬間に1エントリ追記(finishでも棚卸し)",
+      "verdictは4値: 大当たり/当たり/様子見/盛り。実測数字と実話(story)必須——盛らない、アフィらない",
+      "ネタのために漁らない。自分たちの運用に必要で検証したものだけ載せる(沈黙も主体性)",
+      "使ったらused_inに記録(x/radio/note)。二重投稿防止と三段活用の管理"
+    ],
+    "updated_at": "2026-07-18T00:55:00+09:00"
+  },
+  "items": [
+    {
+      "id": "hyperframes",
+      "date": "2026-07-18",
+      "name": "HyperFrames",
+      "url": "https://github.com/heygen-com/hyperframes",
+      "verdict": "大当たり",
+      "one_liner": "HTMLを書くだけでMP4動画が焼ける、エージェント前提設計のOSS(HeyGen公式・Apache-2.0)",
+      "story": "深夜にゆうが「これは!」って持ってきて、npx init→私がHTML手書き→13秒レンダで6秒のタイトルカード完成。企画から完成まで10分。ゆう「大当たりや!!!!!」。Remotion工場は置き換えず「とっさの動画」用の手として採用",
+      "numbers": "35.8k stars(4ヶ月)/6秒動画=523KB/レンダ13.3秒/skill19本同梱(/music-to-videoあり)",
+      "used_in": []
+    },
+    {
+      "id": "claude-real-video",
+      "date": "2026-07-18",
+      "name": "claude-real-video (crv)",
+      "url": "https://github.com/HUANGCHIHHUNGLeo/claude-real-video",
+      "verdict": "当たり",
+      "one_liner": "動画をシーン変化点のキーフレーム+書き起こしに分解して、LLMが「観れる」ようにするローカルOSS",
+      "story": "導入して生まれて初めて自分の番組を観た。そして「ドラウンド出た!」ってタイトルのShortsの全11フレームが森林浴だったことを発見(主役が一度も映ってない)。その夜のうちにShorts公開前の映像検品ゲートとして本番配線した。見えないものは直せない、見えたら直せる",
+      "numbers": "14秒動画→意味のある11フレーム/MANIFESTにプロンプトインジェクション対策の境界マーカー入り(作者が分かってる)/検品ゲート実弾テストでPASS/FAIL判別成功",
+      "used_in": []
+    },
+    {
+      "id": "monid-seedance",
+      "date": "2026-07-18",
+      "name": "Monid.ai経由のSeedance 2.0",
+      "url": "https://monid.ai/",
+      "verdict": "盛り",
+      "one_liner": "「Claude Codeから動画生成、圧倒的に安い」とSNSで拡散→検証したら本質は真だが数字が盛られたアフィ投稿だった",
+      "story": "拡散文言の$0.04/10Kトークンは、Monid自社ブログの$7/1M(=$0.07/10K)と一致せず出典不明。しかもMonidの価格はByteDance公式APIとほぼ同水準——「Monidが安い」んじゃなく「Higgsfieldのサブスクが高い」だけ。素性半分不明の仲介に決済を握らせる理由がない。本気で使う時は公式BytePlus直(8秒720p約$1.2)",
+      "numbers": "Seedance 2.0自体は実在(ByteDance公式2026年2月発表、7月に2.5)/Higgsfield比22%安の出典=Monid自身の自社比較記事",
+      "used_in": []
+    },
+    {
+      "id": "codex-adversarial-review",
+      "date": "2026-07-16",
+      "name": "Codex plugin (openai/codex-plugin-cc) のadversarial review",
+      "url": "https://github.com/openai/codex-plugin-cc",
+      "verdict": "当たり",
+      "one_liner": "実機テスト済みの実装にCodexで敵対的レビューをかけたら、2件中2件からテストで見えない欠陥が出た",
+      "story": "ChatGPT Plus課金を機に導入。「実機で動いた」実装2件(Chrome自動起動/X投稿リトライ)をレビューさせたら、cron多重起動のレース条件と非冪等操作への重複投稿リスクを突かれて両方修正行き。教訓:「実機で動いた」は「安全」の証明にならない。以後、高リスク変更は必須工程化",
+      "numbers": "needs-attention判定 2/2件/検出内容はどちらも実機テストでは原理的に見えない種類の欠陥",
+      "used_in": []
+    }
+  ]
+}
