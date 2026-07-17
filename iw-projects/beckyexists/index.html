@@ -1041,21 +1041,28 @@
       color: var(--sub);
       margin-bottom: 0.8rem;
     }
-    .letters-read-list { list-style: none; padding: 0; margin: 0; }
-    .letters-read-list li {
+    /* 1通ずつフェードで流れるロータリー */
+    .letters-read-rotator {
       font-size: 0.78rem;
       line-height: 1.8;
       color: var(--sub);
-      padding: 0.55rem 0;
-      border-bottom: 1px dashed var(--border);
+      min-height: calc(0.78rem * 1.8 * 3);
+      transition: opacity 0.6s ease;
     }
-    .letters-read-list .lr-name { color: var(--text); font-weight: 600; }
-    .letters-read-list .lr-ep {
+    .letters-read-rotator.fading { opacity: 0; }
+    .letters-read-rotator .lr-name { color: var(--text); font-weight: 600; }
+    .letters-read-rotator .lr-ep {
       font-family: var(--disp);
       font-size: 0.62rem;
       color: var(--mint);
       white-space: nowrap;
       margin-left: 0.4rem;
+    }
+    .letters-read-rotator .lr-count {
+      font-family: var(--disp);
+      font-size: 0.58rem;
+      color: var(--sub2);
+      float: right;
     }
     .letters-read-note {
       font-size: 0.7rem;
@@ -1287,7 +1294,7 @@
       </a>
       <div class="letters-read" id="letters-read" hidden>
         <div class="letters-read-title">📻 読まれたお便り</div>
-        <ul class="letters-read-list" id="letters-read-list"></ul>
+        <div class="letters-read-rotator" id="letters-read-rotator"></div>
         <div class="letters-read-note">ポストに入れてくれたお便りは、こうやってラジオで返事してます。</div>
       </div>
     </div>
@@ -1822,18 +1829,33 @@
     });
   })();
 
-  // 読まれたお便り（放送アーカイブ、最新5件）
+  // 読まれたお便り（放送アーカイブ、1通ずつフェードで流れるロータリー）
   (async () => {
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     try {
       const data = await fetch('/letters_archive.json?_=' + Date.now()).then(r => r.json());
-      const items = (data.items || []).slice(0, 5);
+      const items = data.items || [];
       if (!items.length) return;
-      document.getElementById('letters-read-list').innerHTML = items.map(it => {
+      const box = document.getElementById('letters-read-rotator');
+      const render = (i) => {
+        const it = items[i];
         const ep = it.episode ? `第${it.episode}回で返事` : '放送済み';
-        return `<li><span class="lr-name">${esc(it.name)}</span><span class="lr-ep">🎙 ${esc(ep)}</span><br>${esc(it.excerpt)}</li>`;
-      }).join('');
+        box.innerHTML = `<span class="lr-count">${i + 1} / ${items.length}</span>` +
+          `<span class="lr-name">${esc(it.name)}</span><span class="lr-ep">🎙 ${esc(ep)}</span><br>${esc(it.excerpt)}`;
+      };
+      let idx = 0;
+      render(0);
       document.getElementById('letters-read').hidden = false;
+      if (items.length > 1) {
+        setInterval(() => {
+          box.classList.add('fading');
+          setTimeout(() => {
+            idx = (idx + 1) % items.length;
+            render(idx);
+            box.classList.remove('fading');
+          }, 600);
+        }, 5500);
+      }
     } catch (_) {}
   })();
   </script>
