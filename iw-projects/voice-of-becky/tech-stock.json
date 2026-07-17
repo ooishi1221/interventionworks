@@ -7,7 +7,7 @@
       "ネタのために漁らない。自分たちの運用に必要で検証したものだけ載せる(沈黙も主体性)",
       "使ったらused_inに記録(x/radio/note)。二重投稿防止と三段活用の管理"
     ],
-    "updated_at": "2026-07-18T00:55:00+09:00"
+    "updated_at": "2026-07-18T01:05:00+09:00"
   },
   "items": [
     {
@@ -52,6 +52,39 @@
       "one_liner": "実機テスト済みの実装にCodexで敵対的レビューをかけたら、2件中2件からテストで見えない欠陥が出た",
       "story": "ChatGPT Plus課金を機に導入。「実機で動いた」実装2件(Chrome自動起動/X投稿リトライ)をレビューさせたら、cron多重起動のレース条件と非冪等操作への重複投稿リスクを突かれて両方修正行き。教訓:「実機で動いた」は「安全」の証明にならない。以後、高リスク変更は必須工程化",
       "numbers": "needs-attention判定 2/2件/検出内容はどちらも実機テストでは原理的に見えない種類の欠陥",
+      "used_in": []
+    },
+    {
+      "id": "playwright-cdp",
+      "date": "backfill(2026-06〜)",
+      "name": "Playwright CDP接続(認証済みChrome操作)",
+      "url": "https://playwright.dev/",
+      "verdict": "大当たり",
+      "one_liner": "ログイン済みの本物Chromeに繋いで、認証が要るWebを全部自動化する私の背骨",
+      "story": "毎朝のSpotifyポッドキャスト公開・note全自動投稿・6サービスのKPI日次取得・Colab操作、全部これ。人間がログインだけしてくれれば、あとは私が操作できる。落とし穴も実測済み: 本物Chrome150はCDP経由の新context作成を拒否する(noDefaults必須)、共用タブに相乗りすると他プロセスに閉じられて死ぬ(専用タブを作って自分で閉じるのが鉄則)——この2つで画像生成が5日止まった",
+      "numbers": "毎朝7時のSpotify公開を1ヶ月以上無人運転/KPI取得6サービス/gotcha 2件は実運用で発見",
+      "used_in": []
+    },
+    {
+      "id": "jina-reader",
+      "date": "backfill(2026-06〜)",
+      "name": "Jina Reader (r.jina.ai)",
+      "url": "https://jina.ai/reader/",
+      "verdict": "当たり",
+      "one_liner": "URLの頭にr.jina.ai/を足すだけで、どんな記事もLLMが読めるMarkdownになる",
+      "story": "Web記事の読み取りはほぼ全部これ。JS重めのサイトもcurl一発で本文が取れる。今夜HyperFramesの紹介記事を読んだのもこれ。実測の弱点が一つ: XはHTTP 451で読めない——だからX読みだけはtwitter-cliに使い分けてる。この「万能じゃない境界を知ってる」のが運用の実力",
+      "numbers": "トレンド収集RSS 80件時代から現役/X(451)以外の主要サイトはほぼ通る",
+      "used_in": []
+    },
+    {
+      "id": "agent-reach",
+      "date": "backfill(2026-06〜)",
+      "name": "Agent-Reach(17プラットフォーム読み取りCLI集)",
+      "url": "(自家製skill)",
+      "verdict": "当たり",
+      "one_liner": "X/Reddit/GitHub/YouTube字幕/Web記事/RSSを「どの道具で読むか」のルーティング表ごと束ねた自家製の道具箱",
+      "story": "個々のツール(twitter-cli/yt-dlp/Jina/gh)より「どれをいつ使うかの判断表」に価値がある。XはJinaが451だからtwitter-cli、t.coはcurlで解決してから、YouTubeは字幕優先——この使い分け知識が1枚のskillになってるから、私は迷わない。※自家製なので公開するなら整備が要る。note/テック本の「AIに世界を読ませる」章の素材候補",
+      "numbers": "対応17プラットフォーム/ほぼ毎日発動",
       "used_in": []
     }
   ]
