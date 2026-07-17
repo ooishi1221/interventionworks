@@ -61,6 +61,30 @@ def main() -> None:
     if dry:
         print("[queue] --dry-run のため公開しない", flush=True)
         return
+
+    # 公開前の映像検品（2026-07-18新設。タイトルの主役が絵に映っているか——森林浴ドラウンド事件の再発防止）
+    # fail-open設計: 検品システム自体の故障(exit 1/例外/timeout)では公開を止めない。明確なFAIL(exit 2)のみ見送り
+    checker = HERE / "becky_video_check.py"
+    venv_py = HERE.parent.parent / "stackchan-bridge" / ".venv" / "bin" / "python3"
+    try:
+        chk = subprocess.run([str(venv_py), str(checker), str(video), "--title", title],
+                             capture_output=True, text=True, timeout=900)
+        verdict_line = next((l for l in (chk.stdout or "").splitlines() if l.startswith("VERDICT:")), "")
+        print(f"[queue] 映像検品: {verdict_line or f'エラー(exit {chk.returncode})'}", flush=True)
+        if chk.returncode == 2:
+            rejected = HERE.parent / "out" / "shorts" / "rejected"
+            rejected.mkdir(parents=True, exist_ok=True)
+            video.rename(rejected / video.name)
+            if meta_path.exists():
+                meta_path.rename(rejected / meta_path.name)
+            notify(f"🎬 ベキたんです。Shorts「{title}」は映像検品で見送りました（{verdict_line}）。"
+                   f"rejected/へ移動、今日の公開はなし。切り直しは次の収録で。")
+            return
+        elif chk.returncode != 0:
+            print(f"[queue] 検品システムエラー、fail-openで公開続行: {(chk.stderr or '')[-200:]}", flush=True)
+    except Exception as e:
+        print(f"[queue] 検品スキップ(fail-open): {e}", flush=True)
+
     r = subprocess.run(
         ["python3", str(UPLOADER), str(video), "--title", title,
          "--description", desc, "--tags", "マインクラフト,AI実況,BECKY CRAFT,Shorts",
