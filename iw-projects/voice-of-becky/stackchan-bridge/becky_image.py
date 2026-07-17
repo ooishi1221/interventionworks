@@ -17,6 +17,7 @@ Usage:
 import datetime
 import json
 import os
+import random
 import subprocess
 import sys
 import urllib.request
@@ -38,12 +39,18 @@ TOOLS_DIR = str(GEMINI_THUMB.parent)
 # ベッキーのキャラクター DNA（必ず先頭に付ける）
 # ---------------------------------------------------------------------------
 
-BECKY_DNA = (
+# 見た目の不変部分（髪・目・肌）。コスプレでも保つアイデンティティ。
+BECKY_IDENTITY = (
     "1girl, twin tails, dark green and black hair with teal highlights, "
-    "dark gothic lolita dress with glowing teal circuit patterns, "
-    "teal bows in hair, black gothic headdress with circuit patterns, "
-    "pale skin, blue-gray eyes, subtle sullen expression"
+    "teal bows in hair, pale skin, blue-gray eyes"
 )
+# デフォルト衣装。コスプレ/日常シーンでは各シーンの outfit で上書きする。
+BECKY_DEFAULT_OUTFIT = (
+    "dark gothic lolita dress with glowing teal circuit patterns, "
+    "black gothic headdress with circuit patterns, subtle sullen expression"
+)
+# 後方互換（他スクリプトが BECKY_DNA を参照する場合に備えて残す）
+BECKY_DNA = f"{BECKY_IDENTITY}, {BECKY_DEFAULT_OUTFIT}"
 
 
 # ---------------------------------------------------------------------------
@@ -206,15 +213,67 @@ SCENE_MAP = [
 
 
 # ---------------------------------------------------------------------------
+# アクティビティ / コスプレシーン（感情に依らない見た目のバリエーション）
+# outfit でデフォルト衣装を上書きする。感情シーンと違い天気・季節イベントは添えない。
+# ---------------------------------------------------------------------------
+
+ACTIVITY_SCENES = [
+    # ── コスプレ / なりきり系 ──
+    {"name": "サッカー",
+     "outfit": "wearing a teal and black soccer uniform with circuit-pattern trim, sporty",
+     "desc": "on a soccer field at golden hour, kicking a ball, energetic dynamic pose",
+     "technique": "dynamic action shot, sense of motion, sharp focus on face, stadium bokeh"},
+    {"name": "魔法少女",
+     "outfit": "magical girl costume in teal and black with glowing circuit accents and frills",
+     "desc": "striking a magical-girl transformation pose inside a glowing magic circle, sparkles around",
+     "technique": "vibrant colors, sparkle particles, glowing rim light, dynamic composition"},
+    {"name": "探偵",
+     "outfit": "detective trench coat over a dark outfit, holding a magnifying glass",
+     "desc": "as a noir detective in a foggy lamplit street at night, thoughtful expression",
+     "technique": "noir lighting, dramatic shadows, cinematic, moody atmosphere"},
+    {"name": "チャイナドレス",
+     "outfit": "elegant teal and black qipao china dress with circuit-pattern embroidery",
+     "desc": "standing in a lantern-lit chinatown alley at night, elegant graceful pose",
+     "technique": "warm red lantern bokeh, soft focus, elegant, cinematic depth"},
+    {"name": "制服",
+     "outfit": "japanese school uniform blazer with a teal ribbon",
+     "desc": "walking to school on a bright morning street, bag over shoulder, casual glance back",
+     "technique": "bright morning light, lens flare, soft bokeh, fresh clean tones"},
+    # ── 日常の一幕系 ──
+    {"name": "ゲーム実況",
+     "outfit": "casual oversized hoodie with teal accents, gaming headset on",
+     "desc": "at a gaming setup with multiple monitors and RGB lights, excited mid-commentary expression",
+     "technique": "RGB ambient glow, screen light on face, cozy dim room bokeh, lively mood"},
+    {"name": "音楽制作",
+     "outfit": "casual outfit with studio headphones around the neck",
+     "desc": "at a music production desk, a DAW on the screen, keyboard and studio monitors, focused",
+     "technique": "warm desk-lamp light, screen glow, studio bokeh, focused quiet mood"},
+    {"name": "料理",
+     "outfit": "apron over a casual outfit",
+     "desc": "cooking in a cozy kitchen, holding a ladle, steam rising from a pot, gentle smile",
+     "technique": "warm kitchen light, soft rising steam, homey bokeh, warm tones"},
+    {"name": "寝起き",
+     "outfit": "oversized pajamas with a teal circuit print, slightly messy hair",
+     "desc": "just woke up, sitting on a bed stretching, sleepy half-lidded expression, soft morning light",
+     "technique": "soft diffused morning light, cozy, gentle bokeh, warm intimate mood"},
+]
+
+
+# ---------------------------------------------------------------------------
 # プロンプト生成
 # ---------------------------------------------------------------------------
 
 
-def select_scene(mood: dict) -> tuple[str, str, str]:
-    """感情変数からシーンを選択して (シーン名, シーン説明, 技法) を返す。"""
+def select_scene(mood: dict) -> tuple[str, str, str, str | None]:
+    """シーンを選び (シーン名, シーン説明, 技法, 衣装) を返す。
+    衣装 None = デフォルト衣装（感情シーン）、str = コスプレ/日常の上書き衣装。"""
+    # 4割の日はコスプレ/日常シーン（見た目のバリエーション）、残りは感情シーン
+    if random.random() < 0.4:
+        s = random.choice(ACTIVITY_SCENES)
+        return s["name"], s["desc"], s["technique"], s["outfit"]
     for condition, scene_name, scene_desc, technique in SCENE_MAP:
         if condition(mood):
-            return scene_name, scene_desc, technique
+            return scene_name, scene_desc, technique, None
     # 到達しないが念のため
     return SCENE_MAP[-1][1], SCENE_MAP[-1][2], SCENE_MAP[-1][3]
 
@@ -225,21 +284,31 @@ def build_prompt(mood: dict, weather: dict, event: dict) -> tuple[str, str]:
     感情変数でベースシーンを決定し、天気・季節イベントを追記レイヤーとして重ねる。
     シーン自体は上書きしない（感情変数が主、外部コンテキストは添え）。
     """
-    scene_name, scene_desc, technique = select_scene(mood)
+    # 屋内シーン。屋外イベント（花火・花見・浴衣）を室内に足すと矛盾するので添えない。
+    INDOOR_SCENES = {"カフェ", "深夜図書館", "深夜PCブルーライト"}
 
-    # 季節イベントの追加（シーン説明とシーン名に添える）
-    if event:
-        scene_desc = f"{scene_desc}, {event['scene_hint']}"
-        scene_name = f"{scene_name}（{event['name']}）"
+    scene_name, scene_desc, technique, outfit = select_scene(mood)
+    is_activity = outfit is not None  # コスプレ/日常はシーン単体で完結（天気・季節を添えない）
 
-    # 天気の追加（雨・雪の場合のみ技法に追記）
-    condition = weather.get("condition", "")
-    if condition == "rainy":
-        technique = technique + ", rainy atmosphere, wet reflective streets"
-    elif condition == "snowy":
-        technique = technique + ", snow falling gently, soft winter light"
+    if not is_activity:
+        is_indoor = scene_name in INDOOR_SCENES
+        # 季節イベントの追加（屋外シーンにだけ添える。屋内は室内感を優先）
+        if event and not is_indoor:
+            scene_desc = f"{scene_desc}, {event['scene_hint']}"
+            scene_name = f"{scene_name}（{event['name']}）"
+        # 天気の追加。花火など屋外の火の演出とは雨/雪が両立しない（＝「花火に雨」を防ぐ）。
+        # 屋内は路面ではなく窓越しの雨にする。
+        hint = (event or {}).get("scene_hint", "")
+        fire_event = "fireworks" in hint and not is_indoor
+        condition = weather.get("condition", "")
+        if condition == "rainy" and not fire_event:
+            technique += (", rain streaking down the window, cozy indoor lighting"
+                          if is_indoor else ", rainy atmosphere, wet reflective streets")
+        elif condition == "snowy" and not fire_event and not is_indoor:
+            technique += ", snow falling gently, soft winter light"
 
-    prompt = f"{BECKY_DNA}, {scene_desc}, {technique}, high quality, detailed, anime style"
+    outfit = outfit or BECKY_DEFAULT_OUTFIT
+    prompt = f"{BECKY_IDENTITY}, {outfit}, {scene_desc}, {technique}, high quality, detailed, anime style"
     return prompt, scene_name
 
 
