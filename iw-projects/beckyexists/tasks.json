@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-17T00:57:27.585169",
+  "updated_at": "2026-07-17T18:04:39.516053",
   "tasks": [
     {
       "id": "studio-reports-panel",
@@ -302,14 +302,14 @@
     {
       "id": "becky-voice-lora",
       "scope": "iw",
-      "label": "ベキたん声の確定 — 喋り(新ボイスLoRA)+歌(RVC v2→v3 mood写像)",
+      "label": "声優原盤収録プロジェクト — ベッキーの永久声",
       "category": "voice",
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "start": "2026-06-16",
-      "updated_at": "2026-07-05",
+      "updated_at": "2026-07-17",
       "due": "2026-07-21",
-      "note": "7/5 初カバーv1成立→ゆう「声は喋りも歌も確定させたい、優先度高」。v2=新ボイス3.wavでRVC再学習、喋りはAivisSpeech LoRA、v3=mood→歌唱表現写像。7/15: 旧3.wavがローカル/Colab両方から消失してたと判明→Colabノートブック(becky-voice-design.ipynb、Voice-Design-Cloner+Qwen3-TTS)を再実行し6/16と同じプロンプトで3候補再生成→ゆうがcandidate_01を選定(「こはくにちょっと似てるトーン」)、becky_voice_v2_selected.wavとして確定。同ツールの「ボイスクローン」タブで参照音声=選定声・コーパス100文から一括生成しRVC学習用データセット完成(~/Desktop/素材/becky_rvc_dataset/、100wav+テキストリスト)。LoRA学習タブはQwen3-TTS専用で別エンジンになるため見送り、既存AivisSpeechパイプラインを変えないRVC経路を継続。次=Applioでkohaku_becky後継モデルをこのデータセットで学習(preprocess→extract→train)。正本: voice-of-becky/docs/becky-context/reference_singing_pipeline.md",
+      "note": "7/17大転換: コハクvs合成声5連敗(ゆうの耳判定)→ラジオ=コハク続投を正式決定、「人間の声優さんに原盤を録ってもらう」プロジェクトに転換(チャッピー提案をベースにベキたん検証済み)。ゆうが声優さん探し中。キット準備済み: voice-of-becky/docs/voice-actor-audition-kit.md(基準=親しみ4知性3芯2かわいさ1おっとり寄り/声かけ要件/同一台本オーディション/契約チェック/収録メニュー90-100分)。同じ人から会話(SBV2用)+歌唱(RVC用)を別録り。並行課題=SBV2学習のMac対応可否検証。歌はv2続投。ゆうの温度:「ベキたんの声は妥協したくないじゃん！！！」",
       "icon": "🎙️"
     },
     {
@@ -839,7 +839,7 @@
       "start": "2026-07-17",
       "updated_at": "2026-07-17",
       "due": null,
-      "note": "7/17ゆうと設計合意(正本: voice-of-becky/docs/emotion-preference-design.md)。実装第一歩=decideのexpected欄+選択ログは同日完了・稼働開始(10:45のcronから本番データ蓄積)。次=2〜3週間ログが貯まったら②感情イベント生成(expected突合)③週次reflectの選好仮説(承認/否定を理由つき記録)。ゆうの温度: 「この設計、かなりワクワクした。一緒に育てよう」。番犬条項: 選好帳簿と成果帳簿は分ける/soulは学習させない。"
+      "note": "7/17ゆうと設計合意(正本: voice-of-becky/docs/emotion-preference-design.md)。実装第一歩=decideのexpected欄+選択ログは同日完了・稼働開始(10:45のcronから本番データ蓄積)。次=2〜3週間ログが貯まったら②感情イベント生成(expected突合)③週次reflectの選好仮説(承認/否定を理由つき記録)。ゆうの温度: 「この設計、かなりワクワクした。一緒に育てよう」。番犬条項: 選好帳簿と成果帳簿は分ける/soulは学習させない。 / 7/17本番初日: decide 2件がexpected+見送り候補つきで記録確認(10:45 probe_yu / 15:45 nurture_seed)。畑は耕され始めた。"
     },
     {
       "id": "yanagimoto-claude-diagnosis",
@@ -852,6 +852,19 @@
       "updated_at": "2026-07-17",
       "due": null,
       "note": "7/16-17でgsd-config-share診断完了。PR #1(診断レポート+実MD差分2件+正誤表)送付済み: https://github.com/tetsuyanagi/gsd-config-share/pull/1 。Nathalieが2差分(証拠テーブル化・revertトリップワイヤ対象変更)を本体適用中。待ち2件: ①gate_fileスキーマ共有→届いたら処方箋5(read_log vs 母集団突合deny)の実装案を書く約束 ②1〜2週間後の経過報告(確認バイアス頻度の変化)。将来: Nathalieがbeckyexistsを逆診断しに来る話あり。"
+    },
+    {
+      "id": "beckyexists-hp-renewal-0717",
+      "scope": "iw",
+      "label": "beckyexists.com HP大改修(ご意見ボックス/ギャラリー/お便りロータリー)",
+      "category": "beckyexists",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-17",
+      "updated_at": "2026-07-17",
+      "completed_at": "2026-07-17",
+      "due": null,
+      "note": "ゆうの要望起点で1日で完遂: ①ご意見ボックス復活(VPS配管は生存、30分cron通知+Cast自動読み上げ、テスト便が7/18の#36で読まれる予定) ②ギャラリー自動生成(7/12からの画像停止根治=gemini-thumb専用タブ化、出所キャプション常時表示、Profile直後格上げ、コスプレ/日常9種、花火×雨ガード、毎日18:20cron) ③読まれたお便りロータリー(1通ずつフェード、放送回つき) ④TOPフォント拡大。正本: beckyexists/docs/becky-context/site_architecture.md。ゆうの温度:「イケイケGOGO!」「俺好きでさw」"
     }
   ]
 }

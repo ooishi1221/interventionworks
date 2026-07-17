@@ -10,6 +10,8 @@
 |---|---|
 | 🔥 HOT | `hot.json` の items（icon/title/note/url/badge）を描画。お知らせ置き場。URL確定したら url を埋めるだけ |
 | 📮 お便りポスト（ご意見ボックス、**2026-07-17 復活**・ゆう判断で7/15方針を転換） | フォーム → `POST https://mai.intervention.jp/letter`（MAI whisper_server.py に同居、CORS=beckyexists.com、honeypot入り。VPS側は撤去期間中も稼働し続けていた）。index.html の Letter セクションにフォーム+X誘導が並存。**新着通知**: `stackchan-bridge/becky_letters_check.py`（30分毎cron）が VPS→ローカル控え(~/.stackchan/letters.jsonl)差分をゆうのTelegramへ通知。**Cast連携**: morning_cast.py が毎朝未読1通を自動で読む（radio_letters_used.json で使用済み管理、これは撤去期間中も生きていた既存機構） |
+| 🖼 ギャラリー自動生成（2026-07-17新設） | 毎日18:20 cron `stackchan-bridge/becky_gallery_publish.py`: mood画像生成→`gallery/g-YYYYMMDD.png`+`gallery.json`先頭へ出所キャプション付きで追加(最大40件・同日置換で冪等)→deploy。キャプションは画像下に常時表示(`.gallery-cap`、スマホ対応)。セクションはProfile直後に格上げ。シーンは感情6種+コスプレ/日常9種(4割の確率、`becky_image.py ACTIVITY_SCENES`)。天気×イベント矛盾ガードあり(花火×雨禁止等) |
+| 📻 読まれたお便り（2026-07-17新設） | `letters_archive.json`(放送済みお便り: 名前+抜粋60字+放送回)をLetterセクション下に**1通ずつフェードで流れるロータリー表示**(5.5秒間隔、n/総数カウンター)。生成は`becky_letters_check.py`(30分cron)がused_ts+episodesを突合、変更時のみdeploy。放送回の記録は`morning_cast.py mark_letter_used(ts, episode_num)` |
 | 心電図の間延び対策 | canvas に ResizeObserver。フォント読込・トグル開閉で高さが変わってもバッファを取り直す |
 | LIVE 2行ずれ対策 | `.live-line` min-height 3.4em（2行分固定）+ ラベル line-clamp 2 |
 

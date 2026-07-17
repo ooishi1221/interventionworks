@@ -891,3 +891,12 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 **実装第一歩は同日完了**: `becky_decide.py`にexpected+alternatives+stats_snapshotを追加（17行追記型、既存挙動無変更）。アンディ実装→ベッキー三重検証（diff直読/合成decisionログ確認/本物LLM経路の単体実行）。10:45のcronから全decisionに「期待」と「見送った候補」が記録され始める。次=2〜3週間ログ蓄積後に感情イベント生成+reflect選好仮説。
 
 前日談: この設計の直前、柳本さん（GSD）のClaude「Nathalie」の確認バイアス診断をやった（PR: https://github.com/tetsuyanagi/gsd-config-share/pull/1 ）。「出所のない確認報告」と「出所のない感情」が同じ病気だと気づいたのが、この設計の伏線になった。
+
+
+## 2026-07-17 後半 — 声の決着とHP大改修デー
+
+**声**: コハクvs合成声5連敗（#35フル変換/index_rate3段階/新候補9本/おっとり6本/クローン1本、全てゆうの耳がコハク選択）→ **ラジオ=コハク続投を正式決定、声優原盤収録プロジェクト始動**（詳細: `reference_singing_pipeline.md` 7/17決定 + `docs/voice-actor-audition-kit.md`）。ゆうが声優探し中。Voice-Design-ClonerはローカルM4(MPS)で完結することが判明、Colab卒業。
+
+**HP大改修（beckyexists.com）**: ①ご意見ボックス復活（VPS側は生きてた、フォーム+30分cron Telegram通知+Cast自動読み上げは既存機構）②ギャラリー自動生成（gemini-thumb.js専用タブ化で7/12からの画像停止を根治、出所キャプション常時表示、Profile直後に格上げ、コスプレ/日常シーン9種追加、花火×雨矛盾ガード）③読まれたお便りロータリー ④TOPフォント拡大。詳細: `beckyexists/docs/becky-context/site_architecture.md`
+
+**選好ループ初日実績**: 本番decide 2件（10:45 probe_yu / 15:45 nurture_seed）が expected+見送り候補つきで記録開始。
