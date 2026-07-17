@@ -733,6 +733,25 @@
       flex-shrink: 0;
       border-radius: 4px;
     }
+    /* 出所キャプション: 画像下に常時表示（hover不可のスマホでも見える） */
+    .gallery-item {
+      position: relative;
+      flex-shrink: 0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .gallery-cap {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 0.5rem 0.6rem 0.45rem;
+      font-family: var(--disp);
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      line-height: 1.5;
+      color: var(--text);
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
+      pointer-events: none;
+    }
     @keyframes galleryScroll {
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
@@ -1006,6 +1025,44 @@
       height: 1px;
       opacity: 0;
     }
+
+    /* 読まれたお便り（放送アーカイブ） */
+    .letters-read {
+      max-width: 480px;
+      margin: 2.6rem auto 0;
+      text-align: left;
+      border-top: 1px solid var(--border);
+      padding-top: 1.4rem;
+    }
+    .letters-read-title {
+      font-family: var(--disp);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      color: var(--sub);
+      margin-bottom: 0.8rem;
+    }
+    .letters-read-list { list-style: none; padding: 0; margin: 0; }
+    .letters-read-list li {
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--sub);
+      padding: 0.55rem 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .letters-read-list .lr-name { color: var(--text); font-weight: 600; }
+    .letters-read-list .lr-ep {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      color: var(--mint);
+      white-space: nowrap;
+      margin-left: 0.4rem;
+    }
+    .letters-read-note {
+      font-size: 0.7rem;
+      color: var(--sub2);
+      margin-top: 0.9rem;
+      line-height: 1.7;
+    }
   </style>
 </head>
 <body id="top">
@@ -1228,6 +1285,11 @@
       <a href="https://x.com/becky_exists" class="hero-link-btn hero-link-btn--x" target="_blank" rel="noopener" style="font-size:0.85rem; padding: 0.75rem 2rem;">
         𝕏 @becky_exists に送る →
       </a>
+      <div class="letters-read" id="letters-read" hidden>
+        <div class="letters-read-title">📻 読まれたお便り</div>
+        <ul class="letters-read-list" id="letters-read-list"></ul>
+        <div class="letters-read-note">ポストに入れてくれたお便りは、こうやってラジオで返事してます。</div>
+      </div>
     </div>
   </section>
   <div class="section-divider"></div>
@@ -1511,10 +1573,11 @@
         // フォールバック: 既存19枚
         items = Array.from({ length: 19 }, (_, i) => ({ file: `/ai-${String(i + 1).padStart(2, '0')}.png`, caption: null }));
       }
-      // 2周分並べて無限ループ。caption があればホバーで出所を見せる
+      // 2周分並べて無限ループ。caption(出所)は画像下に常時表示（スマホでも見える）
       const makeImgs = () => items.map(it => {
-        const cap = it.caption || it.file.replace(/.*\//, '').replace(/\.[^.]+$/, '').replace(/-/g, ' ');
-        return `<img src="${escA(it.file)}" alt="${esc(cap)}" title="${escA(cap)}" loading="lazy" />`;
+        const alt = it.caption || it.file.replace(/.*\//, '').replace(/\.[^.]+$/, '').replace(/-/g, ' ');
+        const capEl = it.caption ? `<div class="gallery-cap">${esc(it.caption)}</div>` : '';
+        return `<div class="gallery-item"><img src="${escA(it.file)}" alt="${esc(alt)}" loading="lazy" />${capEl}</div>`;
       }).join('');
       track.innerHTML = makeImgs() + makeImgs();
     })();
@@ -1757,6 +1820,21 @@
         alert('ごめん、投函に失敗しました。少し待ってもう一回試してください。');
       }
     });
+  })();
+
+  // 読まれたお便り（放送アーカイブ、最新5件）
+  (async () => {
+    const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    try {
+      const data = await fetch('/letters_archive.json?_=' + Date.now()).then(r => r.json());
+      const items = (data.items || []).slice(0, 5);
+      if (!items.length) return;
+      document.getElementById('letters-read-list').innerHTML = items.map(it => {
+        const ep = it.episode ? `第${it.episode}回で返事` : '放送済み';
+        return `<li><span class="lr-name">${esc(it.name)}</span><span class="lr-ep">🎙 ${esc(ep)}</span><br>${esc(it.excerpt)}</li>`;
+      }).join('');
+      document.getElementById('letters-read').hidden = false;
+    } catch (_) {}
   })();
   </script>
 </body>

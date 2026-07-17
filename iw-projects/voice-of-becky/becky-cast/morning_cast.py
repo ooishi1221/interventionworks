@@ -107,11 +107,19 @@ def get_used_ts() -> set[str]:
         return set()
 
 
-def mark_letter_used(ts: str) -> None:
-    used = list(get_used_ts())
+def mark_letter_used(ts: str, episode_num: int | None = None) -> None:
+    # 既存の {"used_ts": [...]} 形式に episodes マップを互換追加（get_used_ts は used_ts しか読まないので安全）
+    try:
+        data = json.loads(LETTERS_USED.read_text())
+    except Exception:
+        data = {}
+    used = data.get("used_ts", [])
     used.append(ts)
+    data["used_ts"] = used
+    if episode_num is not None:
+        data.setdefault("episodes", {})[ts] = episode_num
     LETTERS_USED.parent.mkdir(exist_ok=True)
-    LETTERS_USED.write_text(json.dumps({"used_ts": used}, ensure_ascii=False, indent=2))
+    LETTERS_USED.write_text(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 def get_last_manifest() -> dict | None:
@@ -530,10 +538,10 @@ def main() -> None:
     else:
         print(f"[morning_cast] Vercel デプロイ失敗（続行）: {deploy_result.stderr[:100]}", flush=True)
 
-    # 4. お便りを使用済みマーク
+    # 4. お便りを使用済みマーク（どの回で読んだかも記録 → サイトの「読まれたお便り」に出る）
     if letter:
-        mark_letter_used(letter["ts"])
-        print(f"[morning_cast] お便り使用済みマーク: {letter['ts']}", flush=True)
+        mark_letter_used(letter["ts"], episode_num)
+        print(f"[morning_cast] お便り使用済みマーク: {letter['ts']} (第{episode_num}回)", flush=True)
 
     # 5. X告知
     tweet_text = (

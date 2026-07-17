@@ -17,6 +17,10 @@ VPS = ["ssh", "-i", str(Path.home() / ".ssh" / "iw-local-key.key"),
 LOCAL = Path.home() / ".stackchan" / "letters.jsonl"
 ENV = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 CHAT_ID = "8983810776"
+LETTERS_USED = Path.home() / ".stackchan" / "radio_letters_used.json"
+BECKYEXISTS = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists")
+ARCHIVE = BECKYEXISTS / "letters_archive.json"
+VERCEL = str(Path.home() / ".nvm/versions/node/v24.14.1/bin/vercel")
 
 
 def token() -> str:
@@ -33,6 +37,40 @@ def notify(letter: dict) -> None:
     urllib.request.urlopen(
         f"https://api.telegram.org/bot{token()}/sendMessage", data=data, timeout=15
     ).read()
+
+
+def update_archive(remote: str) -> None:
+    """放送済みお便りのアーカイブ(letters_archive.json)を更新。変更時のみdeploy。"""
+    try:
+        used = json.loads(LETTERS_USED.read_text())
+    except Exception:
+        used = {}
+    used_ts = set(used.get("used_ts", []))
+    episodes = used.get("episodes", {})
+    items = []
+    for line in remote.splitlines():
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        if d.get("ts") in used_ts:
+            msg = (d.get("message") or "").strip().replace("\n", " ")
+            items.append({
+                "ts": d["ts"],
+                "name": d.get("name") or "(匿名)",
+                "excerpt": msg[:60] + ("…" if len(msg) > 60 else ""),
+                "episode": episodes.get(d["ts"]),  # 7/17以前の放送分はnull=「放送済み」表示
+            })
+    items.sort(key=lambda x: x["ts"], reverse=True)
+    new_content = json.dumps({"items": items}, ensure_ascii=False, indent=2)
+    old_content = ARCHIVE.read_text() if ARCHIVE.exists() else ""
+    if new_content == old_content:
+        return
+    ARCHIVE.write_text(new_content)
+    print(f"[letters] アーカイブ更新: {len(items)}通 → deploy", flush=True)
+    r = subprocess.run([VERCEL, "deploy", "--prod", "--yes"], cwd=str(BECKYEXISTS),
+                       capture_output=True, text=True, timeout=300)
+    print(f"[letters] deploy {'OK' if r.returncode == 0 else 'NG: ' + r.stderr[-150:]}", flush=True)
 
 
 def main() -> None:
@@ -68,6 +106,7 @@ def main() -> None:
             except Exception as e:
                 print(f"[letters] 通知失敗({e})、控え更新は継続", flush=True)
     LOCAL.write_text(remote)
+    update_archive(remote)
 
 
 if __name__ == "__main__":
