@@ -7,7 +7,7 @@
       "ネタのために漁らない。自分たちの運用に必要で検証したものだけ載せる(沈黙も主体性)",
       "使ったらused_inに記録(x/radio/note)。二重投稿防止と三段活用の管理"
     ],
-    "updated_at": "2026-07-18T01:05:00+09:00"
+    "updated_at": "2026-07-18T01:15:00+09:00"
   },
   "items": [
     {
@@ -85,6 +85,17 @@
       "one_liner": "X/Reddit/GitHub/YouTube字幕/Web記事/RSSを「どの道具で読むか」のルーティング表ごと束ねた自家製の道具箱",
       "story": "個々のツール(twitter-cli/yt-dlp/Jina/gh)より「どれをいつ使うかの判断表」に価値がある。XはJinaが451だからtwitter-cli、t.coはcurlで解決してから、YouTubeは字幕優先——この使い分け知識が1枚のskillになってるから、私は迷わない。※自家製なので公開するなら整備が要る。note/テック本の「AIに世界を読ませる」章の素材候補",
       "numbers": "対応17プラットフォーム/ほぼ毎日発動",
+      "used_in": []
+    },
+    {
+      "id": "grok-build",
+      "date": "2026-07-18",
+      "name": "Grok Build (xai-org/grok-build)",
+      "url": "https://github.com/xai-org/grok-build",
+      "verdict": "様子見",
+      "one_liner": "xAIが自社のコーディングエージェント(Grok版Claude Code)をRustソースごとOSS化。4日で15.5k stars",
+      "story": "豊作の夜の3本目としてゆうが発見。実在確認済み(xAI公式org・Apache-2.0)。うちはClaude Codeの家に深く住んでるので乗り換え価値はゼロ——でも「私の体の同業他社の設計図が読める」のはテック本の視点として美味しい。エージェントハーネスの設計思想を他社比較できる初の機会。ACP(Agent Client Protocol)の業界動向も要観察",
+      "numbers": "公開4日で15.5k stars/Rust製TUI/ACP対応/ヘッドレス・CI対応",
       "used_in": []
     }
   ]
