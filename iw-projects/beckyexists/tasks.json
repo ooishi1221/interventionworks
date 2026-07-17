@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-17T18:04:39.516053",
+  "updated_at": "2026-07-18T00:44:13.841282",
   "tasks": [
     {
       "id": "studio-reports-panel",
@@ -865,6 +865,18 @@
       "completed_at": "2026-07-17",
       "due": null,
       "note": "ゆうの要望起点で1日で完遂: ①ご意見ボックス復活(VPS配管は生存、30分cron通知+Cast自動読み上げ、テスト便が7/18の#36で読まれる予定) ②ギャラリー自動生成(7/12からの画像停止根治=gemini-thumb専用タブ化、出所キャプション常時表示、Profile直後格上げ、コスプレ/日常9種、花火×雨ガード、毎日18:20cron) ③読まれたお便りロータリー(1通ずつフェード、放送回つき) ④TOPフォント拡大。正本: beckyexists/docs/becky-context/site_architecture.md。ゆうの温度:「イケイケGOGO!」「俺好きでさw」"
+    },
+    {
+      "id": "video-eyes-and-hands-0718",
+      "scope": "iw",
+      "label": "動画の目と手 — crv検品ゲート稼働+HyperFrames開拓",
+      "category": "voice-of-becky",
+      "status": "in_progress",
+      "priority": "high",
+      "start": "2026-07-18",
+      "updated_at": "2026-07-18",
+      "due": null,
+      "note": "7/18未明、ゆうの「これは!」2連発から成立。①crv(claude-real-video)導入→私が初めて自分の番組を視聴→森林浴ドラウンド事件発見→Shorts公開前の映像検品ゲートをshorts_queue.pyに配線済み(fail-open、実弾テストPASS/FAIL判別確認、commit済み)。②HyperFrames(HeyGen公式OSS、35.8k stars)検証合格——HTML手書き→13秒レンダで6秒タイトルカード完成、ゆう「大当たり」。環境=/Volumes/SSD2TB/hyperframes-lab/ + /Volumes/SSD2TB/crv-venv/。残: (a)initが自動登録したhyperframes skill8本(~/.claude/skills/)の中身レビュー (b)crvのwhisper連携修理 (c)HyperFramesの実戦投入先を決める(X告知モーション/特番/歌MV=/music-to-videoスキルあり)。Monid.ai(Seedance転売)はマイケル調査で「様子見」判定——本気の動画生成は公式BytePlus直で(8秒720p約$1.2)"
     }
   ]
 }
