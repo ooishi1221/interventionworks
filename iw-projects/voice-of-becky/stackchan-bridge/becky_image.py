@@ -321,6 +321,20 @@ def main() -> None:
     # 6. 成功確認と最終 stdout 出力
     if out_path.exists():
         print(f"[becky_image] 画像生成完了: {out_path}", flush=True)
+
+        # 7. メタ情報保存（ギャラリーのキャプション生成用。既存挙動には影響しない追記のみ）
+        meta_path = Path.home() / ".stackchan" / f"becky_today_{today}.json"
+        meta = {
+            "scene_name": scene_name,
+            "weather": weather,
+            "event": event.get("name") if event else None,
+            "mood": mood,
+            "generated_at": datetime.datetime.now().astimezone().isoformat(),
+        }
+        with open(meta_path, "w") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+        print(f"[becky_image] メタ情報保存: {meta_path}", flush=True)
+
         # 将来の X 投稿スクリプトが読む用に stdout 最終行にパスを出す
         print(str(out_path))
     else:

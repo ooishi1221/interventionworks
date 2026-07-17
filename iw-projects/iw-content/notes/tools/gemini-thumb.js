@@ -64,10 +64,10 @@ async function ensureChrome() {
 
 async function findGeminiPage(browser) {
   const context = browser.contexts()[0];
-  for (const p of context.pages()) {
-    if (p.url().startsWith('https://gemini.google.com')) return p;
-  }
-  const page = context.pages()[0] || await context.newPage();
+  // ponytail: 共用の Gemini タブに相乗りすると、生成待ちの数分間に他プロセス
+  // （scraper / MCP / 手動操作）がそのタブを閉じ「Target page closed」で落ちる。
+  // 毎回専用タブを作って完結させ、main の finally で自分のタブだけ閉じる。
+  const page = await context.newPage();
   await page.goto(GEMINI_URL, { waitUntil: 'domcontentloaded' });
   return page;
 }
@@ -205,7 +205,9 @@ async function main() {
   }
 
   await ensureChrome();
-  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`);
+  // ponytail: noDefaults なしだと接続直後に default context へ Browser.setDownloadBehavior を
+  // 自動送信し、本物Chrome(非headless)がこのCDPコマンドを拒否して即死する。noDefaultsで無効化
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`, { noDefaults: true });
   const page = await findGeminiPage(browser);
   await page.bringToFront();
   await page.waitForTimeout(2000);
@@ -256,6 +258,7 @@ async function main() {
 
   if (!imgEl) {
     console.error('❌ 生成画像が見つかりませんでした');
+    await page.close().catch(() => {}); // 専用タブを片付ける
     await browser.close(); // connectOverCDP なので切断のみ、Chrome は残る
     process.exit(1);
   }
@@ -268,6 +271,7 @@ async function main() {
   await imgEl.screenshot({ path: outPath });
   console.log(`✅ 背景画像保存: ${outPath}`);
 
+  await page.close().catch(() => {}); // 専用タブを片付ける（相乗りしないので溜まらない）
   await browser.close(); // 切断のみ。次回は起動済み Chrome を再利用
   console.log(outPath);
 }
