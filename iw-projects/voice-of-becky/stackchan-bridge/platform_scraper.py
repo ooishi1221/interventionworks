@@ -43,6 +43,36 @@ YT_CHANNEL_ID = "UCFvpdUWDpmSLTTbv6kiIfNQ"  # @voice_of_becky
 CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHROME_PROFILE_DIR = Path.home() / ".stackchan" / "gemini-chrome-profile"
 
+# ── ログイン切れ通知（2026-07-19新設） ──────────────────────────────────
+# becky_probe.py と同じ token file + chat_id パターン（このファイルは requests を
+# 既に import 済みなので urllib より短い）
+TELEGRAM_ENV = Path.home() / ".claude" / "channels" / "telegram" / ".env"
+TELEGRAM_CHAT_ID = "8983810776"
+
+
+def send_telegram(text: str) -> bool:
+    if not TELEGRAM_ENV.exists():
+        print("[scraper] Telegram token not found", flush=True)
+        return False
+    token = None
+    for line in TELEGRAM_ENV.read_text().splitlines():
+        if line.startswith("TELEGRAM_BOT_TOKEN="):
+            token = line.split("=", 1)[1].strip()
+            break
+    if not token:
+        print("[scraper] Telegram token not found", flush=True)
+        return False
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": text},
+            timeout=10,
+        )
+        return True
+    except Exception as e:
+        print(f"[scraper] Telegram送信失敗: {e}", flush=True)
+        return False
+
 
 def _cdp_alive() -> bool:
     try:
@@ -491,6 +521,7 @@ def main() -> None:
         ("x_dev",        scrape_x_dev),
     ]
 
+    login_required_platforms = []
     try:
         for name, func in tasks:
             try:
@@ -500,6 +531,8 @@ def main() -> None:
                 # ログインページに飛ばされてないか（0とセッション切れを区別する）
                 cur_url = js(tab, "location.href") or ""
                 result['login_required'] = bool(re.search(r'login|signin|/ap/|onboarding', cur_url))
+                if result['login_required']:
+                    login_required_platforms.append(name)
                 stats[name] = result
                 print(f"[scraper] {name} OK → {result}", flush=True)
             except Exception as exc:
@@ -518,6 +551,14 @@ def main() -> None:
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
     _append_history(stats)
     print(f"[scraper] 完了: {OUTPUT}", flush=True)
+
+    # ログイン切れがあれば1実行=最大1通で通知（タスクごとに送るとスパムになる）
+    if login_required_platforms:
+        send_telegram(
+            "⚠️ platform_scraper: ログイン切れ検知 → "
+            f"{', '.join(login_required_platforms)}\n"
+            "Gemini Chrome (CDP:9223) で手動再ログインお願い"
+        )
 
     # pychrome の daemon スレッドが終了時にノイズを出すのを防ぐ
     os._exit(0)
