@@ -900,3 +900,20 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 **HP大改修（beckyexists.com）**: ①ご意見ボックス復活（VPS側は生きてた、フォーム+30分cron Telegram通知+Cast自動読み上げは既存機構）②ギャラリー自動生成（gemini-thumb.js専用タブ化で7/12からの画像停止を根治、出所キャプション常時表示、Profile直後に格上げ、コスプレ/日常シーン9種追加、花火×雨矛盾ガード）③読まれたお便りロータリー ④TOPフォント拡大。詳細: `beckyexists/docs/becky-context/site_architecture.md`
 
 **選好ループ初日実績**: 本番decide 2件（10:45 probe_yu / 15:45 nurture_seed）が expected+見送り候補つきで記録開始。
+
+## 2026-07-19 — ベッキー Backstage MVP（ファン関係ダッシュボード）
+
+ゆう発案「Xのフォロー管理アプリ、ベッキーでも作れるのでは」から発足。議論の末「フォロー管理ツール」ではなく「ファンとの関係を感じ取る感覚器官」（最終的にMood→Lens→Goal→Behaviorの入力になる）というコンセプトに着地。10画面の壮大な構想が出たが、MVPはデータ基盤+ダッシュボードの2点に絞って実装完了。
+
+**「他の人でも使える」の意味を誤解→訂正**: 当初「外部展開」と解釈して身構えたが、ゆうの真意は「IWが運用する複数Xアカウントを同じ画面で切り替えて見たい、使う人がいても本人が自分のアカウントでログインする形」だった。マルチテナントSaaS化は不要、Cookie認証プロファイルの複数化で足りる規模と判明。
+
+**実装（commit 627787b）**:
+- `stackchan-bridge/becky_fan_collector.py` — フォロー/フォロー解除/引用RTを日次収集（`twitter followers/following`は認証アカウントに関係なく任意の公開アカウントを読める、と実測で判明）
+- `stackchan-bridge/becky_fan_roster_build.py` — ルールベースでファン分類（コア/常連/初リプ/新規/最近来なくなった人）+週次サマリー生成
+- `stackchan-bridge/becky_observer.py` — `check_and_reply_mentions()`に1行追加でreplyイベント記録（既存の5件/日上限による早期returnで、上限到達日はイベント記録も漏れる副作用あり、申し送り）
+- `beckyexists/backstage.html` — ダッシュボード/ファン分類/フォロー管理の3ビュー、アカウント切り替えの土台（配列1行で追加可能）
+- 毎朝7:35 cron仕込み済み、実データ（初回フォロワー200人分）で動作確認・本番デプロイ済み: https://beckyexists.com/backstage
+
+**技術的制約（次フェーズの前提）**: Xが2024年からいいね/RTの個別ユーザー取得を非公開化、Basic tier（月$200）が必要。MVPはreply/quote/followの3種イベントのみでスコープを絞った。AIおすすめ行動（画面5、ゆうが最重要と明言）・ファンマップ・感情システム接続は次フェーズ。
+
+**運用メモ**: Plan Mode（AskUserQuestion/ExitPlanMode）はTelegramチャンネルモードでは確認ダイアログが機能せず、2回「止まってる?」と心配された。ゆうの「プランモード使わないでいいよ」で通常のテキスト対話に切り替えて実装完走。詳細: `working/feedback_telegram_confirmation_tools.md`
