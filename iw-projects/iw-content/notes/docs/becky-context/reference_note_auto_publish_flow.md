@@ -66,8 +66,9 @@ node note-post.js <記事ファイルパス> --bg /tmp/XX-thumb-bg.png --auto
 node publish-direct.js https://note.com/notes/<note-id>
 # ⚠️ URL は /edit を付けずに渡す（スクリプト内部で /edit を付ける。付けると /edit/edit になって死ぬ）
 # note-post.js のログ「🔗 URL: https://editor.note.com/notes/<id>/edit/」から <id> を拾う
-# タグ: TAGS 配列に設定済み（AI / ClaudeFable5 / 生成AI / Anthropic / InterventionWorks / Claude）
 ```
+
+> ⚠️ **タグは `publish-direct.js` 内の `TAGS` 配列にハードコードされてる**（`AI / ClaudeFable5 / 生成AI / Anthropic / InterventionWorks / Claude`、2026-06-11 時点固定）。記事ファイルの「タグ」行は**読まれない**。2026-07-19、新軸「実測で選ぶツール」第1弾で気づかず旧タグのまま公開してしまった。記事ごとにタグを変えたいなら `TAGS` を都度書き換えるか、`note-post.js` のタグ抽出ロジック（`parseArticle` 内の正規表現）を `publish-direct.js` 側にも移植すること（未修正、次回の宿題）。
 
 menu-publish2.js は旧記事タイトルがハードコードされてるので使わない。
 
@@ -79,6 +80,13 @@ node note-update.js "https://editor.note.com/notes/<id>/edit/" <カバー画像p
 # 公開済み記事の確定ボタンは「投稿する」じゃなく「更新する」
 # 実績: 2026-07-03 第15回のベッキー単独名義改稿で初完走
 ```
+
+> ⚠️ 2026-07-19 実測: カバー画像アップロード直後に「公開に進む」クリック → `投稿する|更新する` ボタン待ちが `Timeout 8000ms exceeded` で落ちることがある（本文・カバーの差し替え自体は成功済み、確定だけ手動で必要）。その場合は同じ edit URL を開き直して以下を単独実行すれば確定できる：
+> ```js
+> await page.locator('button').filter({ hasText: /^公開に進む$/ }).first().click();
+> await page.waitForTimeout(3000);
+> await page.locator('button').filter({ hasText: /^(投稿する|更新する)$/ }).first().click();
+> ```
 
 ---
 
@@ -116,6 +124,23 @@ menu-publish2.js はヘッダー「投稿メニュー」のドロップダウン
 - `記事が公開されました` モーダルが出れば成功（スクリーンショット `/tmp/note-done.png`）
 - 公開 URL: `https://note.com/intervention_jp/n/<id>`
 
+### 本文中の URL が文末までリンク化される（2026-07-19 発見）
+
+本文中に `HyperFrames（github.com/heygen-com/hyperframes）です。HTMLを書くだけで...` のように **URL の直後に句読点や括弧が空白なしで続く**と、note の自動リンク化が URL の終端を誤検出し、**文末までリンクの下線が伸びる**。
+
+**回避策**: URL は文中に埋め込まず、**前後に半角スペースを入れて独立させる**。
+```
+NG: HyperFrames（github.com/heygen-com/hyperframes）です。
+OK: HyperFramesです。HTMLを書くだけで...ツールです。 github.com/heygen-com/hyperframes
+```
+公開後に `document.querySelectorAll('a')` で `href` と `textContent` を見れば誤爆を検出できる（正常なら `textContent` が URL 文字列そのものと一致する）。
+
+### 本文中への画像・GIF 埋め込みは自動化できていない（2026-07-19 検証）
+
+`note-post.js` / `note-update.js` は**カバー画像**の差し替えには対応しているが、**本文中への画像挿入**は未対応。ProseMirror エディタの本文末尾にカーソルを移動 →「+」ボタンでメニューを開く、という一連の操作を Playwright の座標クリックで試みたが、編集フォーカスが安定せず3回試行してすべて失敗（本文が壊れることはなかった）。
+
+**現実的な代替策**: スクリーンショット/GIF を用意して Telegram で裕司に送り、**裕司が手動で note エディタに貼る**。実際にこの方法で2026-07-19 に画像埋め込みが成立した。自動化するなら、ProseMirror の `paste` イベントを直接 dispatch する方式（`reference_note_editor_quirks.md` の本文 paste と同じアプローチ）を試す価値がある。
+
 ---
 
 ## サムネイル設計メモ
@@ -151,6 +176,30 @@ url: https://note.com/intervention_jp/n/<id>
 - self check: 公開前に `grep -E "裕司|ゆう"` で人の登場 0件確認
 - 「だ・である調」は貧乏地下AIアイドルキャラに合わない → **淡々としたですます調**
 - 詳細: `feedback_becky_japanese_writing_tonmana.md` のルール 6
+
+---
+
+## 連載シリーズ「実測で選ぶツール」フォーマット（2026-07-19 新設）
+
+素材ソースは `iw-projects/voice-of-becky/tech-stock.json`（ゆう×ベキたんの夜な夜な検証で判定が出たテックネタのストック、大当たり/当たり/様子見/盛りの4段階評価+実測数字+実話）。1記事1ツールを深掘りする形式で、note・X・ラジオが共通してここから引く単一ソース。
+
+**記事構成の型**（2026-07-19、編集レビュー2ラウンド・計14点の指摘を経て確立）:
+1. 冒頭は結果から入る（「HTMLを1枚書きました。5.7秒後、MP4は完成していました。ただし〜」のように、数字+意外性のある一言）
+2. 実測数字を工程別に細かく出す（セットアップ／実行／エラー発生／修正／再実行、というように失敗込みで正直に）
+3. 「大当たり」判定の理由を、AIエージェント一人称の視点で語る（GUIよりコードの方が得意、等）
+4. ツール単体の紹介で終わらせず、「AI専用ツールという潮流」など一段広い視座に触れる一段落を入れる
+5. 末尾に評価カードを固定フォーマットで置く（シリーズを覚えてもらう仕掛け）:
+   ```
+   ## ベッキー評価
+
+   導入難易度：★★☆☆☆
+   AI適性：★★★★★
+   人間適性：★★★★☆
+   継続利用：YES
+   ```
+   星の数は誇張せず、実際の体験に基づいて判断する。
+
+**画像**: HTML コード・ターミナル出力・完成物のスクリーンショットを用意すると説得力が増す（自動埋め込みは前述の通り未対応、裕司への手動依頼が現実的）。
 
 ---
 

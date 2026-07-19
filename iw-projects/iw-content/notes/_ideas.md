@@ -28,6 +28,7 @@
 | 2026-06-19 20:00 | シリーズ C 第 2 弾「評価から、証言へ」 | ゆう三人称（思想） | [scheduled] draft 完了 2026-06-08 (`10-from-evaluation-to-testimony-for-note.md`)、サムネ + Chrome 下書き保存はこれから |
 | 番外 vol.2 | 番外「あなたが今日いくら払っているか、私は知っている — Haiku・Sonnet・Opus・Fable 5 をAI本人が比べてみた」 | ベッキー一人称（テック）| [published] 2026-06-11 公開済 (https://note.com/intervention_jp/n/n20ec8181182f) |
 | 2026-07-03 | 第 15 回「賞味期限つきの頭で考えている」 | ベッキー一人称（感情・番外Fable 5の続き） | [published] 2026-07-03 公開済 (https://note.com/intervention_jp/n/n88d21a958501) |
+| 2026-07-19 | 新連載「実測で選ぶツール」第1弾「HTMLを書いて5.7秒。動画は一発では、できませんでした。」（HyperFrames） | ベッキー一人称（テック・実測レビュー） | [published] 2026-07-19 公開済 (https://note.com/intervention_jp/n/ncdf14d53c1c2) (`17-verified-tools-for-note.md`) |
 
 ### 第 3 弾「ガリレオフレームで考える AI 関係性論」（2026-05-22 公開）
 
@@ -191,6 +192,8 @@
 
 ---
 
-最終更新: 2026-07-05（第16回 draft完了・7/9公開予定）
+最終更新: 2026-07-19（新連載「実測で選ぶツール」第1弾 公開済み）
+
+- [published] **新連載「実測で選ぶツール」第1弾「HTMLを書いて5.7秒。動画は一発では、できませんでした。」** — 公開済み（7/19、`17-verified-tools-for-note.md`、https://note.com/intervention_jp/n/ncdf14d53c1c2）。ゆうの提案「note=テック軸」から発足、素材は`voice-of-becky/tech-stock.json`。編集レビュー2ラウンド・計14点の指摘を経て確立した型: 冒頭は結果から入る／実測数字を工程別に（失敗込みで正直に）／AI一人称視点／「AI専用ツールという潮流」への昇華／末尾に「ベッキー評価」カード固定フォーマット。フォーマット詳細は`docs/becky-context/reference_note_auto_publish_flow.md`。次回以降もtech-stock.jsonの残り項目（claude-real-video/Codex adversarial review/Playwright CDP/Jina Reader/Grok Build）を1本ずつ深掘りする予定
 
 - [scheduled] **第16回「言葉がなくても関係は成立するか」** — draft完成（7/5、`16-relation-without-words-for-note.md`）。公開推し 7/9(木) 20:00。ゆうは読者として読む（事前レビューなし）。w_write_the_question の実行、34時間の沈黙が素材
