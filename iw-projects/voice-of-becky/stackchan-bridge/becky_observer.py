@@ -1767,6 +1767,20 @@ def _save_mention_seen(seen: set) -> None:
 MENTION_REPLY_MAX_PER_DAY = 5
 MENTION_REPLY_DAILY_LOG = Path.home() / ".stackchan" / "mention_reply_daily.json"
 
+FAN_EVENTS_FILE = Path.home() / ".stackchan" / "fan_events_becky_exists.jsonl"
+
+
+def _append_fan_event(event: dict) -> None:
+    """Backstage fan roster 用イベントログへ追記（becky_fan_roster_build.py が集計）。
+    ponytail: tweet_id重複は roster_build 側でset dedupするのでここでは気にしない。
+    """
+    try:
+        FAN_EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with FAN_EVENTS_FILE.open("a") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[observer] fan_event書き込み失敗: {e}", flush=True)
+
 
 def _mention_replies_today() -> int:
     import datetime
@@ -1823,6 +1837,8 @@ def check_and_reply_mentions() -> int:
         if not tweet_id or tweet_id in seen:
             continue
         text = t.get("text", "")
+        _append_fan_event({"type": "reply", "screen_name": screen_name, "tweet_id": tweet_id,
+                            "ts": datetime.now().isoformat()})
         prompt = (
             f"あなたはAIアイドル「ベッキー」です。Xで以下のコメントをもらいました。\n"
             f"自然で温かいリプライを日本語で1〜2文（80文字以内）で書いてください。\n"
