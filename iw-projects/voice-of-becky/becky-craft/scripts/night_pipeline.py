@@ -217,10 +217,12 @@ def main() -> None:
         (BECKY_NEWS / "video" / "public" / "craft-events.json").write_text(
             json.dumps(events_min), encoding="utf-8")
         wipe_webm = Path("/tmp/wipe.webm")
+        # ponytail: 2026-07-21実測、Remotionレンダは45分かかった(900秒設定は短すぎて誤タイムアウト
+        # →孤児プロセスが裏で完走するだけの空振り事故になった)。安全マージン込みで3600秒に。
         r = subprocess.run(
             ["npx", "remotion", "render", "CraftWipe", str(wipe_webm),
              "--codec=vp8", "--pixel-format=yuva420p", "--gl=angle", "--concurrency", "10"],
-            cwd=str(BECKY_NEWS / "video"), capture_output=True, text=True, timeout=900)
+            cwd=str(BECKY_NEWS / "video"), capture_output=True, text=True, timeout=3600)
         if r.returncode != 0:
             fail(f"ワイプレンダ失敗\n{r.stderr[-800:]}")
 
@@ -231,14 +233,14 @@ def main() -> None:
             "-filter_complex", "[1:v]scale=300:-1[w];[0:v][w]overlay=W-w-12:H-h-8[v]",
             "-map", "[v]", "-map", "0:a", "-c:v", "libx264", "-pix_fmt", "yuv420p",
             "-c:a", "copy", str(wiped_mp4),
-        ], capture_output=True, text=True, timeout=900)
+        ], capture_output=True, text=True, timeout=1800)
         if r.returncode != 0:
             fail(f"ワイプ合成(ffmpeg)失敗\n{r.stderr[-800:]}")
 
         # 3. YouTube cut 生成（OP/ED+サムネ+Shorts、record-episode.py --wipe-cut）
         r = subprocess.run(
             [str(VENV_PY), str(RECORD_SCRIPT), "--wipe-cut", str(wiped_mp4), "--out", ep_out],
-            cwd=str(CRAFT), capture_output=True, text=True, timeout=1200)
+            cwd=str(CRAFT), capture_output=True, text=True, timeout=1800)
         if r.returncode != 0:
             fail(f"YouTube cut生成失敗\n{(r.stdout + r.stderr)[-800:]}")
 
