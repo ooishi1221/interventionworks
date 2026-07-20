@@ -17,8 +17,8 @@
 cd server && nohup ../scripts/start-server.sh > server.log 2>&1 &
 # "Done (x.xs)!" が出るまで待つ（tail -f server.log）
 
-# 2. bot
-cd bot && nohup node becky-bot.js > bot.log 2>&1 &
+# 2. bot（FIRST_PERSON=1必須。抜けると三人称の引きカメラになる——EP.008で発覚、2026-07-21）
+cd bot && FIRST_PERSON=1 nohup node becky-bot.js > bot.log 2>&1 &
 # "[bot] spawned" と "action API on :3008" を確認
 
 # 3. 思考ループ（--max-calls 必須の安全装置、デフォルト30）
