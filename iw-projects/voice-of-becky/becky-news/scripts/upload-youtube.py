@@ -11,7 +11,10 @@ import sys
 CONF_DIR = os.path.expanduser("~/.config/becky-youtube")
 CLIENT_SECRET = os.path.join(CONF_DIR, "client_secret.json")
 TOKEN = os.path.join(CONF_DIR, "token.json")
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# ponytail: upload専用スコープだと videos.update/list(公開設定の変更等)が
+# insufficientPermissionsで弾かれる(2026-07-21実測)。full scopeに拡張。
+# 既存token.jsonはスコープ不足で無効になるため、初回のみ再度ブラウザ同意が必要。
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
 
 
 def get_creds():
@@ -40,10 +43,21 @@ def get_creds():
     return creds
 
 
+def publish_now(video_id: str) -> None:
+    """予約公開(private+publishAt)を今すぐ公開(public)に切り替える。"""
+    from googleapiclient.discovery import build
+    youtube = build("youtube", "v3", credentials=get_creds())
+    body = {"id": video_id, "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+    youtube.videos().update(part="status", body=body).execute()
+    print(f"published now: https://www.youtube.com/watch?v={video_id}")
+
+
 def main():
     p = argparse.ArgumentParser(description="Upload a video to YouTube")
-    p.add_argument("video", help="動画ファイルパス")
-    p.add_argument("--title", required=True)
+    p.add_argument("video", nargs="?", help="動画ファイルパス")
+    p.add_argument("--publish-now", metavar="VIDEO_ID",
+                   help="予約公開中の動画IDを指定し、今すぐ公開に切り替える(他の引数は無視)")
+    p.add_argument("--title")
     p.add_argument("--description", default="")
     p.add_argument("--tags", default="", help="カンマ区切り")
     p.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
@@ -53,6 +67,12 @@ def main():
     p.add_argument("--dry-run", action="store_true", help="リクエスト内容を表示して終了（アップロードしない）")
     a = p.parse_args()
 
+    if a.publish_now:
+        publish_now(a.publish_now)
+        return
+
+    if not a.video or not a.title:
+        sys.exit("video と --title は必須（--publish-now を使わない場合）")
     if not os.path.isfile(a.video):
         sys.exit(f"video not found: {a.video}")
 
