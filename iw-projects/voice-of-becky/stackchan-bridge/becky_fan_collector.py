@@ -12,6 +12,7 @@ ponytail: IPリスク対策で1日1回想定。リトライループしない、
   python3 becky_fan_collector.py [account]   # デフォルト: becky_exists
 """
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -21,6 +22,32 @@ TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" 
 STACKCHAN_DIR = Path.home() / ".stackchan"
 FETCH_N = 300
 QUOTE_SEARCH_N = 20
+
+# twitter-cli に渡す環境変数（main で CDP cookie を注入）
+_CLI_ENV = dict(os.environ)
+
+
+def _inject_cdp_cookies() -> None:
+    """専用Chrome(CDP:9223)からx.comのauth_token/ct0を取り_CLI_ENVへ注入する。
+
+    cronではKeychain認可が下りずtwitter-cliのbrowser cookie抽出が失敗するため、
+    Chrome自身に復号させたcookieを環境変数(TWITTER_AUTH_TOKEN/TWITTER_CT0)で渡す。
+    失敗時は何もしない（twitter-cli側のbrowser抽出にフォールバック）。
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.connect_over_cdp("http://localhost:9223")
+            cookies = {c["name"]: c["value"]
+                       for c in browser.contexts[0].cookies("https://x.com")}
+        if cookies.get("auth_token") and cookies.get("ct0"):
+            _CLI_ENV["TWITTER_AUTH_TOKEN"] = cookies["auth_token"]
+            _CLI_ENV["TWITTER_CT0"] = cookies["ct0"]
+            print("[fan_collector] CDP経由でcookie取得OK", flush=True)
+        else:
+            print("[fan_collector] CDPにx.comのauth cookieなし、browser抽出にフォールバック", flush=True)
+    except Exception as e:
+        print(f"[fan_collector] CDP cookie取得失敗、browser抽出にフォールバック: {e}", flush=True)
 
 
 def _events_file(account: str) -> Path:
@@ -40,7 +67,7 @@ def _fetch_screen_names(cmd: str, account: str) -> set[str] | None:
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), cmd, account, "--json", "-n", str(FETCH_N)],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=60, env=_CLI_ENV,
         )
         if result.returncode != 0 or not result.stdout.strip():
             print(f"[fan_collector] {cmd} 取得失敗: {result.stderr[:150]}", flush=True)
@@ -111,7 +138,7 @@ def collect_quote_events(account: str) -> list[dict]:
         result = subprocess.run(
             [str(TWITTER_CLI), "search", f"url:x.com/{account}/status",
              "-n", str(QUOTE_SEARCH_N), "--json"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=30, env=_CLI_ENV,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return []
@@ -147,6 +174,7 @@ def collect_quote_events(account: str) -> list[dict]:
 
 def main() -> None:
     account = sys.argv[1] if len(sys.argv) > 1 else "becky_exists"
+    _inject_cdp_cookies()
     events = collect_follow_events(account) + collect_quote_events(account)
     _append_events(account, events)
     print(f"[fan_collector] {account}: {len(events)}件追記 → {_events_file(account)}", flush=True)
