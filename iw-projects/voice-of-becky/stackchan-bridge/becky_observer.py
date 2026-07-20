@@ -2324,6 +2324,9 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
                 prompt = build_prompt(topic or "", thought_age, idle_hours, todo, motive)
             print(f"[observer] 発動: {prompt[:80]}...", flush=True)
             text = _call_claude_api(prompt)
+            if text and not _is_postable(text):
+                print(f"[observer] 発話スキップ（メタ発言/断り文検知）: {text[:80]}", flush=True)
+                text = None
             if text:
                 print(f"[observer] ベッキー: {text}", flush=True)
                 cfg = load_config()
