@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-becky_image.py — 感情変数を読んで「今日のベッキー」画像を Gemini で自動生成する
+becky_image.py — 感情変数を読んで「今日のベッキー」画像を Lovart(GPT Image 2) で自動生成する
 
 Usage:
     python3 becky_image.py
@@ -10,8 +10,7 @@ Usage:
 
 依存:
     - ~/.stackchan/becky_mood.json（becky_mood.py が生成）
-    - gemini-thumb.js（Playwright 経由で Gemini に画像生成を依頼）
-    - ~/.stackchan/becky_ref_chibi.jpg（任意。存在する場合のみ参照画像として添付）
+    - lovart-thumb.js（Playwright 経由で Lovart に画像生成を依頼）
 """
 
 import datetime
@@ -28,12 +27,14 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 MOOD_FILE = Path.home() / ".stackchan" / "becky_mood.json"
-REF_IMAGE = Path.home() / ".stackchan" / "becky_ref_chibi.jpg"
-GEMINI_THUMB = Path(
-    "/Volumes/SSD2TB/interventionworks/iw-projects/iw-content/notes/tools/gemini-thumb.js"
+# 2026-07-20: Gemini(gemini-thumb.js)からLovart(GPT Image 2、lovart-thumb.js)に切替。
+# むぎさん(@mugi_AI_Art)クラスの質感をゆうと実測比較して採用。--ref(参照画像添付)は
+# lovart-thumb.js未対応、プロンプトの識別情報だけで十分な一貫性が出ることを実測確認済み。
+LOVART_THUMB = Path(
+    "/Volumes/SSD2TB/interventionworks/iw-projects/iw-content/notes/tools/lovart-thumb.js"
 )
 NODE = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "node"
-TOOLS_DIR = str(GEMINI_THUMB.parent)
+TOOLS_DIR = str(LOVART_THUMB.parent)
 
 # ---------------------------------------------------------------------------
 # ベッキーのキャラクター DNA（必ず先頭に付ける）
@@ -308,7 +309,10 @@ def build_prompt(mood: dict, weather: dict, event: dict) -> tuple[str, str]:
             technique += ", snow falling gently, soft winter light"
 
     outfit = outfit or BECKY_DEFAULT_OUTFIT
-    prompt = f"{BECKY_IDENTITY}, {outfit}, {scene_desc}, {technique}, high quality, detailed, anime style"
+    prompt = (
+        f"{BECKY_IDENTITY}, {outfit}, {scene_desc}, {technique}, "
+        "high quality, detailed, anime style, no text, no logos, no watermark"
+    )
     return prompt, scene_name
 
 
@@ -359,30 +363,25 @@ def main() -> None:
     today = datetime.date.today().strftime("%Y%m%d")
     out_path = Path.home() / ".stackchan" / f"becky_today_{today}.png"
 
-    # 5. gemini-thumb.js を呼ぶ
-    cmd = [str(NODE), str(GEMINI_THUMB), prompt, "--out", str(out_path)]
-    if REF_IMAGE.exists():
-        cmd += ["--ref", str(REF_IMAGE)]
-        print(f"[becky_image] 参照画像を添付: {REF_IMAGE}", flush=True)
-    else:
-        print(f"[becky_image] 参照画像なし（{REF_IMAGE} が見つかりません）、スキップ", flush=True)
+    # 5. lovart-thumb.js を呼ぶ（--ref は lovart-thumb.js 未対応のため渡さない）
+    cmd = [str(NODE), str(LOVART_THUMB), prompt, "--out", str(out_path)]
 
-    print(f"[becky_image] gemini-thumb.js 実行中... (timeout=180s)", flush=True)
+    print(f"[becky_image] lovart-thumb.js 実行中... (timeout=230s)", flush=True)
     try:
         result = subprocess.run(
             cmd,
             cwd=TOOLS_DIR,
             capture_output=False,   # stdout/stderr をリアルタイムでパススルー
             text=True,
-            timeout=180,
+            timeout=230,
         )
     except subprocess.TimeoutExpired:
-        print("[becky_image] タイムアウト（180秒）で画像生成が完了しませんでした", file=sys.stderr)
+        print("[becky_image] タイムアウト（230秒）で画像生成が完了しませんでした", file=sys.stderr)
         sys.exit(1)
 
     if result.returncode != 0:
         print(
-            f"[becky_image] gemini-thumb.js がエラー終了しました (code={result.returncode})",
+            f"[becky_image] lovart-thumb.js がエラー終了しました (code={result.returncode})",
             file=sys.stderr,
         )
         sys.exit(1)
