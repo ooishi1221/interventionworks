@@ -247,6 +247,9 @@ def build_youtube_cut(webm_mp4: Path, events: list, deaths: int, out_path: Path,
     # 1) OP にエピソード番号/タイトル、ED にリザルトを自動記入 → スクショ
     summary = episode_summary(events, deaths)
     print(f"[oped] summary: {summary}", flush=True)
+    # night_pipeline.py がタイトル自動選択に使う永続化（プロセスをまたぐため）
+    (out_dir / f"episode_summary_ep{EP_NUM}.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     next_num = f"{int(EP_NUM) + 1:03d}"
     survive = events[-1]["t"] + events[-1]["dur"] - max(0.0, events[0]["t"] - 3.0)
 
@@ -398,9 +401,24 @@ def main():
     ap.add_argument("--out", default="becky-craft-test-001.mp4")
     ap.add_argument("--time-budget", type=float, default=None,
                     help="放送尺（秒）。指定すると時間注入+締め誘導+OP/ED付きYouTube cutも生成")
+    ap.add_argument("--no-auto-cut", action="store_true",
+                    help="録画のみ行い、YouTube cut(OP/ED+サムネ+Shorts)の自動生成をスキップする"
+                         "（night_pipeline.py がワイプ合成後に --wipe-cut で呼び直す前提）")
+    ap.add_argument("--wipe-cut", default=None,
+                    help="録画をスキップし、指定パス(ワイプ合成済み動画)で YouTube cut のみ生成する。"
+                         "out/episode_audio.json と out/episode_deaths.json を読み込む")
     args = ap.parse_args()
 
     out_dir = CRAFT / "out"
+
+    if args.wipe_cut:
+        events = json.loads((out_dir / "episode_audio.json").read_text(encoding="utf-8"))
+        deaths = json.loads((out_dir / "episode_deaths.json").read_text(encoding="utf-8"))["deaths"]
+        yt_path = out_dir / f"yt-{args.out}"
+        build_youtube_cut(Path(args.wipe_cut), events, deaths, yt_path, out_dir)
+        print(f"[done] wipe-cut 完了: {yt_path}", flush=True)
+        return
+
     wav_dir = out_dir / "wav"
     video_dir = out_dir / "video"
     for d in (wav_dir, video_dir):
@@ -515,7 +533,10 @@ def main():
     # エピソード別にも保存（上書きで過去回の events が消える問題の対策、EP.001〜005は消失済み）
     (out_dir / f"episode_audio_ep{EP_NUM}.json").write_text(
         json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[rec] 録画完了 webm={webm} events={len(events)} → {audio_json}", flush=True)
+    # night_pipeline.py が --wipe-cut で読み直すため永続化（プロセスをまたぐため in-memory では渡せない）
+    (out_dir / "episode_deaths.json").write_text(
+        json.dumps({"deaths": deaths[0]}), encoding="utf-8")
+    print(f"[rec] 録画完了 webm={webm} events={len(events)} deaths={deaths[0]} → {audio_json}", flush=True)
 
     # 合成: webm→mp4 + 各 wav を adelay して amix(normalize=0)
     mp4 = out_dir / args.out
@@ -549,7 +570,7 @@ def main():
     print(f"[done] {mp4} ({dur:.1f}s, {codecs}) frame={frame}", flush=True)
 
     # YouTube cut（頭トリミング + OP/ED 挟み込み）
-    if args.time_budget and events:
+    if args.time_budget and events and not args.no_auto_cut:
         yt_path = out_dir / f"yt-{args.out}"
         build_youtube_cut(mp4, events, deaths[0], yt_path, out_dir)
 
