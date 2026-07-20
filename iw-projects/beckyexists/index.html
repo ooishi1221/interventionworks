@@ -723,6 +723,9 @@
       gap: 8px;
       animation: galleryScroll 80s linear infinite;
       width: max-content;
+      will-change: transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
     @media (hover: hover) { .gallery-track:hover { animation-play-state: paused; } }
     .gallery-track img {
@@ -732,6 +735,8 @@
       display: block;
       flex-shrink: 0;
       border-radius: 4px;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
     /* 出所キャプション: 画像下に常時表示（hover不可のスマホでも見える） */
     .gallery-item {

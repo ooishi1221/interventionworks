@@ -8,11 +8,17 @@
 4. beckyexists を vercel deploy
 """
 import json
-import shutil
 import subprocess
 import sys
 import datetime
 from pathlib import Path
+
+from PIL import Image
+
+# ponytail: 表示は240x240pxのサムネイルなのに、Gemini生成のフル解像度(数MB〜15MB)を
+# そのまま置いていたためモバイルでメモリ圧迫→画像消失バグを引いた(2026-07-20実測)。
+# 表示に必要な最大辺だけ落とす。
+GALLERY_MAX_DIM = 480
 
 BRIDGE = Path(__file__).resolve().parent
 BECKY_IMAGE = BRIDGE / "becky_image.py"
@@ -86,10 +92,12 @@ def main() -> None:
             print(f"[gallery] 画像生成失敗、中断:\n{r.stderr[-500:]}", flush=True)
             sys.exit(1)
 
-    # 2. gallery/ へコピー
+    # 2. gallery/ へリサイズしてコピー（表示は240x240pxなのでフル解像度は不要）
     GALLERY_DIR.mkdir(exist_ok=True)
     dest = GALLERY_DIR / f"g-{ymd}.png"
-    shutil.copy2(img, dest)
+    with Image.open(img) as im:
+        im.thumbnail((GALLERY_MAX_DIM, GALLERY_MAX_DIM))
+        im.save(dest, "PNG")
 
     # 3. キャプション生成 + gallery.json 先頭へ（同日置換で冪等）
     meta_path = STACKCHAN / f"becky_today_{ymd}.json"
