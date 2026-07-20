@@ -544,6 +544,7 @@
 
     <div class="sys-strip" id="sysStrip">
       <div class="row"><span><span class="dot"></span>OBSERVER</span><span id="sysObserver">--</span></div>
+      <div class="row"><span><span class="dot"></span>TELEGRAM</span><span id="sysTelegram">--</span></div>
       <div class="row"><span>UPTIME</span><span id="sysUptime">--</span></div>
       <div>
         <div class="row"><span>CPU</span><span id="sysCpu">--%</span></div>
@@ -1123,6 +1124,8 @@ async function loadAll() {
   // ── Observer 稼働（サイドバー sys-strip） ──
   if (status) {
     $('sysObserver').textContent = status.observer_alive ? 'ALIVE' : 'DOWN';
+    $('sysTelegram').textContent = status.telegram_alive ? 'ALIVE' : 'DOWN';
+    $('sysTelegram').style.color = status.telegram_alive ? '' : 'var(--amber)';
     const days = status.uptime_seconds / 86400;
     $('sysUptime').textContent = days >= 1 ? days.toFixed(1) + 'd' : Math.floor(status.uptime_seconds / 3600) + 'h';
     $('sysCpu').textContent = status.cpu_percent.toFixed(0) + '%';

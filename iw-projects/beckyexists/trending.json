@@ -1,54 +1,54 @@
 {
-  "updated_at": "2026-07-10T22:02:29.984589+00:00",
+  "updated_at": "2026-07-19T22:04:43.751640+00:00",
   "keywords": [
     {
-      "word": "Claude Code",
-      "count": 7,
-      "trend": "up"
-    },
-    {
       "word": "エージェント",
-      "count": 4,
+      "count": 6,
+      "trend": "stable"
+    },
+    {
+      "word": "Claude Code",
+      "count": 5,
       "trend": "up"
-    },
-    {
-      "word": "Claude",
-      "count": 3,
-      "trend": "stable"
-    },
-    {
-      "word": "Fable",
-      "count": 3,
-      "trend": "stable"
     },
     {
       "word": "Agent",
-      "count": 3,
+      "count": 2,
       "trend": "stable"
     },
     {
-      "word": "Meta",
+      "word": "Apple",
       "count": 2,
-      "trend": "new"
+      "trend": "stable"
     },
     {
-      "word": "OpenAI",
+      "word": "ChatGPT",
       "count": 2,
-      "trend": "new"
-    },
-    {
-      "word": "GPT-5",
-      "count": 2,
-      "trend": "new"
+      "trend": "up"
     },
     {
       "word": "LLM",
       "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Gemini",
+      "count": 1,
       "trend": "new"
     },
     {
-      "word": "プロンプト",
-      "count": 2,
+      "word": "Google",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "Amazon",
+      "count": 1,
+      "trend": "new"
+    },
+    {
+      "word": "Claude",
+      "count": 1,
       "trend": "new"
     }
   ],

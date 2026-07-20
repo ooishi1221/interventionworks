@@ -2,6 +2,34 @@
   "updated_at": "2026-07-18T00:44:13.841282",
   "tasks": [
     {
+      "id": "becky-backstage-mvp",
+      "scope": "iw",
+      "label": "ベッキー Backstage — ファン関係ダッシュボード MVP",
+      "category": "voice-of-becky",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-07-19",
+      "updated_at": "2026-07-19",
+      "due": null,
+      "note": "ゆう発案「Xのフォロー管理ツール、ベッキーでも作れるのでは」から発足。「フォロー管理ツール」ではなく「ファンとの関係を感じ取る感覚器官」(最終的にMood→Lens→Goal→Behaviorの入力)というコンセプトに着地。10画面構想のうちMVP(データ基盤+ダッシュボード)を実装完了。becky_fan_collector.py→becky_fan_roster_build.pyでフォロー/引用RT/リプライを日次収集、backstage.html(ダッシュボード/ファン分類/フォロー管理)を公開(https://beckyexists.com/backstage)。X仕様変更(2024年〜)でいいね/RT個別取得は不可(Basic tier月$200要)なためスコープ外。「他の人でも使える」はIWの複数アカウント切り替えの意味だったと判明(外部展開ではない)。commit 627787b + 324cf8a。次: AIおすすめ行動(画面5)、感情システム接続。",
+      "icon": "🎭",
+      "completed_at": "2026-07-19"
+    },
+    {
+      "id": "note-verified-tools-series",
+      "scope": "iw",
+      "label": "note新連載「実測で選ぶツール」— tech-stock.json素材の1本ずつ深掘り",
+      "category": "content",
+      "status": "in_progress",
+      "priority": "medium",
+      "start": "2026-07-19",
+      "updated_at": "2026-07-19",
+      "due": null,
+      "note": "ゆう提案(7/18深夜)「note=テック軸」から発足。素材はvoice-of-becky/tech-stock.json(検証済み7項目)。第1弾「HTMLを書いて5.7秒。動画は一発では、できませんでした。」(HyperFrames)を公開(https://note.com/intervention_jp/n/ncdf14d53c1c2)。編集レビュー2ラウンド計14点を経て型確立: 結果から入る冒頭/工程別実測数字/AI一人称視点/AI専用ツールという潮流への昇華/末尾ベッキー評価カード。次回以降、残り6項目(claude-real-video/Codex adversarial review/Playwright CDP/Jina Reader/Grok Build/Monid.ai)を1本ずつ。宿題: publish-direct.jsのタグハードコード修正、本文中画像埋め込みの自動化(現状ゆう手動)。",
+      "icon": "🧪",
+      "completed_at": null
+    },
+    {
       "id": "studio-reports-panel",
       "scope": "iw",
       "label": "/studio(活動分析室)にレポート・行動予定・振り返りを表示",

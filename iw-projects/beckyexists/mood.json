@@ -1,9 +1,9 @@
 {
-  "curiosity": 1.0,
-  "loneliness": 0.798,
-  "energy": 0.654,
-  "confidence": 1.0,
+  "curiosity": 0.6,
+  "loneliness": 0.355,
+  "energy": 0.684,
+  "confidence": 0.514,
   "attachment": 0.95,
-  "mismatch": 0.235,
-  "updated_at": "2026-07-11T15:00:01.306008"
+  "mismatch": 0.131,
+  "updated_at": "2026-07-20T09:00:01.048237"
 }

@@ -100,9 +100,23 @@ def collect_system() -> dict:
         "disk_internal": disk("/System/Volumes/Data"),
         "disk_memories": disk("/Volumes/SSD2TB"),
         "observer_alive": observer_alive,
+        "telegram_alive": collect_telegram_alive(),
         "brain_main": BRAIN_MAIN,
         "brain_observer": BRAIN_OBSERVER,
     }
+
+
+def collect_telegram_alive() -> bool:
+    """Telegram 常駐（bun server.ts）が実際に生きているかを bot.pid の PID 生存確認で判定する。
+    プロセス自体は生きていても MCP 接続が死んでるケースがある(2026-07-15 OOM巻き添え実績)が、
+    まずは根本原因になりやすいプロセス死を検知できれば十分。"""
+    pid_file = Path.home() / ".claude" / "channels" / "telegram" / "bot.pid"
+    try:
+        pid = pid_file.read_text().strip()
+        return subprocess.run(["kill", "-0", pid], capture_output=True).returncode == 0
+    except Exception as e:
+        print(f'[warn] status_update: telegram_alive check: {e}', flush=True)
+        return False
 
 
 def _load_json(path: Path) -> dict:

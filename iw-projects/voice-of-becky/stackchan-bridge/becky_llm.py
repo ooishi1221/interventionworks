@@ -165,6 +165,30 @@ def x_posts_today() -> int:
         return 0
 
 
+def x_minutes_since_last_post() -> float:
+    """tweet-log.jsonl(全経路共通)の最終実投稿からの経過分。ログなし/読めない時は inf(=ガードしない)。
+    朝7時起床時に複数経路が数分内に連投するバースト防止用(2026-07-20 週次リフレッシュ)。"""
+    try:
+        last_ts = ""
+        for line in X_TWEET_LOG.read_text().splitlines():
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            if entry.get("dry_run"):
+                continue
+            ts = entry.get("timestamp", "")
+            if ts > last_ts:
+                last_ts = ts
+        if not last_ts:
+            return float("inf")
+        dt = datetime.datetime.fromisoformat(last_ts.replace("Z", "+00:00"))
+        now = datetime.datetime.now(datetime.timezone.utc)
+        return (now - dt).total_seconds() / 60
+    except Exception as e:
+        print(f"[llm] x_minutes_since_last_post error: {e}", flush=True)
+        return float("inf")
+
+
 def call_llm_json(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
                   retries: int = 2) -> dict | None:
     """JSON を期待する呼び出し。抽出→パース失敗時は修正プロンプトで1回だけ再実行。"""

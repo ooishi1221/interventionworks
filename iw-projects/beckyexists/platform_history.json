@@ -188,14 +188,113 @@
   },
   {
    "date": "2026-07-11",
-   "x_imp_7d": 930,
+   "x_imp_7d": 848,
    "x_likes_7d": 1,
    "yt_subs": 4,
-   "yt_views": 997,
+   "yt_views": 1308,
    "note_views": 253,
    "note_likes": 37,
    "kdp_orders": 0,
    "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-12",
+   "x_imp_7d": 868,
+   "x_likes_7d": 1,
+   "yt_subs": 4,
+   "yt_views": 1315,
+   "note_views": 253,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-13",
+   "x_imp_7d": 654,
+   "x_likes_7d": 0,
+   "yt_subs": 4,
+   "yt_views": 1449,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-14",
+   "x_imp_7d": 215,
+   "x_likes_7d": 0,
+   "yt_subs": 4,
+   "yt_views": 1445,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-15",
+   "x_imp_7d": 226,
+   "x_likes_7d": 0,
+   "yt_subs": 4,
+   "yt_views": 1446,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-16",
+   "x_imp_7d": null,
+   "x_likes_7d": 0,
+   "yt_subs": null,
+   "yt_views": null,
+   "note_views": null,
+   "note_likes": null,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-17",
+   "x_imp_7d": 797,
+   "x_likes_7d": 2,
+   "yt_subs": 4,
+   "yt_views": 1458,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 0
+  },
+  {
+   "date": "2026-07-18",
+   "x_imp_7d": 844,
+   "x_likes_7d": 2,
+   "yt_subs": 4,
+   "yt_views": 1460,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 40
+  },
+  {
+   "date": "2026-07-19",
+   "x_imp_7d": 793,
+   "x_likes_7d": 2,
+   "yt_subs": 4,
+   "yt_views": 1462,
+   "note_views": 254,
+   "note_likes": 37,
+   "kdp_orders": 0,
+   "kdp_kenp": 40
+  },
+  {
+   "date": "2026-07-20",
+   "x_imp_7d": 832,
+   "x_likes_7d": 4,
+   "yt_subs": 4,
+   "yt_views": 1462,
+   "note_views": 271,
+   "note_likes": 39,
+   "kdp_orders": 0,
+   "kdp_kenp": 40
   }
  ]
 }

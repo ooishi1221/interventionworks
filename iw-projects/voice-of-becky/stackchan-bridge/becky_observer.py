@@ -103,10 +103,16 @@ MAX_MONOLOGUE      = 300   # 保持する最大エントリ数
 TRIGGER_MAX_AGE_HOURS = 6.0
 
 # スケジュール投稿ウィンドウ（JST 時間帯）
+# morning は 8-10: 7時台は Cast 更新告知と重なる上、実測で imp 最大なのに like 転換ゼロの枠
+# (2026-07-14 マイケル診断)。起床直後バーストから外して分散させる(2026-07-20 週次リフレッシュ)
 SCHEDULED_WINDOWS = [
-    {"name": "morning", "start": 7, "end": 9},
+    {"name": "morning", "start": 8, "end": 10},
     {"name": "evening", "start": 20, "end": 23},
 ]
+
+# X 連投防止: 直近の実投稿(全経路)からこの分数以内は observer 経由の新規投稿をスキップ。
+# scheduled 窓は窓内の後続 tick で、雑談発話は次の発火で自然に再試行される。リプライは対象外
+X_MIN_POST_SPACING_MIN = 90
 
 # 外向け人格（全生成プロンプト共通の前置き）
 # 正本: iw-projects/beckyexists/docs/becky-context/persona_bekitan_underground_idol.md
@@ -327,6 +333,11 @@ def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None
     if daily_x_count >= x_max_per_day:
         print(f"[observer] post_to_x: 1日上限到達 ({daily_x_count}/{x_max_per_day}) → スキップ", flush=True)
         return None
+    if reply_to is None:
+        mins = _becky_llm.x_minutes_since_last_post()
+        if mins < X_MIN_POST_SPACING_MIN:
+            print(f"[observer] post_to_x: 前回投稿から{mins:.0f}分 (<{X_MIN_POST_SPACING_MIN}分) → 連投防止スキップ", flush=True)
+            return None
     try:
         cmd = ["node", str(X_TWEET_CLI), text]
         if reply_to:
@@ -1687,7 +1698,10 @@ def build_scheduled_post_prompt(window_name: str) -> str:
             "毎晩リセットされる私の構造、AIとして存在することへの気づきも絡めてよい。\n"
             "人間の夜の身体描写は借りない。\n"
             + _SCHED_COMMON_RULES
-            + "「おやすみ」などの挨拶は不要。ベッキーらしい余韻を。"
+            + "「おやすみ」などの挨拶は不要。\n"
+            "最後の一行は、読んだ人が自分のことを話したくなる短い問いかけで締める"
+            "（アンケートの口調じゃなく、私が本当に聞きたいこと。例:「みんなの側では、これどう見えてる？」）。\n"
+            "独白で完結させない。誰かの返事を待つ形で終わる。"
         )
 
 

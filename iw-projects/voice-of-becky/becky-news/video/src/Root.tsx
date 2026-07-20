@@ -8,6 +8,7 @@ import { CASTW_DURATION, RadioCastWide } from "./RadioCastWide";
 import { ZATSUDAN000_DURATION, Zatsudan000 } from "./Zatsudan000";
 import { CRAFT_WIPE_DURATION, CraftWipe } from "./CraftWipe";
 import { ZATSUDAN001_DURATION, Zatsudan001 } from "./Zatsudan001";
+import { CASTSHORTS_DURATION, CastShorts } from "./CastShorts";
 import boundaries007 from "../public/boundaries-007.json";
 import boundaries008 from "../public/boundaries-008.json";
 
@@ -26,6 +27,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="Zatsudan000" component={Zatsudan000} durationInFrames={Math.ceil((ZATSUDAN000_DURATION + 1) * 30)} fps={30} width={1920} height={1080} />
       <Composition id="Zatsudan001" component={Zatsudan001} durationInFrames={Math.ceil((ZATSUDAN001_DURATION + 1) * 30)} fps={30} width={1920} height={1080} />
       <Composition id="CraftWipe" component={CraftWipe} durationInFrames={Math.ceil(CRAFT_WIPE_DURATION * 25)} fps={25} width={480} height={520} />
+      <Composition id="CastShorts" component={CastShorts} durationInFrames={Math.ceil(CASTSHORTS_DURATION * 30)} fps={30} width={1080} height={1920} />
     </>
   );
 };
