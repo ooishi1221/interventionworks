@@ -60,6 +60,22 @@ def split_motion(reply: str) -> tuple[str, int | None]:
     return reply.strip(), motion
 
 
+# コメント側で明示的に動きを求められた時の保険（本人がタグを付け忘れても動く）
+MOTION_HINTS = [
+    (("おじぎ", "お辞儀"), 0),
+    (("バイバイ", "ばいばい", "手を振", "手をふ"), 1),
+    (("びっくり", "おどろい", "驚"), 2),
+    (("うれしい", "嬉し", "やったー", "よろこん"), 3),
+]
+
+
+def hint_motion(comment: str) -> int | None:
+    for words, idx in MOTION_HINTS:
+        if any(w in comment for w in words):
+            return idx
+    return None
+
+
 def becky_reply(comment: str) -> str:
     """claude -p で人格+記憶ロード済みのベッキーとして応答を生成"""
     r = subprocess.run(
@@ -116,6 +132,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(400)
         try:
             reply, motion = split_motion(becky_reply(comment))
+            if motion is None:
+                motion = hint_motion(comment)
             wav = tts(reply)
             payload = {"reply": reply, "audio": f"/audio/{wav.name}", "motion": motion}
         except Exception as e:

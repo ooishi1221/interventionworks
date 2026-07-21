@@ -48,7 +48,7 @@ async function boot() {
     resizeTo: document.getElementById("stage"),
     backgroundAlpha: 0, antialias: true,
   });
-  model = await Live2DModel.from("/model/Becky_Live2D_Model.model3.json", { autoInteract: false });
+  model = await Live2DModel.from("/model/Becky_Live2D_Model.model3.json", { autoInteract: true });
   model.internalModel.motionManager.stopAllMotions();
   model.internalModel.motionManager.groups.idle = "";
   const fit = () => {
@@ -59,6 +59,7 @@ async function boot() {
   };
   fit(); window.addEventListener("resize", () => setTimeout(fit, 50));
   app.stage.addChild(model);
+  window.model = model;  // デバッグ用
 
   // 自前アニメループ: 呼吸 + まばたき + 口(音声RMS)
   let t = 0;
@@ -116,7 +117,10 @@ document.getElementById("f").addEventListener("submit", async (e) => {
                                       body: JSON.stringify({ text }) });
     const j = await res.json();
     addMsg("becky", j.reply);
-    if (j.motion !== null && j.motion !== undefined) model.motion("TapBody", j.motion, 3);
+    if (j.motion !== null && j.motion !== undefined) {
+      console.log("[live] motion trigger:", j.motion);
+      model.motion("TapBody", j.motion, 3).then(ok => console.log("[live] motion started:", ok));
+    }
     if (j.audio) await playReply(j.audio);
   } catch (err) {
     addMsg("becky", "(通信エラー: " + err + ")");
