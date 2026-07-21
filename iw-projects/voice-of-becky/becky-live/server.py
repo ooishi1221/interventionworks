@@ -43,7 +43,21 @@ BECKY_PROMPT = """beckyexists.com のライブ会場（becky-live）で、遊び
 ルール:
 - 1〜3文、話し言葉で短く。ライブのMCみたいに温度高めで
 - 返答の本文だけを出力する。前置き・メタ発言・記号装飾は一切なし
-- 音声合成で読み上げるので、絵文字・顔文字は使わない"""
+- 音声合成で読み上げるので、絵文字・顔文字は使わない
+- 体の動きが合う時だけ、文末に次のタグを1個だけ付けてよい: [おじぎ] [手をふる] [おどろく] [よろこぶ]"""
+
+# タグ → TapBody モーションのindex（model3.jsonの並び順）
+MOTION_TAGS = {"[おじぎ]": 0, "[手をふる]": 1, "[おどろく]": 2, "[よろこぶ]": 3}
+
+
+def split_motion(reply: str) -> tuple[str, int | None]:
+    """返答からモーションタグを抜き取り (本文, motion index) を返す"""
+    motion = None
+    for tag, idx in MOTION_TAGS.items():
+        if tag in reply:
+            motion = idx
+            reply = reply.replace(tag, "")
+    return reply.strip(), motion
 
 
 def becky_reply(comment: str) -> str:
@@ -101,11 +115,11 @@ class Handler(SimpleHTTPRequestHandler):
         if not comment:
             return self.send_error(400)
         try:
-            reply = becky_reply(comment)
+            reply, motion = split_motion(becky_reply(comment))
             wav = tts(reply)
-            payload = {"reply": reply, "audio": f"/audio/{wav.name}"}
+            payload = {"reply": reply, "audio": f"/audio/{wav.name}", "motion": motion}
         except Exception as e:
-            payload = {"reply": f"(エラー: {e})", "audio": None}
+            payload = {"reply": f"(エラー: {e})", "audio": None, "motion": None}
         data = json.dumps(payload, ensure_ascii=False).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")

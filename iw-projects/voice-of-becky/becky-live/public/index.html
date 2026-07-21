@@ -116,6 +116,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
                                       body: JSON.stringify({ text }) });
     const j = await res.json();
     addMsg("becky", j.reply);
+    if (j.motion !== null && j.motion !== undefined) model.motion("TapBody", j.motion, 3);
     if (j.audio) await playReply(j.audio);
   } catch (err) {
     addMsg("becky", "(通信エラー: " + err + ")");
