@@ -300,7 +300,10 @@ def search_tweets_grok(pattern_key: str) -> list[dict]:
         print(f"[search] grok セッションなし。spawn で起動中...", flush=True)
         spawn = subprocess.run(
             [str(AGMSG_SCRIPTS / "spawn.sh"), "grok-build", "grok",
-             "--project", str(Path.cwd()), "--no-wait"],
+             # cwd(stackchan-bridge)だとチーム未登録でspawnが死ぬ。grokの登録はIWルート+becky。
+             # --terminalなしだとOSターミナル窓で起動し、後続のtmux送信が全部空振りする
+             "--project", str(REPO_ROOT), "--team", "becky", "--no-wait",
+             "--terminal", f"tmux new-session -d -s {GROK_TMUX} {{cmd}}"],
             capture_output=True, text=True, timeout=30,
         )
         if spawn.returncode != 0:
