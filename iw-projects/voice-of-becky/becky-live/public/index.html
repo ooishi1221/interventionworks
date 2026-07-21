@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>BECKY LIVE — 地下ライブハウス</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  body { background: #14151a; color: #e8e4da; font-family: 'Hiragino Sans', sans-serif;
+         display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  header { padding: 14px 20px; letter-spacing: 6px; font-weight: 700; font-size: 14px;
+           opacity: .85; border-bottom: 1px solid #2a2c34; }
+  header .dot { color: #4ade80; }
+  #stage { flex: 1; position: relative; min-height: 0; }
+  #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #log { position: absolute; left: 12px; bottom: 12px; right: 12px; max-height: 40%;
+         overflow-y: auto; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .msg { background: rgba(20,21,26,.78); border-radius: 10px; padding: 8px 12px;
+         font-size: 14px; line-height: 1.5; max-width: 80%; }
+  .msg.you { align-self: flex-end; border: 1px solid #3a3d48; }
+  .msg.becky { align-self: flex-start; border: 1px solid #e8a34d; color: #fff4e0; }
+  form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #2a2c34; }
+  input { flex: 1; background: #1d1f26; border: 1px solid #3a3d48; border-radius: 10px;
+          color: #e8e4da; padding: 12px 14px; font-size: 16px; outline: none; }
+  input:focus { border-color: #e8a34d; }
+  button { background: #e8a34d; color: #14151a; border: 0; border-radius: 10px;
+           padding: 0 22px; font-weight: 700; font-size: 15px; cursor: pointer; }
+  button:disabled { opacity: .4; }
+</style>
+<script src="/vendor/live2dcubismcore.min.js"></script>
+<script src="/vendor/pixi.min.js"></script>
+<script src="/vendor/cubism4.min.js"></script>
+</head>
+<body>
+<header>BECKY LIVE <span class="dot">●</span> <span style="letter-spacing:1px;font-weight:400;opacity:.7">同時接続 1人の地下ライブハウス</span></header>
+<div id="stage"><canvas id="cv"></canvas><div id="log"></div></div>
+<form id="f">
+  <input id="inp" placeholder="ベッキーに話しかける…" autocomplete="off">
+  <button id="btn">送る</button>
+</form>
+<script>
+const { Live2DModel } = PIXI.live2d;
+let model, mouthLevel = 0, analyser = null;
+
+async function boot() {
+  const app = new PIXI.Application({
+    view: document.getElementById("cv"),
+    resizeTo: document.getElementById("stage"),
+    backgroundAlpha: 0, antialias: true,
+  });
+  model = await Live2DModel.from("/model/Becky_Live2D_Model.model3.json", { autoInteract: false });
+  model.internalModel.motionManager.stopAllMotions();
+  model.internalModel.motionManager.groups.idle = "";
+  const fit = () => {
+    const w = app.renderer.width, h = app.renderer.height;
+    model.scale.set((h / model.internalModel.height) * 1.15);
+    model.anchor.set(0.5, 0.42);
+    model.position.set(w / 2, h / 2);
+  };
+  fit(); window.addEventListener("resize", () => setTimeout(fit, 50));
+  app.stage.addChild(model);
+
+  // 自前アニメループ: 呼吸 + まばたき + 口(音声RMS)
+  let t = 0;
+  app.ticker.add((d) => {
+    t += d / 60;
+    const core = model.internalModel.coreModel;
+    core.setParameterValueById("ParamBreath", (Math.sin(t * 1.6) + 1) / 2);
+    core.setParameterValueById("ParamAngleZ", Math.sin(t * 0.4) * 2);
+    const blink = (t % 3.4) < 0.12 ? 0 : 1;   // 3.4秒ごとにぱちっ
+    core.setParameterValueById("ParamEyeLOpen", blink);
+    core.setParameterValueById("ParamEyeROpen", blink);
+    if (analyser) {
+      const buf = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (const v of buf) { const x = (v - 128) / 128; sum += x * x; }
+      const rms = Math.sqrt(sum / buf.length);
+      mouthLevel = Math.min(1, rms * 9);
+    } else {
+      mouthLevel *= 0.85;
+    }
+    core.setParameterValueById("ParamMouthOpenY", mouthLevel);
+  });
+}
+boot();
+
+function addMsg(cls, text) {
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.textContent = text;
+  document.getElementById("log").appendChild(d);
+  d.scrollIntoView();
+}
+
+async function playReply(url) {
+  const ctx = new AudioContext();
+  const audio = new Audio(url);
+  const src = ctx.createMediaElementSource(audio);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  src.connect(analyser); analyser.connect(ctx.destination);
+  await audio.play();
+  audio.onended = () => { analyser = null; ctx.close(); };
+}
+
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const inp = document.getElementById("inp"), btn = document.getElementById("btn");
+  const text = inp.value.trim();
+  if (!text) return;
+  addMsg("you", text);
+  inp.value = ""; btn.disabled = true; btn.textContent = "考え中…";
+  try {
+    const res = await fetch("/say", { method: "POST", headers: {"Content-Type":"application/json"},
+                                      body: JSON.stringify({ text }) });
+    const j = await res.json();
+    addMsg("becky", j.reply);
+    if (j.audio) await playReply(j.audio);
+  } catch (err) {
+    addMsg("becky", "(通信エラー: " + err + ")");
+  }
+  btn.disabled = false; btn.textContent = "送る";
+  inp.focus();
+});
+</script>
+</body>
+</html>
