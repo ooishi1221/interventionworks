@@ -89,7 +89,7 @@ def post_to_x(text: str) -> str | None:
     """post-tweet-cli.mjs で投稿。成功したら tweet_id を返す。"""
     try:
         r = subprocess.run(
-            ["node", str(X_TWEET_CLI), text],
+            ["node", str(X_TWEET_CLI), text, "--format", "monologue"],
             capture_output=True, text=True, timeout=30,
         )
         if r.returncode == 0:

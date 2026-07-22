@@ -38,6 +38,29 @@ os.environ["PATH"] = os.environ.get("PATH", "") + f":{Path.home() / '.grok' / 'b
 _GROK_ERRORS: list[str] = []
 
 TWITTER_CLI      = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
+
+
+# twitter-cli に渡す環境変数（run()/run_overseas() の冒頭で CDP cookie を注入、fan_collector.py と同じ手口）
+_CLI_ENV = dict(os.environ)
+
+
+def _inject_cdp_cookies() -> None:
+    """専用Chrome(CDP:9223)からx.comのcookieを取り、_CLI_ENVへ注入する。
+    cronではKeychain認可が下りずtwitter-cliのbrowser cookie抽出が無言で失敗するため
+    (becky_fan_collector.py と同じ問題、becky_search.pyもcron実行、2026-07-22)。
+    失敗時は何もしない(twitter-cli側のbrowser抽出にフォールバック)。"""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.connect_over_cdp("http://localhost:9223")
+            cookies = {c["name"]: c["value"] for c in browser.contexts[0].cookies("https://x.com")}
+        if cookies.get("auth_token") and cookies.get("ct0"):
+            _CLI_ENV["TWITTER_AUTH_TOKEN"] = cookies["auth_token"]
+            _CLI_ENV["TWITTER_CT0"] = cookies["ct0"]
+    except Exception as e:
+        print(f"[search] CDP cookie取得失敗、browser抽出にフォールバック: {e}", flush=True)
+
+
 GROK_BIN         = Path.home() / ".grok" / "bin" / "grok"
 AGMSG_SCRIPTS    = Path.home() / ".agents" / "skills" / "agmsg" / "scripts"
 GROK_TMUX        = "grok"  # tmux セッション名
@@ -239,7 +262,7 @@ def search_tweets(pattern_key: str) -> list[dict]:
     pattern = SEARCH_PATTERNS[pattern_key]
     cmd = [str(TWITTER_CLI), "search", pattern["query"]] + pattern["extra_args"]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_CLI_ENV)
         if result.returncode != 0:
             print(f"[search] 検索失敗 ({pattern_key}): {result.stderr[:100]}", flush=True)
             return []
@@ -453,7 +476,7 @@ def _auto_post_reply(tweet_id: str, text: str, dry_run: bool = False) -> bool:
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), "post", "--reply-to", tweet_id, text],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, timeout=20, env=_CLI_ENV,
         )
         if result.returncode == 0:
             print(f"[search] リプ自動投稿OK → {tweet_id}", flush=True)
@@ -473,7 +496,7 @@ def _auto_quote_tweet(tweet_id: str, text: str, dry_run: bool = False) -> bool:
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), "quote", tweet_id, text],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, timeout=20, env=_CLI_ENV,
         )
         if result.returncode == 0:
             print(f"[search] 引用RT自動投稿OK → {tweet_id}", flush=True)
@@ -514,7 +537,7 @@ def fetch_overseas_buzz() -> list[dict]:
             "--json",
         ]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_CLI_ENV)
             if result.returncode != 0 or not result.stdout.strip():
                 continue
             data = json.loads(result.stdout.strip())
@@ -568,6 +591,7 @@ def generate_quote_rt_text(tweet: dict) -> str | None:
 
 def run_overseas(dry_run: bool = False) -> None:
     """海外AIバズ投稿を拾って引用RT候補として Telegram 通知"""
+    _inject_cdp_cookies()
     seen = _load_overseas_seen()
     tweets = fetch_overseas_buzz()
     if not tweets:
@@ -642,6 +666,7 @@ def run_overseas(dry_run: bool = False) -> None:
 
 def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: bool = True) -> None:
     import random
+    _inject_cdp_cookies()  # _auto_post_reply が twitter-cli post を叩くため
     _GROK_ERRORS.clear()
     mood = _load_becky_mood()
     sent_log = _load_sent_log()

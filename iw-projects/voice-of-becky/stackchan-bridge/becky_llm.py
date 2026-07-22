@@ -165,6 +165,30 @@ def x_posts_today() -> int:
         return 0
 
 
+def x_conversational_done_today() -> bool:
+    """今日(JST)、質問/二択で締める「会話型」投稿が1本でもあったか。
+    tweet-log.jsonl の format フィールド(post-tweet-cli.mjs --format で記録)で判定する(2026-07-22)。"""
+    try:
+        today_jst = datetime.date.today().isoformat()
+        for line in X_TWEET_LOG.read_text().splitlines():
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            if entry.get("dry_run") or entry.get("format") != "conversational":
+                continue
+            ts = entry.get("timestamp", "")
+            if not ts:
+                continue
+            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dt_jst = dt_utc + datetime.timedelta(hours=9)
+            if dt_jst.date().isoformat() == today_jst:
+                return True
+        return False
+    except Exception as e:
+        print(f"[llm] x_conversational_done_today error: {e}", flush=True)
+        return False
+
+
 def x_minutes_since_last_post() -> float:
     """tweet-log.jsonl(全経路共通)の最終実投稿からの経過分。ログなし/読めない時は inf(=ガードしない)。
     朝7時起床時に複数経路が数分内に連投するバースト防止用(2026-07-20 週次リフレッシュ)。"""

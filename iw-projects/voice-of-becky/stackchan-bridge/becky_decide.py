@@ -557,7 +557,7 @@ def dispatch(decision: dict) -> str:
         import subprocess
         cli = "/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/scripts/post-tweet-cli.mjs"
         try:
-            r = subprocess.run(["node", cli, text], capture_output=True, text=True, timeout=30)
+            r = subprocess.run(["node", cli, text, "--format", "monologue"], capture_output=True, text=True, timeout=30)
             ok = r.returncode == 0
             # post-tweet-cli は成功時 stdout に tweet_id をそのまま出す。
             # outcome層で「どの tweet か」を後から辿れるよう tweet_id / 本文先頭を meta に残す。

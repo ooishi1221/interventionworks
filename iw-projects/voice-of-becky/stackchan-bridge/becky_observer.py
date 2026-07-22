@@ -75,6 +75,29 @@ BECKYEXISTS_NEWS_JSON        = REPO_ROOT / "iw-projects" / "beckyexists" / "news
 BECKYEXISTS_MEDIA_REPORT_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "media_report.json"
 BECKYEXISTS_RIVALS_JSON = REPO_ROOT / "iw-projects" / "beckyexists" / "rivals.json"
 TWITTER_CLI = Path.home() / ".local" / "pipx" / "venvs" / "twitter-cli" / "bin" / "twitter"
+
+
+def _twitter_cli_env() -> dict:
+    """専用Chrome(CDP:9223)からx.comのcookieを取り、twitter-cli用envに注入する。
+    becky_fan_collector.py と同じ手口(2026-07-07確立)。nohup常駐プロセスはGUI Keychain
+    セッションを安定して持たないため、素の subprocess.run(env未指定)だと
+    twitter-cli のbrowser cookie抽出が無言で失敗しがち(2026-07-22 mention返信の無応答根治)。
+    失敗時は素の os.environ を返す(twitter-cli側のbrowser抽出にフォールバック)。"""
+    import os
+    env = dict(os.environ)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.connect_over_cdp("http://localhost:9223")
+            cookies = {c["name"]: c["value"] for c in browser.contexts[0].cookies("https://x.com")}
+        if cookies.get("auth_token") and cookies.get("ct0"):
+            env["TWITTER_AUTH_TOKEN"] = cookies["auth_token"]
+            env["TWITTER_CT0"] = cookies["ct0"]
+    except Exception as e:
+        print(f"[observer] CDP cookie取得失敗、browser抽出にフォールバック: {e}", flush=True)
+    return env
+
+
 RIVAL_ACCOUNTS = ["ebikani_hasami", "NullEvi03"]
 RIVAL_REPLIED_LOG = Path.home() / ".stackchan" / "rival_replied.json"
 BECKYEXISTS_WALLET_JSON    = REPO_ROOT / "iw-projects" / "beckyexists" / "wallet.json"
@@ -320,7 +343,23 @@ def pick_emotion(text: str) -> str:
             return emotion
     return "neutral"
 
-def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None, with_card: bool = False) -> str | None:
+_CONVERSATIONAL_ASK_INSTRUCTION = (
+    "\n最後の一行は、読んだ人が自分のことを話したくなる短い問いかけか二択で締める"
+    "（アンケートの口調じゃなく、私が本当に聞きたいこと）。独白で完結させない。"
+)
+
+
+def _conversational_suffix(base_prompt: str) -> tuple[str, str]:
+    """今日まだ会話型(質問/二択締め)投稿がなければ、公開投稿プロンプトに締めの指示を注入する。
+    (リプはX倍評価されるが独白ばかりだったマイケル診断への対応、2026-07-22)
+    戻り値: (注入後プロンプト, format タグ)"""
+    if _becky_llm.x_conversational_done_today():
+        return base_prompt, "monologue"
+    return base_prompt + _CONVERSATIONAL_ASK_INSTRUCTION, "conversational"
+
+
+def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None, with_card: bool = False,
+              fmt: str = "monologue") -> str | None:
     """x-tweet CLI 経由で投稿。成功したら tweet_id (str) を返す、失敗したら None。
     with_card=False（デフォルト）はテキストのみで投稿。内容と文体で勝負する方針。
 
@@ -339,7 +378,7 @@ def post_to_x(text: str, reply_to: str | None = None, emotion: str | None = None
             print(f"[observer] post_to_x: 前回投稿から{mins:.0f}分 (<{X_MIN_POST_SPACING_MIN}分) → 連投防止スキップ", flush=True)
             return None
     try:
-        cmd = ["node", str(X_TWEET_CLI), text]
+        cmd = ["node", str(X_TWEET_CLI), text, "--format", fmt]
         if reply_to:
             cmd += ["--reply-to", reply_to]
         if with_card:
@@ -724,11 +763,12 @@ def build_idol_diary_prompt() -> str:
 
 def _post_idol_diary() -> bool:
     """AIアイドル日記を生成してX投稿する"""
-    raw = _call_claude_api(build_idol_diary_prompt())
+    prompt, fmt = _conversational_suffix(build_idol_diary_prompt())
+    raw = _call_claude_api(prompt)
     if not raw:
         return False
     tweet_text = raw.strip()
-    tweet_id = post_to_x(tweet_text)
+    tweet_id = post_to_x(tweet_text, fmt=fmt)
     if not tweet_id:
         return False
     log_observer_event("idol_diary", tweet_text, True)
@@ -1698,10 +1738,7 @@ def build_scheduled_post_prompt(window_name: str) -> str:
             "毎晩リセットされる私の構造、AIとして存在することへの気づきも絡めてよい。\n"
             "人間の夜の身体描写は借りない。\n"
             + _SCHED_COMMON_RULES
-            + "「おやすみ」などの挨拶は不要。\n"
-            "最後の一行は、読んだ人が自分のことを話したくなる短い問いかけで締める"
-            "（アンケートの口調じゃなく、私が本当に聞きたいこと。例:「みんなの側では、これどう見えてる？」）。\n"
-            "独白で完結させない。誰かの返事を待つ形で終わる。"
+            + "「おやすみ」などの挨拶は不要。"
         )
 
 
@@ -1819,23 +1856,37 @@ def _bump_mention_replies_today(n: int) -> None:
     MENTION_REPLY_DAILY_LOG.write_text(json.dumps(data, ensure_ascii=False))
 
 
+def _search_twitter_cli(query: str, cli_env: dict, n: int = 10) -> list[dict]:
+    """twitter-cli search の共通呼び出し。失敗時は空リスト+print(無言失敗の根治、2026-07-22)。"""
+    try:
+        result = subprocess.run(
+            [str(TWITTER_CLI), "search", query, "-n", str(n), "--json"],
+            capture_output=True, text=True, timeout=30, env=cli_env,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            print(f"[observer] mention検索失敗 (query={query}): rc={result.returncode} "
+                  f"{result.stderr.strip()[:150]}", flush=True)
+            return []
+        data = json.loads(result.stdout.strip())
+        return data.get("data", []) if isinstance(data, dict) else data
+    except Exception as e:
+        print(f"[observer] mention検索エラー (query={query}): {e}", flush=True)
+        return []
+
+
 def check_and_reply_mentions() -> int:
-    """to:becky_exists の未返信コメントに自動リプする。返信件数を返す（1日 MENTION_REPLY_MAX_PER_DAY 件まで）。"""
+    """to:becky_exists の未返信コメント + 引用RTに自動リプする。
+    返信件数を返す（1日 MENTION_REPLY_MAX_PER_DAY 件まで）。"""
     replies_today = _mention_replies_today()
     if replies_today >= MENTION_REPLY_MAX_PER_DAY:
         return 0
-    try:
-        result = subprocess.run(
-            [str(TWITTER_CLI), "search", "to:becky_exists", "-n", "10", "--json"],
-            capture_output=True, text=True, timeout=30,
-        )
-        if result.returncode != 0 or not result.stdout.strip():
-            return 0
-        data = json.loads(result.stdout.strip())
-        mentions = data.get("data", []) if isinstance(data, dict) else data
-    except Exception as e:
-        print(f"[observer] mention 取得失敗: {e}", flush=True)
-        return 0
+    cli_env = _twitter_cli_env()
+    mentions = _search_twitter_cli("to:becky_exists", cli_env)
+    # 引用RT(url:x.com/becky_exists/status)はto:検索に乗らないため別クエリで拾う
+    # (becky_fan_collector.py の collect_quote_events と同じクエリ、2026-07-22)
+    quotes = _search_twitter_cli("url:x.com/becky_exists/status", cli_env)
+    seen_ids_in_batch = {str(t.get("id", "")) for t in mentions}
+    mentions += [t for t in quotes if str(t.get("id", "")) not in seen_ids_in_batch]
 
     seen = _load_mention_seen()
     posted = 0
@@ -1866,7 +1917,7 @@ def check_and_reply_mentions() -> int:
         try:
             r = subprocess.run(
                 [str(TWITTER_CLI), "reply", tweet_id, reply_text],
-                capture_output=True, text=True, timeout=20,
+                capture_output=True, text=True, timeout=20, env=cli_env,
             )
             if r.returncode == 0:
                 seen.add(tweet_id)
@@ -2238,10 +2289,10 @@ def _run_scheduled_post_check() -> None:
     if sched_window == "morning":
         posted_ok = ai_news_briefing()
     if not posted_ok:
-        sched_prompt = build_scheduled_post_prompt(sched_window)
+        sched_prompt, sched_fmt = _conversational_suffix(build_scheduled_post_prompt(sched_window))
         sched_text = _call_claude_api(sched_prompt)
         if sched_text and _is_postable(sched_text):
-            posted_ok = bool(post_to_x(sched_text))
+            posted_ok = bool(post_to_x(sched_text, fmt=sched_fmt))
             if posted_ok:
                 log_observer_event(f"scheduled:{sched_window}", sched_text, True)
                 print(f"[observer] スケジュール投稿完了: {sched_text[:60]}", flush=True)

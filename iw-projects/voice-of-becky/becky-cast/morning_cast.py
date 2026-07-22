@@ -27,6 +27,9 @@ from pathlib import Path
 # cron の PATH に /opt/homebrew/bin が入らないため補強
 os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:" + os.environ.get("PATH", "")
 
+sys.path.insert(0, str(Path(__file__).parent.parent / "stackchan-bridge"))
+import becky_llm  # x_posts_today/x_daily_budget(全経路共通の1日上限、正本=x-tweet/.env)
+
 # ── パス定義 ──
 HERE = Path(__file__).parent
 NEWS_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/news.json")
@@ -451,9 +454,14 @@ def extract_and_save_manifest(script: str) -> str:
 
 
 def post_to_x(text: str) -> str | None:
+    # 2026-07-22 根治: ここに上限チェックがなく、Cast告知が1日予算(x-tweet/.env
+    # X_TWEET_MAX_PER_DAY)を無視して必ず1本消費していた(他経路は全て becky_llm 経由でチェック済み)。
+    if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
+        print("[morning_cast] X投稿: 1日上限到達 → スキップ", flush=True)
+        return None
     try:
         result = subprocess.run(
-            ["node", str(X_TWEET_CLI), text],
+            ["node", str(X_TWEET_CLI), text, "--format", "announce"],
             capture_output=True, text=True, timeout=30
         )
         if result.returncode == 0:

@@ -112,7 +112,7 @@ def build_caption() -> str | None:
 def post_to_x(text: str, image: Path) -> str | None:
     try:
         r = subprocess.run(
-            ["node", str(X_TWEET_CLI), text, "--image", str(image)],
+            ["node", str(X_TWEET_CLI), text, "--image", str(image), "--format", "announce"],
             capture_output=True, text=True, timeout=60,
         )
         if r.returncode == 0:

@@ -39,6 +39,8 @@ const replyToIdx = args.indexOf("--reply-to");
 const replyTo = replyToIdx !== -1 ? args[replyToIdx + 1] : null;
 const imageIdx = args.indexOf("--image");
 const imagePath = imageIdx !== -1 ? args[imageIdx + 1] : null;
+const formatIdx = args.indexOf("--format");
+const format = formatIdx !== -1 ? args[formatIdx + 1] : "monologue";
 
 if (!text) {
   process.stderr.write("Usage: post-tweet-cli.mjs <text> [--reply-to <tweet_id>] [--image <path>]\n");
@@ -102,6 +104,7 @@ try {
       tweetId,
       reply_to: replyTo ?? null,
       dry_run: false,
+      format,
     }) + "\n"
   );
 
