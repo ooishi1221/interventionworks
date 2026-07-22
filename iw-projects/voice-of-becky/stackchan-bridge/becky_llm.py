@@ -71,6 +71,12 @@ def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
             print(f"[llm] error: {e}", flush=True)
             return None
 
+        if on_usage:
+            try:
+                on_usage(msg.usage.input_tokens, msg.usage.output_tokens)
+            except Exception as e:
+                print(f"[llm] usage hook error: {e}", flush=True)
+
         if msg.stop_reason == "max_tokens" and not grew:
             grew = True
             kwargs["max_tokens"] *= 2
@@ -78,12 +84,6 @@ def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
             continue
         if msg.stop_reason == "max_tokens":
             print("[llm] warning: max_tokens切れ（2倍でも切れた。そのまま返す）", flush=True)
-
-        if on_usage:
-            try:
-                on_usage(msg.usage.input_tokens, msg.usage.output_tokens)
-            except Exception as e:
-                print(f"[llm] usage hook error: {e}", flush=True)
 
         try:
             return msg.content[0].text.strip()

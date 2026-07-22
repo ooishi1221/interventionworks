@@ -238,11 +238,10 @@ def collect_activities() -> list[dict]:
 def collect_schedule() -> dict:
     """ラジオ・X投稿・note の定期タスク実績を収集。"""
     from email.utils import parsedate_to_datetime
-    from becky_llm import jst_today
     jst = timezone(timedelta(hours=9))
     now_utc = datetime.now(timezone.utc)
     now_jst = now_utc.astimezone(jst)
-    today_jst = jst_today()
+    today_jst = now_jst.date().isoformat()
     yesterday_jst = (now_jst.date() - timedelta(days=1)).isoformat()
 
     result: dict = {}
