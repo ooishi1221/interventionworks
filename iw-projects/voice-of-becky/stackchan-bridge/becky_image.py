@@ -330,6 +330,15 @@ def load_mood() -> dict:
 
 
 def main() -> None:
+    # 0. 冪等性: 当日分が既にあれば何もしない(X投稿から分離しストック化、2026-07-22)。
+    # 1日3枠cronで叩かれる想定なので、Lovartクレジット切れ等で1枠失敗しても次の枠に静かに託せる。
+    today_check = datetime.date.today().strftime("%Y%m%d")
+    existing = Path.home() / ".stackchan" / f"becky_today_{today_check}.png"
+    if existing.exists():
+        print(f"[becky_image] 当日分は生成済み → スキップ: {existing}", flush=True)
+        print(str(existing))
+        return
+
     # 1. 感情変数を読む
     mood = load_mood()
     print(
