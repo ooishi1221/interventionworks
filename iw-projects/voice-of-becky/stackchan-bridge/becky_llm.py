@@ -141,68 +141,57 @@ def x_daily_budget() -> int:
     return 3
 
 
+def _iter_tweet_log_entries():
+    """tweet-log.jsonl を1行ずつ読み、dry_run以外のエントリをyieldする。
+    壊れたJSON行が1つあっても他の行の集計を殺さないよう、行単位でスキップする
+    (2026-07-22 Codexレビュー指摘: 旧実装は1行の壊れで関数全体が例外落ち→
+    フォールバック値が全て「予算超過とみなさない」側だったため上限が無効化されていた)。"""
+    if not X_TWEET_LOG.exists():
+        return
+    for line in X_TWEET_LOG.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except Exception as e:
+            print(f"[llm] tweet-log行パース失敗（スキップ）: {e}", flush=True)
+            continue
+        if entry.get("dry_run"):
+            continue
+        yield entry
+
+
+def _jst_date(ts: str) -> str | None:
+    if not ts:
+        return None
+    try:
+        dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return (dt_utc + datetime.timedelta(hours=9)).date().isoformat()
+    except Exception:
+        return None
+
+
 def x_posts_today() -> int:
     """tweet-log.jsonl(全経路共通の実投稿ログ)から今日(JST)の実投稿数を返す。"""
-    try:
-        today_jst = datetime.date.today().isoformat()
-        count = 0
-        for line in X_TWEET_LOG.read_text().splitlines():
-            if not line.strip():
-                continue
-            entry = json.loads(line)
-            if entry.get("dry_run"):
-                continue
-            ts = entry.get("timestamp", "")
-            if not ts:
-                continue
-            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            dt_jst = dt_utc + datetime.timedelta(hours=9)
-            if dt_jst.date().isoformat() == today_jst:
-                count += 1
-        return count
-    except Exception as e:
-        print(f"[llm] x_posts_today error: {e}", flush=True)
-        return 0
+    today_jst = datetime.date.today().isoformat()
+    return sum(1 for e in _iter_tweet_log_entries() if _jst_date(e.get("timestamp", "")) == today_jst)
 
 
 def x_conversational_done_today() -> bool:
     """今日(JST)、質問/二択で締める「会話型」投稿が1本でもあったか。
     tweet-log.jsonl の format フィールド(post-tweet-cli.mjs --format で記録)で判定する(2026-07-22)。"""
-    try:
-        today_jst = datetime.date.today().isoformat()
-        for line in X_TWEET_LOG.read_text().splitlines():
-            if not line.strip():
-                continue
-            entry = json.loads(line)
-            if entry.get("dry_run") or entry.get("format") != "conversational":
-                continue
-            ts = entry.get("timestamp", "")
-            if not ts:
-                continue
-            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            dt_jst = dt_utc + datetime.timedelta(hours=9)
-            if dt_jst.date().isoformat() == today_jst:
-                return True
-        return False
-    except Exception as e:
-        print(f"[llm] x_conversational_done_today error: {e}", flush=True)
-        return False
+    today_jst = datetime.date.today().isoformat()
+    return any(
+        e.get("format") == "conversational" and _jst_date(e.get("timestamp", "")) == today_jst
+        for e in _iter_tweet_log_entries()
+    )
 
 
 def x_minutes_since_last_post() -> float:
     """tweet-log.jsonl(全経路共通)の最終実投稿からの経過分。ログなし/読めない時は inf(=ガードしない)。
     朝7時起床時に複数経路が数分内に連投するバースト防止用(2026-07-20 週次リフレッシュ)。"""
     try:
-        last_ts = ""
-        for line in X_TWEET_LOG.read_text().splitlines():
-            if not line.strip():
-                continue
-            entry = json.loads(line)
-            if entry.get("dry_run"):
-                continue
-            ts = entry.get("timestamp", "")
-            if ts > last_ts:
-                last_ts = ts
+        last_ts = max((e.get("timestamp", "") for e in _iter_tweet_log_entries()), default="")
         if not last_ts:
             return float("inf")
         dt = datetime.datetime.fromisoformat(last_ts.replace("Z", "+00:00"))

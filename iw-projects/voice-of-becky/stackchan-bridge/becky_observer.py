@@ -1339,7 +1339,9 @@ def ai_news_briefing() -> bool:
             tweet_text = f"【ベキたん訳】{summary_ja}…\n\n{comment}"
         tweet_text = f"{tweet_text}\n{link}"
 
-    tweet_id = post_to_x(tweet_text)
+    # fmt="monologue"明示。build_ai_comment_prompt はJSON出力(summary_ja/comment)なので
+    # 会話型suffix注入は対象外(JSON構造が壊れるリスク、2026-07-22 Codexレビュー確認)。
+    tweet_id = post_to_x(tweet_text, fmt="monologue")
     if not tweet_id:
         return False
 
@@ -2392,9 +2394,14 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
                     print("[observer] 裕司いない → Telegram", flush=True)
                     send_telegram(text)
                 # X投稿判断（公開向けなら投稿）
+                # ponytail: この text は build_prompt/build_calendar_prompt が「裕司への
+                # 話しかけ」として生成した同一テキストで、声・Telegram にも同時に使う
+                # (2359行目付近)。会話型suffixを注入すると私的な独り言に読者向けの
+                # 問いかけが混ざり不自然になるため、suffix注入は見送りfmt明示のみ
+                # (2026-07-22 Codexレビュー指摘で検討、プレーンテキストだが意味的に対象外と判断)。
                 x_posted = False
                 if _should_post_to_x(text, topic or ""):
-                    x_posted = bool(post_to_x(text))
+                    x_posted = bool(post_to_x(text, fmt="monologue"))
                 # journal記録
                 effective_topic = cal_trigger or topic or ""
                 log_observer_event(effective_topic, text, x_posted)
