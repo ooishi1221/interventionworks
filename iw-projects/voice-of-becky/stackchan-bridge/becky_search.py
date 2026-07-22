@@ -760,6 +760,8 @@ def run(dry_run: bool = False, patterns: list[str] | None = None, random_pick: b
         # beckyexists/grok_tweets.json を更新（room.html Intelligence 表示用）
         try:
             grok_data = {
+                # ponytail: 意図的にUTCのまま。room.html側はfmtAgo()で絶対時刻の差分（相対時間表示）にしか使わない
+                # ＝JST日付バケット判定ではないので jst_date() 化は不要（2026-07-22 監査で確認）
                 "updated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "candidates": [
                     {

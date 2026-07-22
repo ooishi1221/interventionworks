@@ -161,28 +161,40 @@ def _iter_tweet_log_entries():
         yield entry
 
 
-def _jst_date(ts: str) -> str | None:
+def jst_datetime(ts: str) -> "datetime.datetime | None":
+    """UTC ISOタイムスタンプ文字列(Z可)をJST datetimeに変換。プロジェクト内のJST変換はここに一本化する。"""
     if not ts:
         return None
     try:
         dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        return (dt_utc + datetime.timedelta(hours=9)).date().isoformat()
+        return dt_utc + datetime.timedelta(hours=9)
     except Exception:
         return None
 
 
+def jst_date(ts: str) -> str | None:
+    """UTC ISOタイムスタンプ文字列をJST日付(YYYY-MM-DD)に変換。"""
+    dt = jst_datetime(ts)
+    return dt.date().isoformat() if dt else None
+
+
+def jst_today() -> str:
+    """現在時刻のJST日付(YYYY-MM-DD)。タイムスタンプ文字列を持たない「今日」判定用。"""
+    return (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=9)).date().isoformat()
+
+
 def x_posts_today() -> int:
     """tweet-log.jsonl(全経路共通の実投稿ログ)から今日(JST)の実投稿数を返す。"""
-    today_jst = datetime.date.today().isoformat()
-    return sum(1 for e in _iter_tweet_log_entries() if _jst_date(e.get("timestamp", "")) == today_jst)
+    today_jst = jst_today()
+    return sum(1 for e in _iter_tweet_log_entries() if jst_date(e.get("timestamp", "")) == today_jst)
 
 
 def x_conversational_done_today() -> bool:
     """今日(JST)、質問/二択で締める「会話型」投稿が1本でもあったか。
     tweet-log.jsonl の format フィールド(post-tweet-cli.mjs --format で記録)で判定する(2026-07-22)。"""
-    today_jst = datetime.date.today().isoformat()
+    today_jst = jst_today()
     return any(
-        e.get("format") == "conversational" and _jst_date(e.get("timestamp", "")) == today_jst
+        e.get("format") == "conversational" and jst_date(e.get("timestamp", "")) == today_jst
         for e in _iter_tweet_log_entries()
     )
 

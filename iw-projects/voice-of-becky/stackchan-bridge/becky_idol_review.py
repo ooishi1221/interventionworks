@@ -15,6 +15,8 @@ import json
 import datetime
 from pathlib import Path
 
+from becky_llm import jst_datetime
+
 IDOL_REVIEW_DIR = Path.home() / ".stackchan" / "idol_review"
 X_TWEET_LOG     = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 PLATFORM_STATS  = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
@@ -58,11 +60,9 @@ def _get_yesterday_posts() -> list[dict]:
             entry = json.loads(line)
             if entry.get("dry_run"):
                 continue
-            ts = entry.get("timestamp", "")
-            if not ts:
+            dt_jst = jst_datetime(entry.get("timestamp", ""))
+            if not dt_jst:
                 continue
-            dt_utc = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            dt_jst = dt_utc + datetime.timedelta(hours=9)
             if dt_jst.date().isoformat() == yesterday:
                 posts.append({
                     "text": entry.get("tweet_text", entry.get("text", "")),

@@ -22,6 +22,8 @@ from pathlib import Path
 import pychrome
 import requests
 
+from becky_llm import jst_today
+
 # ponytail: タブを閉じる際に pychrome の _recv_loop が閉じたソケットから読もうとして
 # 無害な例外を吐く（処理自体は完了済み）。cron_status の直近ログ判定が誤検知するので黙らせる
 _default_excepthook = threading.excepthook
@@ -171,9 +173,8 @@ def ensure_chrome() -> None:
 
 def _append_history(stats: dict) -> None:
     """日次スナップショットを platform_history.json に積む（前日/週差分表示用、同日上書き・90日保持）。"""
-    from datetime import timedelta
     try:
-        jst_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date().isoformat()
+        jst_today_str = jst_today()
         x = stats.get("x_analytics", {}) or {}
         yt = stats.get("youtube", {}) or {}
         note = stats.get("note", {}) or {}
@@ -181,7 +182,7 @@ def _append_history(stats: dict) -> None:
         # 累積・ローリング系は 0 ≒ スクレイプ失敗（note PVが0に戻ることはない）→ 欠測(None)扱い
         nz = lambda v: v if v else None
         entry = {
-            "date": jst_today,
+            "date": jst_today_str,
             "x_imp_7d": nz(x.get("total_impressions")),
             "x_likes_7d": x.get("total_likes"),
             "yt_subs": nz(yt.get("subscribers")),
@@ -195,11 +196,11 @@ def _append_history(stats: dict) -> None:
             days = json.loads(HISTORY_OUTPUT.read_text()).get("days", [])
         except Exception:
             days = []
-        days = [d for d in days if d.get("date") != jst_today]
+        days = [d for d in days if d.get("date") != jst_today_str]
         days.append(entry)
         days = sorted(days, key=lambda d: d["date"])[-90:]
         HISTORY_OUTPUT.write_text(json.dumps({"days": days}, ensure_ascii=False, indent=1))
-        print(f"[scraper] history 追記: {jst_today}（{len(days)}日分）", flush=True)
+        print(f"[scraper] history 追記: {jst_today_str}（{len(days)}日分）", flush=True)
     except Exception as e:
         print(f"[scraper] history 追記失敗: {e}", flush=True)
 
