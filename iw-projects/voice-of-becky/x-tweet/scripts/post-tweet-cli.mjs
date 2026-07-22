@@ -16,6 +16,7 @@ import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { tweetWithRetry } from "./tweet-retry.mjs";
+import { checkSafetyGuard } from "../dist/lib/safety-guard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const envPath = resolve(__dirname, "../.env");
@@ -71,6 +72,12 @@ const todayCount = getTodayCount();
 if (todayCount >= maxPerDay) {
   process.stderr.write(`LIMIT: ${todayCount}/${maxPerDay}\n`);
   process.exit(2);
+}
+
+const guardResult = checkSafetyGuard(text);
+if (!guardResult.ok) {
+  process.stderr.write(`GUARD: ${guardResult.reason} (blockedBy: ${guardResult.blockedBy})\n`);
+  process.exit(3);
 }
 
 const client = new TwitterApi({
