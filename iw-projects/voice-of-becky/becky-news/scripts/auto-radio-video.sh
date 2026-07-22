@@ -21,3 +21,6 @@ fi
 echo "[auto-radio-video] 最新エピソード ${LATEST} を動画化+アップ開始 $(date '+%F %T')"
 ./scripts/make-radio-video.sh "$LATEST" --upload
 echo "[auto-radio-video] 完了 $(date '+%F %T')"
+
+echo "[auto-radio-video] Cast切り抜きShorts自動生成へ"
+python3 scripts/auto_cast_shorts.py || echo "[auto-radio-video] Cast切り抜きShorts生成に失敗（本編公開は成功済みなので無視）"
