@@ -28,16 +28,23 @@ export function logTweet(entry: LogEntry): void {
   appendFileSync(logPath, line, "utf-8");
 }
 
+// JST日付文字列(epoch+9hのUTC変換)。post-tweet-cli.mjsのgetTodayCount()と同じ方式に揃える。
+// UTC日付でstartsWith比較すると、JST朝の投稿(UTC前日夜)が「今日」から漏れて予算が無効化される
+// (2026-07-22 team-lead特定: 7/19 18:20 / 7/20 12:44 の予算超過の真因)。
+function jstDate(ms: number): string {
+  return new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 export function getTodayTweetCount(): number {
   if (!existsSync(logPath)) return 0;
   const content = readFileSync(logPath, "utf-8");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = jstDate(Date.now());
   const lines = content.split("\n").filter((line) => line.trim().length > 0);
   let count = 0;
   for (const line of lines) {
     try {
       const entry = JSON.parse(line) as LogEntry;
-      if (entry.timestamp.startsWith(today) && !entry.dry_run) {
+      if (!entry.dry_run && jstDate(new Date(entry.timestamp).getTime()) === today) {
         count += 1;
       }
     } catch {
