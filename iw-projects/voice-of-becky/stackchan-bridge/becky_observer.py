@@ -1514,16 +1514,17 @@ def is_person_present() -> bool:
         image_path = inner.get("image_path", "")
         if not image_path or not Path(image_path).exists():
             return False
-        # Claude Vision で人の有無を判定
+        # Claude Vision で人の有無を判定（画像入力はcall_llmがテキスト専用のため直叩きのまま）
         import base64
         import anthropic
+        import becky_llm
         cfg = load_config()
         personal_key = cfg.get("becky_api_key", "").strip()
         client = anthropic.Anthropic(api_key=personal_key if personal_key else None)
         with open(image_path, "rb") as f:
             img_b64 = base64.standard_b64encode(f.read()).decode()
         msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=becky_llm.MODELS["default"],
             max_tokens=10,
             messages=[{
                 "role": "user",

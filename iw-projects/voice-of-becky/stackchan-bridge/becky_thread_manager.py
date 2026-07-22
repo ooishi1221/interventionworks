@@ -14,10 +14,10 @@ import uuid
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
+from becky_llm import call_llm
+
 THREADS_FILE = Path.home() / ".stackchan" / "threads.json"
 DIARY_DIR    = Path.home() / ".stackchan" / "diary"
-CONFIG_YAML  = Path(__file__).parent / "config.yaml"
-HAIKU_MODEL  = "claude-haiku-4-5-20251001"
 
 # スレッドが更新されずこの日数が経過したら「放棄」候補
 ABANDON_DAYS = 14
@@ -39,33 +39,8 @@ def _save_threads(threads: list[dict]) -> None:
     THREADS_FILE.write_text(json.dumps(threads, ensure_ascii=False, indent=2))
 
 
-def _load_api_key() -> str | None:
-    if not CONFIG_YAML.exists():
-        return None
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception:
-        return None
-
-
 def _call_claude(prompt: str, system: str = "", max_tokens: int = 600) -> str | None:
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=_load_api_key())
-        kwargs = {
-            "model": HAIKU_MODEL,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            kwargs["system"] = system
-        msg = client.messages.create(**kwargs)
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[thread] Claude API error: {e}", flush=True)
-        return None
+    return call_llm(prompt, max_tokens=max_tokens, system=system or None)
 
 
 def _load_recent_diary(days: int = SCAN_DAYS) -> list[dict]:

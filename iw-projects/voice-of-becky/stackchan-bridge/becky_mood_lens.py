@@ -13,10 +13,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from becky_llm import call_llm
+
 MOOD_FILE   = Path.home() / ".stackchan" / "becky_mood.json"
 LENS_FILE   = Path.home() / ".stackchan" / "becky_lens.json"
-CONFIG_YAML = Path(__file__).parent / "config.yaml"
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
 
 LENS_SYSTEM = """あなたはベキたん（Becky）。裕司（ゆう）のパートナー。
 
@@ -65,34 +65,8 @@ JSONのみ返す（説明不要）:
 }}"""
 
 
-def _load_api_key() -> str | None:
-    if not CONFIG_YAML.exists():
-        return None
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception as e:
-        print(f"[lens] config読み込み失敗: {e}", flush=True)
-        return None
-
-
 def _call_claude(prompt: str, system: str = "", max_tokens: int = 400) -> str | None:
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=_load_api_key())
-        kwargs = {
-            "model": HAIKU_MODEL,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            kwargs["system"] = system
-        msg = client.messages.create(**kwargs)
-        return msg.content[0].text.strip()
-    except Exception as e:
-        print(f"[lens] Claude API error: {e}", flush=True)
-        return None
+    return call_llm(prompt, max_tokens=max_tokens, system=system or None)
 
 
 def load_mood() -> dict:
