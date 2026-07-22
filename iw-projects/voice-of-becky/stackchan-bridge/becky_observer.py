@@ -868,10 +868,10 @@ def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), "user-posts", username],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=30, env=_twitter_cli_env()
         )
         if result.returncode != 0:
-            print(f"[observer] rivals: {username} 取得失敗", flush=True)
+            print(f"[observer] rivals: {username} 取得失敗: {result.stderr.strip()[:150]}", flush=True)
             return []
         posts = []
         current: dict = {}
@@ -918,9 +918,10 @@ def fetch_user_profile(username: str) -> dict:
     try:
         result = subprocess.run(
             [str(TWITTER_CLI), "user", username, "--json"],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=30, env=_twitter_cli_env()
         )
         if result.returncode != 0:
+            print(f"[observer] profile fetch失敗 ({username}): {result.stderr.strip()[:150]}", flush=True)
             return {}
         payload = json.loads(result.stdout)
         return payload.get("data", {}) if payload.get("ok") else {}
