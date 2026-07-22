@@ -107,7 +107,15 @@ async function main() {
   }
 
   if (!newSrc) {
-    console.error('❌ 生成画像が見つかりませんでした');
+    // ponytail: クレジット切れ等の理由をUI文言から拾えたら区別してログに残す。
+    // 見つからなくても汎用エラーとして続行(Lovart側の文言変化に依存する簡易チェック)。
+    const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
+    const creditHit = bodyText.match(/(クレジット不足|クレジットが不足|insufficient credit|out of credit|no credits?\s*(left|remaining))/i);
+    if (creditHit) {
+      console.error(`❌ 生成画像が見つかりませんでした（クレジット不足の可能性: 「${creditHit[0]}」を検出）`);
+    } else {
+      console.error('❌ 生成画像が見つかりませんでした');
+    }
     await browser.close();
     process.exit(1);
   }
