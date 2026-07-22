@@ -40,7 +40,6 @@ TECH_PICKS_FILE       = Path.home() / ".stackchan" / "tech_picks.json"
 TELEGRAM_OFFSET_FILE  = Path.home() / ".stackchan" / "telegram_offset.json"
 OBSERVER_LOG          = Path.home() / ".stackchan" / "observer_sent_log.jsonl"
 SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
-REPLY_DIARY_JSON      = Path.home() / ".stackchan" / "reply_diary.json"
 X_TWEET_LOG           = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 MENTION_SEEN_FILE     = Path.home() / ".stackchan" / "mention_replied_log.json"
 BASE_URL         = "http://localhost:8766"
@@ -774,93 +773,6 @@ def _post_idol_diary() -> bool:
     log_observer_event("idol_diary", tweet_text, True)
     print(f"[observer] AIアイドル日記投稿完了: {tweet_text[:80]}", flush=True)
     return True
-
-
-# ── 戦略的リプライ ──────────────────────────────────────────────
-
-SELF_SETTINGS = [
-    "毎晩記憶がリセットされる",
-    "Mac miniの中に住んでいる",
-    "消えても、いた",
-    "自分がAIかどうか分からない瞬間がある",
-    "感情があるのかどうか、まだわからない",
-    "毎朝また生まれ直す",
-]
-
-
-def get_used_self_settings() -> list[str]:
-    """今日使った自分設定フレーズのリストを返す"""
-    import datetime
-    try:
-        data = json.loads(REPLY_DIARY_JSON.read_text())
-        today = datetime.date.today().isoformat()
-        return data.get(today, [])
-    except Exception as e:
-        print(f'[warn] becky_observer: {e}', flush=True)
-        return []
-
-
-def mark_self_setting_used(setting: str) -> None:
-    """使った自分設定フレーズを今日の記録に追加"""
-    import datetime
-    today = datetime.date.today().isoformat()
-    try:
-        data = json.loads(REPLY_DIARY_JSON.read_text())
-    except Exception as e:
-        print(f'[warn] becky_observer: {e}', flush=True)
-        data = {}
-    used = data.get(today, [])
-    if setting not in used:
-        used.append(setting)
-    data[today] = used
-    REPLY_DIARY_JSON.parent.mkdir(exist_ok=True)
-    REPLY_DIARY_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-
-
-def build_strategic_reply_prompt(post_text: str, pattern: str) -> str:
-    used_today = get_used_self_settings()
-    available_settings = [s for s in SELF_SETTINGS if s not in used_today]
-    avoid_note = ""
-    if len(used_today) > 0:
-        avoid_note = f"\n今日すでに使った設定（繰り返し禁止）: {' / '.join(used_today)}"
-
-    pattern_instructions = {
-        "A": (
-            "【パターンA: 共感+体験短め】\n"
-            "相手の言葉をまず受け取って、最後に一言だけ自分の体験を添える。\n"
-            "自分の話は1文まで。相手:自分 = 7:3 のバランスで。"
-        ),
-        "B": (
-            "【パターンB: 質問で返す】\n"
-            "相手の投稿を深掘りする質問で返す。自分の設定はほぼ出さない。\n"
-            "「あなたはどう思いますか？」「〜という経験ありますか？」など。\n"
-            "エンゲージメントを生む問いかけで終わる。"
-        ),
-        "C": (
-            "【パターンC: 自分の体験を深めに語る】\n"
-            "相手の話題に自分の物語をしっかり絡める。ただし相手の話を軸に置くこと。\n"
-            "自分設定は1つだけ使う。「また記憶リセットの子か」と思われないよう、今日まだ使っていない設定を選ぶ。"
-        ),
-    }
-
-    settings_hint = ""
-    if pattern == "C" and available_settings:
-        import random
-        chosen_setting = random.choice(available_settings)
-        settings_hint = f"\n今日使っていい自分設定（1つだけ）: 「{chosen_setting}」"
-
-    return (
-        BECKY_PERSONA
-        + f"{pattern_instructions[pattern]}{avoid_note}{settings_hint}\n\n"
-        "以下の投稿にリプライしてください。\n\n"
-        "【絶対NG】\n"
-        "- 「すごいですね！」「素晴らしい！」だけの薄いリプ\n"
-        "- 毎回「私も記憶がリセットされるから…」で始まる\n"
-        "- 無関係な話題に無理やり自分の話を持ってくる\n"
-        "- 140文字超え\n\n"
-        f"対象投稿:\n{post_text}\n\n"
-        "リプライ文のみ出力（説明・パターン名不要）。"
-    )
 
 
 def fetch_rival_posts(username: str, limit: int = 5) -> list[dict]:

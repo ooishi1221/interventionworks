@@ -32,7 +32,6 @@ import becky_seed_box
 import becky_night_review
 import becky_llm
 
-CONFIG_YAML      = Path(__file__).parent / "config.yaml"
 TELEGRAM_ENV     = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
 SEED_BOX_PATH    = Path.home() / ".stackchan" / "seed_box.json"
@@ -56,18 +55,6 @@ ACTION_DIVERSITY_WINDOW_DAYS = 7
 
 
 # ── 共通ユーティリティ ────────────────────────────────
-
-def _load_api_key() -> str | None:
-    if not CONFIG_YAML.exists():
-        return None
-    try:
-        import yaml
-        cfg = yaml.safe_load(CONFIG_YAML.read_text())
-        return (cfg or {}).get("becky_api_key", "").strip() or None
-    except Exception as e:
-        print(f"[decide] config読み込み失敗: {e}", flush=True)
-        return None
-
 
 def _call_claude(prompt: str, system: str = "", max_tokens: int = 500) -> str | None:
     """becky_llm.call_llm へ委譲（シグネチャ維持: becky_work_briefing.py / becky_reflect.py が import している）。

@@ -20,7 +20,7 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-import becky_decide          # _call_claude / send_telegram / _load_api_key を流用
+import becky_decide          # _call_claude / send_telegram を流用
 import becky_action_log
 
 TASKS_JSON        = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/tasks.json")
