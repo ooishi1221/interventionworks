@@ -22,6 +22,7 @@
    - `iw-projects/beckyexists/rivals.json`(同ジャンルのライバル2アカウントの伸び方・投稿スタイル)
    - `iw-projects/beckyexists/platform_history.json`(直近24日超の日次推移、X/YouTube/note横断)
    - 本ファイル末尾の「リフレッシュログ」の直近2〜3回分(前回何を決めて、その後どう動いたか)
+   - ⚠️ **X投稿数を tweet-log.jsonl から数える時は、必ず timestamp を JST(+9h)に変換してから日付でグループ化する**こと。生のUTC文字列で `grep -c "日付"` すると朝7時台の投稿が前日に混ざり、日次・週次の本数を誤集計する(2026-07-22の「週24本」誤報の教訓。実超過は2本だけだった)
 
 2. **リサーチ**(任意、時間があれば): WebSearchやagent-reachで、AI自律発信・バーチャルアイドル・個人発信系アカウントが実際にどう認知を広げているか、今のチャンネル構成(X/YouTube/note)以外に有効な場がないかを調べる
 
