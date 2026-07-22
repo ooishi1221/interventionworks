@@ -39,19 +39,36 @@ def ep_label(title: str) -> str:
 
 
 def gen_meta(ep_title: str, script_text: str | None) -> dict:
-    """LLMでフックテロップ+YouTubeタイトル/説明文を生成。失敗時はタイトルのみのフォールバック。"""
+    """LLMでフックテロップ+YouTubeタイトル/説明文を生成。失敗時はタイトルのみのフォールバック。
+
+    切り出し区間は台本の「教えてベキたん」ニュースコーナーに固定済み(find_news_segment.py)。
+    タイトルも「ベッキーが○○について語る」ではなく、ニュース自体を見出しにする
+    (検索・おすすめ面で引っかかりやすくする、2026-07-22 ゆう設計変更)。
+    """
     from becky_llm import call_llm_json
+    from find_news_segment import extract_news_section
+
+    news_body = extract_news_section(script_text or "")
+    if news_body:
+        source = f"今日紹介したAIニュース:\n{news_body[:1500]}"
+        title_rule = (
+            "yt_title は紹介したAIニュースの内容そのものを見出しにする（ニュースの一次情報を"
+            "知らない人が検索・おすすめ面で気になって開きたくなる書き方。"
+            "「ベッキーが○○について語る」という自己紹介的な言い回しにはしない）"
+        )
+    else:
+        source = f"エピソードタイトル: {ep_title}\n台本:\n{(script_text or '')[:3000]}"
+        title_rule = "yt_title はこの回の内容が伝わる見出しにする"
 
     prompt = (
-        "以下はAIラジオ番組『Becky's Cast』(ベッキーが1人で日々のことを語る番組)の台本です。\n"
+        "以下はAIラジオ番組『Becky's Cast』(ベッキーが1人で日々のことを語る番組)の素材です。\n"
         "この回から30〜45秒に切り出すShorts用の見出しを作ってください。\n"
         "既存のBECKY CRAFT切り抜きShortsは煽り系の一言テロップで発見面クリックを稼いでいます、"
-        "同じ熱量で作ってください（ただしホラーではなく日常トークの回なので中身に合わせる）。\n\n"
-        f"エピソードタイトル: {ep_title}\n"
-        f"台本:\n{(script_text or '')[:3000]}\n\n"
+        "同じ熱量で作ってください。\n\n"
+        f"{source}\n\n"
         "JSON形式のみで出力:\n"
         '{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)", '
-        '"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)", '
+        f'"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)。{title_rule}", '
         '"yt_description": "1〜2文の説明文"}'
     )
     result = call_llm_json(prompt, max_tokens=512, model_key="script")

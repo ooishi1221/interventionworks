@@ -44,10 +44,17 @@ if ! python3 -c "import sys; sys.exit(0 if abs(float('$MP3_DUR') - float('$CUR_D
   (cd video && node scripts/build-rms.mjs public/audio-cast.wav public/rms-cast.json)
 fi
 
-# 2. 見どころ window を RMS から特定
-read -r START END <<< "$(python3 scripts/find_highlight.py video/public/rms-cast.json "$WINDOW_SEC")"
+# 2. 見どころ window を特定。台本の「教えてベキたん」ニューストピック部分を優先(検索・おすすめ面の
+#    フックにするため、2026-07-22 設計変更)。台本が無い/ニュースコーナーが無い回はRMS山場にフォールバック
+SCRIPT_MD="/tmp/morning_cast_$(date '+%F').md"
+if [ -f "$SCRIPT_MD" ] && HL=$(python3 scripts/find_news_segment.py "$SCRIPT_MD" "$MP3_DUR" "$WINDOW_SEC" 2>/dev/null); then
+  read -r START END <<< "$HL"
+  echo "== 見どころ(ニュースコーナー): ${START}s 〜 ${END}s"
+else
+  read -r START END <<< "$(python3 scripts/find_highlight.py video/public/rms-cast.json "$WINDOW_SEC")"
+  echo "== 見どころ(RMSフォールバック): ${START}s 〜 ${END}s"
+fi
 DUR=$(python3 -c "print(round($END - $START, 1))")
-echo "== 見どころ: ${START}s 〜 ${END}s（${DUR}s）"
 
 # 3. 音声トリム → Shorts専用の口パク/RMSを作り直す（フル尺のcast-*.jsonは汚さない）
 ffmpeg -y -v error -ss "$START" -t "$DUR" -i video/public/audio-cast.wav -ar 44100 -ac 1 video/public/audio-cast-shorts.wav
