@@ -240,6 +240,12 @@ ACTIVITY_SCENES = [
      "outfit": "japanese school uniform blazer with a teal ribbon",
      "desc": "walking to school on a bright morning street, bag over shoulder, casual glance back",
      "technique": "bright morning light, lens flare, soft bokeh, fresh clean tones"},
+    {"name": "サイバーレースクイーン",
+     "outfit": ("cyber race queen bodysuit, glossy white and black stretch bodysuit with "
+                "glowing teal circuit line accents, metallic silver segmented armor panels, "
+                "high-cut hips, thigh-high racing boots with silver heel guards"),
+     "desc": "standing confidently on a racing circuit pit lane beside sports cars, futuristic motorsport atmosphere",
+     "technique": "sharp reflections on glossy fabric, cool metallic highlights, sense of speed, cinematic depth of field"},
     # ── 日常の一幕系 ──
     {"name": "ゲーム実況",
      "outfit": "casual oversized hoodie with teal accents, gaming headset on",
