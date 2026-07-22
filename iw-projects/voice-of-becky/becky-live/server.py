@@ -5,7 +5,7 @@
 記憶を持った本物のベッキー(claude -p、CLAUDE.md人格自動ロード)が考えて、
 コハクの声(AivisSpeech)で返事する。
 
-起動: python3 server.py → http://localhost:8765
+起動: python3 server.py → http://localhost:8767
 ponytail: stdlib http.serverのみ・依存ゼロ。多人数/公開(zrok)/DuplexはMVP外。
 """
 import json
@@ -17,7 +17,7 @@ import uuid
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-PORT = 8765
+PORT = 8767  # 2026-07-22: stackchan_mcpが8765(WS_PORT)+8766(CAPTURE_PORT)を固定占有してるため8767に移設
 HERE = Path(__file__).parent
 IW_ROOT = Path("/Volumes/SSD2TB/interventionworks")
 NEWS_VIDEO = IW_ROOT / "iw-projects/voice-of-becky/becky-news/video"
