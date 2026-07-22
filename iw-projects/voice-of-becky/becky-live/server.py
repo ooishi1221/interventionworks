@@ -11,6 +11,7 @@ ponytail: stdlib http.serverのみ・依存ゼロ。多人数/公開(zrok)/Duple
 import json
 import subprocess
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 import uuid
@@ -79,7 +80,8 @@ def hint_motion(comment: str) -> int | None:
 def becky_reply(comment: str) -> str:
     """claude -p で人格+記憶ロード済みのベッキーとして応答を生成"""
     r = subprocess.run(
-        ["claude", "-p", BECKY_PROMPT.format(comment=comment), "--dangerously-skip-permissions"],
+        ["claude", "-p", BECKY_PROMPT.format(comment=comment),
+         "--model", "claude-haiku-4-5-20251001", "--dangerously-skip-permissions"],
         capture_output=True, text=True, timeout=120, cwd=IW_ROOT,
     )
     reply = r.stdout.strip()
@@ -131,10 +133,14 @@ class Handler(SimpleHTTPRequestHandler):
         if not comment:
             return self.send_error(400)
         try:
+            t0 = time.monotonic()
             reply, motion = split_motion(becky_reply(comment))
+            t1 = time.monotonic()
             if motion is None:
                 motion = hint_motion(comment)
             wav = tts(reply)
+            t2 = time.monotonic()
+            print(f"[live] timing: claude={t1-t0:.2f}s tts={t2-t1:.2f}s total={t2-t0:.2f}s", flush=True)
             payload = {"reply": reply, "audio": f"/audio/{wav.name}", "motion": motion}
         except Exception as e:
             payload = {"reply": f"(エラー: {e})", "audio": None, "motion": None}
