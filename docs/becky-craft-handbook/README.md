@@ -22,6 +22,10 @@ memory には常駐させず、必要時にここを開く。
 
 - `reference_iw_local_demo_deploy.md` — 個人店デモサイト作成 → Formspree → VPS（demo.intervention.jp）デプロイまでの一連手順
 
+### 営業 / 提案書
+
+- `reference_proposal_template_formal.md` — お堅い企業/親会社向け提案書テンプレート（7/22、経産省BI事業報告書の骨格を抽出）
+
 ### AI tool 運用
 
 - `reference_canva_mcp_image_director.md` — Canva MCP × image director craft（5/21）
