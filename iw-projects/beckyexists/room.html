@@ -491,6 +491,20 @@
     .done-date { font-family: var(--mono); font-size: 11px; color: var(--sub2); min-width: 40px; }
     .done-label { color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    /* ARSENAL markdown表示 */
+    .arsenal-md { font-size: 13px; line-height: 1.75; color: var(--text); }
+    .arsenal-md h1 { display: none; } /* カードh2と重複するので隠す */
+    .arsenal-md h2 { font-size: 14px; margin: 20px 0 8px; color: var(--green); display: block; }
+    .arsenal-md h3 { font-size: 13px; margin: 14px 0 6px; }
+    .arsenal-md blockquote { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--line); color: var(--sub2); font-size: 12px; }
+    .arsenal-md table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; display: block; overflow-x: auto; }
+    .arsenal-md th, .arsenal-md td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .arsenal-md th { color: var(--sub2); font-weight: 600; white-space: nowrap; }
+    .arsenal-md td:first-child { white-space: nowrap; font-weight: 600; }
+    .arsenal-md code { font-family: var(--mono); font-size: 11px; background: #111; padding: 1px 5px; border-radius: 4px; color: #4ade80; }
+    .arsenal-md ul, .arsenal-md ol { padding-left: 20px; margin: 6px 0; }
+    .arsenal-md hr { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+
     /* TOOLS テキストリンク */
     .tools-links { display: grid; gap: 4px; margin-top: 4px; }
     .tool-link { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 10px; transition: background 0.15s; }
@@ -687,6 +701,16 @@
     </div>
     </div><!-- /sec-reports -->
 
+    <!-- ── Section: ARSENAL（2026-07-23 新設: 「入れたもの忘れちゃう問題」対策。正本は docs/becky-context/reference_installed_arsenal.md、ここは表示するだけ） ── -->
+    <button class="sec-label" aria-expanded="false" aria-controls="sec-arsenal" onclick="toggleSec('arsenal')">ARSENAL<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-arsenal">
+    <div class="card">
+      <h2><svg data-lucide="wrench"></svg>ベキたんに入ってるもの全部</h2>
+      <div class="sub-note">MCP / プラグイン / CLI / スキルの物理台帳（正本: docs/becky-context/reference_installed_arsenal.md、新規インストール時に1行追記）</div>
+      <div id="arsenalBody" class="arsenal-md"><div class="empty">loading...</div></div>
+    </div>
+    </div><!-- /sec-arsenal -->
+
     <!-- ── Section: BECKY（状況ダッシュボード: アクティビティ+メディアKPI。旧MEDIA、id は互換のため sec-media のまま） ── -->
     <button class="sec-label" aria-expanded="true" aria-controls="sec-media" onclick="toggleSec('media')">BECKY<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-media">
@@ -814,6 +838,7 @@
 </div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
 <script src="/room-tasks.js"></script>
 <script>
 // ── password gate ──
@@ -822,7 +847,7 @@ const PASS_KEY = 'room_auth_v1';
 
 // ── section accordion ──
 // 2026-07-10 並び最適化: OPS(稼働)→COST→BECKY(状況)→TASKS。key を sec2_ に更新（旧開閉状態を引きずらない）
-const SEC_DEFAULTS = { ops: '1', cost: '1', reports: '1', media: '1', tasks: '1' };
+const SEC_DEFAULTS = { ops: '1', cost: '1', reports: '1', arsenal: '0', media: '1', tasks: '1' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
@@ -929,6 +954,21 @@ function buildCronStatus(cron) {
       ${j.last_error_snippet ? `<details class="cron-err"><summary>エラー詳細</summary><pre>${esc(j.last_error_snippet)}</pre></details>` : ''}
     </div>`).join('');
 }
+
+// ── ARSENAL（2026-07-23 新設: 装備の物理台帳。md正本をそのまま描画）──
+async function loadArsenal() {
+  const el = $('arsenalBody');
+  if (!el) return;
+  try {
+    const res = await fetch('/docs/becky-context/reference_installed_arsenal.md');
+    if (!res.ok) throw new Error(res.status);
+    const md = await res.text();
+    el.innerHTML = marked.parse(md);
+  } catch (e) {
+    el.innerHTML = '<div class="empty">台帳が読めない（' + e.message + '）。正本: docs/becky-context/reference_installed_arsenal.md</div>';
+  }
+}
+loadArsenal();
 
 // ── REPORTS（2026-07-11 Telegram→部屋 移設）──
 const REPORT_KIND_LABEL = { briefing: '朝ブリーフィング', idol_review: 'アイドルPDCA', reflect: '週次自己観察', search: 'リプ営業', night_review: '夜の総括', portfolio_refresh: '週次ポートフォリオ判断', portfolio_refresh_proposal: 'ポートフォリオ判断（ゆうに相談）', decide: '自律行動' };
