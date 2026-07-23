@@ -69,7 +69,11 @@ Studio: `https://studio.youtube.com/channel/UCFvpdUWDpmSLTTbv6kiIfNQ` → 作成
 - tweet 実投稿の X 上での表示確認（予約バグ・二重投稿の目視）
 - finish で tasks.json / handoff に反映
 
-## ラジオ動画（Becky's Cast → YouTube）の作り方（2026-07-07 確立）
+## ラジオ動画（Becky's Cast → YouTube）本編は撤退（2026-07-24）
+
+`scripts/auto-radio-video.sh` の自動アップロードは停止済み。YouTube Data API実測（全37本母集団）で本編(Cast, n=15)は中央値0回・最大22回、Shorts(n=10)は中央値141回・最大253回。10日以上経過した安定分で比べても中央値で約60倍差が残り、「本編に伸びしろが見えない」がデータで裏付けられた（マイケル調査、ゆう承認 2026-07-23）。Cast切り抜きShortsの自動生成（ラジオへの導線）は継続。BECKY CRAFT実況本編は本編内では相対的にマシ(平均5.56回)なので継続。手動でフル尺動画を作りたくなった時のために、下の手順は歴史資料として残す。
+
+## ラジオ動画（Becky's Cast → YouTube）の作り方（2026-07-07 確立、本編公開は現在停止中）
 
 Cast の音声をラジオブース動画にして YouTube にフル尺で上げる流れ。
 
