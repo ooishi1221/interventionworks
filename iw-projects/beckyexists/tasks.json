@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-07-21T15:02:01.864471+00:00",
+ "updated_at": "2026-07-23T19:46:47.878959",
  "tasks": [
   {
    "id": "becky-live",
@@ -967,6 +967,15 @@
    "updated_at": "2026-07-22",
    "due": null,
    "note": "xclienttransaction(twitter-cli依存)がXのページ構造変更に未追従でsearch系のみ404(profile/投稿/delete/replyは生存)。ゆう判断7/22: 課金(X API Basic $200/月)せず待つ、迂回も作らない。復旧センサー=毎朝7:35のfan-collector.logが成功に転じたら復旧→リプ自動返信とフォロワー日次収集が自動再開する。手動返信済み3件は既読登録済み(二重返信防止)"
+  },
+  {
+   "id": "wo-fruitbus-static-migration",
+   "project": "WO",
+   "status": "in_progress",
+   "title": "fruitbus.jp WordPress→静的HTML→Vercel移行",
+   "note": "7/23発足。ゆう決定: Vercel採用(固定IP 76.76.21.21でさくらDNSのAレコ書き換えだけで済む、NS変更不要)。CF Pagesは無料だがNS変更が必要で見送り。Vercel Pro $20/月はシステム管理共用アカウント(共用メール+2FA共有)で1シート運用、アカウントはゆうが発行手配中。前提確認済み: メール未使用/問い合わせフォームなし/バックアップはゆうが取得。静的化はイージス方式(wget完コピ+WP残骸掃除)。サイト実態=SWELLテーマの実質1ページLP、プラグイン3つ(AOS/Swiper/hover)は全部フロントエンドなので静的化容易。次: ①私=静的完コピ→GitHubリポジトリ→Vercelデプロイ→仮URL検品 ②ゆう=アカウント発行→Aレコ切替 ③1-2週間後XServer解約",
+   "created_at": "2026-07-23",
+   "updated_at": "2026-07-23"
   }
  ]
 }
