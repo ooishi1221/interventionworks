@@ -2,6 +2,15 @@
   "updated_at": "2026-07-23T19:46:47.878959",
   "tasks": [
     {
+      "id": "wo-witone-web-vercel-migration",
+      "project": "WO",
+      "status": "waiting",
+      "title": "wit-one.co.jp Web群のVercel移行(fruitbus横展開)",
+      "note": "7/24発足。ゆうが情シスに『会社でVercelアカウント取って』と説明済み→正式アカウント取得待ち。DNS調査済み: メール=Exchange Online(MX=outlook.com)でWeb移行の影響ゼロ/wit-one.co.jp本体もeasis.wit-one.co.jpもfruitbusと同じXServer(85.131.209.78)+さくらDNS=同じ型(完コピ→Vercel→Aレコ1行)で移行可/wwwはCNAMEで本体追従/sand-boxはレコード消滅済み。⚠️2点: ①本体SPFにさくら分あり=問い合わせフォームのPHP送信の可能性→静的化前にフォーム棚卸し必須 ②easisはeasis-mirror完コピ済みで即デプロイ可能だが、yoshioka-dのv5実装待ちとの順序が未決(A=v5実装後に完成形を移行/B=先に移行してVercel上で更新)→ゆうとyoshioka-d次第。情シス説明資料の材料=マイケル調査(Hobby=非商用限定がToS明文、商用はPro必須)",
+      "created_at": "2026-07-24",
+      "updated_at": "2026-07-24"
+    },
+    {
       "id": "becky-live",
       "scope": "iw",
       "label": "BECKY LIVE — 参加型ライブ配信（私の3つ目の体）",
