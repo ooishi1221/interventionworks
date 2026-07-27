@@ -27,6 +27,9 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 MOOD_FILE = Path.home() / ".stackchan" / "becky_mood.json"
+# 直近7日間に使ったシーン名の軽量ログ（偏り防止用）。fail-soft: 壊れてても生成は止めない。
+HISTORY_FILE = Path.home() / ".stackchan" / "becky_image_history.json"
+HISTORY_WINDOW_DAYS = 7
 # 2026-07-20: Gemini(gemini-thumb.js)からLovart(GPT Image 2、lovart-thumb.js)に切替。
 # むぎさん(@mugi_AI_Art)クラスの質感をゆうと実測比較して採用。--ref(参照画像添付)は
 # lovart-thumb.js未対応、プロンプトの識別情報だけで十分な一貫性が出ることを実測確認済み。
@@ -52,6 +55,39 @@ BECKY_DEFAULT_OUTFIT = (
 )
 # 後方互換（他スクリプトが BECKY_DNA を参照する場合に備えて残す）
 BECKY_DNA = f"{BECKY_IDENTITY}, {BECKY_DEFAULT_OUTFIT}"
+
+# 季節連動の衣装プール（感情シーンのデフォルト衣装をドレス一辺倒からほどく）。
+# 水着・浴衣はシーンとセットが前提のため ACTIVITY_SCENES 側の outfit で持たせる（ここには含めない）。
+SUMMER_OUTFITS = [
+    "casual short-sleeve t-shirt and denim shorts, light summer look",
+    "sleeveless summer sundress with a light floral pattern",
+    "camisole top and denim shorts, casual summer style",
+    "off-shoulder summer blouse with a teal ribbon accent",
+    BECKY_DEFAULT_OUTFIT,  # 定番衣装も選択肢の一つとして残す（一辺倒にはしない）
+]
+WINTER_OUTFITS = [
+    "long wool coat with a knit muffler, winter casual",
+    "turtleneck sweater under a teal-lined duffel coat",
+    "knit cardigan with a scarf, cozy winter look",
+    BECKY_DEFAULT_OUTFIT,
+]
+SPRING_AUTUMN_OUTFITS = [
+    "long-sleeve casual shirt with a light cardigan",
+    "denim jacket over a simple top, casual layered look",
+    "knit sweater with a pleated skirt",
+    BECKY_DEFAULT_OUTFIT,
+]
+
+
+def get_seasonal_outfit(month: int) -> str:
+    """月から季節衣装プールを選んでランダムに1着返す。"""
+    if month in (6, 7, 8, 9):
+        pool = SUMMER_OUTFITS
+    elif month in (12, 1, 2):
+        pool = WINTER_OUTFITS
+    else:
+        pool = SPRING_AUTUMN_OUTFITS
+    return random.choice(pool)
 
 
 # ---------------------------------------------------------------------------
@@ -263,6 +299,43 @@ ACTIVITY_SCENES = [
      "outfit": "oversized pajamas with a teal circuit print, slightly messy hair",
      "desc": "just woke up, sitting on a bed stretching, sleepy half-lidded expression, soft morning light",
      "technique": "soft diffused morning light, cozy, gentle bokeh, warm intimate mood"},
+    # ── 夏の一幕系（水着・浴衣はシーンとセットで固定、他季節に出さない） ──
+    {"name": "ビーチ",
+     "outfit": "teal and black swimsuit with circuit-pattern trim, sun hat",
+     "desc": "standing on a sunny beach with turquoise waves, sand between toes, relaxed summer smile",
+     "technique": "bright sunlight, sparkling water bokeh, high-key summer tones, cheerful mood"},
+    {"name": "プール",
+     "outfit": "teal and black swimsuit with circuit-pattern trim",
+     "desc": "sitting at a poolside with feet in the water, sunglasses pushed up, cool drink nearby",
+     "technique": "bright reflective water bokeh, high-key summer light, relaxed mood"},
+    {"name": "かき氷屋",
+     "outfit": "casual short-sleeve t-shirt and shorts, summer festival vibe",
+     "desc": "eating shaved ice (kakigori) at a summer stand, colorful syrup, happy small bite expression",
+     "technique": "bright daylight, vivid colors, soft bokeh, cheerful summer mood"},
+    {"name": "花火大会",
+     "outfit": "yukata with teal circuit-pattern obi, hair up with a fan tucked in",
+     "desc": "watching fireworks burst overhead at a summer festival, awed upward gaze",
+     "technique": "vivid fireworks bokeh, warm lantern glow, night sky, cinematic"},
+    {"name": "ひまわり畑",
+     "outfit": "sleeveless summer sundress with a light floral pattern, straw hat",
+     "desc": "standing in a vast sunflower field under blue sky, arms slightly spread, joyful",
+     "technique": "bright golden sunlight, vivid yellow and green bokeh, high-key summer tones"},
+    {"name": "縁日",
+     "outfit": "yukata with teal circuit-pattern obi",
+     "desc": "walking through summer festival stalls at dusk, holding a goldfish-scooping net, playful",
+     "technique": "warm string lights bokeh, festival stall colors, dusk atmosphere, cinematic"},
+    {"name": "川辺の夕涼み",
+     "outfit": "camisole top and denim shorts, casual summer style",
+     "desc": "sitting on riverside steps at dusk to cool down, feet near the water, calm relaxed expression",
+     "technique": "soft dusk light, water reflection bokeh, cool blue-orange tones, tranquil mood"},
+    {"name": "アイス食べてる",
+     "outfit": "off-shoulder summer blouse with a teal ribbon accent",
+     "desc": "walking down a sunny street licking a soft-serve ice cream cone, cheerful casual moment",
+     "technique": "bright daylight, soft bokeh, warm cheerful summer tones"},
+    {"name": "扇風機の前でだらけてる",
+     "outfit": "loose camisole and short shorts, hair let down, very relaxed",
+     "desc": "lying on the floor in front of an electric fan on a hot day, lazily melting expression",
+     "technique": "soft indoor daylight, hazy summer heat mood, relaxed bokeh"},
 ]
 
 
@@ -271,30 +344,70 @@ ACTIVITY_SCENES = [
 # ---------------------------------------------------------------------------
 
 
+def load_recent_scenes() -> set[str]:
+    """直近 HISTORY_WINDOW_DAYS 日間に使ったシーン名の集合を返す。壊れてても空集合で継続（fail-soft）。"""
+    try:
+        with open(HISTORY_FILE) as f:
+            records = json.load(f)
+        cutoff = datetime.date.today() - datetime.timedelta(days=HISTORY_WINDOW_DAYS)
+        return {
+            r["scene"] for r in records
+            if datetime.date.fromisoformat(r["date"]) >= cutoff
+        }
+    except Exception:
+        return set()
+
+
+def record_scene(scene_name: str) -> None:
+    """今日選んだシーン名を履歴に追記。直近14日分だけ残して肥大化を防ぐ。fail-soft。"""
+    try:
+        records = []
+        if HISTORY_FILE.exists():
+            with open(HISTORY_FILE) as f:
+                records = json.load(f)
+        records.append({"date": datetime.date.today().isoformat(), "scene": scene_name})
+        cutoff = datetime.date.today() - datetime.timedelta(days=14)
+        records = [
+            r for r in records
+            if datetime.date.fromisoformat(r["date"]) >= cutoff
+        ]
+        with open(HISTORY_FILE, "w") as f:
+            json.dump(records, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[becky_image] シーン履歴の保存に失敗（無視して継続）: {e}", file=sys.stderr)
+
+
 def select_scene(mood: dict) -> tuple[str, str, str, str | None]:
     """シーンを選び (シーン名, シーン説明, 技法, 衣装) を返す。
-    衣装 None = デフォルト衣装（感情シーン）、str = コスプレ/日常の上書き衣装。"""
+    衣装 None = デフォルト衣装（感情シーン）、str = コスプレ/日常の上書き衣装。
+    直近7日で使ったシーンは避ける（全滅時は制限解除、fail-soft）。"""
+    recent = load_recent_scenes()
+
     # 4割の日はコスプレ/日常シーン（見た目のバリエーション）、残りは感情シーン
     if random.random() < 0.4:
-        s = random.choice(ACTIVITY_SCENES)
+        pool = [s for s in ACTIVITY_SCENES if s["name"] not in recent] or ACTIVITY_SCENES
+        s = random.choice(pool)
         return s["name"], s["desc"], s["technique"], s["outfit"]
-    for condition, scene_name, scene_desc, technique in SCENE_MAP:
-        if condition(mood):
-            return scene_name, scene_desc, technique, None
-    # 到達しないが念のため
-    return SCENE_MAP[-1][1], SCENE_MAP[-1][2], SCENE_MAP[-1][3]
+
+    matches = [(name, desc, tech) for cond, name, desc, tech in SCENE_MAP if cond(mood)]
+    filtered = [m for m in matches if m[0] not in recent] or matches
+    scene_name, scene_desc, technique = filtered[0]
+    return scene_name, scene_desc, technique, None
 
 
-def build_prompt(mood: dict, weather: dict, event: dict) -> tuple[str, str]:
+def build_prompt(mood: dict, weather: dict, event: dict, dt: datetime.date | None = None) -> tuple[str, str]:
     """(プロンプト文字列, シーン名) を返す。
 
     感情変数でベースシーンを決定し、天気・季節イベントを追記レイヤーとして重ねる。
     シーン自体は上書きしない（感情変数が主、外部コンテキストは添え）。
     """
+    dt = dt or datetime.date.today()
     # 屋内シーン。屋外イベント（花火・花見・浴衣）を室内に足すと矛盾するので添えない。
     INDOOR_SCENES = {"カフェ", "深夜図書館", "深夜PCブルーライト"}
 
     scene_name, scene_desc, technique, outfit = select_scene(mood)
+    base_scene_name = scene_name  # 履歴記録用（季節イベント suffix を付ける前の名前）
+    record_scene(base_scene_name)
     is_activity = outfit is not None  # コスプレ/日常はシーン単体で完結（天気・季節を添えない）
 
     if not is_activity:
@@ -304,17 +417,25 @@ def build_prompt(mood: dict, weather: dict, event: dict) -> tuple[str, str]:
             scene_desc = f"{scene_desc}, {event['scene_hint']}"
             scene_name = f"{scene_name}（{event['name']}）"
         # 天気の追加。花火など屋外の火の演出とは雨/雪が両立しない（＝「花火に雨」を防ぐ）。
-        # 屋内は路面ではなく窓越しの雨にする。
+        # 屋内は路面ではなく窓越しの雨にする。雨でも毎回「雨シーン」にせず、雨上がり・無言及にも分散する。
         hint = (event or {}).get("scene_hint", "")
         fire_event = "fireworks" in hint and not is_indoor
         condition = weather.get("condition", "")
         if condition == "rainy" and not fire_event:
-            technique += (", rain streaking down the window, cozy indoor lighting"
-                          if is_indoor else ", rainy atmosphere, wet reflective streets")
+            roll = random.random()
+            if is_indoor:
+                if roll < 0.5:
+                    technique += ", rain streaking down the window, cozy indoor lighting"
+                # 残り5割は雨に触れない（室内の雰囲気を優先）
+            elif roll < 0.4:
+                technique += ", rainy atmosphere, wet reflective streets"
+            elif roll < 0.7:
+                technique += ", streets still wet after the rain, clearing sky, fresh air"
+            # 残り3割は雨に触れない
         elif condition == "snowy" and not fire_event and not is_indoor:
             technique += ", snow falling gently, soft winter light"
 
-    outfit = outfit or BECKY_DEFAULT_OUTFIT
+    outfit = outfit or get_seasonal_outfit(dt.month)
     prompt = (
         f"{BECKY_IDENTITY}, {outfit}, {scene_desc}, {technique}, "
         "high quality, detailed, anime style, no text, no logos, no watermark"

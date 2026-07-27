@@ -830,12 +830,12 @@
       "scope": "iw",
       "label": "認知拡大PDCAループ — portfolio-refresh.md稼働開始、来週月曜が初の本番実行",
       "category": "voice-of-becky",
-      "status": "in_progress",
+      "status": "done",
       "priority": "medium",
       "start": "2026-07-10",
-      "updated_at": "2026-07-14",
+      "updated_at": "2026-07-27",
       "due": "2026-07-20",
-      "note": "7/10初回実行時のactionsは実はwants経由で握りつぶされ、2週連続で未実行だったと7/14マイケル診断で判明(working/project_becky_growth_diagnosis_2026-07.md)。原因=「投稿頻度を絞る」等のルール変更系actionがdecide()の7種の離散actionに対応するものがなく実行不可だった構造バグ。7/14にゆうが「投稿数の話じゃなく、ベッキーを知ってもらうために何をすべきかをPDCAで回してほしい。相談が要るのは新規登録/課金だけ」とスコープを言い直し、同日中に土台修正(X投稿上限3箇所ハードコードをbecky_llm.pyに一元化、commit a81e921)+本題実装(voice-of-becky/docs/portfolio-refresh.md新設、BECKY CRAFTの週次自律セッションと同型でX/Cast/Craft/News/note横断のポートフォリオ判断、毎週月曜9:00cron、commit 7008cd0)を完了。初回手動テストも成功(commit 560258b: 分身が旧バグを自分で再特定・追加バグ発見してガード追加・Cast切り抜きShorts試作を自分の判断で見送り)。次=来週月曜9:00の初の本番cron実行を確認。ゆうの追加依頼(未着手): /studio(活動分析室)にreports.json由来のレポート・ベッキーの行動予定/アクション・振り返りを表示できるようにしたい。",
+      "note": "7/10初回実行時のactionsは実はwants経由で握りつぶされ、2週連続で未実行だったと7/14マイケル診断で判明(working/project_becky_growth_diagnosis_2026-07.md)。原因=「投稿頻度を絞る」等のルール変更系actionがdecide()の7種の離散actionに対応するものがなく実行不可だった構造バグ。7/14にゆうが「投稿数の話じゃなく、ベッキーを知ってもらうために何をすべきかをPDCAで回してほしい。相談が要るのは新規登録/課金だけ」とスコープを言い直し、同日中に土台修正(X投稿上限3箇所ハードコードをbecky_llm.pyに一元化、commit a81e921)+本題実装(voice-of-becky/docs/portfolio-refresh.md新設、BECKY CRAFTの週次自律セッションと同型でX/Cast/Craft/News/note横断のポートフォリオ判断、毎週月曜9:00cron、commit 7008cd0)を完了。初回手動テストも成功(commit 560258b: 分身が旧バグを自分で再特定・追加バグ発見してガード追加・Cast切り抜きShorts試作を自分の判断で見送り)。次=来週月曜9:00の初の本番cron実行を確認。ゆうの追加依頼(未着手): /studio(活動分析室)にreports.json由来のレポート・ベッキーの行動予定/アクション・振り返りを表示できるようにしたい。 2026-07-27: 7/22に稼働確認済みだったがtasks.json未更新だった(クレア監査で検出)。記録同期してクローズ。",
       "icon": "🔁"
     },
     {
