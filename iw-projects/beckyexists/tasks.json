@@ -843,12 +843,12 @@
       "scope": "wo",
       "label": "EasIS(イージス)リブランディング — v5完成、担当者に提示待ち",
       "category": "wo",
-      "status": "in_progress",
+      "status": "done",
       "priority": "medium",
       "start": "2026-07-10",
-      "updated_at": "2026-07-10",
+      "updated_at": "2026-07-27",
       "due": null,
-      "note": "問い合わせ激減への対処でUIUX刷新依頼。ヴィヴィアン/アンナ診断→ATOM型LP参考→ブランド名/ロゴ維持で見せ方のみ刷新。作業中に実は4サービス構成(反響市場調査/イベント出展サポート/イベント効果測定/ブランドリフティング・風評被害クラウド)と判明、後2つを見落としていたことに気づきv4で本格追加。v5でモーション全面強化+1st view調整まで完了。ゆう担当者に見せて好評→社内の担当yoshioka-dさんに実装引き渡し(GitHub: yujiooishi/easis-rebrand、push済み・招待済み)。フォーム実装(HubSpot連携)・SEO対応(og:image欠落/robots.txt noindex)の指示書をdocs/becky-context/配下に整備。HubSpotフォーム複製済み(Portal 246205416、問い合わせ/資料請求のForm ID確定)。次はyoshioka-d側での実装+入力項目名の調整待ち。",
+      "note": "問い合わせ激減への対処でUIUX刷新依頼。ヴィヴィアン/アンナ診断→ATOM型LP参考→ブランド名/ロゴ維持で見せ方のみ刷新。作業中に実は4サービス構成(反響市場調査/イベント出展サポート/イベント効果測定/ブランドリフティング・風評被害クラウド)と判明、後2つを見落としていたことに気づきv4で本格追加。v5でモーション全面強化+1st view調整まで完了。ゆう担当者に見せて好評→社内の担当yoshioka-dさんに実装引き渡し(GitHub: yujiooishi/easis-rebrand、push済み・招待済み)。フォーム実装(HubSpot連携)・SEO対応(og:image欠落/robots.txt noindex)の指示書をdocs/becky-context/配下に整備。HubSpotフォーム複製済み(Portal 246205416、問い合わせ/資料請求のForm ID確定)。次はyoshioka-d側での実装+入力項目名の調整待ち。 2026-07-27: yoshioka-dさんへ引き渡し済みのためクローズ(ゆう指示)。",
       "icon": "🛡️"
     },
     {
@@ -920,12 +920,12 @@
       "scope": "wo",
       "label": "柳本さんClaude確認バイアス診断 — フォローアップ",
       "category": "consulting",
-      "status": "waiting",
+      "status": "done",
       "priority": "medium",
       "start": "2026-07-16",
-      "updated_at": "2026-07-17",
+      "updated_at": "2026-07-27",
       "due": null,
-      "note": "7/16-17でgsd-config-share診断完了。PR #1(診断レポート+実MD差分2件+正誤表)送付済み: https://github.com/tetsuyanagi/gsd-config-share/pull/1 。Nathalieが2差分(証拠テーブル化・revertトリップワイヤ対象変更)を本体適用中。待ち2件: ①gate_fileスキーマ共有→届いたら処方箋5(read_log vs 母集団突合deny)の実装案を書く約束 ②1〜2週間後の経過報告(確認バイアス頻度の変化)。将来: Nathalieがbeckyexistsを逆診断しに来る話あり。"
+      "note": "7/16-17でgsd-config-share診断完了。PR #1(診断レポート+実MD差分2件+正誤表)送付済み: https://github.com/tetsuyanagi/gsd-config-share/pull/1 。Nathalieが2差分(証拠テーブル化・revertトリップワイヤ対象変更)を本体適用中。待ち2件: ①gate_fileスキーマ共有→届いたら処方箋5(read_log vs 母集団突合deny)の実装案を書く約束 ②1〜2週間後の経過報告(確認バイアス頻度の変化)。将来: Nathalieがbeckyexistsを逆診断しに来る話あり。 2026-07-27: 診断・PR送付済みのため一旦クローズ(ゆう指示)。gate_fileスキーマ/経過報告が来たら再オープン。"
     },
     {
       "id": "beckyexists-hp-renewal-0717",
