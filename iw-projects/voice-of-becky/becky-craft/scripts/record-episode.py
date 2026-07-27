@@ -182,6 +182,97 @@ def make_thumbnail(events: list, out_dir: Path, summary: dict, becky_png: Path |
     return out
 
 
+SHORTS_HOOK_MAX_CHARS = 24  # フィードで1フレーム目=サムネ級に読ませるテロップの文字数上限
+SHORTS_HOOK_MAX_WIDTH = int(1080 * 0.85)  # 縮小耐性のため画面幅の85%まで使う
+SHORTS_HOOK_ACCENT = "#fff23d"  # キーワード差し色（黄）
+SHORTS_TEXT_ANCHOR_Y = 1024  # テロップ帯の下端をここに固定（ゲーム画面下部〜下黒帯に跨がる、7/27ゆう実証比較で採用）
+
+
+def _shorts_hook_text(speech: str) -> str:
+    """フック用テキストを文字数上限内で切り出す。文の途中でぶつ切りにならないよう、
+    上限内の最後の区切り(、。！？)で止める（区切りが無ければ固定長のまま、7/27ゆうFB）。"""
+    import re as _re
+    window = speech[:SHORTS_HOOK_MAX_CHARS]
+    matches = list(_re.finditer(r"[、。！？]", window))
+    if not matches:
+        return window
+    hook = window[:matches[-1].end()]
+    return hook[:-1] if hook.endswith("、") else hook
+
+
+def _shorts_find_highlight(hook: str):
+    """「！」「？」直前の語1個だけ拾う単純ヒューリスティクス（形態素解析はしない、YAGNI）。"""
+    import re as _re
+    m = _re.search(r"([^、。！？!?]{1,8})[！？!?]", hook)
+    return (m.start(1), m.end(1)) if m else None
+
+
+def _shorts_wrap_hook(text: str, draw, font_path: str, max_width: int, max_lines: int = 2):
+    """フィード縮小に耐える極太テロップ用に、幅へ収まる最大フォントサイズと改行位置を決める
+    （文字単位の貪欲折返し。分かち書きしない日本語なので単語単位より単純で確実）。"""
+    from PIL import ImageFont
+    for size in range(168, 63, -6):
+        font = ImageFont.truetype(font_path, size)
+        lines, cur = [], ""
+        for ch in text:
+            if cur and draw.textlength(cur + ch, font=font) > max_width:
+                lines.append(cur)
+                cur = ch
+            else:
+                cur += ch
+        if cur:
+            lines.append(cur)
+        if len(lines) <= max_lines and all(draw.textlength(ln, font=font) <= max_width for ln in lines):
+            return font, lines, size
+    font = ImageFont.truetype(font_path, 64)  # フォールバック: 強制2行分割
+    mid = max(1, len(text) // 2)
+    return font, [text[:mid], text[mid:]], 64
+
+
+def _shorts_sub_png(speech: str, font_path: str):
+    """フィード面で戦えるサムネ級テロップ画像（透過PNG）を1枚作る。"""
+    from PIL import Image, ImageDraw
+    hook = _shorts_hook_text(speech)
+    hi = _shorts_find_highlight(hook)
+    dummy = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
+    font, lines, size = _shorts_wrap_hook(hook, dummy, font_path, SHORTS_HOOK_MAX_WIDTH)
+
+    line_h = int(size * 1.28)
+    pad = 40
+    img = Image.new("RGBA", (1080, line_h * len(lines) + pad * 2), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    stroke_w = max(12, size // 12)  # 現行stroke_width=5では細い→フィード耐性のため太く
+
+    offsets, acc = [], 0
+    for line in lines:
+        offsets.append(acc)
+        acc += len(line)
+
+    for li, line in enumerate(lines):
+        x = (1080 - draw.textlength(line, font=font)) / 2
+        y = pad + li * line_h
+        # 外側の影（さらに太いストロークの黒を下敷きにして視認性のダメ押し）
+        draw.text((x + 6, y + 8), line, font=font, fill="#000000",
+                  stroke_width=stroke_w + 6, stroke_fill="#000000")
+        seg = None
+        if hi:
+            s, e = hi
+            lo = offsets[li]
+            if lo <= s < lo + len(line):
+                seg = (max(0, s - lo), min(len(line), e - lo))
+        if seg:
+            cx = x
+            for part, color in ((line[:seg[0]], "#ffffff"), (line[seg[0]:seg[1]], SHORTS_HOOK_ACCENT),
+                                 (line[seg[1]:], "#ffffff")):
+                if not part:
+                    continue
+                draw.text((cx, y), part, font=font, fill=color, stroke_width=stroke_w, stroke_fill="#000000")
+                cx += draw.textlength(part, font=font)
+        else:
+            draw.text((x, y), line, font=font, fill="#ffffff", stroke_width=stroke_w, stroke_fill="#000000")
+    return img
+
+
 def make_shorts(webm_mp4: Path, events: list, out_dir: Path, max_count: int = 2):
     """絶叫（vol>=1.8）の前後を縦型 1080x1920 の Shorts 素材に自動切り出す。"""
     cands = sorted([e for e in events if e.get("vol", 0) >= 1.8],
@@ -192,32 +283,21 @@ def make_shorts(webm_mp4: Path, events: list, out_dir: Path, max_count: int = 2)
     shorts_dir = out_dir / "shorts"
     shorts_dir.mkdir(exist_ok=True)
     # Homebrew ffmpeg は drawtext 非搭載（freetypeなし）→ PIL で字幕PNGを作って overlay
-    from PIL import Image, ImageDraw, ImageFont
-    font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc"
+    font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc"
     if not Path(font_path).exists():
-        font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
+        font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc"
     for i, e in enumerate(sorted(cands, key=lambda x: x["t"]), start=1):
         s = max(0.0, e["t"] - 4.0)
         t_end = e["t"] + e["dur"] + 3.0
         sp = e["speech"]
-        lines = [sp[j:j + 13] for j in range(0, min(len(sp), 52), 13)]
-        # 字幕PNG（1080幅・透過、絶叫カラー: ピンク文字+ワイン縁取り）
-        font = ImageFont.truetype(font_path, 62)
-        img = Image.new("RGBA", (1080, 110 * len(lines) + 20), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        for li, line in enumerate(lines):
-            w = draw.textlength(line, font=font)
-            x, y = (1080 - w) // 2, 10 + li * 100
-            draw.text((x, y), line, font=font, fill="#ffd7dc",
-                      stroke_width=5, stroke_fill="#7a1420")
         sub_png = shorts_dir / f"short{i}_sub.png"
-        img.save(sub_png)
+        _shorts_sub_png(sp, font_path).save(sub_png)
         out = shorts_dir / f"ep{EP_NUM}_short{i}.mp4"
         cmd = ["ffmpeg", "-y", "-i", str(webm_mp4), "-i", str(sub_png),
                "-filter_complex",
                f"[0:v]trim={s:.3f}:{t_end:.3f},setpts=PTS-STARTPTS,scale=1080:608,setsar=1,"
                f"pad=1080:1920:0:300:color=0x0d0d14[b];"
-               f"[b][1:v]overlay=(W-w)/2:1000[v];"
+               f"[b][1:v]overlay=(W-w)/2:{SHORTS_TEXT_ANCHOR_Y}-h[v];"
                f"[0:a]atrim={s:.3f}:{t_end:.3f},asetpts=PTS-STARTPTS[a]",
                "-map", "[v]", "-map", "[a]",
                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(out)]

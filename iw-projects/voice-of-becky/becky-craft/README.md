@@ -75,7 +75,7 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 | 009 | 一撃死縛り — 死んだら即終了 | https://www.youtube.com/watch?v=DYndC2IUZIk | K2企画。無傷で石装備まで進化 |
 
 Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
-**シリーズ現在地: 鉄をめぐって6連敗中。EP.009 = M2「鉄装備で拠点整備」へ。火/金 3:00 深夜自動収録体制（PLAN.md）**
+**シリーズ現在地: 鉄をめぐって6連敗中(EP.009一撃死縛りは無傷生還も鉄には未達)。次回 EP.010 = M2「鉄装備で拠点整備」へ。火/金 3:00 深夜自動収録体制（PLAN.md）**
 **週2運用（水=本編/土=企画回）と企画キューの正本: `PLAN.md`**（毎週月曜10:00 cron が KPI+リサーチでキューを自動リフレッシュ）
 
 ## 罠
