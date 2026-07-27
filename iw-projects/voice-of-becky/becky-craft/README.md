@@ -73,6 +73,7 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 | 007 | 5度目の正直 — 新しい頭で鉄を獲る | https://www.youtube.com/watch?v=n9EiGaqIwp0 | 新頭初仕事。全ロス後ゼロ再出発、板クラフトでつまずき作業台止まり。ドラウンド再来で締め。サムネ『鉄まで届かず。』 |
 | 008 | 6度目の鉄 — 今度こそ dig_down | https://www.youtube.com/watch?v=HUynD8V_SMQ | M1企画。深夜自動収録の構造修正後初の本番。night_pipeline.pyのタイムアウトが実測より短く「失敗」誤報告→データは無事だったため手動でワイプ以降を完走。石のつるはし完成も鉄には届かず、また全滅。サムネ『また全ロス。』 |
 | 009 | 一撃死縛り — 死んだら即終了 | https://www.youtube.com/watch?v=DYndC2IUZIk | K2企画。無傷で石装備まで進化 |
+| 010 | 7度目の鉄 — 拠点を整備して水辺を封鎖する | https://www.youtube.com/watch?v=csQTP4Z7Kcc | M2企画。因縁のドラウンドと死闘 |
 
 Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
 **シリーズ現在地: 鉄をめぐって6連敗中(EP.009一撃死縛りは無傷生還も鉄には未達)。次回 EP.010 = M2「鉄装備で拠点整備」へ。火/金 3:00 深夜自動収録体制（PLAN.md）**
