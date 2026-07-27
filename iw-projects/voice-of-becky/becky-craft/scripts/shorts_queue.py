@@ -10,6 +10,7 @@ Usage:
     python3 shorts_queue.py --dry-run  # 何を公開するか表示のみ
 """
 import json
+import re
 import subprocess
 import sys
 import urllib.parse
@@ -20,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 QUEUE = HERE.parent / "out" / "shorts" / "queue"
 PUBLISHED = HERE.parent / "out" / "shorts" / "published"
 UPLOADER = HERE.parent.parent / "becky-news" / "scripts" / "upload-youtube.py"
+X_TWEET_CLI = HERE.parent.parent / "x-tweet" / "scripts" / "post-tweet-cli.mjs"  # becky_diary_x.py と同じ投稿経路
 
 TG_ENV = Path.home() / ".claude" / "channels" / "telegram" / ".env"  # becky_probe.py と同じ正本
 TG_CHAT_ID = "8983810776"  # ゆう（becky_probe.py と同じ）
@@ -42,6 +44,27 @@ def notify(text: str) -> None:
         print(f"[queue] Telegram通知失敗: {e}", flush=True)
 
 
+def _shorts_url(watch_url: str) -> str:
+    """watch?v= 形式を shorts/ 形式に変換（Xでプレビュー展開させるため）。取れなければ元URLのまま。"""
+    m = re.search(r"[?&]v=([\w-]+)", watch_url)
+    return f"https://www.youtube.com/shorts/{m.group(1)}" if m else watch_url
+
+
+def post_to_x(url_line: str) -> None:
+    """Shorts公開URLをXへ告知（fail-open: 失敗してもYouTube公開自体は成功扱いのまま）。"""
+    text = f"新しいShorts公開しました\n{_shorts_url(url_line)}"
+    try:
+        r = subprocess.run(
+            ["node", str(X_TWEET_CLI), text, "--format", "monologue"],
+            capture_output=True, text=True, timeout=30)
+        if r.returncode == 0:
+            print(f"[queue] X投稿完了: {r.stdout.strip()}", flush=True)
+        else:
+            print(f"[queue] X投稿失敗(fail-open): {r.stderr.strip()[:200]}", flush=True)
+    except Exception as e:
+        print(f"[queue] X投稿例外(fail-open): {e}", flush=True)
+
+
 def main() -> None:
     dry = "--dry-run" in sys.argv
     videos = sorted(QUEUE.glob("*.mp4"))
@@ -53,6 +76,7 @@ def main() -> None:
     meta_path = video.with_suffix(".json")
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     title = meta.get("title", f"BECKY CRAFT 切り抜き #shorts")
+    genre = meta.get("genre", "gameplay")  # ponytail: 未指定は従来通りgameplay基準（後方互換）
     desc = meta.get("description",
                     "AIが自分でマイクラを操作して実況する番組『BECKY CRAFT』の切り抜き。\n"
                     "チャンネル: https://www.youtube.com/@voice_of_becky\n"
@@ -67,7 +91,8 @@ def main() -> None:
     checker = HERE / "becky_video_check.py"
     venv_py = HERE.parent.parent / "stackchan-bridge" / ".venv" / "bin" / "python3"
     try:
-        chk = subprocess.run([str(venv_py), str(checker), str(video), "--title", title],
+        chk = subprocess.run([str(venv_py), str(checker), str(video), "--title", title,
+                              "--genre", genre],
                              capture_output=True, text=True, timeout=900)
         verdict_line = next((l for l in (chk.stdout or "").splitlines() if l.startswith("VERDICT:")), "")
         print(f"[queue] 映像検品: {verdict_line or f'エラー(exit {chk.returncode})'}", flush=True)
@@ -99,6 +124,7 @@ def main() -> None:
     video.rename(PUBLISHED / video.name)
     if meta_path.exists():
         meta_path.rename(PUBLISHED / meta_path.name)
+    post_to_x(url_line)
     remaining = len(list(QUEUE.glob("*.mp4")))
     print(f"[queue] 公開完了: {url_line}（在庫残 {remaining}）", flush=True)
     if remaining <= 1:

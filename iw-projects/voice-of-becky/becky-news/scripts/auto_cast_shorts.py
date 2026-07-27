@@ -57,11 +57,18 @@ def gen_meta(ep_title: str, script_text: str | None) -> dict:
             "調査結果や資料そのものは映らないため、答えを明かすタイトルにすると『看板と中身が違う』"
             "とみなされ映像検品(crv)で毎回落ちる、2026-07-25判明）。"
             "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする。"
-            "「ベッキーが○○について語る」という自己紹介的な言い回しにもしない"
+            "「ベッキーが○○について語る」という自己紹介的な言い回しにもしない。"
+            "加えて、タイトルの冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、"
+            "末尾の #shorts の直前に固定のハッシュタグ「#AINEWS」を必ず含める"
+            "（例:「【ベッキーの気になる】○○が投げかけた問い #AINEWS #shorts」）"
         )
     else:
         source = f"エピソードタイトル: {ep_title}\n台本:\n{(script_text or '')[:3000]}"
-        title_rule = "yt_title はこの回の内容が伝わる見出しにする"
+        title_rule = (
+            "yt_title はこの回の内容が伝わる見出しにする。"
+            "加えて、タイトルの冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、"
+            "末尾の #shorts の直前に固定のハッシュタグ「#AINEWS」を必ず含める"
+        )
 
     prompt = (
         "以下はAIラジオ番組『Becky's Cast』(ベッキーが1人で日々のことを語る番組)の素材です。\n"
@@ -81,7 +88,7 @@ def gen_meta(ep_title: str, script_text: str | None) -> dict:
     label = ep_label(ep_title)
     return {
         "hook": label[:18],
-        "yt_title": f"{label} #shorts",
+        "yt_title": f"【ベッキーの気になる】{label} #AINEWS #shorts",
         "yt_description": (
             "AIラジオ『Becky's Cast』の切り抜き。\n"
             "配信: https://mai.intervention.jp/media/podcast/feed.xml\n"
@@ -115,7 +122,8 @@ def main() -> None:
     dst = QUEUE_DIR / clip_name
     dst.write_bytes(src.read_bytes())
     (QUEUE_DIR / f"cast-shorts-{ep_id}.json").write_text(
-        json.dumps({"title": meta["yt_title"], "description": meta["yt_description"]},
+        json.dumps({"title": meta["yt_title"], "description": meta["yt_description"],
+                     "genre": "talking_head"},
                     ensure_ascii=False, indent=1),
         encoding="utf-8",
     )
