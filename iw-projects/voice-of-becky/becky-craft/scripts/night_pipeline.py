@@ -125,6 +125,39 @@ def append_readme_row(readme_text: str, new_row: str) -> str:
     return "".join(lines)
 
 
+def prev_episode_url(readme_text: str) -> str | None:
+    """公開エピソード表の最終行(3桁番号)からURL列を取る。fail-soft: 見つからなければNone。"""
+    ep_rows = [l for l in readme_text.splitlines() if re.match(r"^\|\s*\d{3}\s*\|", l)]
+    if not ep_rows:
+        return None
+    cells = [c.strip() for c in ep_rows[-1].strip().strip("|").split("|")]
+    return cells[2] if len(cells) > 2 and cells[2] else None
+
+
+def build_description(ep_num: str, summary: dict, readme_text: str) -> str:
+    """初期エピソード(EP.001-005)のリッチ形式を踏襲(ゆう指示 2026-07-27)。"""
+    lines = [
+        f"AI地下アイドルのベッキーが、自分でマイクラを操作して実況する番組『BECKY CRAFT』第{ep_num}回。",
+        "",
+        "台本なし。行動もセリフも、効果音も、サムネの文字も、全部AIの私がその場で判断・生成しています。",
+        "",
+        summary.get("highlight", ""),
+        "",
+    ]
+    prev_url = prev_episode_url(readme_text)
+    if prev_url:
+        lines.append(f"前回 EP.{int(ep_num) - 1:03d}: {prev_url}")
+    lines += [
+        "初回 EP.001: https://www.youtube.com/watch?v=NIf3LvNo6io",
+        "",
+        "番組ホーム: https://beckyexists.com",
+        "X: https://x.com/becky_exists",
+        "",
+        "#マインクラフト #Minecraft #マイクラ",
+    ]
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------------
 # I/O
 # --------------------------------------------------------------------------
@@ -256,10 +289,14 @@ def main() -> None:
         # 5. 予約公開
         summary_path = OUT_DIR / f"episode_summary_ep{ep_num}.json"
         summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
-        title = (summary.get("youtube_titles") or [f"【BECKY CRAFT】第{ep_num}回 {ep_title}"])[0]
+        title = (summary.get("youtube_titles") or [f"【マインクラフト】【BECKY CRAFT】第{ep_num}回 {ep_title}"])[0]
         thumb = OUT_DIR / f"thumb_ep{ep_num}.png"
         publish_at = publish_at_for(now)
+        readme_text = README_MD.read_text(encoding="utf-8")
+        description = build_description(ep_num, summary, readme_text)
+        tags = "マインクラフト,Minecraft,マイクラ,AI,自動実況,BECKY CRAFT"
         cmd = [sys.executable, str(UPLOAD_SCRIPT), str(yt_mp4), "--title", title,
+               "--description", description, "--tags", tags,
                "--publish-at", publish_at.strftime("%Y-%m-%dT%H:%M")]
         if thumb.exists():
             cmd += ["--thumbnail", str(thumb)]
@@ -275,7 +312,6 @@ def main() -> None:
         plan_lines[row["line_no"]] = mark_row_done(row["raw_line"], ep_num, today)
         PLAN_MD.write_text("\n".join(plan_lines) + "\n", encoding="utf-8")
 
-        readme_text = README_MD.read_text(encoding="utf-8")
         new_row = (f"| {ep_num} | {ep_title} | {video_url} | "
                    f"{row['id']}企画。{summary.get('highlight', '')} |\n")
         README_MD.write_text(append_readme_row(readme_text, new_row), encoding="utf-8")

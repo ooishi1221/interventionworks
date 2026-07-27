@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from night_pipeline import (JST, append_readme_row, lane_for, publish_at_for,
-                             read_constant, select_queue_row, tts_failure_count)
+from night_pipeline import (JST, append_readme_row, build_description, lane_for,
+                             prev_episode_url, publish_at_for, read_constant,
+                             select_queue_row, tts_failure_count)
 
 
 def test_lane_for():
@@ -85,6 +86,27 @@ def test_append_readme_row():
     assert lines[idx + 1] == "| 008 | 今回 | url8 | note8 |", out
 
 
+def test_prev_episode_url():
+    readme = "| EP | タイトル | URL | 備考 |\n|---|---|---|---|\n| 007 | 前回 | url7 | note7 |\n"
+    assert prev_episode_url(readme) == "url7"
+    assert prev_episode_url("no table here") is None
+
+
+def test_build_description():
+    readme = "| EP | タイトル | URL | 備考 |\n|---|---|---|---|\n| 007 | 前回 | url7 | note7 |\n"
+    desc = build_description("008", {"highlight": "鉄まで届かず。"}, readme)
+    assert "第008回" in desc
+    assert "鉄まで届かず。" in desc
+    assert "前回 EP.007: url7" in desc
+    assert "初回 EP.001: https://www.youtube.com/watch?v=NIf3LvNo6io" in desc
+    assert "#マインクラフト #Minecraft #マイクラ" in desc
+    assert "#AI #BECKYCRAFT" not in desc
+
+    # README にエピソード行が無ければ「前回」行を省略(fail-soft)
+    desc_no_prev = build_description("001", {"highlight": ""}, "no table")
+    assert "前回" not in desc_no_prev
+
+
 if __name__ == "__main__":
     test_lane_for()
     test_publish_at_for()
@@ -92,4 +114,6 @@ if __name__ == "__main__":
     test_tts_failure_count()
     test_read_constant()
     test_append_readme_row()
+    test_prev_episode_url()
+    test_build_description()
     print("OK: all night_pipeline self-checks passed")
