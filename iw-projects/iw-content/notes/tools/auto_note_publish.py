@@ -30,6 +30,7 @@ SESSION_MARKER = Path.home() / ".stackchan" / "note-chrome-profile" / ".logged_i
 RE_DATE = re.compile(r"公開推し\s*[:：]\s*(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
 RE_STATUS = re.compile(r"^status\s*[:：]\s*(\S+)", re.MULTILINE)
 RE_TITLE = re.compile(r"^タイトル\s*[:：]\s*(.+)$", re.MULTILINE)
+RE_PROOFREAD = re.compile(r"^proofread\s*[:：]\s*(\S+)", re.MULTILINE)
 
 
 def parse_header(path: Path):
@@ -39,6 +40,7 @@ def parse_header(path: Path):
     m_date = RE_DATE.search(header)
     m_status = RE_STATUS.search(header)
     m_title = RE_TITLE.search(header)
+    m_proofread = RE_PROOFREAD.search(header)
     push_date = None
     if m_date:
         y, mo, d = (int(x) for x in m_date.groups())
@@ -50,6 +52,8 @@ def parse_header(path: Path):
         "push_date": push_date,
         "status": (m_status.group(1).strip() if m_status else None),
         "title": (m_title.group(1).strip() if m_title else path.name),
+        # フィールドなし = pending 扱い（既存記事は触らず後方互換を保つ）
+        "proofread": (m_proofread.group(1).strip() if m_proofread else "pending"),
     }
 
 
@@ -125,6 +129,8 @@ def preflight(today: dt.date, dry: bool):
         titles = "・".join(h["title"] for _, h in due)
         sess = "✅生存" if session_ok else "⚠️切れの可能性(要ログイン確認)"
         msg = f"🕢 今夜20:00 note自動公開の準備\n対象「{titles}」\nnoteセッション: {sess}{note}"
+        if any(h["proofread"] != "done" for _, h in due):
+            msg += "\n⚠️校正未確認の記事があります（proofread: pending）"
     else:
         msg = f"🕢 今夜のnote公開予定はありません（{today} 公開推しの下書きなし）"
     print(f"[auto-publish] preflight: {msg}", flush=True)
@@ -156,7 +162,10 @@ def main():
         ok, url = publish(path)
         if ok:
             mark_published(path, today, url)
-            send_telegram(f"📣 note 自動公開しました\n「{title}」\n{url or ''}".strip())
+            msg = f"📣 note 自動公開しました\n「{title}」\n{url or ''}".strip()
+            if h["proofread"] != "done":
+                msg += "\n⚠️校正未確認のまま公開しました"
+            send_telegram(msg)
             print(f"[auto-publish]   ✅ 公開完了: {url}", flush=True)
         else:
             send_telegram(
