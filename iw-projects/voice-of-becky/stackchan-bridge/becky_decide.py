@@ -49,6 +49,8 @@ MAX_BUILD_PER_WEEK = 2
 # seed を「3回目に触れたら」Thread昇格候補にする（Incubator）
 SEED_PROMOTE_AT = 3
 
+TWEET_ACTION_ENABLED = False  # 2026-07-27 ゆう指示: 独り言系X投稿は一旦停止（戻しやすさ優先）
+
 # action選択の多様性チェック用（Task #20, 2026-07-15: probe_yu/nurture_seedへの偏り検知）
 ALL_ACTIONS = ["nurture_seed", "tweet", "probe_yu", "investigate", "build", "diary", "silence"]
 ACTION_DIVERSITY_WINDOW_DAYS = 7
@@ -189,7 +191,7 @@ def _exhausted_today() -> list[str]:
     """今日すでに上限到達で、選んでも dispatch 側でno-opになるaction種別
     （MAX_PROBE_PER_DAY等のガード自体は変えず、decide側に「無駄な選択」だと伝えるだけ）。"""
     exhausted = []
-    if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
+    if not TWEET_ACTION_ENABLED or becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
         exhausted.append("tweet")
     if _count_action_today("probe_yu") >= MAX_PROBE_PER_DAY:
         exhausted.append("probe_yu")
@@ -533,6 +535,9 @@ def dispatch(decision: dict) -> str:
         return f"nurture_seed: {note}"
 
     if action == "tweet":
+        if not TWEET_ACTION_ENABLED:  # 2026-07-27 ゆう指示: 独り言系X投稿は一旦停止（戻しやすさ優先）
+            _log_decision(decision, executed=False, extra="tweetアクション一旦停止中")
+            return "tweet: 停止中でスキップ"
         if becky_llm.x_posts_today() >= becky_llm.x_daily_budget():
             _log_decision(decision, executed=False, extra="日次上限のため実行せず")
             return "tweet: 上限到達でスキップ"

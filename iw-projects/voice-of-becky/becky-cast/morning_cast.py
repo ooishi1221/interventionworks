@@ -43,6 +43,7 @@ X_TWEET_CLI = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky
 VPS_KEY = Path.home() / ".ssh" / "iw-local-key.key"
 VPS_HOST = "ubuntu@133.18.123.60"
 UV = Path.home() / ".local" / "bin" / "uv"
+POST_ANNOUNCE_TO_X = False  # 2026-07-27 ゆう指示: ラジオ更新告知のX投稿は廃止（インプ少）
 
 
 # ── ユーティリティ ──
@@ -568,20 +569,23 @@ def main() -> None:
         mark_letter_used(letter["ts"], episode_num)
         print(f"[morning_cast] お便り使用済みマーク: {letter['ts']} (第{episode_num}回)", flush=True)
 
-    # 5. X告知
-    comment = gen_announce_comment(script)
-    tweet_text = (
-        f"【Becky's Cast 更新🎙️】#{num_str} 配信しました！\n"
-        f"{('「' + subtitle + '」') if subtitle else ''}\n"
-        f"{(comment + chr(10)) if comment else ''}\n"
-        f"beckyexists.com で聴けます。\n"
-        f"お便りも待ってます📮"
-    )
-    tweet_id = post_to_x(tweet_text)
-    if tweet_id:
-        print(f"[morning_cast] X告知完了: {tweet_id}", flush=True)
+    # 5. X告知 — 2026-07-27 廃止（インプ少のためゆう指示、コードは戻しやすさ優先で残す）
+    if POST_ANNOUNCE_TO_X:
+        comment = gen_announce_comment(script)
+        tweet_text = (
+            f"【Becky's Cast 更新🎙️】#{num_str} 配信しました！\n"
+            f"{('「' + subtitle + '」') if subtitle else ''}\n"
+            f"{(comment + chr(10)) if comment else ''}\n"
+            f"beckyexists.com で聴けます。\n"
+            f"お便りも待ってます📮"
+        )
+        tweet_id = post_to_x(tweet_text)
+        if tweet_id:
+            print(f"[morning_cast] X告知完了: {tweet_id}", flush=True)
+        else:
+            print(f"[morning_cast] X告知スキップ（失敗）", flush=True)
     else:
-        print(f"[morning_cast] X告知スキップ（失敗）", flush=True)
+        print("[morning_cast] X告知: 廃止済み（2026-07-27）→ スキップ", flush=True)
 
     print(f"[morning_cast] ===== 第{episode_num}回 完了 =====", flush=True)
 

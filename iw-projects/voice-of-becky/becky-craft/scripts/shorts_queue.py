@@ -6,8 +6,9 @@ out/shorts/queue/ の最古の1本を YouTube に公開し、published/ へ移�
 キューが空になったら Telegram でゆうに在庫切れを通知（無言死しない）。
 
 Usage:
-    python3 shorts_queue.py            # 先頭1本を公開
-    python3 shorts_queue.py --dry-run  # 何を公開するか表示のみ
+    python3 shorts_queue.py                    # 先頭1本を公開
+    python3 shorts_queue.py <ファイル名.mp4>    # 指定した1本を即公開（auto_cast_shorts.pyが朝イチ公開に使う）
+    python3 shorts_queue.py --dry-run          # 何を公開するか表示のみ
 """
 import json
 import re
@@ -50,9 +51,13 @@ def _shorts_url(watch_url: str) -> str:
     return f"https://www.youtube.com/shorts/{m.group(1)}" if m else watch_url
 
 
-def post_to_x(url_line: str) -> None:
-    """Shorts公開URLをXへ告知（fail-open: 失敗してもYouTube公開自体は成功扱いのまま）。"""
-    text = f"新しいShorts公開しました\n{_shorts_url(url_line)}"
+def post_to_x(url_line: str, description: str | None = None) -> None:
+    """Shorts公開をXへ告知（fail-open: 失敗してもYouTube公開自体は成功扱いのまま）。
+    2026-07-27: 一方的な告知文はアルゴリズム評価が低いと裏付けが取れたため（マイケル調査）、
+    meta jsonのdescription（LLM生成済みの中身紹介文、追加LLM呼び出しなし）を本文に使う。
+    description未指定時のみ従来の乾いた告知文にフォールバック。"""
+    body = description.strip() if description and description.strip() else "新しいShorts公開しました"
+    text = f"{body}\n{_shorts_url(url_line)}"
     try:
         r = subprocess.run(
             ["node", str(X_TWEET_CLI), text, "--format", "monologue"],
@@ -67,21 +72,31 @@ def post_to_x(url_line: str) -> None:
 
 def main() -> None:
     dry = "--dry-run" in sys.argv
-    videos = sorted(QUEUE.glob("*.mp4"))
-    if not videos:
-        print("[queue] 在庫切れ", flush=True)
-        notify("📭 ベキたんです。Shorts の在庫が切れました！次の BECKY CRAFT を収録すると自動で補充されます。")
-        return
-    video = videos[0]
+    target = next((a for a in sys.argv[1:] if not a.startswith("--")), None)
+    if target:
+        # 指定ファイル即公開モード（auto_cast_shorts.pyがニュースShortsを朝イチ公開する経路）
+        video = QUEUE / target
+        if not video.exists():
+            print(f"[queue] 指定ファイルなし: {target}", flush=True)
+            return
+    else:
+        videos = sorted(QUEUE.glob("*.mp4"))
+        if not videos:
+            print("[queue] 在庫切れ", flush=True)
+            notify("📭 ベキたんです。Shorts の在庫が切れました！次の BECKY CRAFT を収録すると自動で補充されます。")
+            return
+        video = videos[0]
     meta_path = video.with_suffix(".json")
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     title = meta.get("title", f"BECKY CRAFT 切り抜き #shorts")
     genre = meta.get("genre", "gameplay")  # ponytail: 未指定は従来通りgameplay基準（後方互換）
+    x_text_desc = meta.get("description")  # X告知本文用（YouTube用descのフォールバック適用前の生値）
     desc = meta.get("description",
                     "AIが自分でマイクラを操作して実況する番組『BECKY CRAFT』の切り抜き。\n"
                     "チャンネル: https://www.youtube.com/@voice_of_becky\n"
                     "#マインクラフト #AI実況 #BECKYCRAFT")
-    print(f"[queue] 公開対象: {video.name} 「{title}」（在庫残 {len(videos) - 1}）", flush=True)
+    remaining_before = len(list(QUEUE.glob("*.mp4"))) - 1
+    print(f"[queue] 公開対象: {video.name} 「{title}」（在庫残 {remaining_before}）", flush=True)
     if dry:
         print("[queue] --dry-run のため公開しない", flush=True)
         return
@@ -124,7 +139,7 @@ def main() -> None:
     video.rename(PUBLISHED / video.name)
     if meta_path.exists():
         meta_path.rename(PUBLISHED / meta_path.name)
-    post_to_x(url_line)
+    post_to_x(url_line, description=x_text_desc)
     remaining = len(list(QUEUE.glob("*.mp4")))
     print(f"[queue] 公開完了: {url_line}（在庫残 {remaining}）", flush=True)
     if remaining <= 1:

@@ -129,6 +129,14 @@ def main() -> None:
     )
     print(f"[auto-cast-shorts] キュー投入完了: {dst}", flush=True)
 
+    # ニュースShortsは朝イチ公開（19:00キューを待たせない、2026-07-27 ゆう指示）。
+    # 既存の shorts_queue.py に対象ファイルを指定して即実行、19:00 cron側の
+    # CRAFT切り抜きキューには手を付けない（公開済み分はqueue/から消えるだけ）。
+    subprocess.run(
+        ["python3", str(BECKY_NEWS.parent / "becky-craft" / "scripts" / "shorts_queue.py"), clip_name],
+        check=False,
+    )
+
 
 if __name__ == "__main__":
     main()

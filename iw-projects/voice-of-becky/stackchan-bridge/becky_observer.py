@@ -43,6 +43,7 @@ SCHEDULED_POST_LOG    = Path.home() / ".stackchan" / "scheduled_post_log.json"
 X_TWEET_LOG           = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 MENTION_SEEN_FILE     = Path.home() / ".stackchan" / "mention_replied_log.json"
 BASE_URL         = "http://localhost:8766"
+AUTONOMOUS_X_POST_ENABLED = False  # 2026-07-27 ゆう指示: 独り言系X投稿(スケジュール投稿+発話判定)は一旦停止（戻しやすさ優先）
 AI_NEWS_FEEDS = [
     # 英語（一次ソース）
     "https://openai.com/news/rss.xml",
@@ -1183,6 +1184,12 @@ def ai_news_briefing() -> bool:
     generate_michael_report()
     _deploy_beckyexists()
 
+    # 2026-07-27 ゆう指示: 独り言系X投稿は一旦停止。news.json更新(Cast台本のネタ元)は
+    # 上記で完了済みなのでここで打ち切る（戻しやすさ優先、フラグ1つで復活）。
+    if not AUTONOMOUS_X_POST_ENABLED:
+        print("[observer] AIニュースX投稿: 一旦停止中 → news.json更新のみ", flush=True)
+        return True
+
     # X投稿タイプをランダム選択: AIテック(60%) / AIアイドル日記(40%)
     import random
     post_type = random.choices(["tech", "idol"], weights=[6, 4], k=1)[0]
@@ -2192,7 +2199,10 @@ def consume_todo() -> None:
 
 
 def _run_scheduled_post_check() -> None:
-    """朝7-9/夜20-23の窓で1日1本、スケジュールX投稿する。"""
+    """朝7-9/夜20-23の窓で1日1本、スケジュールX投稿する。
+    2026-07-27: X投稿自体はAUTONOMOUS_X_POST_ENABLEDで止めているが、
+    朝窓のai_news_briefing()はnews.json更新(Cast台本のニュースネタ元)を兼ねるため
+    このチェック自体は動かし続ける（ai_news_briefing側でX投稿だけスキップ）。"""
     sched_window    = get_current_scheduled_window()
     windows_posted  = get_scheduled_windows_posted_today()
     daily_x_count   = _becky_llm.x_posts_today()
@@ -2204,7 +2214,7 @@ def _run_scheduled_post_check() -> None:
     posted_ok = False
     if sched_window == "morning":
         posted_ok = ai_news_briefing()
-    if not posted_ok:
+    if not posted_ok and AUTONOMOUS_X_POST_ENABLED:
         sched_prompt, sched_fmt = _conversational_suffix(build_scheduled_post_prompt(sched_window))
         sched_text = _call_claude_api(sched_prompt)
         if sched_text and _is_postable(sched_text):
@@ -2313,7 +2323,7 @@ def _run_speak_decision(git: dict, interests: dict, monologue: list, idle_hours:
                 # 問いかけが混ざり不自然になるため、suffix注入は見送りfmt明示のみ
                 # (2026-07-22 Codexレビュー指摘で検討、プレーンテキストだが意味的に対象外と判断)。
                 x_posted = False
-                if _should_post_to_x(text, topic or ""):
+                if AUTONOMOUS_X_POST_ENABLED and _should_post_to_x(text, topic or ""):
                     x_posted = bool(post_to_x(text, fmt="monologue"))
                 # journal記録
                 effective_topic = cal_trigger or topic or ""
