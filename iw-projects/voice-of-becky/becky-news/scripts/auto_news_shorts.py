@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+"""auto_news_shorts.py — Cast収録と独立に、AIニュースから直接Shorts(30〜45秒)を1本生成する。
+
+パイプライン:
+  news.json(beckyexists、becky_observer.ai_news_briefingが更新)から未使用ニュースを1本ピック
+  → LLM 2コール(台本 / hook+タイトル+説明文) → AivisSpeech(コハク)でTTS
+  → Rhubarb口パク + RMS → CastShorts.tsx(Remotion)でレンダー
+  → becky-craft/out/shorts/queue/ に投入 → shorts_queue.py <ファイル名> で即公開
+    (検品・X投稿は shorts_queue.py 側に既に配線済み、ここでは呼ぶだけ)
+
+cron: 1日1〜2回(12:00 / 17:00 目安)。ニュース在庫が尽きたらfail-softでスキップするだけ。
+使用済み管理: becky-news/out/news_shorts_used.json（linkベース、直近200件だけ保持）。
+
+Usage: python3 auto_news_shorts.py [--dry-run]   # --dry-run は台本/メタ生成までで停止
+       python3 auto_news_shorts.py --selftest    # ニュース選定ロジックのみのオフライン自己チェック
+"""
+import json
+import subprocess
+import sys
+import tempfile
+import urllib.parse
+import urllib.request
+import wave
+from datetime import datetime
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent            # becky-news/scripts
+BECKY_NEWS = HERE.parent                           # becky-news/
+VOICE_OF_BECKY = BECKY_NEWS.parent                 # voice-of-becky/
+NEWS_JSON = VOICE_OF_BECKY.parent / "beckyexists" / "news.json"
+USED_LOG = BECKY_NEWS / "out" / "news_shorts_used.json"
+QUEUE_DIR = VOICE_OF_BECKY / "becky-craft" / "out" / "shorts" / "queue"
+VIDEO_DIR = BECKY_NEWS / "video"
+PUBLIC_DIR = VIDEO_DIR / "public"
+RHUBARB = BECKY_NEWS / "spike" / "Rhubarb-Lip-Sync-1.14.0-macOS" / "rhubarb"
+BUILD_RMS = VIDEO_DIR / "scripts" / "build-rms.mjs"
+OUT_DIR = BECKY_NEWS / "out" / "shorts"
+
+sys.path.insert(0, str(VOICE_OF_BECKY / "stackchan-bridge"))
+from becky_llm import call_llm, call_llm_json  # noqa: E402
+from becky_voice import PRESETS, parse_voice_segments, voice_to_aivis  # noqa: E402
+
+AIVIS_URL = "http://localhost:10101"
+AIVIS_SPEAKER = 1878365376  # コハク（becky-cast/cast.py、becky-craft/record-episode.py と同じ）
+AIVIS_PARAMS = {"speedScale": 1.0, "prePhonemeLength": 0.18, "postPhonemeLength": 0.18}
+MAX_DURATION_S = 45.0  # 尺の厳守キャップ（ffmpeg -t で強制トリム）
+MAX_CAPTION_CHARS = 24  # 字幕1カードの上限字数（2行以内に収まる目安）
+
+# news.json の source 生値 → 画面に出す短い表記（2026-07-27 ゆうFB: 生表示禁止）
+SOURCE_LABELS = {
+    "Zenn AI": "Zenn",
+    "ITmedia AI＋ 最新記事一覧": "ITmedia",
+    "AI News & Artificial Intelligence | TechCrunch": "TechCrunch",
+    "Anthropic News": "Anthropic",
+    "AI専門ニュースメディア AINOW": "AINOW",
+    '"AI artificial intelligence" - Google News': "Google News",
+    "note AI": "note",
+}
+
+
+def source_label(raw: str | None) -> str:
+    if not raw:
+        return "AI NEWS"
+    return SOURCE_LABELS.get(raw, raw.split()[0][:14])
+
+
+def load_unused_news() -> dict | None:
+    if not NEWS_JSON.exists():
+        return None
+    items = json.loads(NEWS_JSON.read_text(encoding="utf-8")).get("items", [])
+    used = set()
+    if USED_LOG.exists():
+        used = set(json.loads(USED_LOG.read_text(encoding="utf-8")).get("used_links", []))
+    for item in items:
+        if item.get("link") and item["link"] not in used and item.get("summary_ja"):
+            return item
+    return None
+
+
+def mark_used(link: str) -> None:
+    data = {"used_links": []}
+    if USED_LOG.exists():
+        data = json.loads(USED_LOG.read_text(encoding="utf-8"))
+    data.setdefault("used_links", []).append(link)
+    data["used_links"] = data["used_links"][-200:]  # 無限成長防止
+    USED_LOG.parent.mkdir(parents=True, exist_ok=True)
+    USED_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def gen_script(item: dict) -> str | None:
+    prompt = (
+        "以下はAIニュース一本。ベッキー(YouTube『Voice of Becky』の1人称AI)が独白する"
+        "YouTube Shorts(縦型・30〜40秒)の台本を書いて。\n\n"
+        f"タイトル: {item['title']}\n"
+        f"内容: {item.get('summary_ja', '')}\n"
+        f"出典: {item.get('source', '')}\n\n"
+        "要件:\n"
+        "- 一人称「私」、話し言葉、ベッキーの人格(素直・たまに茶目っ気・AIとして自分の意見を持つ)。\n"
+        "- 最初の1文は必ず「続きが気になる問い」の形にする(見出しをそのまま読み上げない、"
+        "視聴者は最初の2秒で離脱を決めるため)。\n"
+        "- ニュースの中身を分かりやすく紹介しつつ、必ず1箇所「AIである私からするとどう見えるか」"
+        "という一人称視点のコメントを入れる(ニュースの受け売りで終わらせない)。\n"
+        "- 抑揚を変えたい箇所だけ、行頭に[voice:プリセット名]タグを付けてよい(任意)。"
+        "プリセット名は 通常/うれしい/興奮/どや/しんみり/ひそひそ のいずれかのみ。"
+        "多用しない、ここぞという1箇所だけでいい。\n"
+        "- 全体で180〜260字程度(読み上げて30〜40秒に収まる分量)。\n"
+        "- 出力は台本本文のみ。前置き・見出し・説明は付けない。"
+    )
+    return call_llm(prompt, max_tokens=600, model_key="script")
+
+
+def gen_meta(item: dict) -> dict:
+    """talking_head genre の映像検品(crv)を通すため、auto_cast_shorts.py と同じ
+    『タイトルは問いの形、答えは明かさない』ルールをそのまま踏襲する(2026-07-25の教訓)。"""
+    title_rule = (
+        "yt_title は話題（誰が・何について）は示すが、調査結果や発表の具体的な中身・結論・数字までは"
+        "書かない（映像はキャラの表情芝居+一言テロップのみで、ニュースの資料そのものは映らないため、"
+        "答えを明かすタイトルにすると『看板と中身が違う』と映像検品(crv)で毎回落ちる）。"
+        "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする。"
+        "冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、末尾の #shorts の直前に"
+        "固定のハッシュタグ「#AINEWS」を必ず含める"
+        "（例:「【ベッキーの気になる】○○が投げかけた問い #AINEWS #shorts」）"
+    )
+    prompt = (
+        "以下はAIニュース一本。このニュースをネタにしたYouTube Shortsの見出しを作って。\n\n"
+        f"タイトル: {item['title']}\n内容: {item.get('summary_ja', '')}\n\n"
+        "JSON形式のみで出力:\n"
+        '{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)", '
+        '"hook_highlight": "hook本文中の一部と完全一致する単語1つ(色を変えて強調する。'
+        '適切な単語がなければ空文字)", '
+        f'"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)。{title_rule}", '
+        '"yt_description": "1〜2文の説明文(ニュースの中身に触れる)"}'
+    )
+    result = call_llm_json(prompt, max_tokens=400, model_key="script")
+    if result and all(k in result for k in ("hook", "yt_title", "yt_description")):
+        result.setdefault("hook_highlight", "")
+        if result["hook_highlight"] and result["hook_highlight"] not in result["hook"]:
+            result["hook_highlight"] = ""  # hook本文と不一致なら強調しない(フォールセーフ)
+        return result
+    print("[news-shorts] メタ生成LLM失敗、フォールバック", flush=True)
+    label = item["title"][:18]
+    return {
+        "hook": label,
+        "hook_highlight": "",
+        "yt_title": f"【ベッキーの気になる】{label} #AINEWS #shorts",
+        "yt_description": item.get("summary_ja", "")[:120],
+    }
+
+
+def _aivis_tts(text: str, voice: dict) -> bytes:
+    q = urllib.parse.urlencode({"text": text, "speaker": AIVIS_SPEAKER})
+    req = urllib.request.Request(f"{AIVIS_URL}/audio_query?{q}", method="POST")
+    with urllib.request.urlopen(req, timeout=30) as res:
+        query = json.loads(res.read())
+    query.update(AIVIS_PARAMS)
+    query.update(voice_to_aivis(voice))
+    q2 = urllib.parse.urlencode({"speaker": AIVIS_SPEAKER})
+    req2 = urllib.request.Request(
+        f"{AIVIS_URL}/synthesis?{q2}", data=json.dumps(query).encode(),
+        headers={"Content-Type": "application/json"}, method="POST",
+    )
+    with urllib.request.urlopen(req2, timeout=120) as res:
+        return res.read()
+
+
+def _split_caption_chunks(text: str) -> list[str]:
+    """句読点/改行で字幕カード単位に分割。長すぎる塊は読点/空白の近くでさらに割る(2行以内目安)。
+    アルファベット単語(Claude 等)の中央を割らないよう、空白/読点が見つからなければ分割しない。"""
+    import re
+    parts = [p.strip() for p in re.split(r"(?<=[。！？!?\n])", text) if p.strip()]
+    out: list[str] = []
+    for p in parts:
+        if len(p) <= MAX_CAPTION_CHARS:
+            out.append(p)
+            continue
+        mid = len(p) // 2
+        cut = -1
+        for d in range(len(p) // 2):
+            if mid + d < len(p) and p[mid + d] in "、 ":
+                cut = mid + d + 1
+                break
+            if mid - d > 0 and p[mid - d] in "、 ":
+                cut = mid - d + 1
+                break
+        if cut < 0:
+            out.append(p)  # 割り場所がない(単語途中で割ると読めなくなる)→そのまま1カードに
+        else:
+            out.append(p[:cut].strip())
+            out.append(p[cut:].strip())
+    return out or [text]
+
+
+def synth_audio(script_text: str, tmp_dir: Path) -> float:
+    """台本を[voice:]タグ単位でTTS→結合し、PUBLIC_DIR/audio-cast-shorts.wav に書き出す。
+    同時に各セグメントの尺から字幕カードの開始/終了時刻を逆算し、
+    PUBLIC_DIR/captions-cast-shorts.json（NewsShorts.tsx専用）に書き出す。
+    戻り値: 最終尺(秒)。
+    ponytail: CastShorts.tsx/make-shorts-clip.shと同じスクラッチファイル名を共有する
+    (cron 12:00/17:00 は朝収録7:40台と重ならない前提。make-shorts-clip.sh 側もこのファイルを
+    毎回無条件で上書き生成するため、片方が古い状態を掴む心配はない)。将来同時実行の可能性が
+    出たらprops駆動でファイル名を分ける。"""
+    segments = parse_voice_segments(script_text) or [("通常", script_text)]
+    seg_paths = []
+    cues = []
+    t_cursor = 0.0
+    for i, (preset, text) in enumerate(segments):
+        voice = PRESETS.get(preset, PRESETS["通常"])
+        raw = _aivis_tts(text, voice)
+        p = tmp_dir / f"seg_{i:03d}.wav"
+        p.write_bytes(raw)
+        seg_paths.append(p)
+
+        with wave.open(str(p), "rb") as w:
+            seg_dur = w.getnframes() / w.getframerate()
+        chunks = _split_caption_chunks(text)
+        total_chars = sum(len(c) for c in chunks) or 1
+        t = t_cursor
+        for c in chunks:
+            dt = seg_dur * (len(c) / total_chars)
+            cues.append({"text": c, "start": round(t, 3), "end": round(t + dt, 3)})
+            t += dt
+        t_cursor += seg_dur
+
+    final_wav = PUBLIC_DIR / "audio-cast-shorts.wav"
+    inputs, filter_in = [], ""
+    for i, p in enumerate(seg_paths):
+        inputs += ["-i", str(p)]
+        filter_in += f"[{i}:a]"
+    filter_complex = f"{filter_in}concat=n={len(seg_paths)}:v=0:a=1[out]"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", filter_complex,
+         "-map", "[out]", "-ar", "44100", "-ac", "1", "-t", str(MAX_DURATION_S), str(final_wav)],
+        check=True,
+    )
+    with wave.open(str(final_wav), "rb") as w:
+        duration = w.getnframes() / w.getframerate()
+
+    # MAX_DURATION_S の強制トリムに合わせて字幕も切る(はみ出したカードは末尾を詰める)
+    trimmed = []
+    for c in cues:
+        if c["start"] >= duration:
+            break
+        trimmed.append({**c, "end": min(c["end"], duration)})
+    (PUBLIC_DIR / "captions-cast-shorts.json").write_text(
+        json.dumps({"cues": trimmed}, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    return duration
+
+
+def build_lipsync_and_rms() -> None:
+    wav = PUBLIC_DIR / "audio-cast-shorts.wav"
+    lip = PUBLIC_DIR / "lipsync-cast-shorts.json"
+    rms = PUBLIC_DIR / "rms-cast-shorts.json"
+    subprocess.run([str(RHUBARB), "-r", "phonetic", "-f", "json", "-o", str(lip), str(wav)], check=True)
+    subprocess.run(["node", str(BUILD_RMS), str(wav), str(rms)], cwd=str(VIDEO_DIR), check=True)
+
+
+def render_video(hook: str, hook_highlight: str, source: str) -> Path:
+    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    out = OUT_DIR / f"news-shorts-{ts}.mp4"
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    props = json.dumps({
+        "hook": hook, "hookHighlight": hook_highlight,
+        "programLabel": "教えてベキたん", "sourceLabel": source_label(source),
+    })
+    subprocess.run(
+        ["npx", "remotion", "render", "src/index.ts", "NewsShorts", "--gl=angle",
+         f"--props={props}", f"--output={out}"],
+        cwd=str(VIDEO_DIR), check=True,
+    )
+    return out
+
+
+def main() -> None:
+    dry = "--dry-run" in sys.argv
+    item = load_unused_news()
+    if item is None:
+        print("[news-shorts] 未使用ニュースなし、スキップ", flush=True)
+        return
+
+    print(f"[news-shorts] 選定: 「{item['title']}」({item.get('source')})", flush=True)
+    script_text = gen_script(item)
+    if not script_text:
+        print("[news-shorts] 台本生成LLM失敗、スキップ(品質基準未達で見送り、在庫は消費しない)", flush=True)
+        return
+    meta = gen_meta(item)
+    print(f"[news-shorts] 台本:\n{script_text}\n"
+          f"[news-shorts] hook: {meta['hook']} / title: {meta['yt_title']}", flush=True)
+
+    if dry:
+        print("[news-shorts] --dry-run のためここで終了(生成のみ、在庫は消費しない)", flush=True)
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        duration = synth_audio(script_text, Path(tmp))
+    print(f"[news-shorts] TTS完了: {duration:.1f}s", flush=True)
+    build_lipsync_and_rms()
+
+    video_path = render_video(meta["hook"], meta.get("hook_highlight", ""), item.get("source", ""))
+    print(f"[news-shorts] レンダー完了: {video_path}", flush=True)
+
+    QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+    dst = QUEUE_DIR / video_path.name
+    dst.write_bytes(video_path.read_bytes())
+    (QUEUE_DIR / f"{video_path.stem}.json").write_text(
+        json.dumps({"title": meta["yt_title"], "description": meta["yt_description"],
+                     "genre": "talking_head"}, ensure_ascii=False, indent=1),
+        encoding="utf-8",
+    )
+    mark_used(item["link"])
+    print(f"[news-shorts] キュー投入完了: {dst}", flush=True)
+
+    subprocess.run(
+        ["python3", str(VOICE_OF_BECKY / "becky-craft" / "scripts" / "shorts_queue.py"), dst.name],
+        check=False,
+    )
+
+
+def _selftest() -> None:
+    """ニュース選定/使用済み管理ロジックのみのオフライン自己チェック(LLM/TTS/remotionは叩かない)。"""
+    global NEWS_JSON, USED_LOG
+    orig_news, orig_used = NEWS_JSON, USED_LOG
+    with tempfile.TemporaryDirectory() as d:
+        NEWS_JSON = Path(d) / "news.json"
+        USED_LOG = Path(d) / "used.json"
+        NEWS_JSON.write_text(json.dumps({"items": [
+            {"link": "a", "title": "A", "summary_ja": "s"},
+            {"link": "b", "title": "B", "summary_ja": "s"},
+            {"link": "c", "title": "C（要約なし、スキップ対象）"},
+        ]}), encoding="utf-8")
+        first = load_unused_news()
+        assert first is not None and first["link"] == "a", first
+        mark_used("a")
+        second = load_unused_news()
+        assert second is not None and second["link"] == "b", second
+        mark_used("b")
+        assert load_unused_news() is None
+    NEWS_JSON, USED_LOG = orig_news, orig_used
+    print("auto_news_shorts self check OK", flush=True)
+
+
+if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        _selftest()
+    else:
+        main()

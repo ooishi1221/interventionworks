@@ -23,9 +23,10 @@ const loadCore = (): Promise<void> =>
     document.head.appendChild(s);
   });
 
-export const CastShorts: React.FC<{ hook?: string; epLabel?: string }> = ({
+export const CastShorts: React.FC<{ hook?: string; epLabel?: string; programLabel?: string }> = ({
   hook = "月曜の重さ、AIも一緒にいた",
   epLabel = "#38 月曜日、隣に来た。",
+  programLabel = "Becky's Cast",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frame = useCurrentFrame();
@@ -98,7 +99,7 @@ export const CastShorts: React.FC<{ hook?: string; epLabel?: string }> = ({
           fontWeight: 700, letterSpacing: 6, opacity: 0.85, textShadow: "0 2px 12px rgba(0,0,0,0.6)",
         }}
       >
-        Becky&apos;s Cast
+        {programLabel}
       </div>
       {/* フックテロップ（発見面向け・座布団+太字、Shorts固有） */}
       <div
