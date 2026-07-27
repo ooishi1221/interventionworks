@@ -9,6 +9,7 @@ import json
 import subprocess
 import urllib.request
 import urllib.parse
+from datetime import datetime
 from pathlib import Path
 
 VPS = ["ssh", "-i", str(Path.home() / ".ssh" / "iw-local-key.key"),
@@ -96,6 +97,11 @@ def main() -> None:
             continue
         if d.get("ts") not in seen:
             new.append(d)
+    # ハートビート（2026-07-27追加）: 新着ゼロだと従来ここまで無出力で、ログmtimeが
+    # 動かずcron_statusがstale誤判定していた(2026-07-18新着ゼロ以降ずっと"stale"表示)。
+    # 新着の有無に関わらず1行だけ出して「本当に死んでる」だけをstaleに拾わせる。
+    print(f"[letters] {datetime.now().strftime('%Y-%m-%d %H:%M')} checked, {len(new)} new", flush=True)
+
     if first_run:
         print(f"[letters] 初回: 控え作成のみ({len(new)}通、通知なし)", flush=True)
     else:

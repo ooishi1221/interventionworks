@@ -226,25 +226,34 @@ def scrape_claude_platform(tab: pychrome.Tab) -> dict:
         if not re.search(r'login|signin', js(tab, "location.href") or ""):
             break
         time.sleep(1)
+    # 2026-07-27 修正: Anthropic Console の UI 変更で `a[href="/cost"]` が消滅し
+    # monthly_cost_usd が7/10からずっと0.0固定になっていた（credit_remainingは減り続けていて
+    # 矛盾、スクレイプ側の断線と判明）。href頼みをやめ、ダッシュボード直書きのラベル文言
+    # 「組織のクレジット」「今月の使用額」の直後に来る $ 表記を拾う方式に変更。
     raw = js(tab, r"""
 (function() {
-  var dollar = Array.from(document.querySelectorAll('*'))
-    .filter(function(el){ return el.children.length === 0; })
-    .map(function(el){ return el.textContent.trim(); })
-    .filter(function(t){ return /^\$[0-9]+\.[0-9]+$/.test(t); });
-  var costEl = document.querySelector('a[href="/cost"]');
-  var costText = costEl ? costEl.textContent : '';
-  var m = costText.match(/\$([0-9.]+)/);
+  var lines = document.body.innerText.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  function findAfter(label) {
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i] === label) {
+        for (var j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+          var m = lines[j].match(/^\$[0-9.,]+/);
+          if (m) return m[0];
+        }
+      }
+    }
+    return null;
+  }
   return JSON.stringify({
-    credit: dollar[0] || null,
-    monthly: m ? m[0] : null
+    credit: findAfter('組織のクレジット'),
+    monthly: findAfter('今月の使用額')
   });
 })()
 """)
     d = json.loads(raw) if raw else {}
     return {
-        "credit_remaining": float((d.get("credit") or "$0").replace("$", "")),
-        "monthly_cost_usd": float((d.get("monthly") or "$0").replace("$", "")),
+        "credit_remaining": float((d.get("credit") or "$0").replace("$", "").replace(",", "")),
+        "monthly_cost_usd": float((d.get("monthly") or "$0").replace("$", "").replace(",", "")),
     }
 
 

@@ -15,6 +15,7 @@ becky_work_briefing.py — 仕事の朝ブリーフィング
 """
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, date, timedelta
 from pathlib import Path
@@ -30,6 +31,17 @@ NIGHT_REVIEW_DIR  = Path.home() / ".stackchan" / "night_reviews"
 STALE_DAYS        = 7    # waiting/in_progress がこれ以上放置なら「腐り」扱い
 DUE_SOON_DAYS     = 3    # due がこれ以内なら「もうすぐ」扱い
 ACTIVE_STATUSES   = ("pending", "in_progress", "waiting")
+
+# ── 番犬セクション（2026-07-27 新設）───────────────────
+# 「気がついたら静かに壊れてた」防止。新しい仕組みは作らず既存の朝ブリーフィングに統合。
+CRON_STATUS_JSON     = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/cron_status.json")
+CRON_HEALTH_HISTORY  = Path.home() / ".stackchan" / "cron_health_history.json"
+WATCHDOG_CONSECUTIVE_DAYS = 3   # これ以上連続 error/stale で報告（1回のエラーはノイズ）
+WATCHDOG_HISTORY_KEEP_DAYS = 30
+ESCALATE_KEYWORDS = ("morning_cast", "shorts", "status_update", "platform_scraper", "becky_image")  # 配信系・収益系のみTelegram即報
+
+NOTES_TOOLS_DIR   = Path("/Volumes/SSD2TB/interventionworks/iw-projects/iw-content/notes/tools")
+CRAFT_PLAN_MD     = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-craft/PLAN.md")
 
 
 # ── 1. scan_tasks ─────────────────────────────────────
@@ -118,6 +130,106 @@ def last_yu_observation() -> str:
         return ""
 
 
+# ── 1.5 番犬（cron 連続エラー + 在庫先読み） ────────────
+
+def _load_cron_jobs() -> list[dict]:
+    try:
+        return json.loads(CRON_STATUS_JSON.read_text()).get("jobs", [])
+    except Exception:
+        return []
+
+
+def _record_cron_health(jobs: list[dict], today: date) -> dict:
+    """cron_status.json の状態を日次スナップショットとして history に追記、古い分はトリム。fail-soft。"""
+    try:
+        history = json.loads(CRON_HEALTH_HISTORY.read_text()).get("days", {}) if CRON_HEALTH_HISTORY.exists() else {}
+    except Exception:
+        history = {}
+    history[today.isoformat()] = {j.get("name", ""): j.get("status", "") for j in jobs if j.get("name")}
+    kept = sorted(history.keys())[-WATCHDOG_HISTORY_KEEP_DAYS:]
+    history = {d: history[d] for d in kept}
+    try:
+        CRON_HEALTH_HISTORY.parent.mkdir(parents=True, exist_ok=True)
+        CRON_HEALTH_HISTORY.write_text(json.dumps({"days": history}, ensure_ascii=False, indent=1))
+    except Exception as e:
+        print(f"[work_briefing] cron_health_history 書き込み失敗: {e}", flush=True)
+    return history
+
+
+def _chronic_error_jobs(history: dict, jobs: list[dict], today: date) -> list[dict]:
+    """WATCHDOG_CONSECUTIVE_DAYS 連続 error/stale のジョブだけを返す（1回のエラーはノイズなので無視）。
+    履歴が足りない日（運用開始直後・欠測）は判定を保留し、誤検知より沈黙を優先する。"""
+    check_dates = [(today - timedelta(days=i)).isoformat() for i in range(WATCHDOG_CONSECUTIVE_DAYS)]
+    if any(d not in history for d in check_dates):
+        return []
+    chronic = []
+    for j in jobs:
+        name = j.get("name", "")
+        if name and all(history.get(d, {}).get(name) in ("error", "stale") for d in check_dates):
+            chronic.append(j)
+    return chronic
+
+
+def _note_queue_warning(today: date) -> str | None:
+    """今週木曜のnote下書き（draft/scheduled）が無ければ警告。auto_note_publish のパーサーを流用。fail-soft。"""
+    try:
+        sys.path.insert(0, str(NOTES_TOOLS_DIR))
+        import auto_note_publish as anp
+        thursday = today + timedelta(days=(3 - today.weekday()) % 7)  # Mon=0..Thu=3
+        for path in anp.NOTES_DIR.glob("*-for-note.md"):
+            h = anp.parse_header(path)
+            if h["push_date"] == thursday and h["status"] in ("draft", "scheduled"):
+                return None
+        return f"今週木曜（{thursday.isoformat()}）のnote下書きなし"
+    except Exception as e:
+        print(f"[work_briefing] note在庫チェック失敗: {e}", flush=True)
+        return None
+
+
+def _craft_queue_warning() -> str | None:
+    """BECKY CRAFT 企画回レーンの未消化企画がゼロなら警告。PLAN.md の表を素朴にパース。fail-soft。"""
+    try:
+        text = CRAFT_PLAN_MD.read_text(encoding="utf-8")
+        m = re.search(r"### 企画回レーン(.*?)(?=\n## |\Z)", text, re.S)
+        if not m:
+            return None
+        rows = [l for l in m.group(1).splitlines()
+                if l.strip().startswith("|") and not l.strip().startswith("|---")
+                and not re.match(r"\|\s*#\s*\|", l.strip())]
+        if rows and all("収録済み" in r for r in rows):
+            return "BECKY CRAFT企画回キューが空、週次リフレッシュ待ち"
+        return None
+    except Exception as e:
+        print(f"[work_briefing] craftキューチェック失敗: {e}", flush=True)
+        return None
+
+
+def watchdog_section(today: date | None = None) -> tuple[str, bool]:
+    """番犬セクションの本文と、配信/収益系エスカレーションが必要かを返す。
+    内部で例外を握り潰し、必ず文字列を返す（fail-soft、ブリーフィング本体を落とさない）。"""
+    today = today or date.today()
+    lines: list[str] = []
+    escalate = False
+    try:
+        jobs = _load_cron_jobs()
+        history = _record_cron_health(jobs, today)
+        for j in _chronic_error_jobs(history, jobs, today):
+            lines.append(f"{j.get('name')}が{WATCHDOG_CONSECUTIVE_DAYS}日以上{j.get('status')}のまま")
+            haystack = (j.get("command_short") or "") + (j.get("name") or "")
+            if any(k in haystack for k in ESCALATE_KEYWORDS):
+                escalate = True
+    except Exception as e:
+        print(f"[work_briefing] 番犬(cron)チェック失敗: {e}", flush=True)
+
+    for w in (_note_queue_warning(today), _craft_queue_warning()):
+        if w:
+            lines.append(w)
+
+    if not lines:
+        return "🐕 異常なし", False
+    return "🐕 番犬\n" + "\n".join(lines), escalate
+
+
 # ── 2. compose ────────────────────────────────────────
 
 # ブリーフィングの人格・方向性。仮文言、後でベッキーが磨く。
@@ -198,8 +310,12 @@ def main():
     counts = {k: len(v) for k, v in scan.items()}
     print(f"[work_briefing] scan: {counts}", flush=True)
 
-    if _is_empty(scan) and not unread_yu_comments():
-        print("[work_briefing] アクティブタスクなし・未読コメントなし → 沈黙（送信スキップ）", flush=True)
+    watchdog_text, escalate = watchdog_section()
+    print(f"[work_briefing] watchdog: {watchdog_text!r} escalate={escalate}", flush=True)
+
+    # 番犬に異常があれば、タスクが平和でも沈黙しない（このセクション自体が「静かに壊れてた」対策）
+    if _is_empty(scan) and not unread_yu_comments() and watchdog_text == "🐕 異常なし":
+        print("[work_briefing] アクティブタスクなし・未読コメントなし・番犬異常なし → 沈黙（送信スキップ）", flush=True)
         return
 
     text = compose(scan)
@@ -208,23 +324,30 @@ def main():
         print("[work_briefing] compose 失敗（API 応答なし）→ 送信しない", flush=True)
         sys.exit(1)
 
+    full_text = f"{watchdog_text}\n\n{text}"
+
     if args.dry_run:
         print("[work_briefing] === scan ===", flush=True)
         print(json.dumps(scan, ensure_ascii=False, indent=2), flush=True)
         print("[work_briefing] === briefing ===", flush=True)
-        print(text, flush=True)
+        print(full_text, flush=True)
+        if escalate:
+            print("[work_briefing] （dry-run のため Telegram エスカレーションは送信スキップ）", flush=True)
         return
 
     # 2026-07-11 ゆう決定: レポート類は Telegram じゃなく作戦本部（reports.json）へ。
     # Telegram に送らなくなったので probe_latest（返信文脈の正本）への書き込みも不要になった
-    if not becky_decide.post_report("briefing", f"朝ブリーフィング {date.today().isoformat()}", text):
+    if not becky_decide.post_report("briefing", f"朝ブリーフィング {date.today().isoformat()}", full_text):
         print("[work_briefing] 作戦本部への投函失敗", flush=True)
         sys.exit(1)
+
+    if escalate:
+        becky_decide.send_telegram(f"🔴 番犬エスカレーション（配信/収益系）\n{watchdog_text}")
 
     becky_action_log.log_action(
         "work_briefing",
         detail=f"朝ブリーフィング送信 {counts}",
-        meta={"scan_counts": counts, "briefing": text[:200]},
+        meta={"scan_counts": counts, "briefing": text[:200], "watchdog": watchdog_text},
     )
     print("[work_briefing] 送信完了", flush=True)
 
@@ -266,6 +389,21 @@ def _self_check():
     assert "dn" not in sum(ids.values(), [])          # done は全カテゴリ不在
     assert not _is_empty(scan)
     assert _is_empty({"overdue": [], "stale_waiting": [], "stale_progress": [], "due_soon": []})
+
+    # 番犬: 3日連続 error のみ拾い、1回のエラー・履歴不足は無視する
+    today2 = date(2026, 7, 27)
+    d0, d1, d2, d3 = [(today2 - timedelta(days=i)).isoformat() for i in range(4)]
+    history = {
+        d0: {"chronic": "error", "flaky": "ok"},
+        d1: {"chronic": "error", "flaky": "error"},
+        d2: {"chronic": "stale", "flaky": "ok"},
+    }
+    jobs = [{"name": "chronic", "status": "error"}, {"name": "flaky", "status": "ok"},
+            {"name": "no_history", "status": "error"}]
+    chronic = _chronic_error_jobs(history, jobs, today2)
+    assert [j["name"] for j in chronic] == ["chronic"], chronic
+    # 履歴が3日分揃ってない場合は判定保留（誤検知より沈黙優先）
+    assert _chronic_error_jobs({d0: {"chronic": "error"}}, jobs, today2) == []
     print("[work_briefing] self-check OK", flush=True)
 
 
