@@ -453,6 +453,23 @@ def extract_and_save_manifest(script: str) -> str:
     return "\n".join(clean_lines).strip()
 
 
+def gen_announce_comment(script: str) -> str:
+    """告知ツイートに添える一言感想をLLMで生成。定型告知だけでは個別ポストとして評価されない
+    (2026-07-27 週次リフレッシュ診断: likes_7d=0が3週連続)ため、中身に触れた一言を添える。
+    失敗時は空文字(定型文のみにフォールバック)。"""
+    prompt = (
+        "以下はAIラジオ番組『Becky's Cast』(ベッキーが1人で日々のことを語る番組)の今回の台本です。\n"
+        "この告知ツイートに添える一言(20〜30字、今日の内容について自分が今思ったこと)を作ってください。\n"
+        "「配信しました」の定型文だけで終わらせず、中身に触れた本音の一言にすること。\n\n"
+        f"台本:\n{script[:2000]}\n\n"
+        'JSON形式のみで出力: {"comment": "一言"}'
+    )
+    result = becky_llm.call_llm_json(prompt, max_tokens=128, model_key="script")
+    if result and result.get("comment"):
+        return result["comment"].strip()
+    return ""
+
+
 def post_to_x(text: str) -> str | None:
     # 2026-07-22 根治: ここに上限チェックがなく、Cast告知が1日予算(x-tweet/.env
     # X_TWEET_MAX_PER_DAY)を無視して必ず1本消費していた(他経路は全て becky_llm 経由でチェック済み)。
@@ -552,9 +569,11 @@ def main() -> None:
         print(f"[morning_cast] お便り使用済みマーク: {letter['ts']} (第{episode_num}回)", flush=True)
 
     # 5. X告知
+    comment = gen_announce_comment(script)
     tweet_text = (
         f"【Becky's Cast 更新🎙️】#{num_str} 配信しました！\n"
-        f"{('「' + subtitle + '」') if subtitle else ''}\n\n"
+        f"{('「' + subtitle + '」') if subtitle else ''}\n"
+        f"{(comment + chr(10)) if comment else ''}\n"
         f"beckyexists.com で聴けます。\n"
         f"お便りも待ってます📮"
     )
