@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from datetime import datetime, timedelta
 
 OUT = "/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/cron_status.json"
@@ -331,6 +332,72 @@ def log_status(log_path, sched, now):
     return "ok", last_run_iso, None
 
 
+# ── グループ分け（Task, 2026-07-27） ──────────────────────────────
+# room.html の OPS 一覧を「何をやってるジョブか」でグループ化するためのマッピング。
+# 名前変更はここ（GROUPS の値）を書き換えるだけで済む。
+GROUPS = {
+    "becky-core": "🧠 ベキたん本体",
+    "youtube": "📺 YouTube・動画工場",
+    "x-post": "🐦 X発信",
+    "note": "📝 note",
+    "site-ops": "🌐 サイト運用",
+    "infra": "🛡 監視・インフラ",
+    "other": "❓ その他",
+}
+DEFAULT_GROUP_KEY = "other"
+
+# キー: log_path のファイル名（拡張子込み basename）。autonomy_stale_jobs 等
+# log_path が無いジョブは name をキーにする。値: (group_key, 15字以内の一言説明)
+JOB_META = {
+    # 🧠 ベキたん本体
+    "becky-mood.log": ("becky-core", "感情変数の毎時更新"),
+    "becky_decide.log": ("becky-core", "1日3回の行動選択"),
+    "becky_reflect.log": ("becky-core", "週次の振り返り"),
+    "becky_night_review.log": ("becky-core", "夜の総括"),
+    "becky-self-check.log": ("becky-core", "崩れてないかの検知"),
+    "becky-diary.log": ("becky-core", "気になった事の日記"),
+    "becky-probe.log": ("becky-core", "ゆうへの自発連絡"),
+    "becky_work_briefing.log": ("becky-core", "朝の仕事ブリーフィング"),
+    "idol-review.log": ("becky-core", "アイドル活動の振り返り"),
+    "memory-tidy.log": ("becky-core", "週次メモリ整理"),
+    "speak_decision": ("becky-core", "自発発話の停滞監視"),
+    "todo_consume": ("becky-core", "todo消化の停滞監視"),
+    # 📺 YouTube・動画工場
+    "morning-cast.log": ("youtube", "毎朝のラジオ自動収録"),
+    "radio-video.log": ("youtube", "ラジオの動画化"),
+    "shorts-queue.log": ("youtube", "Shorts自動投稿"),
+    "news-shorts.log": ("youtube", "ニュースからShorts生成"),
+    "craft-night-recording.log": ("youtube", "マイクラ深夜収録"),
+    "craft-plan-refresh.log": ("youtube", "マイクラ企画の更新"),
+    # 🐦 X発信
+    "becky_search.log": ("x-post", "リプ営業の自動巡回"),
+    "becky-image.log": ("x-post", "投稿用画像の生成"),
+    "image-x.log": ("x-post", "コスプレ画像を投稿"),
+    "fan-collector.log": ("x-post", "ファン情報の日次収集"),
+    # 📝 note
+    "note-auto-publish.log": ("note", "note記事の予告と公開"),
+    # 🌐 サイト運用
+    "becky-status.log": ("site-ops", "作戦本部の状態更新"),
+    "cron-status.log": ("site-ops", "この一覧の自動生成"),
+    "gallery-publish.log": ("site-ops", "ギャラリー自動公開"),
+    "letters-check.log": ("site-ops", "ご意見ボックス通知"),
+    "platform-scraper.log": ("site-ops", "KPIの日次取得"),
+    "activity-review.log": ("site-ops", "週次の活動レビュー"),
+    "portfolio-refresh.log": ("site-ops", "週次の方針見直し"),
+    # 🛡 監視・インフラ
+    "becky-reconnect.log": ("infra", "Telegram接続の復旧"),
+    "becky-watchdog.log": ("infra", "常駐プロセスの生存監視"),
+    "morning-ping.log": ("infra", "レート起点を揃える"),
+}
+
+
+def classify_job(name, log_path):
+    """(group_label, description) を返す。マッピングに無ければ「その他」で fail-soft。"""
+    key = os.path.basename(log_path) if log_path else name
+    group_key, desc = JOB_META.get(key, (DEFAULT_GROUP_KEY, None))
+    return GROUPS[group_key], desc
+
+
 CRON_RE = re.compile(r"^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)$")
 
 
@@ -346,7 +413,12 @@ def main():
             preceding_comment = None
             continue
         if stripped.startswith("#"):
-            preceding_comment = stripped.lstrip("# ").strip()
+            candidate = stripped.lstrip("# ").strip()
+            # ponytail: 無効化された（#でコメントアウトされた）cron行はそれ自体が
+            # schedule+commandの形をしてるので、人間が書いた注釈と区別してpreceding_commentに
+            # しない（既存bug: 2026-07-27 becky_decideの表示名が丸ごとこれになってた）
+            if not CRON_RE.match(candidate):
+                preceding_comment = candidate
             continue
         if "=" in stripped.split()[0] and not CRON_RE.match(stripped):
             # PATH= 等の env 行
@@ -384,6 +456,7 @@ def main():
                 status, err = "error", "telegram MCPプロセスが見つからない"
             last_run = now.isoformat(timespec="seconds")
         nxt = next_fire(sched, now)
+        group, description = classify_job(name, log_path)
 
         jobs.append({
             "name": name,
@@ -395,11 +468,21 @@ def main():
             "next_run": nxt.isoformat(timespec="seconds") if nxt else None,
             "status": status,
             "last_error_snippet": err,
+            "group": group,
+            "description": description,
         })
 
-    jobs.extend(autonomy_stale_jobs(now))
+    autonomy_jobs = autonomy_stale_jobs(now)
+    for j in autonomy_jobs:
+        j["group"], desc = classify_job(j["name"], None)
+        j["description"] = desc or j["schedule_human"]
+    jobs.extend(autonomy_jobs)
 
-    out = {"updated_at": now.isoformat(timespec="seconds"), "jobs": jobs}
+    out = {
+        "updated_at": now.isoformat(timespec="seconds"),
+        "groups": list(GROUPS.values()),  # 表示順の正本。GROUPS の並びを変えるだけで反映
+        "jobs": jobs,
+    }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
 
@@ -412,5 +495,20 @@ def main():
     print("summary:", {("err" if k == "error" else k): v for k, v in counts.items()})
 
 
+def _selfcheck():
+    """classify_job のマッピング漏れ検知（既知ジョブの group が「その他」に落ちてないか）+ 無効化cron行が
+    preceding_comment として拾われないことの回帰チェック。"""
+    known_ok, unmapped = classify_job("becky mood", "/x/becky-mood.log")
+    assert known_ok == GROUPS["becky-core"], known_ok
+    other, desc = classify_job("謎ジョブ", "/x/nonexistent-xyz.log")
+    assert other == GROUPS[DEFAULT_GROUP_KEY] and desc is None
+    assert not CRON_RE.match("becky_diary_x — 日記墓場のX発掘")
+    assert CRON_RE.match("15 12,22 * * * /bin/true >> /tmp/x.log 2>&1")
+    print("selfcheck ok")
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--selfcheck":
+        _selfcheck()
+    else:
+        main()

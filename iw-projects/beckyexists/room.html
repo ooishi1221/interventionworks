@@ -247,10 +247,16 @@
     .cron-dot.error { background: var(--red); }
     .cron-dot.stale { background: var(--amber); }
     .cron-dot.never { background: var(--sub2); }
-    .cron-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .cron-name-wrap { overflow: hidden; min-width: 0; }
+    .cron-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cron-desc { font-size: 11px; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
     .cron-sched { font-size: 11.5px; color: var(--sub); font-family: var(--mono); white-space: nowrap; }
     .cron-last { font-size: 11px; color: var(--sub2); font-family: var(--mono); white-space: nowrap; text-align: right; }
     .cron-err { margin-top: 6px; }
+    .cron-group { margin-bottom: 12px; }
+    .cron-group-head { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: var(--sub2); padding: 6px 12px 4px; }
+    .cron-group-head .n { font-family: var(--mono); font-weight: 400; }
+    .cron-group-head .warn { color: var(--amber); font-weight: 700; }
     .report-item summary { cursor: pointer; font-size: 12px; color: var(--text); list-style: none; padding: 4px 0; }
     .report-item summary::-webkit-details-marker { display: none; }
     .report-item summary::before { content: '▸ '; color: var(--sub2); }
@@ -943,16 +949,36 @@ function buildCronStatus(cron) {
   }
 
   const lastTxt = j => j.status === 'never_ran' ? '未実行' : (j.last_run ? fmtAgo(j.last_run) : '--');
-  el.innerHTML = jobs.map(j => `
+  const itemHtml = j => `
     <div class="cron-item">
       <div class="cron-line">
         <span class="cron-dot ${dotCls[j.status] || 'never'}"></span>
-        <span class="cron-name" title="${esc(j.name)} — ${esc(j.command_short)}">${esc(j.name)}</span>
+        <div class="cron-name-wrap" title="${esc(j.name)} — ${esc(j.command_short)}">
+          <div class="cron-name">${esc(j.name)}</div>
+          ${j.description ? `<div class="cron-desc">${esc(j.description)}</div>` : ''}
+        </div>
         <span class="cron-sched">${esc(j.schedule_human)}</span>
         <span class="cron-last">${lastTxt(j)}</span>
       </div>
       ${j.last_error_snippet ? `<details class="cron-err"><summary>エラー詳細</summary><pre>${esc(j.last_error_snippet)}</pre></details>` : ''}
-    </div>`).join('');
+    </div>`;
+
+  // グループ順は cron.groups（cron_status.py の GROUPS が正本）。無ければ出現順にフォールバック（fail-soft）。
+  const groupOrder = cron?.groups?.length ? cron.groups : [...new Set(jobs.map(j => j.group || 'その他'))];
+  const byGroup = new Map(groupOrder.map(g => [g, []]));
+  jobs.forEach(j => {
+    const g = j.group || 'その他';
+    if (!byGroup.has(g)) byGroup.set(g, []);
+    byGroup.get(g).push(j);
+  });
+
+  el.innerHTML = [...byGroup.entries()].filter(([, js]) => js.length).map(([group, js]) => {
+    const warn = js.some(j => j.status === 'error' || j.status === 'stale');
+    return `<div class="cron-group">
+      <div class="cron-group-head">${esc(group)} <span class="n">${js.length}</span>${warn ? ' <span class="warn">⚠️</span>' : ''}</div>
+      ${js.map(itemHtml).join('')}
+    </div>`;
+  }).join('');
 }
 
 // ── ARSENAL（2026-07-23 新設: 装備の物理台帳。md正本をそのまま描画）──
