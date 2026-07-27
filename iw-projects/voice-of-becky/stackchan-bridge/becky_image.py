@@ -336,6 +336,39 @@ ACTIVITY_SCENES = [
      "outfit": "loose camisole and short shorts, hair let down, very relaxed",
      "desc": "lying on the floor in front of an electric fan on a hot day, lazily melting expression",
      "technique": "soft indoor daylight, hazy summer heat mood, relaxed bokeh"},
+    # ── ネオポップ画風系（2026-07-27、むぎ@AIアートのセカイ氏のネオポップ解説プロンプト型を採用） ──
+    # Lovart(lovart-thumb.js)は単一プロンプト文字列のみ受け付け、negative prompt引数はない。
+    # 記事推奨のnegative prompt(photorealistic, muted colors, cluttered composition,
+    # muddy colors, weak outlines, unreadable design)はポジティブ側の言い回しで吸収する
+    # (例: clean uncluttered composition, crisp bold outlines)。lovart-thumb.js側は改造しない。
+    {"name": "ネオポップ・アイドルポスター",
+     "outfit": "casual street-style outfit with teal accents",
+     "desc": ("neo pop idol poster, anime idol girl posing with a microphone, vivid pop colors, "
+              "bold graphic background, halftone dots, comic-style sparkle symbols, sticker-like layout, "
+              "modern pop culture energy, clear silhouette, high-impact promotional poster design"),
+     "technique": ("neo pop art style, anime pop art fusion, bold outlines, sticker-like character design, "
+                   "teal, mint green, magenta, yellow, black and white palette, limited but vibrant palette, "
+                   "high contrast color blocks, clean uncluttered composition, crisp bold outlines, "
+                   "vividly saturated colors, readable graphic poster design")},
+    {"name": "ネオポップ・ストリート",
+     "outfit": "casual street-style outfit with teal accents",
+     "desc": ("standing in front of a graffiti wall, modern pop art illustration, street art background "
+              "with graffiti elements, spray paint texture, sticker bomb details, bold neon color palette, "
+              "thick clean outlines, rebellious but cute mood, urban pop culture style"),
+     "technique": ("neo pop art style, anime pop art fusion, bold outlines, halftone dots, "
+                   "sticker-like character design, clear silhouette, "
+                   "teal, mint green, magenta, yellow, black and white palette, limited but vibrant palette, "
+                   "high contrast color blocks, clean uncluttered composition, "
+                   "vividly saturated colors, readable graphic design")},
+    {"name": "ネオポップ・ゲームUI",
+     "outfit": "casual street-style outfit with teal accents, gaming headset on",
+     "desc": ("neo pop art style, game UI inspired graphic details, pixel art accents, "
+              "comic speech bubble elements, bright graphic color scheme, bold outlines, energetic pose, "
+              "playful modern design, clean poster layout"),
+     "technique": ("anime pop art fusion, halftone dots, sticker-like character design, clear silhouette, "
+                   "teal, mint green, magenta, yellow, black and white palette, limited but vibrant palette, "
+                   "high contrast color blocks, clean uncluttered composition, crisp bold outlines, "
+                   "vividly saturated colors, readable graphic design")},
 ]
 
 
