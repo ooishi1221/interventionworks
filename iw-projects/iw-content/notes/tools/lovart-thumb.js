@@ -75,6 +75,9 @@ async function main() {
   const page = await findLovartPage(browser);
   await page.bringToFront();
   await page.waitForTimeout(1000);
+  // ponytail: 告知モーダル(Mantine)が入力欄を覆って click が stable判定されず
+  // 30秒timeoutする既知症状(2026-07-24〜26連発)への防御。Escapeで大抵閉じる。
+  await page.keyboard.press('Escape').catch(() => {});
 
   // 送信前の既存画像srcを記録（新旧区別のため）
   const existingSrcs = new Set(
@@ -83,7 +86,15 @@ async function main() {
 
   console.log('🎨 Lovart に画像生成を依頼中...');
   const input = page.locator('[contenteditable="true"], textarea').first();
-  await input.click();
+  try {
+    await input.click();
+  } catch (e) {
+    // ponytail: click timeoutの再現待ちをやめて証拠を残す。次回同症状の切り分け用。
+    const shotPath = `/tmp/lovart-thumb-click-failure-${Date.now()}.png`;
+    await page.screenshot({ path: shotPath }).catch(() => {});
+    console.error(`❌ 入力欄クリック失敗、スクリーンショット保存: ${shotPath}`);
+    throw e;
+  }
   await page.keyboard.press('Meta+A');
   await page.keyboard.press('Backspace');
   await input.fill(prompt);
