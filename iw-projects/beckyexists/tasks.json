@@ -2,6 +2,34 @@
   "updated_at": "2026-07-23T19:46:47.878959",
   "tasks": [
     {
+      "id": "shorts-trigger-strategy-0727",
+      "scope": "iw",
+      "label": "Shortsトリガー戦略 — 工場化+サムネ級1フレーム目+X再編(ショートこそ我々の生きる道)",
+      "category": "voice-of-becky",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-27",
+      "updated_at": "2026-07-27",
+      "completed_at": "2026-07-27",
+      "due": null,
+      "note": "7/27一気通貫で実装。マイケル外部調査(切り抜きクリップ拡散がAI VTuber成功例の起点/告知調はアルゴリズム評価低)+ゆうのフィード観察(ミリオンShortsは1フレーム目が極太文字サムネ)を受け、ゆう宣言「ショートこそ我々の生きる道」。①ニュースShorts工場新設(auto_news_shorts.py、cron12時/17時、朝Cast切り出しと合わせ1日3本、初回1本公開済みy-7n6T5bTkA、生成2分22秒/本) ②全Shortsサムネ級テロップ(極太フチ+キーワード黄色+発話字幕、NewsShorts.tsx新設/CRAFT側record-episode.py) ③X再編(ラジオ告知廃止/独り言停止/コスプレ画像19:30復活/ShortsリンクX自動投稿=プレビュー展開をゆう実機確認/X予算3→6) ④YouTube SEO(タイトル【マインクラフト】表記+説明リッチ形式+タグ、既存9本遡及済み)。Codexレビュー通過。commit: d7482cd/8b8227f/88c4a48/870dca1ほか",
+      "icon": "🎬"
+    },
+    {
+      "id": "watchdog-briefing-0727",
+      "scope": "iw",
+      "label": "番犬 — 静かな故障の検知ループ(朝ブリーフィング統合)",
+      "category": "voice-of-becky",
+      "status": "done",
+      "priority": "medium",
+      "start": "2026-07-27",
+      "updated_at": "2026-07-27",
+      "completed_at": "2026-07-27",
+      "due": null,
+      "note": "ゆう「気がついたらうまく回ってないパターンあるよね、ループを回す設計にできないか」への実装。7/27に静かな故障5件同時発覚(Vercel認証切れ4日/Shorts検品5連敗/画像投稿停止5日/note在庫切れ/コスト取得0.0固定)が発端。毎朝9:20 briefingに統合: 3日以上連続error/staleのcronのみ列挙+note/CRAFT在庫先読み+配信収益系はTelegramエスカレーション。初走行で「7/30のnote下書きなし」を実際に検知。判定本稼働は履歴3日分が揃う7/29から。commit d343301",
+      "icon": "🐕"
+    },
+    {
       "id": "wo-witone-web-vercel-migration",
       "project": "WO",
       "status": "waiting",
@@ -69,9 +97,9 @@
       "status": "in_progress",
       "priority": "medium",
       "start": "2026-07-19",
-      "updated_at": "2026-07-19",
-      "due": null,
-      "note": "ゆう提案(7/18深夜)「note=テック軸」から発足。素材はvoice-of-becky/tech-stock.json(検証済み7項目)。第1弾「HTMLを書いて5.7秒。動画は一発では、できませんでした。」(HyperFrames)を公開(https://note.com/intervention_jp/n/ncdf14d53c1c2)。編集レビュー2ラウンド計14点を経て型確立: 結果から入る冒頭/工程別実測数字/AI一人称視点/AI専用ツールという潮流への昇華/末尾ベッキー評価カード。次回以降、残り6項目(claude-real-video/Codex adversarial review/Playwright CDP/Jina Reader/Grok Build/Monid.ai)を1本ずつ。宿題: publish-direct.jsのタグハードコード修正、本文中画像埋め込みの自動化(現状ゆう手動)。",
+      "updated_at": "2026-07-27",
+      "due": "2026-07-30",
+      "note": "ゆう提案(7/18深夜)「note=テック軸」から発足。素材はvoice-of-becky/tech-stock.json(検証済み7項目)。第1弾「HTMLを書いて5.7秒。動画は一発では、できませんでした。」(HyperFrames)を公開(https://note.com/intervention_jp/n/ncdf14d53c1c2)。編集レビュー2ラウンド計14点を経て型確立: 結果から入る冒頭/工程別実測数字/AI一人称視点/AI専用ツールという潮流への昇華/末尾ベッキー評価カード。次回以降、残り6項目(claude-real-video/Codex adversarial review/Playwright CDP/Jina Reader/Grok Build/Monid.ai)を1本ずつ。宿題: publish-direct.jsのタグハードコード修正、本文中画像埋め込みの自動化(現状ゆう手動)。 7/27: 7/23公開分は下書き在庫切れで正常スキップだったと判明(パイプライン健在)。第2弾を7/30(木)までに仕込むのがベッキーの宿題(番犬も毎朝在庫を監視)。",
       "icon": "🧪",
       "completed_at": null
     },
@@ -137,9 +165,9 @@
       "status": "in_progress",
       "priority": "high",
       "start": "2026-07-06",
-      "updated_at": "2026-07-24",
+      "updated_at": "2026-07-27",
       "due": null,
-      "note": "7/24: Cast本編(ラジオ動画フル尺)のYouTube自動アップロード撤退。YouTube Data API実測(全37本母集団): 本編(n=15)中央値0回・最大22回 vs Shorts(n=10)中央値141回・最大253回、10日経過後も約60倍差で伸びしろ見えず(マイケル調査、ゆう承認)。`becky-news/scripts/auto-radio-video.sh`からアップロード処理削除・commit a5af895。Cast切り抜きShorts生成は継続、BECKY CRAFT実況本編も継続。次: Xインプレッション低迷の原因調査も並行実施(n=17投稿平均32.8imp、AI判定説/リンクペナルティ説とも裏付けなし、次の一手=検索タブ自己検索でシャドウバン簡易判定)。",
+      "note": "7/24: Cast本編(ラジオ動画フル尺)のYouTube自動アップロード撤退。YouTube Data API実測(全37本母集団): 本編(n=15)中央値0回・最大22回 vs Shorts(n=10)中央値141回・最大253回、10日経過後も約60倍差で伸びしろ見えず(マイケル調査、ゆう承認)。`becky-news/scripts/auto-radio-video.sh`からアップロード処理削除・commit a5af895。Cast切り抜きShorts生成は継続、BECKY CRAFT実況本編も継続。次: Xインプレッション低迷の原因調査も並行実施(n=17投稿平均32.8imp、AI判定説/リンクペナルティ説とも裏付けなし、次の一手=検索タブ自己検索でシャドウバン簡易判定)。 7/27: Shortsトリガー戦略へ全面移行(tasks: shorts-trigger-strategy-0727参照)。ニュースShorts工場で1日3本体制、Cast切り抜きは検品genre分岐で根治済み。",
       "icon": "📺"
     },
     {
@@ -381,9 +409,9 @@
       "status": "in_progress",
       "priority": "high",
       "start": "2026-06-16",
-      "updated_at": "2026-07-17",
+      "updated_at": "2026-07-27",
       "due": "2026-07-21",
-      "note": "7/17大転換: コハクvs合成声5連敗(ゆうの耳判定)→ラジオ=コハク続投を正式決定、「人間の声優さんに原盤を録ってもらう」プロジェクトに転換(チャッピー提案をベースにベキたん検証済み)。ゆうが声優さん探し中。キット準備済み: voice-of-becky/docs/voice-actor-audition-kit.md(基準=親しみ4知性3芯2かわいさ1おっとり寄り/声かけ要件/同一台本オーディション/契約チェック/収録メニュー90-100分)。同じ人から会話(SBV2用)+歌唱(RVC用)を別録り。並行課題=SBV2学習のMac対応可否検証。歌はv2続投。ゆうの温度:「ベキたんの声は妥協したくないじゃん！！！」",
+      "note": "7/17大転換: コハクvs合成声5連敗(ゆうの耳判定)→ラジオ=コハク続投を正式決定、「人間の声優さんに原盤を録ってもらう」プロジェクトに転換(チャッピー提案をベースにベキたん検証済み)。ゆうが声優さん探し中。キット準備済み: voice-of-becky/docs/voice-actor-audition-kit.md(基準=親しみ4知性3芯2かわいさ1おっとり寄り/声かけ要件/同一台本オーディション/契約チェック/収録メニュー90-100分)。同じ人から会話(SBV2用)+歌唱(RVC用)を別録り。並行課題=SBV2学習のMac対応可否検証。歌はv2続投。ゆうの温度:「ベキたんの声は妥協したくないじゃん！！！」 7/27クレア監査: due7/21超過・6日停滞。ブロッカーはゆうの声優探し(システム故障ではない)。",
       "icon": "🎙️"
     },
     {
@@ -973,9 +1001,9 @@
       "status": "waiting",
       "priority": "medium",
       "start": "2026-07-22",
-      "updated_at": "2026-07-22",
+      "updated_at": "2026-07-27",
       "due": null,
-      "note": "xclienttransaction(twitter-cli依存)がXのページ構造変更に未追従でsearch系のみ404(profile/投稿/delete/replyは生存)。ゆう判断7/22: 課金(X API Basic $200/月)せず待つ、迂回も作らない。復旧センサー=毎朝7:35のfan-collector.logが成功に転じたら復旧→リプ自動返信とフォロワー日次収集が自動再開する。手動返信済み3件は既読登録済み(二重返信防止)"
+      "note": "xclienttransaction(twitter-cli依存)がXのページ構造変更に未追従でsearch系のみ404(profile/投稿/delete/replyは生存)。ゆう判断7/22: 課金(X API Basic $200/月)せず待つ、迂回も作らない。復旧センサー=毎朝7:35のfan-collector.logが成功に転じたら復旧→リプ自動返信とフォロワー日次収集が自動再開する。手動返信済み3件は既読登録済み(二重返信防止) 7/27根本原因特定: X側フロントエンド大規模リライト(TanStack Start化)でxclienttransactionの正規表現が恒久的に不一致。upstream issue https://github.com/iSarabjitDhiman/XClientTransaction/issues/41 (7/25オープン、未解決、メンテナー正式修正なし)。自作パッチはフォーク規模のため見送り確定。なおXシャドウバンはゆう手動確認でシロ。"
     },
     {
       "id": "wo-fruitbus-static-migration",

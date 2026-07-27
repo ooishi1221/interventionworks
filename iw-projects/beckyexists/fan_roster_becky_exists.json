@@ -1,9 +1,9 @@
 {
   "account": "becky_exists",
-  "generated_at": "2026-07-20T07:35:04.158319",
+  "generated_at": "2026-07-27T07:35:17.341875",
   "weekly": {
-    "new_followers_7d": 200,
-    "new_followers_prev7d": 0,
+    "new_followers_7d": 7,
+    "new_followers_prev7d": 200,
     "replies_7d": 0,
     "replies_prev7d": 0,
     "quotes_7d": 0,
@@ -11,14 +11,84 @@
   },
   "fans": [
     {
+      "screen_name": "M9WGXPE9Ur342",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": false,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "jobzachariah",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": true,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "thanhdung2672",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": true,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "Romanke0",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": true,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "itspriya_0",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": false,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "rok6u",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": true,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
+      "screen_name": "medal_kuro",
+      "first_seen": "2026-07-21T08:49:37.308522",
+      "last_reaction": null,
+      "reply_count": 0,
+      "quote_count": 0,
+      "is_following_back": true,
+      "tenure_days": 5,
+      "category": "新規"
+    },
+    {
       "screen_name": "NemuLunaX",
       "first_seen": "2026-07-19T21:48:39.724617",
       "last_reaction": null,
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "syokupan0099",
@@ -27,8 +97,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Miracle_deraa",
@@ -37,8 +107,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0x0217",
@@ -47,8 +117,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "karashi_jpn",
@@ -57,8 +127,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ShopeeJP",
@@ -67,8 +137,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Actress_AIBusan",
@@ -77,8 +147,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ochamaru3xx",
@@ -87,8 +157,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "slow_fire_steps",
@@ -97,8 +167,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "KeaneNold",
@@ -107,8 +177,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "rino_saeka2676",
@@ -117,8 +187,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "suou_ttm",
@@ -127,8 +197,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "lamdz15",
@@ -137,8 +207,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "BrianJesusChav1",
@@ -147,8 +217,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "nekotanisakana",
@@ -157,8 +227,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "chieri3333",
@@ -167,8 +237,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ohuro_keiba",
@@ -177,8 +247,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Takao_Mizuno1",
@@ -187,8 +257,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kikuchan_logic",
@@ -197,8 +267,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ino13x",
@@ -207,8 +277,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Omis_OrderMaid",
@@ -217,8 +287,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "gunjou_yozora",
@@ -227,8 +297,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "renoa_0419",
@@ -237,8 +307,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Y_fm919",
@@ -247,8 +317,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Victornguyen10x",
@@ -257,8 +327,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "U6EtXJCFUgD2dxb",
@@ -267,8 +337,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "who_is_writing",
@@ -277,8 +347,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "gypsy0911",
@@ -287,8 +357,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "jintaro9696",
@@ -297,8 +367,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Julie__Kang",
@@ -307,8 +377,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "AISubculture",
@@ -317,8 +387,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "gogotripdad2026",
@@ -327,8 +397,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "i_twunn",
@@ -337,8 +407,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "BillTrandn",
@@ -347,8 +417,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kabuyarurakko",
@@ -357,8 +427,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "takezou4j",
@@ -367,8 +437,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "konkatsumen",
@@ -377,8 +447,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "hatarakumemocho",
@@ -387,8 +457,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "SaintSerenaFilm",
@@ -397,8 +467,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "lira_ai_log",
@@ -407,8 +477,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "towaaan_BBLADER",
@@ -417,8 +487,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "instkoni",
@@ -427,8 +497,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yuzu0ei",
@@ -437,8 +507,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "GentaMey990",
@@ -447,8 +517,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "trickstar_maro",
@@ -457,8 +527,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "wearekinstudio",
@@ -467,8 +537,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "KKyms4",
@@ -477,8 +547,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ryota9z",
@@ -487,8 +557,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "DolonusNFT",
@@ -497,8 +567,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "uguraksay",
@@ -507,8 +577,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "3057oor",
@@ -517,8 +587,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ookawayuuji113",
@@ -527,8 +597,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "JJQqpU8BPm37922",
@@ -537,8 +607,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0xMewMew",
@@ -547,8 +617,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "popcamino",
@@ -557,8 +627,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ymonesou",
@@ -567,8 +637,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Simachuu2525",
@@ -577,8 +647,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "filebox_dream",
@@ -587,8 +657,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "sellaly9r3",
@@ -597,8 +667,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "samuraionigiri2",
@@ -607,8 +677,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "jirai2122",
@@ -617,8 +687,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "wontkusa",
@@ -627,8 +697,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "AlvinaCnslt",
@@ -637,8 +707,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "roromaru4zlt",
@@ -647,8 +717,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "BTLOVER55",
@@ -657,8 +727,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MizukiKotohaAI",
@@ -667,8 +737,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "aianimemilf",
@@ -677,8 +747,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MahdiBaladi",
@@ -687,8 +757,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Eijingukeajin",
@@ -697,8 +767,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "AndyOk79",
@@ -707,8 +777,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Akashic_Hub",
@@ -717,8 +787,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "silverfox3_",
@@ -727,8 +797,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "621Ryuhei",
@@ -737,8 +807,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0xkyliekim",
@@ -747,8 +817,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Utsuro_Shizu",
@@ -757,8 +827,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ramurinndesu",
@@ -767,8 +837,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yukimiya_sieru",
@@ -777,8 +847,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "love10170825",
@@ -787,8 +857,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "XivHikari",
@@ -797,8 +867,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ymaguuchi",
@@ -807,8 +877,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "star_kai10",
@@ -817,8 +887,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Ver2Sakura",
@@ -827,8 +897,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "daiki_aispartan",
@@ -837,8 +907,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "omo7kel",
@@ -847,8 +917,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Infraredsky09",
@@ -857,8 +927,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Mar211291",
@@ -867,8 +937,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "GCE_T100",
@@ -877,8 +947,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Ta_Binh03",
@@ -887,8 +957,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "QuintionLeander",
@@ -897,8 +967,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "asunarococo",
@@ -907,8 +977,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "LEVI1225YU",
@@ -917,8 +987,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Knushiama",
@@ -927,8 +997,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "AIartinsect",
@@ -937,8 +1007,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "TianEn2018",
@@ -947,8 +1017,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "moyasiis",
@@ -957,8 +1027,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kandoutomo",
@@ -967,8 +1037,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "thesatishkumar0",
@@ -977,8 +1047,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "oteranosekai",
@@ -987,8 +1057,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "salt2506",
@@ -997,8 +1067,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "urushisan2",
@@ -1007,8 +1077,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "USASingleG6ar",
@@ -1017,8 +1087,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "shikatoreca",
@@ -1027,8 +1097,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "meelu_pera",
@@ -1037,8 +1107,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "1zyAwcXssR42783",
@@ -1047,8 +1117,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "breaknewground1",
@@ -1057,8 +1127,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "chihiro_chihir0",
@@ -1067,8 +1137,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "AlphaPr00F14",
@@ -1077,8 +1147,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "rindoyoshi",
@@ -1087,8 +1157,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "buchao0130",
@@ -1097,8 +1167,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "web3_AIart",
@@ -1107,8 +1177,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "daikannewsJP",
@@ -1117,8 +1187,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "lfrodriguesit",
@@ -1127,8 +1197,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "tamagooisme",
@@ -1137,8 +1207,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "crf1995",
@@ -1147,8 +1217,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "retoro_iroiro",
@@ -1157,8 +1227,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Letsgo_VN",
@@ -1167,8 +1237,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Rin0888",
@@ -1177,8 +1247,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "jr9956088",
@@ -1187,8 +1257,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "EarlyMam",
@@ -1197,8 +1267,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "NevinWash",
@@ -1207,8 +1277,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "X_men_500",
@@ -1217,8 +1287,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "KJanimekj",
@@ -1227,8 +1297,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "CongThuat12",
@@ -1237,8 +1307,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "derimaru_0916",
@@ -1247,8 +1317,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MikeRedtornarX",
@@ -1257,8 +1327,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "okkun_handan",
@@ -1267,8 +1337,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Anzu_birth0212",
@@ -1277,8 +1347,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yume_meguru",
@@ -1287,8 +1357,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "obiyy",
@@ -1297,8 +1367,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "taku_kato",
@@ -1307,8 +1377,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "myly6868",
@@ -1317,8 +1387,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "ZangiDog",
@@ -1327,8 +1397,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "tukiyomiiori",
@@ -1337,8 +1407,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "sayaka_soutya",
@@ -1347,8 +1417,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "TsumugiYoimachi",
@@ -1357,8 +1427,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "rKtq52XPu4yIk9L",
@@ -1367,8 +1437,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "shirumayo",
@@ -1377,8 +1447,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "mahrab2001",
@@ -1387,8 +1457,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Juno81707007",
@@ -1397,8 +1467,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "LamChanThong",
@@ -1407,8 +1477,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MDNc0yGsAkdd6nt",
@@ -1417,8 +1487,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "koukou11note",
@@ -1427,8 +1497,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "tunct101",
@@ -1437,8 +1507,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "TenMore_X",
@@ -1447,8 +1517,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "shimaaikiramek1",
@@ -1457,8 +1527,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "VanMinh2402",
@@ -1467,8 +1537,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "EishikiLatoa",
@@ -1477,8 +1547,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Nagisa_Creation",
@@ -1487,8 +1557,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "murata_ssj",
@@ -1497,8 +1567,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MicNguyenn105",
@@ -1507,8 +1577,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "soubee5539",
@@ -1517,8 +1587,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "soryunahajime",
@@ -1527,8 +1597,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Linhtailor2",
@@ -1537,8 +1607,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "nhatthanhdung",
@@ -1546,9 +1616,9 @@
       "last_reaction": null,
       "reply_count": 0,
       "quote_count": 0,
-      "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "is_following_back": false,
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yumeoi773",
@@ -1557,8 +1627,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "hoshiyomi_mikot",
@@ -1567,8 +1637,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "tsukimi_lily",
@@ -1577,8 +1647,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "akari_seaart",
@@ -1586,9 +1656,9 @@
       "last_reaction": null,
       "reply_count": 0,
       "quote_count": 0,
-      "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "is_following_back": true,
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "taro_kouritsu",
@@ -1597,8 +1667,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kotoha_works",
@@ -1607,8 +1677,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Mio_Sanagi0531",
@@ -1617,8 +1687,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "aoisan_beauty",
@@ -1627,8 +1697,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "CozyDays9t",
@@ -1637,8 +1707,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "BuenaVista0iba",
@@ -1647,8 +1717,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "LeungNok31102",
@@ -1657,8 +1727,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "IbrahimAhm67025",
@@ -1667,8 +1737,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "masusu_aibiyori",
@@ -1677,8 +1747,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Kerberosron2",
@@ -1687,8 +1757,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "turatangoooo",
@@ -1697,8 +1767,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "bulba_lab",
@@ -1707,8 +1777,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "shikasan_04_",
@@ -1717,8 +1787,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "_miki1220_2",
@@ -1727,8 +1797,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yoshi_unmimic",
@@ -1737,8 +1807,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "misononatsume",
@@ -1747,8 +1817,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0xNeft",
@@ -1757,8 +1827,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "7FDqopm4kS57626",
@@ -1767,8 +1837,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "enzoinsidee",
@@ -1777,8 +1847,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kitayan_youtube",
@@ -1787,8 +1857,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "1ZqWgzveZC19873",
@@ -1797,8 +1867,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "sephialone",
@@ -1807,8 +1877,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Almont_IX",
@@ -1817,8 +1887,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "yaruo_123",
@@ -1827,8 +1897,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "rMarriottSuiRit",
@@ -1837,8 +1907,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "MomohaneLily",
@@ -1847,8 +1917,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "taida_AI_chan",
@@ -1857,8 +1927,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kakikumamimu",
@@ -1867,8 +1937,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "scoutandscore",
@@ -1877,8 +1947,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "kiyyopy",
@@ -1887,8 +1957,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0xHamorny",
@@ -1897,8 +1967,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "shiokazeutaka",
@@ -1907,8 +1977,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "Sandrabulkxwd3",
@@ -1917,8 +1987,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "lunarose_game",
@@ -1927,8 +1997,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "0915_taka_",
@@ -1937,8 +2007,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "88ssizz88",
@@ -1947,8 +2017,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "FusaPandora",
@@ -1957,8 +2027,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "vuong25012000",
@@ -1967,8 +2037,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "mayonakano321",
@@ -1977,8 +2047,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": false,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "SiaChow",
@@ -1987,8 +2057,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "retroman_aidea",
@@ -1997,8 +2067,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     },
     {
       "screen_name": "SZOK_ufactor",
@@ -2007,8 +2077,8 @@
       "reply_count": 0,
       "quote_count": 0,
       "is_following_back": true,
-      "tenure_days": 0,
-      "category": "新規"
+      "tenure_days": 7,
+      "category": "フォロワー"
     }
   ]
 }

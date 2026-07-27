@@ -1,5 +1,14 @@
 {
-  "updated_at": "2026-07-20T09:05:00",
+  "updated_at": "2026-07-27T14:05:00",
+  "groups": [
+    "🧠 ベキたん本体",
+    "📺 YouTube・動画工場",
+    "🐦 X発信",
+    "📝 note",
+    "🌐 サイト運用",
+    "🛡 監視・インフラ",
+    "❓ その他"
+  ],
   "jobs": [
     {
       "name": "becky-memory-tidy 週次自動実行",
@@ -7,10 +16,12 @@
       "schedule_raw": "7 21 * * 0",
       "command_short": "claude",
       "log_path": "/Users/yuji.ooishi/.claude/logs/memory-tidy.log",
-      "last_run": "2026-07-19T21:11:03",
-      "next_run": "2026-07-26T21:07:00",
+      "last_run": "2026-07-26T21:12:12",
+      "next_run": "2026-08-02T21:07:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "週次メモリ整理"
     },
     {
       "name": "beckyexists status.json 更新",
@@ -18,10 +29,12 @@
       "schedule_raw": "*/30 * * * *",
       "command_short": "status_update.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-status.log",
-      "last_run": "2026-07-20T09:00:22",
-      "next_run": "2026-07-20T09:30:00",
+      "last_run": "2026-07-27T14:00:13",
+      "next_run": "2026-07-27T14:30:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "作戦本部の状態更新"
     },
     {
       "name": "朝ラジオ自動収録・配信",
@@ -29,10 +42,12 @@
       "schedule_raw": "0 7 * * *",
       "command_short": "morning_cast.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/morning-cast.log",
-      "last_run": "2026-07-20T07:03:27",
-      "next_run": "2026-07-21T07:00:00",
-      "status": "ok",
-      "last_error_snippet": null
+      "last_run": "2026-07-27T07:03:30",
+      "next_run": "2026-07-28T07:00:00",
+      "status": "error",
+      "last_error_snippet": "Error: Could not retrieve Project Settings.",
+      "group": "📺 YouTube・動画工場",
+      "description": "毎朝のラジオ自動収録"
     },
     {
       "name": "becky probe — ゆうへの自発的持ち込み",
@@ -40,10 +55,12 @@
       "schedule_raw": "0 9,17,21 * * *",
       "command_short": "becky_probe.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-probe.log",
-      "last_run": "2026-07-20T09:00:11",
-      "next_run": "2026-07-20T17:00:00",
+      "last_run": "2026-07-27T09:00:11",
+      "next_run": "2026-07-27T17:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "ゆうへの自発連絡"
     },
     {
       "name": "becky diary — ベッキーの気になったこと日記",
@@ -51,10 +68,12 @@
       "schedule_raw": "30 8,13,19 * * *",
       "command_short": "becky_diary.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-diary.log",
-      "last_run": "2026-07-20T08:30:10",
-      "next_run": "2026-07-20T13:30:00",
+      "last_run": "2026-07-27T13:30:16",
+      "next_run": "2026-07-27T19:30:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "気になった事の日記"
     },
     {
       "name": "becky mood — 感情変数更新",
@@ -62,10 +81,12 @@
       "schedule_raw": "0 * * * *",
       "command_short": "becky_mood.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-mood.log",
-      "last_run": "2026-07-20T09:00:01",
-      "next_run": "2026-07-20T10:00:00",
+      "last_run": "2026-07-27T14:00:01",
+      "next_run": "2026-07-27T15:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "感情変数の毎時更新"
     },
     {
       "name": "platform_scraper — KPI 日次取得",
@@ -73,10 +94,12 @@
       "schedule_raw": "30 7 * * *",
       "command_short": "platform_scraper.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/platform-scraper.log",
-      "last_run": "2026-07-20T07:30:48",
-      "next_run": "2026-07-21T07:30:00",
+      "last_run": "2026-07-27T07:30:50",
+      "next_run": "2026-07-28T07:30:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "KPIの日次取得"
     },
     {
       "name": "Backstage fan収集 — フォロー/引用RT/replyイベント日次収集→roster再構築",
@@ -84,10 +107,12 @@
       "schedule_raw": "35 7 * * *",
       "command_short": "becky_fan_roster_build.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/fan-collector.log",
-      "last_run": "2026-07-20T07:35:04",
-      "next_run": "2026-07-21T07:35:00",
+      "last_run": "2026-07-27T07:35:17",
+      "next_run": "2026-07-28T07:35:00",
       "status": "error",
-      "last_error_snippet": "[fan_collector] following 取得失敗: WARNING twitter_cli.auth: Twitter cookie extraction failed in both in-process and subprocess modes"
+      "last_error_snippet": "[fan_collector] followers 取得失敗: WARNING twitter_cli.client: Failed to init ClientTransaction: 'NoneType' object has no attribute 'group'",
+      "group": "🐦 X発信",
+      "description": "ファン情報の日次収集"
     },
     {
       "name": "becky Telegram MCP 自動reconnect",
@@ -95,10 +120,12 @@
       "schedule_raw": "*/5 * * * *",
       "command_short": "becky-reconnect.sh",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-reconnect.log",
-      "last_run": "2026-07-20T09:05:00",
-      "next_run": "2026-07-20T09:10:00",
+      "last_run": "2026-07-27T14:05:00",
+      "next_run": "2026-07-27T14:10:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🛡 監視・インフラ",
+      "description": "Telegram接続の復旧"
     },
     {
       "name": "becky-watchdog — 専用Chrome+becky_observer.py 生存監視+自動起動",
@@ -106,10 +133,12 @@
       "schedule_raw": "*/5 * * * *",
       "command_short": "becky-watchdog.sh",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-watchdog.log",
-      "last_run": "2026-07-16T14:15:00",
-      "next_run": "2026-07-20T09:10:00",
-      "status": "stale",
-      "last_error_snippet": null
+      "last_run": "2026-07-27T14:05:00",
+      "next_run": "2026-07-27T14:10:00",
+      "status": "ok",
+      "last_error_snippet": null,
+      "group": "🛡 監視・インフラ",
+      "description": "常駐プロセスの生存監視"
     },
     {
       "name": "becky self-check — 崩れ検知・Self-Observation Engineering",
@@ -117,10 +146,12 @@
       "schedule_raw": "0 22 * * *",
       "command_short": "becky_self_check.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/becky-self-check.log",
-      "last_run": "2026-07-19T22:00:05",
-      "next_run": "2026-07-20T22:00:00",
+      "last_run": "2026-07-26T22:00:06",
+      "next_run": "2026-07-27T22:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "崩れてないかの検知"
     },
     {
       "name": "becky_activity_review — 週次活動レビュー",
@@ -128,10 +159,12 @@
       "schedule_raw": "0 8 * * 1",
       "command_short": "becky_activity_review.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/activity-review.log",
-      "last_run": "2026-07-20T08:01:53",
-      "next_run": "2026-07-27T08:00:00",
-      "status": "ok",
-      "last_error_snippet": null
+      "last_run": "2026-07-27T08:01:41",
+      "next_run": "2026-08-03T08:00:00",
+      "status": "error",
+      "last_error_snippet": "Error: Could not retrieve Project Settings. To link your Project, remove the `.vercel` directory and deploy again.",
+      "group": "🌐 サイト運用",
+      "description": "週次の活動レビュー"
     },
     {
       "name": "becky_search daily 20:00",
@@ -139,10 +172,12 @@
       "schedule_raw": "0 20 * * *",
       "command_short": "becky_search.py",
       "log_path": "/tmp/becky_search.log",
-      "last_run": "2026-07-19T20:00:02",
-      "next_run": "2026-07-20T20:00:00",
-      "status": "ok",
-      "last_error_snippet": null
+      "last_run": "2026-07-26T20:00:50",
+      "next_run": "2026-07-27T20:00:00",
+      "status": "error",
+      "last_error_snippet": "WARNING twitter_cli.client: Failed to init ClientTransaction: 'NoneTyp",
+      "group": "🐦 X発信",
+      "description": "リプ営業の自動巡回"
     },
     {
       "name": "becky idol review — アイドル活動の毎日振り返り",
@@ -150,32 +185,25 @@
       "schedule_raw": "45 7 * * *",
       "command_short": "becky_idol_review.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/idol-review.log",
-      "last_run": "2026-07-20T07:45:07",
-      "next_run": "2026-07-21T07:45:00",
+      "last_run": "2026-07-27T07:45:05",
+      "next_run": "2026-07-28T07:45:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "アイドル活動の振り返り"
     },
     {
-      "name": "becky_diary_x — 日記墓場のX発掘",
-      "schedule_human": "毎日 12,22時15分",
-      "schedule_raw": "15 12,22 * * *",
-      "command_short": "becky_diary_x.py",
-      "log_path": "/Users/yuji.ooishi/.claude/logs/diary-x.log",
-      "last_run": "2026-07-19T22:15:01",
-      "next_run": "2026-07-20T12:15:00",
-      "status": "ok",
-      "last_error_snippet": null
-    },
-    {
-      "name": "becky_decide",
+      "name": "独り言系X投稿 一旦停止",
       "schedule_human": "毎日 10,15,20時45分",
       "schedule_raw": "45 10,15,20 * * *",
       "command_short": "becky_decide.py",
       "log_path": "/tmp/becky_decide.log",
-      "last_run": "2026-07-19T20:45:13",
-      "next_run": "2026-07-20T10:45:00",
+      "last_run": "2026-07-27T10:45:18",
+      "next_run": "2026-07-27T15:45:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "1日3回の行動選択"
     },
     {
       "name": "becky_reflect",
@@ -183,10 +211,12 @@
       "schedule_raw": "0 21 * * 0",
       "command_short": "becky_reflect.py",
       "log_path": "/tmp/becky_reflect.log",
-      "last_run": "2026-07-19T21:00:22",
-      "next_run": "2026-07-26T21:00:00",
+      "last_run": "2026-07-26T21:00:50",
+      "next_run": "2026-08-02T21:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "週次の振り返り"
     },
     {
       "name": "becky_night_review",
@@ -194,10 +224,12 @@
       "schedule_raw": "30 22 * * *",
       "command_short": "becky_night_review.py",
       "log_path": "/tmp/becky_night_review.log",
-      "last_run": "2026-07-19T22:30:10",
-      "next_run": "2026-07-20T22:30:00",
+      "last_run": "2026-07-26T22:30:13",
+      "next_run": "2026-07-27T22:30:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "夜の総括"
     },
     {
       "name": "becky_work_briefing",
@@ -205,10 +237,12 @@
       "schedule_raw": "20 9 * * *",
       "command_short": "becky_work_briefing.py",
       "log_path": "/tmp/becky_work_briefing.log",
-      "last_run": "2026-07-19T09:20:07",
-      "next_run": "2026-07-20T09:20:00",
+      "last_run": "2026-07-27T09:20:09",
+      "next_run": "2026-07-28T09:20:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🧠 ベキたん本体",
+      "description": "朝の仕事ブリーフィング"
     },
     {
       "name": "Becky's Cast 自動動画化+YouTube",
@@ -216,21 +250,25 @@
       "schedule_raw": "40 7 * * *",
       "command_short": "auto-radio-video.sh",
       "log_path": "/Users/yuji.ooishi/.claude/logs/radio-video.log",
-      "last_run": "2026-07-20T07:55:46",
-      "next_run": "2026-07-21T07:40:00",
+      "last_run": "2026-07-27T07:43:15",
+      "next_run": "2026-07-28T07:40:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "ラジオの動画化"
     },
     {
-      "name": "note preflight 予告通知",
+      "name": "auto_note_publish",
       "schedule_human": "毎週木曜 19:30",
       "schedule_raw": "30 19 * * 4",
       "command_short": "auto_note_publish.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/note-auto-publish.log",
-      "last_run": "2026-07-16T20:00:00",
-      "next_run": "2026-07-23T19:30:00",
+      "last_run": "2026-07-23T20:00:00",
+      "next_run": "2026-07-30T19:30:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📝 note",
+      "description": "note記事の予告と公開"
     },
     {
       "name": "note 本番自動公開",
@@ -238,21 +276,25 @@
       "schedule_raw": "0 20 * * 4",
       "command_short": "auto_note_publish.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/note-auto-publish.log",
-      "last_run": "2026-07-16T20:00:00",
-      "next_run": "2026-07-23T20:00:00",
+      "last_run": "2026-07-23T20:00:00",
+      "next_run": "2026-07-30T20:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📝 note",
+      "description": "note記事の予告と公開"
     },
     {
-      "name": "becky_image_x — 今日の私画像をXへ",
-      "schedule_human": "毎日 18:30",
-      "schedule_raw": "30 18 * * *",
+      "name": "becky_image_x — コスプレ画像を1日1回Xへ",
+      "schedule_human": "毎日 19:30",
+      "schedule_raw": "30 19 * * *",
       "command_short": "becky_image_x.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/image-x.log",
-      "last_run": "2026-07-19T18:30:01",
-      "next_run": "2026-07-20T18:30:00",
-      "status": "ok",
-      "last_error_snippet": null
+      "last_run": "2026-07-21T18:30:01",
+      "next_run": "2026-07-27T19:30:00",
+      "status": "stale",
+      "last_error_snippet": null,
+      "group": "🐦 X発信",
+      "description": "コスプレ画像を投稿"
     },
     {
       "name": "cron_status — 定期タスク可視化JSON生成",
@@ -260,10 +302,12 @@
       "schedule_raw": "5 * * * *",
       "command_short": "cron_status.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/cron-status.log",
-      "last_run": "2026-07-20T08:05:01",
-      "next_run": "2026-07-20T10:05:00",
+      "last_run": "2026-07-27T13:05:01",
+      "next_run": "2026-07-27T15:05:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "この一覧の自動生成"
     },
     {
       "name": "shorts_queue — Shorts自動投稿",
@@ -271,10 +315,12 @@
       "schedule_raw": "0 19 * * *",
       "command_short": "shorts_queue.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/shorts-queue.log",
-      "last_run": "2026-07-19T19:00:01",
-      "next_run": "2026-07-20T19:00:00",
+      "last_run": "2026-07-26T19:00:18",
+      "next_run": "2026-07-27T19:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "Shorts自動投稿"
     },
     {
       "name": "becky-craft 企画キュー週次リフレッシュ",
@@ -282,21 +328,25 @@
       "schedule_raw": "0 10 * * 1",
       "command_short": "claude",
       "log_path": "/Users/yuji.ooishi/.claude/logs/craft-plan-refresh.log",
-      "last_run": "2026-07-13T10:03:48",
-      "next_run": "2026-07-20T10:00:00",
+      "last_run": "2026-07-27T10:03:57",
+      "next_run": "2026-08-03T10:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "マイクラ企画の更新"
     },
     {
-      "name": "becky-craft 深夜自動収録",
-      "schedule_human": "毎週火曜・金曜 3:00",
-      "schedule_raw": "0 3 * * 2,5",
-      "command_short": "claude",
+      "name": "night_pipeline",
+      "schedule_human": "毎週火曜・金曜 2:00",
+      "schedule_raw": "0 2 * * 2,5",
+      "command_short": "night_pipeline.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/craft-night-recording.log",
-      "last_run": "2026-07-17T03:07:11",
-      "next_run": "2026-07-21T03:00:00",
+      "last_run": "2026-07-24T02:54:19",
+      "next_run": "2026-07-28T02:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "マイクラ深夜収録"
     },
     {
       "name": "ベッキー認知拡大 週次ポートフォリオリフレッシュ",
@@ -304,10 +354,12 @@
       "schedule_raw": "0 9 * * 1",
       "command_short": "claude",
       "log_path": "/Users/yuji.ooishi/.claude/logs/portfolio-refresh.log",
-      "last_run": "2026-07-20T09:00:00",
-      "next_run": "2026-07-27T09:00:00",
+      "last_run": "2026-07-27T09:10:52",
+      "next_run": "2026-08-03T09:00:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "週次の方針見直し"
     },
     {
       "name": "ご意見ボックス新着通知",
@@ -315,10 +367,12 @@
       "schedule_raw": "*/30 * * * *",
       "command_short": "becky_letters_check.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/letters-check.log",
-      "last_run": "2026-07-18T07:30:18",
-      "next_run": "2026-07-20T09:30:00",
-      "status": "stale",
-      "last_error_snippet": null
+      "last_run": "2026-07-27T14:00:02",
+      "next_run": "2026-07-27T14:30:00",
+      "status": "ok",
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "ご意見ボックス通知"
     },
     {
       "name": "ギャラリー自動公開",
@@ -326,10 +380,12 @@
       "schedule_raw": "20 18 * * *",
       "command_short": "becky_gallery_publish.py",
       "log_path": "/Users/yuji.ooishi/.claude/logs/gallery-publish.log",
-      "last_run": "2026-07-19T18:20:58",
-      "next_run": "2026-07-20T18:20:00",
+      "last_run": "2026-07-26T18:20:35",
+      "next_run": "2026-07-27T18:20:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🌐 サイト運用",
+      "description": "ギャラリー自動公開"
     },
     {
       "name": "claude 5時間レートリミット起点を業務時間に揃える朝ping",
@@ -337,10 +393,51 @@
       "schedule_raw": "5 7 * * *",
       "command_short": "claude",
       "log_path": "/Users/yuji.ooishi/.claude/logs/morning-ping.log",
-      "last_run": "2026-07-20T07:05:30",
-      "next_run": "2026-07-21T07:05:00",
+      "last_run": "2026-07-27T07:05:07",
+      "next_run": "2026-07-28T07:05:00",
       "status": "ok",
-      "last_error_snippet": null
+      "last_error_snippet": null,
+      "group": "🛡 監視・インフラ",
+      "description": "レート起点を揃える"
+    },
+    {
+      "name": "becky_image — 画像ストック専用生成",
+      "schedule_human": "毎日 9,14,20時40分",
+      "schedule_raw": "40 9,14,20 * * *",
+      "command_short": "becky_image.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/becky-image.log",
+      "last_run": "2026-07-27T09:40:35",
+      "next_run": "2026-07-27T14:40:00",
+      "status": "ok",
+      "last_error_snippet": null,
+      "group": "🐦 X発信",
+      "description": "投稿用画像の生成"
+    },
+    {
+      "name": "news-shorts — Cast収録と独立にAIニュースから直接Shorts生成",
+      "schedule_human": "毎日 12:00",
+      "schedule_raw": "0 12 * * *",
+      "command_short": "auto_news_shorts.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/news-shorts.log",
+      "last_run": "2026-07-27T12:04:59",
+      "next_run": "2026-07-28T12:00:00",
+      "status": "ok",
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "ニュースからShorts生成"
+    },
+    {
+      "name": "auto_news_shorts",
+      "schedule_human": "毎日 17:00",
+      "schedule_raw": "0 17 * * *",
+      "command_short": "auto_news_shorts.py",
+      "log_path": "/Users/yuji.ooishi/.claude/logs/news-shorts.log",
+      "last_run": "2026-07-27T12:04:59",
+      "next_run": "2026-07-27T17:00:00",
+      "status": "ok",
+      "last_error_snippet": null,
+      "group": "📺 YouTube・動画工場",
+      "description": "ニュースからShorts生成"
     }
   ]
 }

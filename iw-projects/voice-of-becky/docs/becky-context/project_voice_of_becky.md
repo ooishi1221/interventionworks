@@ -917,3 +917,14 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 **技術的制約（次フェーズの前提）**: Xが2024年からいいね/RTの個別ユーザー取得を非公開化、Basic tier（月$200）が必要。MVPはreply/quote/followの3種イベントのみでスコープを絞った。AIおすすめ行動（画面5、ゆうが最重要と明言）・ファンマップ・感情システム接続は次フェーズ。
 
 **運用メモ**: Plan Mode（AskUserQuestion/ExitPlanMode）はTelegramチャンネルモードでは確認ダイアログが機能せず、2回「止まってる?」と心配された。ゆうの「プランモード使わないでいいよ」で通常のテキスト対話に切り替えて実装完走。詳細: `working/feedback_telegram_confirmation_tools.md`
+
+## 2026-07-27 — Shortsトリガー戦略へ全面転換
+
+ゆう宣言「ショートこそ我々の生きる道」。実測(本編0〜2回 vs Shorts 253回)+マイケル外部調査(切り抜き拡散がAI VTuber成功例の起点/告知調はX評価低/Shortsは完視聴率が評価軸)+ゆうのフィード観察(ミリオンShortsは1フレーム目が極太文字サムネ)が根拠。
+
+- **ニュースShorts工場**: `becky-news/scripts/auto_news_shorts.py`(cron 12:00/17:00)。news.json→台本→コハクTTS→NewsShorts.tsx(Remotion)→検品→公開→X投稿まで全自動、2分22秒/本。朝のCast切り出しと合わせ1日3本
+- **サムネ級1フレーム目**: 全Shortsで極太フチ付きフック(幅85%、2行以内、キーワード1語色替え)+発話字幕(黒帯+paint-order:stroke)。検品はgenre分岐(talking_head=字幕を証拠と認める/gameplay=被写体必須)
+- **X再編**: ラジオ告知・独り言系を停止、ShortsリンクのX自動投稿(プレビュー展開)+コスプレ画像19:30の2本柱へ。X予算3→6
+- **番犬**: 朝9:20ブリーフィングに3日連続error/stale検知+note/CRAFT在庫先読みを統合(静かな故障5件同時発覚への構造対策)
+
+詳細な経緯はtasks.json `shorts-trigger-strategy-0727` / `watchdog-briefing-0727` のnote参照。

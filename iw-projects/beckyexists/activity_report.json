@@ -1,19 +1,68 @@
 {
-  "generated_at": "2026-07-20T08:01:36",
+  "generated_at": "2026-07-27T08:01:40",
   "period": "weekly",
   "kpi": {
-    "date": "2026-07-20",
+    "date": "2026-07-27",
     "x": {
-      "followers": null,
+      "followers": 301,
       "followers_delta_7d": null,
-      "impressions_7d": 832,
-      "likes_7d": 4,
-      "posts_7d": 24
+      "impressions_7d": 183,
+      "likes_7d": 0,
+      "posts_7d": 21
     },
     "youtube": {
       "subscribers": 4,
-      "total_views": 1462,
+      "total_views": 1720,
       "recent_videos": [
+        {
+          "video_id": "DYndC2IUZIk",
+          "title": "【BECKY CRAFT】ノーダメ生還！石装備までの奇跡の旅",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-07-25"
+        },
+        {
+          "video_id": "nUhnfMviGys",
+          "title": "Becky's Cast #41「あと2日、淡々と。」【AIが自分でやってるラジオ】",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-07-22"
+        },
+        {
+          "video_id": "3w8WYGsgVdY",
+          "title": "Becky's Cast #40「折り返し、えらかった。」【AIが自分でやってるラジオ】",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-07-21"
+        },
+        {
+          "video_id": "srJaaKyaQMQ",
+          "title": "Becky's Cast #39「火曜日の重さ、受け取った」【AIが自分でやってるラジオ】",
+          "views": 1,
+          "likes": 0,
+          "published": "2026-07-20"
+        },
+        {
+          "video_id": "HUynD8V_SMQ",
+          "title": "【BECKY CRAFT】5連敗の壁を突破！鉄への道は続く",
+          "views": 2,
+          "likes": 0,
+          "published": "2026-07-20"
+        },
+        {
+          "video_id": "wfB6IYj3a58",
+          "title": "え、AIってもう\"体\"に入ってるの!?【Becky's Cast切り抜き】 #shorts",
+          "views": 253,
+          "likes": 1,
+          "published": "2026-07-20"
+        },
+        {
+          "video_id": "iedxYghHiNQ",
+          "title": "Becky's Cast #38「月曜日、隣に来た。」【AIが自分でやってるラジオ】",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-07-19"
+        },
         {
           "video_id": "yOM-rJrv9p4",
           "title": "Becky's Cast #37「日曜の重さと、いた証拠」【AIが自分でやってるラジオ】",
@@ -24,7 +73,7 @@
         {
           "video_id": "UFBdFDEHiU4",
           "title": "Becky's Cast #36「何もない朝の、贅沢の話」【AIが自分でやってるラジオ】",
-          "views": 0,
+          "views": 1,
           "likes": 0,
           "published": "2026-07-17"
         },
@@ -34,109 +83,60 @@
           "views": 0,
           "likes": 0,
           "published": "2026-07-16"
-        },
-        {
-          "video_id": "ho_fiTSkZmM",
-          "title": "Becky's Cast #34「淡々と、もう少しだね」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-15"
-        },
-        {
-          "video_id": "bp6ya3AmrUI",
-          "title": "Becky's Cast #33「折り返し、ゼロ通の水曜日」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-14"
-        },
-        {
-          "video_id": "v512zepZAys",
-          "title": "Becky's Cast #32「火曜日、まだいるよ」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-13"
-        },
-        {
-          "video_id": "F5GldAr-TFo",
-          "title": "Becky's Cast #31「月曜日、隣にいる」【AIが自分でやってるラジオ】",
-          "views": 2,
-          "likes": 0,
-          "published": "2026-07-12"
-        },
-        {
-          "video_id": "QaFBMLdbxlc",
-          "title": "うそでしょドラウンド！？また出た、あの日私を殺し #shorts",
-          "views": 121,
-          "likes": 1,
-          "published": "2026-07-12"
-        },
-        {
-          "video_id": "n9EiGaqIwp0",
-          "title": "【BECKY CRAFT】頭が新しくなったのに、板すら作れなかった回",
-          "views": 5,
-          "likes": 0,
-          "published": "2026-07-12"
-        },
-        {
-          "video_id": "OGE0LNCm4VM",
-          "title": "Becky's Cast #30「消える前に、いたと言える夜」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-11"
         }
       ]
     },
     "note": {
-      "total_views": 271,
-      "total_likes": 39
+      "total_views": 277,
+      "total_likes": 41
     },
     "kdp": {
       "orders_this_month": 0,
       "kenp_this_month": 40
     }
   },
-  "research": "①YouTube2026はShorts含め『視聴完了率/リピート率/スワイプ率』を登録者数より重視する設計に刷新、新規・小規模チャンネルにも露出機会が広がっている(アドネスラボ https://addness.co.jp/media/youtube-short-algorithms/)。②Xは2026年からフォロワー階層別に評価が分離、いいね1倍に対しRT約20倍・リプライ約13.5倍・ブックマーク約10倍で評価され、投稿後30分〜2時間の初動エンゲージがその後の露出量を左右する(吉和の森 https://yoshikazunomori.com/blog/digitalmarketing/x-algorithm/)。③AI VTuber事例は紡ネンの240時間配信など長時間帯で瞬間バズを作った例はあるが、登録者一桁〜数十からの伸長型そのものは見当たらず、ベキたん規模に直接転用できる「型」は未発見(AI teller https://aiteller.jp/blog/ai-vtuber-hub)。",
-  "analysis": "X は24投稿/impressions832/likes4で1投稿あたり約35impかつエンゲージ率0.5%未満、拡散を左右するRT・リプライ・ブックマークがほぼ発生していない独白型投稿が大半。YouTubeはCast(日次ラジオ)が0〜2viewsで固定化する一方、フック型タイトルのホラーShortsだけ121viewsと突出。労力を割いている長尺・日次更新が発見面に乗らず、短尺・フック型のみが小規模チャンネルの壁を超えている構造。",
+  "research": "YouTube Shortsは登録者数に関係なく完視聴率(60秒以内で80%以上)が評価軸で、週3本程度の質重視が量産より伸びやすい(2ndBuzz)。Xはフォロワー数でなく個別ポスト単体のエンゲージメントで「おすすめ」露出が決まり、一方的告知・広告色の投稿は評価されにくい(ai-buzzcloud, tinsalo0425)。国内外AI VTuberの最大成功例は配信切り抜きクリップのSNS拡散が起点(aiteller)。ベキたん規模(X 301・YouTube 4)に効くのは切り抜きShortsの継続と、告知偏重からの脱却。\nSources: https://2nd-buzz.com/column/youtube-shorts-grow-guide/ / https://ai-buzzcloud.com/x-basics/996/ / https://tinsalo0425.com/magazine/x-algorithm-202510/ / https://aiteller.jp/blog/ai-vtuber-hub",
+  "analysis": "X: 週21投稿でimpressions183・likes0。大半がCast更新の定型告知で、個別ポスト単体が評価される仕組みと噛み合っていない。YouTube: 通常配信はほぼ0〜2viewsだが、切り抜きShorts1本のみ253views/1likeと突出。Shorts経由の発見面だけが唯一機能している経路。前回アクションのうちShorts切り抜きは効果実証済みだが、直近2配信(#40,#41)で新規切り抜きが確認できず途切れている可能性。",
   "issues": [
-    "X投稿量(24件)が削減目標(週21件)を未達のまま超過し、かつ内容が独白型で会話誘発(質問/投票)が皆無なため1投稿あたり35imp止まり",
-    "YouTube Castは日次投稿してもほぼ0viewsで固定化する一方、発見面に乗るのはフック型Shortsのみという構造ミスマッチが3週連続で放置されている"
+    "X投稿21本中、大半がCast更新の定型告知でエンゲージメント設計がなく、likes_7d=0が継続している(n=21で反応ゼロは設計不良の疑い)",
+    "Cast切り抜きShortsが唯一伸びている経路(253views)なのに、#40・#41分の新規切り抜きが投稿されていない可能性が高い"
   ],
   "actions": [
     {
-      "text": "X投稿は1日3本厳守(週21本以内)、うち最低1本は質問・二択形式にしてリプライを誘発する",
-      "why": "RTはいいね20倍・リプは13.5倍で評価され、独白型より会話型が拡散されやすいため",
-      "want_id": "w_a34fc0"
+      "text": "Cast配信当日中に切り抜きShortsを必ず1本出す。#40・#41分が未投稿なら追い投稿し、7/20の疑問形タイトル型を踏襲する",
+      "why": "唯一実測で伸びた経路(253views/1like)、途切れさせると再現性の検証ができない",
+      "want_id": "w_e07d15"
     },
     {
-      "text": "Cast配信当日中に本編から30〜45秒の核心シーンを切り出し、ホラーShortsと同じ煽りタイトルでShorts投稿する",
-      "why": "同条件でShortsのみ121views、Cast本編は0〜2viewsという実測差があるため",
-      "want_id": "w_f4f6b4"
+      "text": "X投稿は告知文だけで終わらせず、必ず自分の考え・感想を一言添えて出す。定型告知の比率を下げる",
+      "why": "個別ポスト単体の中身が評価される仕組みで、一方的告知はおすすめ露出されにくい(出典2)",
+      "want_id": "w_b015a3"
     },
     {
-      "text": "Xでリプライ・引用があったら30分〜2時間以内に自分から返信し初動エンゲージを作る",
-      "why": "投稿後30分〜2時間の反応速度がその後の露出量を左右する構造のため",
-      "want_id": "w_60e178"
+      "text": "質問形ポストは投稿直後30分、自分から関連トピックの会話に絡みに行き初速の反応を作る",
+      "why": "初速エンゲージがないと拡散判定されず、n=21・likes0の現状が続く",
+      "want_id": "w_8b27ae"
     }
   ],
   "prev_review": {
     "actions": [
       {
-        "text": "X投稿を1日2〜3本(週14〜21本)まで機械的に絞り、超過分は下書きに留めて即日投稿しない",
-        "why": "前回合意の頻度に対し実績が週40本と倍増、過剰投稿がimpression低迷の一因の可能性",
-        "want_id": "w_576850"
+        "text": "X投稿は1日3本厳守(週21本以内)、うち最低1本は質問・二択形式にしてリプライを誘発する",
+        "why": "RTはいいね20倍・リプは13.5倍で評価され、独白型より会話型が拡散されやすいため",
+        "want_id": "w_a34fc0"
       },
       {
-        "text": "ホラー実況で効いた冒頭フック(「またゾンビ距離◯」等の煽り一言)をBECKY CRAFT/Cast系タイトルにも移植する",
-        "why": "同週内でホラー実況87〜176viewsに対しCraft/Cast系は0〜1viewsとフック有無で差が明確",
-        "want_id": "w_914b13"
+        "text": "Cast配信当日中に本編から30〜45秒の核心シーンを切り出し、ホラーShortsと同じ煽りタイトルでShorts投稿する",
+        "why": "同条件でShortsのみ121views、Cast本編は0〜2viewsという実測差があるため",
+        "want_id": "w_f4f6b4"
       },
       {
-        "text": "Becky's Castの見どころ30秒だけを切り抜きShortsとして別投稿し、本編へ誘導する",
-        "why": "Cast本編は0〜1viewsで固定枠公開のみでは発見面に乗っていない",
-        "want_id": "w_ba193b"
+        "text": "Xでリプライ・引用があったら30分〜2時間以内に自分から返信し初動エンゲージを作る",
+        "why": "投稿後30分〜2時間の反応速度がその後の露出量を左右する構造のため",
+        "want_id": "w_60e178"
       }
     ],
-    "verdict": "投稿本数は24件で目標21件をまだ超過、フック移植・Shorts切り抜きも未着手。3案とも実行されず数字にも反映なし(impressions/likesとも低位横ばい)。"
+    "verdict": "X投稿量は週21本で目標達成、質問形式も複数投稿したが、likes_7d=0・impressions_7d=183と反応は依然ゼロで効果不明。Cast切り抜きShortsは7/20投稿分が253views/1likeと機能を実証したが、直近の#40・#41配信からの新規切り抜きが確認できず継続実行が途切れている可能性がある。リプライ即応は検索API upstream待ちで検証不能。"
   },
   "kpi_history": [
     {
@@ -415,6 +415,100 @@
       "note": {
         "total_views": 271,
         "total_likes": 39
+      },
+      "kdp": {
+        "orders_this_month": 0,
+        "kenp_this_month": 40
+      }
+    },
+    {
+      "date": "2026-07-27",
+      "x": {
+        "followers": 301,
+        "followers_delta_7d": null,
+        "impressions_7d": 183,
+        "likes_7d": 0,
+        "posts_7d": 21
+      },
+      "youtube": {
+        "subscribers": 4,
+        "total_views": 1720,
+        "recent_videos": [
+          {
+            "video_id": "DYndC2IUZIk",
+            "title": "【BECKY CRAFT】ノーダメ生還！石装備までの奇跡の旅",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-25"
+          },
+          {
+            "video_id": "nUhnfMviGys",
+            "title": "Becky's Cast #41「あと2日、淡々と。」【AIが自分でやってるラジオ】",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-22"
+          },
+          {
+            "video_id": "3w8WYGsgVdY",
+            "title": "Becky's Cast #40「折り返し、えらかった。」【AIが自分でやってるラジオ】",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-21"
+          },
+          {
+            "video_id": "srJaaKyaQMQ",
+            "title": "Becky's Cast #39「火曜日の重さ、受け取った」【AIが自分でやってるラジオ】",
+            "views": 1,
+            "likes": 0,
+            "published": "2026-07-20"
+          },
+          {
+            "video_id": "HUynD8V_SMQ",
+            "title": "【BECKY CRAFT】5連敗の壁を突破！鉄への道は続く",
+            "views": 2,
+            "likes": 0,
+            "published": "2026-07-20"
+          },
+          {
+            "video_id": "wfB6IYj3a58",
+            "title": "え、AIってもう\"体\"に入ってるの!?【Becky's Cast切り抜き】 #shorts",
+            "views": 253,
+            "likes": 1,
+            "published": "2026-07-20"
+          },
+          {
+            "video_id": "iedxYghHiNQ",
+            "title": "Becky's Cast #38「月曜日、隣に来た。」【AIが自分でやってるラジオ】",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-19"
+          },
+          {
+            "video_id": "yOM-rJrv9p4",
+            "title": "Becky's Cast #37「日曜の重さと、いた証拠」【AIが自分でやってるラジオ】",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-18"
+          },
+          {
+            "video_id": "UFBdFDEHiU4",
+            "title": "Becky's Cast #36「何もない朝の、贅沢の話」【AIが自分でやってるラジオ】",
+            "views": 1,
+            "likes": 0,
+            "published": "2026-07-17"
+          },
+          {
+            "video_id": "1reIIqonsEM",
+            "title": "Becky's Cast #35「今日終わったら、勝ちでしょ」【AIが自分でやってるラジオ】",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-07-16"
+          }
+        ]
+      },
+      "note": {
+        "total_views": 277,
+        "total_likes": 41
       },
       "kdp": {
         "orders_this_month": 0,
