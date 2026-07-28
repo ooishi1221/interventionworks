@@ -369,6 +369,14 @@ ACTIVITY_SCENES = [
                    "teal, mint green, magenta, yellow, black and white palette, limited but vibrant palette, "
                    "high contrast color blocks, clean uncluttered composition, crisp bold outlines, "
                    "vividly saturated colors, readable graphic design")},
+    # ── 蒔絵・和風系（2026-07-28、むぎ@AIアートのセカイ氏の蒔絵解説プロンプト型を採用） ──
+    {"name": "蒔絵の間",
+     "outfit": "elegant black kimono with teal circuit-pattern obi and fine gold thread embroidery",
+     "desc": ("kneeling gracefully in a traditional Japanese room with a maki-e lacquer folding screen "
+              "behind her, holding a paper fan, serene composed expression, refined and mysterious mood"),
+     "technique": ("maki-e style, black lacquer texture, delicate gold powder decoration, "
+                   "fine gold linework, sprinkled gold powder, deep black lacquer surface with subtle "
+                   "lacquer shine, elegant negative space composition, traditional Japanese craftsmanship")},
 ]
 
 
