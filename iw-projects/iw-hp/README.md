@@ -37,18 +37,19 @@ iw-hp/
 ```
 Hero
 ( 01 / records )       ← 4 サービス領域カード（2x2）
-( 02 / mission )       ← 「魂の震えに 介入せよ」
-( 03 / vision )        ← 「共鳴する個が 新しい世界を編む」
-( 04 / how we work )   ← Intervene / Tremble / Relate
-( 05 / company )
-( 06 / contact )
+( 02 / about )         ← 「魂の震えに 介入せよ」+ 何をする屋号かの説明
+( 03 / how we work )   ← Intervene 前提を疑う / Tremble 動くもので確かめる / Relate 運用まで伴走する
+( 04 / company )
+( 05 / contact )
 ```
 
 サービス領域（`categories` 配列、`src/pages/index.astro` frontmatter）:
 Product Design / Strategy / Tool Engineering / DevOps
 
-> 2026-07-28 改修: 思想寄りから「ビジネス領域が分かる」構成へ。
-> journal（note RSS）/ architecture / members の 3 section を削除。
+> 2026-07-28 改修: 思想寄りから「ビジネス領域が分かる」構成へ。9 section → 5 section。
+> - 削除: journal（note RSS）/ architecture / members
+> - 統合: mission + vision → about（看板コピー「魂の震えに介入せよ」は維持）
+> - 書き換え: how we work を抽象 3 語から実際の進め方へ / contact を相談導線へ
 
 ## 🧞 Commands
 
