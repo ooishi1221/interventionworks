@@ -209,5 +209,7 @@ async function loadTasks() {
 // room.html の startRoom から呼ぶ。コメントを先に読んでからタスク表を描く。
 function bootTasks() {
   initComments().then(loadTasks);
-  setInterval(() => initComments().then(loadTasks), 300000);
+  // pollVisible は /poll-visible.js。単体で読まれた時のために setInterval へ fallback
+  const poll = window.pollVisible || ((fn, ms) => setInterval(fn, ms));
+  poll(() => initComments().then(loadTasks), 300000);
 }

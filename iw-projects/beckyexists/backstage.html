@@ -180,6 +180,7 @@
 </div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="/poll-visible.js"></script>
 <script>
 const ROOM_PASS = 'bk2026';
 const PASS_KEY = 'room_auth_v1';   // room/studio と共有 — 解錠済みなら自動入場
@@ -297,7 +298,7 @@ $('categoryFilter')?.addEventListener?.('change', buildClassifyTbl);
     initAccountSelect();
     $('categoryFilter').addEventListener('change', buildClassifyTbl);
     loadAccount(ACCOUNTS[0].id);
-    setInterval(() => loadAccount($('accountSelect').value), 300000);
+    pollVisible(() => loadAccount($('accountSelect').value), 300000);
   }
   if (authed()) { enter(); return; }
   gate.style.display = 'flex';

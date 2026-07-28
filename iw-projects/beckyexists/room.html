@@ -845,6 +845,7 @@
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script src="https://unpkg.com/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+<script src="/poll-visible.js"></script>
 <script src="/room-tasks.js"></script>
 <script>
 // ── password gate ──
@@ -1292,8 +1293,8 @@ function startRoom() {
   bootTasks();       // room-tasks.js: initComments → loadTasks + 5分間隔
   loadMood();
   loadMemos();
-  setInterval(loadAll, 60000);
-  setInterval(loadMood, 300000);
+  pollVisible(loadAll, 60000);
+  pollVisible(loadMood, 300000);
 }
 
 (function initGate() {

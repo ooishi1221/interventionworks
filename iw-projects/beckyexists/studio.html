@@ -222,6 +222,7 @@
 </div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="/poll-visible.js"></script>
 <script>
 const ROOM_PASS = 'bk2026';
 const PASS_KEY = 'room_auth_v1';   // room.html と共有 — room で解錠済みなら自動入場
@@ -380,7 +381,7 @@ async function loadAll() {
     gate.style.display = 'none';
     app.style.display = 'block';
     loadAll();
-    setInterval(loadAll, 300000);
+    pollVisible(loadAll, 300000);
   }
   if (authed()) { enter(); return; }
   gate.style.display = 'flex';
