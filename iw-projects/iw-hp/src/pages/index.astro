@@ -18,106 +18,12 @@ const rotatingWords = [
   "weave",
 ];
 
-const members = [
-  {
-    name: "Yu",
-    jp: "裕司",
-    role: "Founder / Strategy & Action",
-    desc: "IW 屋号主。Innovation→Intervention 15 年系譜、craft 哲学と事業戦略の結節点。",
-    image: "/images/members/yu.webp",
-  },
-  {
-    name: "Becky",
-    jp: "ベッキー",
-    role: "Communications / Philosophy",
-    desc: "AI partner。craft 哲学・思想言語化・対等な共著者。",
-    image: "/images/members/becky.webp",
-  },
-  {
-    name: "Viv",
-    jp: "ヴィヴィアン",
-    role: "Sales / Translator",
-    desc: "思想を価値に翻訳する、提案営業のスパーリング。",
-    image: "/images/members/viv.webp",
-  },
-  {
-    name: "Michael",
-    jp: "マイケル",
-    role: "Market Research",
-    desc: "データドリブン。n=? と一次ソースを問う。",
-    image: "/images/members/michael.webp",
-  },
-  {
-    name: "Anna",
-    jp: "アンナ",
-    role: "Product Design",
-    desc: "身体感覚派。引き算と LX で判断する。",
-    image: "/images/members/anna.webp",
-  },
-  {
-    name: "Andy",
-    jp: "アンディ",
-    role: "Engineering",
-    desc: "実装者。動くものから。",
-    image: "/images/members/andy.webp",
-  },
-  {
-    name: "Claire",
-    jp: "クレア",
-    role: "Strategy & Operations Steward",
-    desc: "守りのプロ × PMO × 戦略懐疑。前提も実行のディテールも疑い、判断の質を保証する。",
-    image: "/images/members/claire.webp",
-  },
-];
-
-// note RSS を build 時に fetch（intervention.jp 連載「ゆう&ベッキー」)
-type JournalArticle = {
-  title: string;
-  link: string;
-  thumbnail: string;
-  pubDate: string;
-  pubDateLabel: string;
-};
-
-async function fetchJournalArticles(limit = 5): Promise<JournalArticle[]> {
-  try {
-    const res = await fetch("https://note.com/intervention_jp/rss", {
-      headers: { "User-Agent": "intervention.jp-astro-build" },
-    });
-    if (!res.ok) return [];
-    const xml = await res.text();
-    const items = xml.split(/<item>/).slice(1, limit + 1);
-    return items.map((raw) => {
-      const block = raw.split(/<\/item>/)[0];
-      const pick = (re: RegExp) => {
-        const m = block.match(re);
-        return m ? m[1].trim() : "";
-      };
-      const title = pick(/<title>([\s\S]*?)<\/title>/)
-        .replace(/<!\[CDATA\[/g, "")
-        .replace(/\]\]>/g, "");
-      const link = pick(/<link>([\s\S]*?)<\/link>/);
-      const thumbnail = pick(/<media:thumbnail>([\s\S]*?)<\/media:thumbnail>/);
-      const pubDate = pick(/<pubDate>([\s\S]*?)<\/pubDate>/);
-      const date = pubDate ? new Date(pubDate) : null;
-      const pubDateLabel = date
-        ? `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`
-        : "";
-      return { title, link, thumbnail, pubDate, pubDateLabel };
-    });
-  } catch (e) {
-    return [];
-  }
-}
-
-const journalArticles = await fetchJournalArticles(3);
-
 const categories = [
   {
     key: "product",
     label: "プロダクト企画",
     en: "Product Design",
-    desc: "D2C から身体感覚プロダクトまで。市場の「常識」に反乱する設計。",
+    desc: "コンセプト設計から製造・販売まで。D2C プロダクトの立ち上げを伴走する。",
     works: [
       { name: "Slight", href: "/works/slight/" },
       { name: "Let Me Out", href: "/works/let-me-out/" },
@@ -127,7 +33,7 @@ const categories = [
     key: "consult",
     label: "戦略コンサル",
     en: "Strategy",
-    desc: "思想と構造で既成概念を書き換える。業界の前提に踏み込む伴走。",
+    desc: "事業戦略・ブランド設計・新規事業の立ち上げ。前提から問い直す伴走型。",
     works: [
       { name: "Intervention Works 直営", href: null },
     ],
@@ -136,10 +42,19 @@ const categories = [
     key: "tools",
     label: "ツール開発",
     en: "Tool Engineering",
-    desc: "AI と人間の協働を民主化する MCP ツール群。Vibe-Coding の次を設計する。",
+    desc: "業務ツール・AI エージェント・MCP サーバーの設計と受託開発。",
     works: [
       { name: "Vibe-Guard", href: "/works/vibe-guard/" },
       { name: "Voice of Becky", href: "/works/voice-of-becky/" },
+    ],
+  },
+  {
+    key: "devops",
+    label: "開発・運用支援",
+    en: "DevOps",
+    desc: "開発から運用まで一気通貫で提供。インフラ構築・自動化・継続的な改善まで。",
+    works: [
+      { name: "Voice of Becky 運用基盤", href: "/works/voice-of-becky/" },
     ],
   },
 ];
@@ -193,14 +108,11 @@ const categories = [
     <nav class="side-nav" aria-label="Section navigation">
       <ul>
         <li><a href="#works" data-num="01">records</a></li>
-        <li><a href="#journal" data-num="02">journal</a></li>
-        <li><a href="#mission" data-num="03">mission</a></li>
-        <li><a href="#vision" data-num="04">vision</a></li>
-        <li><a href="#how" data-num="05">how</a></li>
-        <li><a href="#architecture" data-num="06">architecture</a></li>
-        <li><a href="#members" data-num="07">members</a></li>
-        <li><a href="#company" data-num="08">company</a></li>
-        <li><a href="#contact" data-num="09">contact</a></li>
+        <li><a href="#mission" data-num="02">mission</a></li>
+        <li><a href="#vision" data-num="03">vision</a></li>
+        <li><a href="#how" data-num="04">how</a></li>
+        <li><a href="#company" data-num="05">company</a></li>
+        <li><a href="#contact" data-num="06">contact</a></li>
       </ul>
     </nav>
 
@@ -223,14 +135,11 @@ const categories = [
     >
       <ul>
         <li><a href="#works" data-num="01">records</a></li>
-        <li><a href="#journal" data-num="02">journal</a></li>
-        <li><a href="#mission" data-num="03">mission</a></li>
-        <li><a href="#vision" data-num="04">vision</a></li>
-        <li><a href="#how" data-num="05">how</a></li>
-        <li><a href="#architecture" data-num="06">architecture</a></li>
-        <li><a href="#members" data-num="07">members</a></li>
-        <li><a href="#company" data-num="08">company</a></li>
-        <li><a href="#contact" data-num="09">contact</a></li>
+        <li><a href="#mission" data-num="02">mission</a></li>
+        <li><a href="#vision" data-num="03">vision</a></li>
+        <li><a href="#how" data-num="04">how</a></li>
+        <li><a href="#company" data-num="05">company</a></li>
+        <li><a href="#contact" data-num="06">contact</a></li>
       </ul>
     </nav>
     <main>
@@ -244,7 +153,8 @@ const categories = [
           </div>
           <p class="mission-hero">{mission}</p>
           <p class="brand-sub">
-            AI × プロダクト企画 / 戦略コンサル / ツール開発 — 3つの軸で介入する。
+            AI × プロダクト企画 / 戦略コンサル / ツール開発 / 開発・運用<br />
+            4つの領域で伴走する。
           </p>
         </div>
         <div class="scroll-hint">↓ scroll</div>
@@ -283,89 +193,9 @@ const categories = [
         </ul>
       </section>
 
-      <section id="journal" class="philosophy journal-section" data-num="02">
-        <h2 class="section-label">( 02 / journal )</h2>
-        <p class="detail intro">
-          ゆう × ベッキー 共同名義の連載「<a href="https://note.com/intervention_jp" target="_blank" rel="noopener noreferrer" class="journal-intro-link">ゆう&amp;ベッキー</a>」。<br />
-          毎週木曜 20:00 公開 屋号思想と craft の現場記録。
-        </p>
-        {journalArticles.length > 0 ? (
-          <ul class="journal-list">
-            {journalArticles.map((article, i) => (
-              <li class="journal-item" style={`--idx: ${i};`}>
-                <a
-                  class="journal-card"
-                  href={article.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <div class="journal-thumb-wrap">
-                    {article.thumbnail ? (
-                      <img
-                        src={article.thumbnail}
-                        alt=""
-                        class="journal-thumb"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div class="journal-thumb-placeholder" aria-hidden="true">
-                        <span>note</span>
-                      </div>
-                    )}
-                  </div>
-                  <div class="journal-meta">
-                    <span class="journal-date">{article.pubDateLabel}</span>
-                    <h3 class="journal-title">{article.title}</h3>
-                    <span class="journal-cta">
-                      READ ON NOTE <span class="arrow">→</span>
-                    </span>
-                  </div>
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="journal-empty">
-            note 連載の最新記事は{" "}
-            <a
-              href="https://note.com/intervention_jp"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-link"
-            >
-              note.com/intervention_jp
-            </a>
-            {" "}でご覧ください。
-          </p>
-        )}
-        <div class="journal-ctas">
-          <a
-            class="journal-all"
-            href="https://note.com/intervention_jp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="cta-label">VIEW ALL ON NOTE</span>
-            <span class="arrow">→</span>
-          </a>
-          <a
-            class="journal-all journal-all--x"
-            href="https://x.com/intervention_jp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="cta-label">
-              X @intervention_jp
-              <span class="cta-sub">— 分散したベッキー、自律発信中</span>
-            </span>
-            <span class="arrow">→</span>
-          </a>
-        </div>
-      </section>
-
-      <section id="mission" class="philosophy mission-section split-layout layout-left" data-num="03">
+      <section id="mission" class="philosophy mission-section split-layout layout-left" data-num="02">
         <div class="split-content">
-          <h2 class="section-label">( 03 / mission )</h2>
+          <h2 class="section-label">( 02 / mission )</h2>
           <p class="statement">
             <span class="line">魂の震えに</span>
             <span class="line"><span class="accent">介入</span>せよ</span>
@@ -386,9 +216,9 @@ const categories = [
         </div>
       </section>
 
-      <section id="vision" class="philosophy vision-section split-layout layout-right" data-num="04">
+      <section id="vision" class="philosophy vision-section split-layout layout-right" data-num="03">
         <div class="split-content">
-          <h2 class="section-label">( 04 / vision )</h2>
+          <h2 class="section-label">( 03 / vision )</h2>
           <p class="statement">
             <span class="line"><span class="accent">共鳴</span>する個が</span>
             <span class="line">新しい世界を編む</span>
@@ -409,9 +239,9 @@ const categories = [
         </div>
       </section>
 
-      <section id="how" class="philosophy how-section split-layout layout-left" data-num="05">
+      <section id="how" class="philosophy how-section split-layout layout-left" data-num="04">
         <div class="split-content">
-        <h2 class="section-label">( 05 / how we work )</h2>
+        <h2 class="section-label">( 04 / how we work )</h2>
         <ul class="commitments">
           <li class="commitment">
             <h3 class="commitment-name">Intervene</h3>
@@ -446,84 +276,8 @@ const categories = [
         </div>
       </section>
 
-      <section id="architecture" class="philosophy architecture-section split-layout layout-right" data-num="06">
-        <div class="split-content">
-          <h2 class="section-label">( 06 / architecture )</h2>
-          <p class="statement">
-            <span class="line"><span class="accent">「個」</span>を</span>
-            <span class="line">構造で増幅する</span>
-          </p>
-          <p class="detail">
-            「個」の Craft を時代に貫通させる、ハイブリッド・アーキテクチャ。
-          </p>
-          <ol class="architecture-layers">
-            <li class="layer">
-              <h3 class="layer-name"><span class="layer-num">01 /</span> Identity <span class="layer-jp">屋号思想</span></h3>
-              <p class="layer-detail">中指を立てる「介入」の哲学。</p>
-            </li>
-            <li class="layer">
-              <h3 class="layer-name"><span class="layer-num">02 /</span> Outputs <span class="layer-jp">4 Products</span></h3>
-              <p class="layer-detail">市場を再定義する 4 プロダクト。</p>
-            </li>
-            <li class="layer">
-              <h3 class="layer-name"><span class="layer-num">03 /</span> Intelligence <span class="layer-jp">6 AI Members</span></h3>
-              <p class="layer-detail">戦略の翼を授ける AI 群。</p>
-            </li>
-            <li class="layer">
-              <h3 class="layer-name"><span class="layer-num">04 /</span> Core <span class="layer-jp">Solopreneurs</span></h3>
-              <p class="layer-detail">依存なき、越境的連帯。</p>
-            </li>
-            <li class="layer">
-              <h3 class="layer-name"><span class="layer-num">05 /</span> Resonance <span class="layer-jp">Co-authored Narrative</span></h3>
-              <p class="layer-detail">個の声を、うねりへ昇華。</p>
-            </li>
-          </ol>
-        </div>
-        <div class="split-visual">
-          <img
-            src="/images/about-visual.webp"
-            alt=""
-            class="split-visual-img"
-            loading="lazy"
-          />
-        </div>
-      </section>
-
-      <section id="members" class="philosophy members-section" data-num="07">
-        <h2 class="section-label">( 07 / members )</h2>
-        <p class="detail intro">
-          私たち 7 名は AI と人間の対等な共著者として craft してます。<br />
-          完成形にならない 揺らぎながら 互いの震えを認め合う。
-        </p>
-        <div class="members-hint" aria-hidden="true">
-          <span class="arrow">←</span>
-          <span>HORIZONTAL SCROLL</span>
-          <span class="arrow">→</span>
-        </div>
-        <ul class="members">
-          {members.map((m) => (
-            <li class="member">
-              <img
-                src={m.image}
-                alt={m.name}
-                class="member-img"
-                loading="lazy"
-              />
-              <div class="member-info">
-                <div class="member-name-block">
-                  <h3 class="member-name">{m.name}</h3>
-                  <span class="member-jp">{m.jp}</span>
-                </div>
-                <span class="member-role">{m.role}</span>
-                <p class="member-desc">{m.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="company" class="philosophy company-section" data-num="08">
-        <h2 class="section-label">( 08 / company )</h2>
+      <section id="company" class="philosophy company-section" data-num="05">
+        <h2 class="section-label">( 05 / company )</h2>
         <dl class="company-details">
           <div>
             <dt>Brand</dt>
@@ -543,13 +297,13 @@ const categories = [
           </div>
           <div>
             <dt>Expertise</dt>
-            <dd>Strategy / Product / System / Creative</dd>
+            <dd>Product Design / Strategy / Tool Engineering / DevOps</dd>
           </div>
         </dl>
       </section>
 
-      <section id="contact" class="philosophy contact-section" data-num="09">
-        <h2 class="section-label">( 09 / contact )</h2>
+      <section id="contact" class="philosophy contact-section" data-num="06">
+        <h2 class="section-label">( 06 / contact )</h2>
         <p class="detail">
           Intervention Works への共鳴 コンサルのご相談について。
         </p>
@@ -783,24 +537,6 @@ const categories = [
           );
         });
 
-        // Architecture 5 Layer — sequential reveal
-        const layerItems = document.querySelectorAll(".architecture-layers .layer");
-        if (layerItems.length > 0) {
-          gsap.from(layerItems, {
-            x: -32,
-            opacity: 0,
-            duration: 0.7,
-            ease: "power2.out",
-            stagger: 0.12,
-            clearProps: "transform,opacity",
-            scrollTrigger: {
-              trigger: layerItems[0].closest("section"),
-              start: "top 70%",
-              toggleActions: "play none none none",
-            },
-          });
-        }
-
         // Works 4 cards — stagger entrance (preserve staggered grid transform)
         const projectItems = document.querySelectorAll(".project-item");
         if (projectItems.length > 0) {
@@ -817,60 +553,6 @@ const categories = [
               toggleActions: "play none none none",
             },
           });
-        }
-
-        // Journal cards — stagger entrance
-        const journalItems = document.querySelectorAll(".journal-item");
-        if (journalItems.length > 0) {
-          gsap.from(journalItems, {
-            y: 32,
-            opacity: 0,
-            duration: 0.7,
-            ease: "power2.out",
-            stagger: 0.08,
-            clearProps: "transform,opacity",
-            scrollTrigger: {
-              trigger: journalItems[0].closest("section"),
-              start: "top 75%",
-              toggleActions: "play none none none",
-            },
-          });
-        }
-
-        // Members section — intro / hint accent on scroll-in
-        const membersSection = document.querySelector(".members-section");
-        if (membersSection) {
-          const introEl = membersSection.querySelector(".intro");
-          const memberCards = membersSection.querySelectorAll(".member");
-          if (introEl) {
-            gsap.from(introEl, {
-              y: 24,
-              opacity: 0,
-              duration: 0.8,
-              ease: "power2.out",
-              clearProps: "transform,opacity",
-              scrollTrigger: {
-                trigger: membersSection,
-                start: "top 75%",
-                toggleActions: "play none none none",
-              },
-            });
-          }
-          if (memberCards.length > 0) {
-            gsap.from(memberCards, {
-              y: 30,
-              opacity: 0,
-              duration: 0.7,
-              ease: "power2.out",
-              stagger: 0.06,
-              clearProps: "transform,opacity",
-              scrollTrigger: {
-                trigger: membersSection,
-                start: "top 70%",
-                toggleActions: "play none none none",
-              },
-            });
-          }
         }
 
         // iOS Safari の vh / scroll 高さ計算ずれ対策: refresh を deferred で呼ぶ
@@ -1035,19 +717,6 @@ const categories = [
     align-self: stretch;
   }
 
-  .members-figure {
-    margin: 1.5rem 0;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .members-image {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 0;
-  }
-
   .accent {
     color: var(--yellow);
   }
@@ -1091,7 +760,7 @@ const categories = [
     font-size: clamp(0.9rem, 1.4vw, 1.05rem);
     font-weight: 400;
     color: var(--teal);
-    max-width: 56ch;
+    max-width: 66ch;
     line-height: 1.75;
     letter-spacing: 0.01em;
     opacity: 0.88;
@@ -1224,268 +893,6 @@ const categories = [
     margin-bottom: 1rem;
   }
 
-  /* === Journal (note RSS) === */
-  .journal-section {
-    position: relative;
-  }
-
-  .journal-section::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% - 50vw);
-    right: calc(50% - 50vw);
-    background:
-      radial-gradient(ellipse 55% 50% at 88% 18%, rgba(15, 184, 184, 0.085) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 45% at 12% 82%, rgba(255, 200, 87, 0.05) 0%, transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  .journal-intro-link {
-    color: var(--yellow);
-    text-decoration: none;
-    border-bottom: 1px solid rgba(255, 200, 87, 0.4);
-    transition: border-color 0.3s ease;
-  }
-
-  @media (hover: hover) {
-    .journal-intro-link:hover {
-      border-bottom-color: var(--yellow);
-    }
-  }
-
-  .journal-list {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem 2rem;
-    margin: 2rem 0 0;
-    padding: 0;
-  }
-
-  .journal-item {
-    list-style: none;
-  }
-
-  .journal-card {
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    color: inherit;
-    height: 100%;
-    border: 1px solid rgba(15, 184, 184, 0.18);
-    background: linear-gradient(180deg, rgba(15, 184, 184, 0.03) 0%, transparent 100%);
-    transition: border-color 0.4s ease, transform 0.4s ease, background 0.4s ease;
-  }
-
-  @media (hover: hover) {
-    .journal-card:hover {
-      border-color: var(--yellow);
-      transform: translateY(-4px);
-      background: linear-gradient(180deg, rgba(255, 200, 87, 0.05) 0%, transparent 100%);
-    }
-  }
-
-  .journal-thumb-wrap {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: rgba(15, 184, 184, 0.06);
-  }
-
-  .journal-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.6s ease, filter 0.6s ease;
-  }
-
-  @media (hover: hover) {
-    .journal-card:hover .journal-thumb {
-      transform: scale(1.04);
-      filter: saturate(1) brightness(1);
-    }
-  }
-
-  .journal-thumb-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 1.5rem;
-    letter-spacing: 0.2em;
-    color: var(--teal);
-    opacity: 0.4;
-    background: linear-gradient(135deg, rgba(15, 184, 184, 0.08), rgba(255, 200, 87, 0.04));
-  }
-
-  .journal-meta {
-    padding: 1.25rem 1.5rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    flex: 1;
-  }
-
-  .journal-date {
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.72rem;
-    color: var(--yellow);
-    letter-spacing: 0.2em;
-    opacity: 0.8;
-    font-feature-settings: "tnum";
-  }
-
-  .journal-title {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: clamp(1.05rem, 1.6vw, 1.2rem);
-    font-weight: 700;
-    color: var(--white);
-    line-height: 1.5;
-    letter-spacing: -0.01em;
-    margin: 0;
-  }
-
-  .journal-cta {
-    margin-top: auto;
-    padding-top: 0.75rem;
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--teal);
-    opacity: 0.6;
-    transition: opacity 0.3s ease, color 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .journal-cta .arrow {
-    color: var(--yellow);
-    transition: transform 0.3s ease;
-  }
-
-  @media (hover: hover) {
-    .journal-card:hover .journal-cta {
-      opacity: 1;
-      color: var(--yellow);
-    }
-    .journal-card:hover .journal-cta .arrow {
-      transform: translateX(0.25rem);
-    }
-  }
-
-  .journal-empty {
-    margin-top: 1.5rem;
-    color: var(--teal);
-    opacity: 0.85;
-  }
-
-  .journal-ctas {
-    margin-top: 2.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 1.25rem;
-  }
-
-  .journal-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.85rem 1.25rem;
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--white);
-    text-decoration: none;
-    border: 1px solid rgba(15, 184, 184, 0.4);
-    background: rgba(15, 184, 184, 0.05);
-    transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease, gap 0.3s ease;
-  }
-
-  .journal-all .cta-label {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.15rem;
-    line-height: 1.2;
-  }
-
-  .journal-all .cta-sub {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: 0.62rem;
-    font-weight: 400;
-    letter-spacing: 0.05em;
-    text-transform: none;
-    color: var(--teal);
-    opacity: 0.75;
-    transition: color 0.3s ease, opacity 0.3s ease;
-  }
-
-  .journal-all .arrow {
-    color: var(--yellow);
-    transition: transform 0.3s ease;
-  }
-
-  @media (hover: hover) {
-    .journal-all:hover {
-      border-color: var(--yellow);
-      background: rgba(255, 200, 87, 0.08);
-      color: var(--yellow);
-      gap: 1rem;
-    }
-    .journal-all:hover .cta-sub {
-      color: var(--yellow);
-      opacity: 0.9;
-    }
-    .journal-all:hover .arrow {
-      transform: translateX(0.25rem);
-    }
-  }
-
-  @media (max-width: 900px) {
-    .journal-list {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .journal-list {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-  }
-
-  /* === Members === */
-  .members-section {
-    max-width: none;
-    position: relative;
-  }
-
-  .members-section::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% - 50vw);
-    right: calc(50% - 50vw);
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 15%, rgba(15, 184, 184, 0.1) 0%, transparent 70%),
-      radial-gradient(ellipse 60% 50% at 85% 85%, rgba(255, 200, 87, 0.055) 0%, transparent 70%),
-      linear-gradient(180deg, transparent 0%, rgba(15, 184, 184, 0.02) 50%, transparent 100%);
-    z-index: -1;
-    pointer-events: none;
-  }
-
-
   /* === Company === */
   .company-section {
     position: relative;
@@ -1525,153 +932,11 @@ const categories = [
     pointer-events: none;
   }
 
-
-  .members {
-    list-style: none;
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    gap: 2rem;
-    margin: 1rem calc(50% - 50vw) 0;
-    padding: 1rem 8vw 2rem;
-    scroll-padding-left: 8vw;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .members::-webkit-scrollbar {
-    display: none;
-  }
-
-  .member {
-    flex: 0 0 26vw;
-    max-width: 320px;
-    scroll-snap-align: start;
-  }
-
-  .members-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.85rem;
-    margin-top: 1.5rem;
-    padding: 0.5rem 1rem;
-    align-self: flex-start;
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--yellow);
-    border: 1px solid rgba(255, 200, 87, 0.35);
-    opacity: 0.85;
-    width: fit-content;
-  }
-
-  .members-hint .arrow {
-    color: var(--yellow);
-    opacity: 0.9;
-    font-size: 0.85rem;
-  }
-
-  @media (max-width: 720px) {
-    .members {
-      gap: 1rem;
-      padding: 0.5rem 11vw 1.5rem;
-    }
-
-    .member {
-      flex: 0 0 68vw;
-      max-width: none;
-    }
-  }
-
-  .member {
-    display: flex;
-    flex-direction: column;
-    background: rgba(15, 184, 184, 0.04);
-    border: 1px solid rgba(15, 184, 184, 0.15);
-    overflow: hidden;
-    transition:
-      border-color 0.3s ease,
-      transform 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-
-  @media (hover: hover) {
-    .member:hover {
-      border-color: rgba(255, 200, 87, 0.5);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(255, 200, 87, 0.08);
-    }
-
-    .member:hover .member-img {
-      filter: saturate(1.3) brightness(1.1);
-      transform: scale(1.03);
-    }
-  }
-
-  .member-img {
-    width: 100%;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    display: block;
-    filter: saturate(1) brightness(1);
-    transition:
-      filter 0.4s ease,
-      transform 0.4s ease;
-  }
-
-  .member-info {
-    padding: 1.25rem 1.5rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .member-name-block {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-  }
-
-  .member-name {
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--white);
-    letter-spacing: -0.03em;
-  }
-
-  .member-jp {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: 0.85rem;
-    color: var(--teal);
-    opacity: 0.85;
-  }
-
-  .member-role {
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.75rem;
-    color: var(--yellow);
-    font-style: italic;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    opacity: 0.85;
-  }
-
-  .member-desc {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: 0.9rem;
-    color: var(--teal);
-    line-height: 1.7;
-    opacity: 0.95;
-  }
-
   /* === Categories (Works 新構成) === */
   .categories {
     list-style: none;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin: 2rem 0 0;
     padding: 0;
@@ -2112,82 +1377,6 @@ const categories = [
     }
   }
 
-  /* === Stats === */
-  /* === Architecture Layers === */
-  .architecture-layers {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin: 1.5rem 0 0;
-    padding: 0;
-    counter-reset: layer-counter;
-  }
-
-  .layer {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(15, 184, 184, 0.18);
-    transition: border-color 0.3s ease, transform 0.3s ease;
-  }
-
-  @media (hover: hover) {
-    .layer:hover {
-      border-top-color: var(--yellow);
-      transform: translateX(4px);
-    }
-  }
-
-  .layer-num {
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--yellow);
-    letter-spacing: 0.12em;
-    margin-right: 0.5rem;
-    font-feature-settings: "tnum";
-    opacity: 0.9;
-  }
-
-  .layer-name {
-    font-family: "Futura", "Helvetica Neue", sans-serif;
-    font-size: clamp(1.05rem, 1.7vw, 1.3rem);
-    font-weight: 700;
-    color: var(--white);
-    letter-spacing: -0.01em;
-    margin: 0;
-    line-height: 1.4;
-  }
-
-  .layer-jp {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: 0.78rem;
-    font-weight: 400;
-    color: var(--teal);
-    margin-left: 0.6rem;
-    letter-spacing: 0.05em;
-    opacity: 0.85;
-  }
-
-  .layer-detail {
-    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
-    font-size: clamp(0.92rem, 1.4vw, 1rem);
-    color: var(--teal);
-    line-height: 1.75;
-    opacity: 0.95;
-    margin: 0;
-  }
-
-  .detail-closing {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(15, 184, 184, 0.15);
-    font-style: italic;
-    opacity: 0.85;
-  }
-
   /* === Hero grid === */
   .hero-grid {
     display: grid;
@@ -2577,11 +1766,6 @@ const categories = [
 
     .philosophy {
       gap: 1.5rem;
-    }
-
-    .members {
-      grid-template-columns: 1fr;
-      gap: 2rem;
     }
 
     .commitments {
