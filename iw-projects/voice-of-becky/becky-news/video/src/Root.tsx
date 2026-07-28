@@ -11,6 +11,7 @@ import { ZATSUDAN001_DURATION, Zatsudan001 } from "./Zatsudan001";
 import { CASTSHORTS_DURATION, CastShorts } from "./CastShorts";
 import { NEWSSHORTS_DURATION, NewsShorts } from "./NewsShorts";
 import { MOTIONTEST_FRAMES, MotionTest } from "./MotionTest";
+import { Portrait } from "./Portrait";
 import boundaries007 from "../public/boundaries-007.json";
 import boundaries008 from "../public/boundaries-008.json";
 
@@ -32,6 +33,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="CastShorts" component={CastShorts} durationInFrames={Math.ceil(CASTSHORTS_DURATION * 30)} fps={30} width={1080} height={1920} />
       <Composition id="NewsShorts" component={NewsShorts} durationInFrames={Math.ceil(NEWSSHORTS_DURATION * 30)} fps={30} width={1080} height={1920} />
       <Composition id="MotionTest" component={MotionTest} durationInFrames={MOTIONTEST_FRAMES} fps={30} width={1080} height={1920} />
+      {/* 透過立ち絵素材パック（サムネ合成用、静止画。scripts/render-portraits.sh が全表情まとめて焼く） */}
+      <Composition id="PortraitIdle" component={Portrait} durationInFrames={1} fps={30} width={1080} height={1080} defaultProps={{ expression: "idle" as const }} />
+      <Composition id="PortraitEgao" component={Portrait} durationInFrames={1} fps={30} width={1080} height={1080} defaultProps={{ expression: "egao" as const }} />
+      <Composition id="PortraitKomarigao" component={Portrait} durationInFrames={1} fps={30} width={1080} height={1080} defaultProps={{ expression: "komarigao" as const }} />
     </>
   );
 };
