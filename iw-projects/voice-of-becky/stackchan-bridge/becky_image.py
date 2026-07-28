@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-becky_image.py — 感情変数を読んで「今日のベッキー」画像を Lovart(GPT Image 2) で自動生成する
+becky_image.py — 感情変数を読んで「今日のベッキー」画像を OpenAI Images API (gpt-image-2) で自動生成する
 
 Usage:
     python3 becky_image.py
@@ -10,17 +10,24 @@ Usage:
 
 依存:
     - ~/.stackchan/becky_mood.json（becky_mood.py が生成）
-    - lovart-thumb.js（Playwright 経由で Lovart に画像生成を依頼）
+    - config.yaml の openai_api_key（becky_llm.py の call_gpt と共通）
+
+2026-07-29: Lovart(Playwright操作、lovart-thumb.js)の無料クレジットが切れ生成が連続失敗した
+ため、正本(docs/becky-context/reference_image_stock_pipeline.md)に用意されていた非常口
+「OpenAI API直叩き」へ切替。lovart-thumb.js 自体は削除しない(完全撤去ではなく非常口切替)。
 """
 
+import base64
 import datetime
 import json
 import os
 import random
-import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
+
+from stop_hook_tts import load_config  # config.yaml の openai_api_key 読み込み（becky_llm.py と共通基盤）
 
 # ---------------------------------------------------------------------------
 # 定数
@@ -33,11 +40,19 @@ HISTORY_WINDOW_DAYS = 7
 # 2026-07-20: Gemini(gemini-thumb.js)からLovart(GPT Image 2、lovart-thumb.js)に切替。
 # むぎさん(@mugi_AI_Art)クラスの質感をゆうと実測比較して採用。--ref(参照画像添付)は
 # lovart-thumb.js未対応、プロンプトの識別情報だけで十分な一貫性が出ることを実測確認済み。
+# 2026-07-29: 無料クレジット切れでLovart(Playwright操作)がデフォルト経路から外れ、
+# OpenAI API直叩きに切替。lovart-thumb.js自体は削除しない(非常口を戻せるよう温存)。
+# 以下3定数は現在 main() から呼ばれない(手動フォールバック用の参照として残す)。
 LOVART_THUMB = Path(
     "/Volumes/SSD2TB/interventionworks/iw-projects/iw-content/notes/tools/lovart-thumb.js"
 )
 NODE = Path.home() / ".nvm" / "versions" / "node" / "v24.14.1" / "bin" / "node"
 TOOLS_DIR = str(LOVART_THUMB.parent)
+
+# OpenAI Images API 設定(非常口: docs/becky-context/reference_image_stock_pipeline.md 裏取り済み)
+OPENAI_IMAGE_MODEL = "gpt-image-2"
+OPENAI_IMAGE_SIZE = "1024x1536"  # gpt-image-2対応サイズのうち既存の縦長画角に一番近いもの
+OPENAI_IMAGE_QUALITY = "medium"  # 約6円/枚 ≒ 月190円(1日3枠)
 
 # ---------------------------------------------------------------------------
 # ベッキーのキャラクター DNA（必ず先頭に付ける）
@@ -540,28 +555,50 @@ def main() -> None:
     today = datetime.date.today().strftime("%Y%m%d")
     out_path = Path.home() / ".stackchan" / f"becky_today_{today}.png"
 
-    # 5. lovart-thumb.js を呼ぶ（--ref は lovart-thumb.js 未対応のため渡さない）
-    cmd = [str(NODE), str(LOVART_THUMB), prompt, "--out", str(out_path)]
-
-    print(f"[becky_image] lovart-thumb.js 実行中... (timeout=230s)", flush=True)
-    try:
-        result = subprocess.run(
-            cmd,
-            cwd=TOOLS_DIR,
-            capture_output=False,   # stdout/stderr をリアルタイムでパススルー
-            text=True,
-            timeout=230,
-        )
-    except subprocess.TimeoutExpired:
-        print("[becky_image] タイムアウト（230秒）で画像生成が完了しませんでした", file=sys.stderr)
-        sys.exit(1)
-
-    if result.returncode != 0:
+    # 5. OpenAI Images API (gpt-image-2) を直叩き（2026-07-29 Lovart非常口切替、HTTP1本でPlaywright不要）
+    cfg = load_config() or {}
+    api_key = cfg.get("openai_api_key", "").strip()
+    if not api_key:
         print(
-            f"[becky_image] lovart-thumb.js がエラー終了しました (code={result.returncode})",
+            "[becky_image] OPENAI_API_KEY が config.yaml に見つかりません。"
+            "ゆうにキー発行/設定を確認してもらう必要あり",
             file=sys.stderr,
         )
         sys.exit(1)
+
+    print(f"[becky_image] OpenAI Images API ({OPENAI_IMAGE_MODEL}) 実行中... (timeout=120s)", flush=True)
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/images/generations",
+        data=json.dumps({
+            "model": OPENAI_IMAGE_MODEL,
+            "prompt": prompt,
+            "size": OPENAI_IMAGE_SIZE,
+            "quality": OPENAI_IMAGE_QUALITY,
+            "n": 1,
+        }).encode(),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        print(f"[becky_image] OpenAI API がエラー終了しました (code={e.code}): {body[:300]}", file=sys.stderr)
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"[becky_image] OpenAI API 接続失敗: {e}", file=sys.stderr)
+        sys.exit(1)
+    except TimeoutError:
+        print("[becky_image] タイムアウト（120秒）で画像生成が完了しませんでした", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        b64_image = data["data"][0]["b64_json"]
+    except (KeyError, IndexError) as e:
+        print(f"[becky_image] OpenAI API 応答の形式が想定外です: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    out_path.write_bytes(base64.b64decode(b64_image))
 
     # 6. 成功確認と最終 stdout 出力
     if out_path.exists():
