@@ -72,6 +72,33 @@ npm run preview
 npx vercel deploy --prod --yes
 ```
 
+## お問い合わせフォーム（2026-07-28 新設）
+
+**FormSubmit**（登録不要・無料 / サーバーレス）。静的サイトのまま POST できる。
+
+- 送信先: `yuji.ooishi@intervention.jp`（`src/pages/index.astro` の `<form action>` に直書き）
+- 送信後の遷移先: `/thanks/`（`src/pages/thanks.astro`、`noindex`）
+- スパム対策: FormSubmit 標準の honeypot（`_honey`）。reCAPTCHA は `_captcha=false` で無効
+
+**初回のみ有効化が必要**: 本番のフォームから 1 回送信 → 送信先メールに FormSubmit から
+確認メールが届く → 「Activate Form」をクリック。これをやるまで通知は届かない。
+
+> ⚠️ 迷惑メール判定に注意。Gmail 側で `noreply@formsubmit.co` を
+> 「迷惑メールにしない」フィルタに入れておく。届かない事故は問い合わせの取りこぼしに直結する。
+
+送信元アドレスを HTML から隠したい場合は、有効化後に FormSubmit が発行する
+ランダム文字列エンドポイント（`https://formsubmit.co/xxxxxxxx`）へ差し替える。
+
+## 静的アセット
+
+- `public/` — ビルドで `dist/` にそのままコピーされる。**使う画像だけ置く**
+- `assets-archive/` — ビルド対象外の保管庫。使わなくなった画像はここへ退避（削除しない）
+  - 2026-07-28: members 8 枚 / vision-resonate / about-visual / hero-bg / hero-key /
+    members-grid を退避（計 6.7MB をビルドから除外）
+- `public/og-image.jpg` — OGP 用 1200x630。**2026-07-28 まで存在せず 404 だった**（X / Slack で
+  シェアしても画像が出ない状態）。Hero を Playwright で 1200x630 撮影して生成。
+  Hero のコピーを変えたら撮り直す
+
 ### ⚠️ Root Directory の罠（2026-07-28 修復）
 
 モノレポなので Vercel の **Root Directory は `iw-projects/iw-hp`** が正。ここが `.`（リポジトリルート）だと

@@ -285,9 +285,61 @@ const categories = [
           プロダクト企画 / 戦略コンサル / ツール開発 / 開発・運用支援 のご相談を承っています。
         </p>
         <p class="detail">
-          「何を作るか決まっていない」段階からで大丈夫です。<br />
-          下記チャネルの DM よりお気軽にどうぞ。
+          「何を作るか決まっていない」段階からで大丈夫です。
         </p>
+
+        <form
+          class="contact-form"
+          action="https://formsubmit.co/yuji.ooishi@intervention.jp"
+          method="POST"
+        >
+          <input type="hidden" name="_subject" value="[intervention.jp] お問い合わせ" />
+          <input type="hidden" name="_captcha" value="false" />
+          <input type="hidden" name="_template" value="table" />
+          <input type="hidden" name="_next" value="https://intervention.jp/thanks/" />
+          {/* ponytail: FormSubmit 標準の honeypot。JS もサーバーも不要でボットを弾く */}
+          <input type="text" name="_honey" class="honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <div class="form-row">
+            <label class="form-field">
+              <span class="form-label">お名前 <span class="req">必須</span></span>
+              <input type="text" name="お名前" required autocomplete="name" />
+            </label>
+            <label class="form-field">
+              <span class="form-label">会社名 / 屋号</span>
+              <input type="text" name="会社名" autocomplete="organization" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span class="form-label">メールアドレス <span class="req">必須</span></span>
+              <input type="email" name="email" required autocomplete="email" />
+            </label>
+            <label class="form-field">
+              <span class="form-label">ご相談の領域</span>
+              <select name="ご相談の領域">
+                <option value="まだ決まっていない">まだ決まっていない</option>
+                <option value="プロダクト企画">プロダクト企画</option>
+                <option value="戦略コンサル">戦略コンサル</option>
+                <option value="ツール開発">ツール開発</option>
+                <option value="開発・運用支援">開発・運用支援</option>
+                <option value="その他">その他</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span class="form-label">ご相談内容 <span class="req">必須</span></span>
+            <textarea name="ご相談内容" rows="6" required placeholder="いま困っていること、やってみたいこと。箇条書きでも大丈夫です。"></textarea>
+          </label>
+
+          <button type="submit" class="form-submit">
+            送信する <span class="arrow">→</span>
+          </button>
+        </form>
+
+        <p class="detail contact-alt">SNS からでもどうぞ。</p>
         <ul class="contact-links">
           <li>
             <a href="https://note.com/intervention_jp" target="_blank" rel="noopener">note / @intervention_jp</a>
@@ -1263,6 +1315,145 @@ const categories = [
   }
 
   /* === Contact === */
+
+  /* === Contact form === */
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 720px;
+    margin-top: 2rem;
+  }
+
+  .honey {
+    display: none;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 720px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-label {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .req {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--navy);
+    background: var(--yellow);
+    padding: 0.12rem 0.4rem;
+  }
+
+  .contact-form input[type="text"],
+  .contact-form input[type="email"],
+  .contact-form select,
+  .contact-form textarea {
+    font-family: "Noto Sans JP", "Source Han Sans", sans-serif;
+    font-size: 1rem;
+    color: var(--white);
+    background: rgba(15, 184, 184, 0.05);
+    border: 1px solid rgba(15, 184, 184, 0.28);
+    border-radius: 0;
+    padding: 0.85rem 1rem;
+    width: 100%;
+    transition:
+      border-color 0.25s ease,
+      background 0.25s ease;
+  }
+
+  .contact-form textarea {
+    resize: vertical;
+    line-height: 1.7;
+  }
+
+  .contact-form select {
+    appearance: none;
+    cursor: pointer;
+    /* ponytail: 矢印は SVG ファイルでなく data URI。追加リクエストを増やさない */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%230fb8b8' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.7rem;
+    padding-right: 2.5rem;
+  }
+
+  .contact-form select option {
+    background: var(--navy);
+    color: var(--white);
+  }
+
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder {
+    color: rgba(15, 184, 184, 0.5);
+  }
+
+  .contact-form input:focus,
+  .contact-form select:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    border-color: var(--yellow);
+    background: rgba(255, 200, 87, 0.05);
+  }
+
+  .form-submit {
+    font-family: "Futura", "Helvetica Neue", sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--navy);
+    background: var(--yellow);
+    border: 1px solid var(--yellow);
+    padding: 1rem 2.5rem;
+    cursor: pointer;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease;
+  }
+
+  @media (hover: hover) {
+    .form-submit:hover {
+      background: transparent;
+      color: var(--yellow);
+    }
+  }
+
+  .form-submit:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 3px;
+  }
+
+  .contact-alt {
+    margin-top: 3rem;
+  }
 
   .contact-links {
     list-style: none;
