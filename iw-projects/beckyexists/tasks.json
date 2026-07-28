@@ -1,6 +1,32 @@
 {
-  "updated_at": "2026-07-23T19:46:47.878959",
+  "updated_at": "2026-07-28T12:00:32.790645+09:00",
   "tasks": [
+    {
+      "id": "vercel-edge-request-diet-0728",
+      "scope": "iw",
+      "label": "Vercel Edge Request 無料枠96%到達 — 作戦本部の非表示タブポーリングを停止",
+      "category": "infra",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-28",
+      "updated_at": "2026-07-28",
+      "completed_at": "2026-07-28",
+      "due": null,
+      "note": "ゆうがVercelのUsage画面を持ち込み「リクエストけっこうあっぷあっぷだけどこれ大丈夫なのかなw」。Edge Requests 960K/1M(96%)。ただしFast Data Transferは10.73GB/100GB(11%)、CPU系も数%。→ 1リクエスト平均11KBの『小さいJSONへの大量ポーリング』型と判断し発信側から特定。犯人=開きっぱなしの作戦本部。/room が loadAll で JSON 11本を60秒ごと(約15,800 req/日、30日で約475K)、/studio 4本×300秒、/backstage 1本×300秒。さらに fetchJson が `?t=`+Date.now() を付けるのでCDNキャッシュも効かない。対策= poll-visible.js 新設(document.hidden の間はポーリングしない/タブ復帰時は間隔を待たず即取得)。room・studio・backstage・room-tasks.js に適用。実測で非表示70秒=fetch 0回、復帰直後=11本取得を確認。commit d4a8498。【注意】Vercel Usage API は Pro プラン限定(Hobbyは plan_upgrade_required)でプロジェクト別内訳が取れない。【残】数日後にUsageが下がっているか要確認。足りなければ次の手= 11本のJSONをcronで1本のbundle.jsonに事前結合(11 req→1 req)。"
+    },
+    {
+      "id": "iw-hp-business-refocus-0728",
+      "scope": "iw",
+      "label": "intervention.jp 再構成 — 思想強め→ビジネス領域が分かる形へ(9→5 section)+問い合わせフォーム新設",
+      "category": "iw-hp",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-28",
+      "updated_at": "2026-07-28",
+      "completed_at": "2026-07-28",
+      "due": null,
+      "note": "ゆう朝いち依頼「思想強めからもうちょっとシンプルに且つビジネス領域とかがわかる感じに」。削除リスト(journal/architecture/members)はゆう指定、思想3section残問題は「一旦わかりやすい感じにかえてみようと思ってて べきたんやってみてもらえる？」で丸投げ=私判断。①9→5 section: journal/architecture/members 削除、mission+vision→( 02 / about )統合(看板「魂の震えに介入せよ」は死守し下の説明を「何をする屋号か」へ)、how we work=Intervene/Tremble/Relate に日本語ラベル(前提を疑う/動くもので確かめる/運用まで伴走する)+ステップ番号で実務言語化、contact=4領域の相談導線へ。②records に DevOps「開発・運用支援」追加(ゆう指定文言)=4領域2x2、他3領域descも発注内容の記述に統一。Relate→「運用まで伴走」はDevOpsと線を繋ぐ意図。③問い合わせフォーム新設=FormSubmit(登録不要・静的のまま)、宛先yuji.ooishi@intervention.jp、送信後/thanks/(新設)、honeypotでスパム対策。「ご相談の領域」初期値は『まだ決まっていない』(決まってる人しか押せない入口は狭すぎる)。ゆうが有効化クリック→着弾確認済(初回は迷惑メール行き→ゆうが『迷惑メールじゃない』を設定)。④静かな故障2件修理: Vercel Root Directoryが`.`のままでルートのsecretlint用package.jsonでinstallが走りastro: command not found(exit 127)、GitHub連携の自動デプロイが数日ずっと失敗(本番は手動deployの生き残りで無症状) → API経由でiw-projects/iw-hpに修正し自動デプロイ復活。og-image.jpgが最初から404でSNSシェア時に画像が出ていなかった → Hero を Playwright 1200x630 で撮って生成。⑤未使用画像6.7MBを assets-archive/ へ退避(ゆう指示『使うかもしれないから保存』のため削除せずビルド対象外に)。commit 97ed0d6/b3181d0/4e11627/60ce0eb。craft正本=iw-projects/iw-hp/README.md。【残】実問い合わせが迷惑メールに入らないか監視、再発したらGoogle Apps Script経由(送信元をゆう自身のGmail)へ切替とゆうに宣言済み。週次rebuild workflow(木21:00)はjournal削除で目的喪失、害なしのため放置中・掃除するかは未決。"
+    },
     {
       "id": "shorts-trigger-strategy-0727",
       "scope": "iw",
