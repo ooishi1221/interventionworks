@@ -155,20 +155,19 @@ def make_thumbnail(events: list, out_dir: Path, summary: dict, becky_png: Path |
     size = 190 if len(word) <= 5 else 150 if len(word) <= 7 else 120
     font = ImageFont.truetype(font_path, size)
 
-    # 座布団（赤帯・少し回転）+ 極太白文字（黒縁）を別レイヤーで合成
+    # 座布団（赤帯・水平）+ 極太白文字（黒縁）を別レイヤーで合成
     layer = Image.new("RGBA", (1600, 500), (0, 0, 0, 0))
     ld = ImageDraw.Draw(layer)
     tw = ld.textlength(word, font=font)
-    bx, by = (1600 - tw) / 2, 130
+    bx, by = (1600 - tw) / 2, 110
     ld.rectangle([bx - 44, by - 26, bx + tw + 44, by + size + 30], fill=(200, 16, 46, 235))
     ld.text((bx, by), word, font=font, fill="#ffffff", stroke_width=10, stroke_fill="#14060a")
-    layer = layer.rotate(2.5, expand=False, resample=Image.BICUBIC)
     img = img.convert("RGBA")
     img.alpha_composite(layer, (int((1280 - 1600) / 2), 40))
 
     if becky_png and Path(becky_png).exists():  # 表情立ち絵の差し込み口（素材パック待ち）
         becky = Image.open(becky_png).convert("RGBA")
-        becky.thumbnail((560, 560))
+        becky.thumbnail((400, 400))  # 座布団下端(最大y=390)と被らないサイズに調整
         img.alpha_composite(becky, (20, 720 - becky.height))
 
     d = ImageDraw.Draw(img)
