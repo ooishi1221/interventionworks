@@ -36,16 +36,19 @@ iw-hp/
 
 ```
 Hero
-( 01 / works )         ← 4 Products カード + EXPLORE link
-( 02 / journal )       ← note RSS（build 時 fetch、最大 5 件）
-( 03 / mission )       ← 「魂の震えに 介入せよ」
-( 04 / vision )        ← 「共鳴する個が 新しい世界を編む」
-( 05 / how we work )   ← Intervene / Tremble / Relate
-( 06 / architecture )  ← 5 Layer (Identity / Outputs / Intelligence / Core / Resonance)
-( 07 / members )       ← 7 名（横スクロール、scroll-snap）
-( 08 / company )
-( 09 / contact )
+( 01 / records )       ← 4 サービス領域カード（2x2）
+( 02 / mission )       ← 「魂の震えに 介入せよ」
+( 03 / vision )        ← 「共鳴する個が 新しい世界を編む」
+( 04 / how we work )   ← Intervene / Tremble / Relate
+( 05 / company )
+( 06 / contact )
 ```
+
+サービス領域（`categories` 配列、`src/pages/index.astro` frontmatter）:
+Product Design / Strategy / Tool Engineering / DevOps
+
+> 2026-07-28 改修: 思想寄りから「ビジネス領域が分かる」構成へ。
+> journal（note RSS）/ architecture / members の 3 section を削除。
 
 ## 🧞 Commands
 
@@ -68,13 +71,18 @@ npm run preview
 npx vercel deploy --prod --yes
 ```
 
-### 週次自動 rebuild（note RSS 反映用）
+### ⚠️ Root Directory の罠（2026-07-28 修復）
+
+モノレポなので Vercel の **Root Directory は `iw-projects/iw-hp`** が正。ここが `.`（リポジトリルート）だと
+ルートの `package.json`（secretlint 用）で install が走り `astro: command not found` (exit 127) で
+**自動デプロイだけが静かに失敗し続ける**。本番は手動 deploy の成功版が残るため気づきにくい。
+
+確認: `npx vercel project inspect iw-hp` の `Root Directory` 行。
+
+### 週次自動 rebuild
 
 `.github/workflows/iw-hp-weekly-rebuild.yml` が毎週木曜 21:00 JST に Vercel Deploy Hook を trigger。  
-note 公開（木曜 20:00）の 1 時間後に Journal section に最新記事自動反映。
-
-手動 trigger も可:
-- GitHub repo → Actions → `IW HP — Weekly Thursday Rebuild` → Run workflow
+※ journal（note RSS）section は 2026-07-28 に削除済みのため、この rebuild の当初目的は消失。
 
 ## 主要 craft 知見
 
