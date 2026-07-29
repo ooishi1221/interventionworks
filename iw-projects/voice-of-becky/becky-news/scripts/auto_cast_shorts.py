@@ -51,6 +51,17 @@ def gen_meta(ep_title: str, script_text: str | None) -> dict:
     news_body = extract_news_section(script_text or "")
     if news_body:
         source = f"今日紹介したAIニュース:\n{news_body[:1500]}"
+        core_rule = (
+            "hook と yt_title は同じニュースの核（誰が・何をしたか）を共有すること"
+            "（例: タイトルが『図書館で起きてる静かな反乱』ならhookも図書館/回避の話に触れる。"
+            "2026-07-26以降、両者の話題が微妙にズレた実例あり）。"
+        )
+        hook_rule = (
+            "このニュースの核（誰が・何をしたか）に一言触れながら煽る。"
+            "ベッキー自身の内省・独白だけの一言にしない"
+            "（『私の存在、誰かの信頼で動いてる』のような独白オンリーのhookは2026-07-26以降"
+            "映像検品(crv)で『ニュースへの具体的言及が確認できない』としてFAILし続けた失敗パターン）"
+        )
         title_rule = (
             "yt_title はニュースの話題（誰が・何について）は示すが、"
             "調査結果や発表の具体的な中身・結論・数字までは書かない（映像はキャラの表情芝居のみで"
@@ -64,6 +75,11 @@ def gen_meta(ep_title: str, script_text: str | None) -> dict:
         )
     else:
         source = f"エピソードタイトル: {ep_title}\n台本:\n{(script_text or '')[:3000]}"
+        core_rule = "hook と yt_title は同じ話題の核（誰が・何をした/どうなったか）を共有すること。"
+        hook_rule = (
+            "この回の話題の核に一言触れながら煽る。"
+            "ベッキー自身の内省・独白だけの一言にしない。"
+        )
         title_rule = (
             "yt_title はこの回の内容が伝わる見出しにする。"
             "加えて、タイトルの冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、"
@@ -76,8 +92,9 @@ def gen_meta(ep_title: str, script_text: str | None) -> dict:
         "既存のBECKY CRAFT切り抜きShortsは煽り系の一言テロップで発見面クリックを稼いでいます、"
         "同じ熱量で作ってください。\n\n"
         f"{source}\n\n"
+        f"{core_rule}\n\n"
         "JSON形式のみで出力:\n"
-        '{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)", '
+        f'{{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)。{hook_rule}", '
         f'"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)。{title_rule}", '
         '"yt_description": "1〜2文の説明文"}'
     )
