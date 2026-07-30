@@ -12,6 +12,8 @@
 
 ## 起動手順（この順で）
 
+> 通常運用ではサーバー・botの起動/停止は自動。`~/bin/becky-watchdog.sh`が収録時間帯(火/金1:50-6:00)だけ起動し、`scripts/night_pipeline.py`が収録後に停止する(2026-07-30、24時間常駐~1.4GBが撮影専用サーバーには無駄だったため撤去)。以下は手動デバッグ時のみ。
+
 ```bash
 # 1. サーバ（Java: /opt/homebrew/opt/openjdk = JDK26。spark は paper-global.yml で無効化済み）
 cd server && nohup ../scripts/start-server.sh > server.log 2>&1 &
