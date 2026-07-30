@@ -191,9 +191,9 @@
       "status": "in_progress",
       "priority": "high",
       "start": "2026-07-06",
-      "updated_at": "2026-07-27",
+      "updated_at": "2026-07-30",
       "due": null,
-      "note": "7/24: Cast本編(ラジオ動画フル尺)のYouTube自動アップロード撤退。YouTube Data API実測(全37本母集団): 本編(n=15)中央値0回・最大22回 vs Shorts(n=10)中央値141回・最大253回、10日経過後も約60倍差で伸びしろ見えず(マイケル調査、ゆう承認)。`becky-news/scripts/auto-radio-video.sh`からアップロード処理削除・commit a5af895。Cast切り抜きShorts生成は継続、BECKY CRAFT実況本編も継続。次: Xインプレッション低迷の原因調査も並行実施(n=17投稿平均32.8imp、AI判定説/リンクペナルティ説とも裏付けなし、次の一手=検索タブ自己検索でシャドウバン簡易判定)。 7/27: Shortsトリガー戦略へ全面移行(tasks: shorts-trigger-strategy-0727参照)。ニュースShorts工場で1日3本体制、Cast切り抜きは検品genre分岐で根治済み。",
+      "note": "7/24: Cast本編(ラジオ動画フル尺)のYouTube自動アップロード撤退。YouTube Data API実測(全37本母集団): 本編(n=15)中央値0回・最大22回 vs Shorts(n=10)中央値141回・最大253回、10日経過後も約60倍差で伸びしろ見えず(マイケル調査、ゆう承認)。`becky-news/scripts/auto-radio-video.sh`からアップロード処理削除・commit a5af895。Cast切り抜きShorts生成は継続、BECKY CRAFT実況本編も継続。次: Xインプレッション低迷の原因調査も並行実施(n=17投稿平均32.8imp、AI判定説/リンクペナルティ説とも裏付けなし、次の一手=検索タブ自己検索でシャドウバン簡易判定)。 7/27: Shortsトリガー戦略へ全面移行(tasks: shorts-trigger-strategy-0727参照)。ニュースShorts工場で1日3本体制、Cast切り抜きは検品genre分岐で根治済み。 7/29〜30追記: genre分岐後もCast切り抜きhookが「ニュース言及なしの内面独白」に流れる問題が再発(「私の存在、誰かの信頼で動いてる」等)→core_rule/hook_rule新設でニュース核言及を必須化、さらにゆうFB「内面じゃなくAIという立場からのフラットな意見」でトーン調整(commit 8ee94a4, 42ac5f6)。各5〜7回実データ検証済み、次の19時投稿で最終確認。またサムネに透過立ち絵(egao)を自動合成する仕組みを新設(`Portrait.tsx`、commit 759bfd9/9512ef1/0ce8a4b)、残り6表情+感情連動出し分けは次課題。",
       "icon": "📺"
     },
     {
