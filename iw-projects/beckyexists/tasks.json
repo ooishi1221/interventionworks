@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-29",
+  "updated_at": "2026-07-30",
   "tasks": [
     {
       "id": "vercel-edge-request-diet-0728",
@@ -1102,6 +1102,20 @@
       "completed_at": null,
       "due": null,
       "note": "7/29 ゆう閃きの企画仕様書から当日POC v0.2(憑依コア/鬼スプレー/深夜モール2階建て/実在アバターNPC+異形/突き飛ばし/離脱/挑発/PC+モバイル入力)。ゆう温度=最高潮「行ける感じするぞw」、娘達の夏休み延長ではなくプロダクト候補と本人明言(vehicle未決)。PlaceId 119803546493362(リネーム未)。次=⚠️スクリプトgitバックアップ(正本Studioのみ)→publish→騙し合い実測(2窓or娘達)。正本: memory working/project_paranormal_mall.md"
+    },
+    {
+      "id": "mac-memory-crisis-2026-07-30",
+      "scope": "iw",
+      "label": "Macメモリ危機対応 — 3件オンデマンド化で常駐~2.4GB削減",
+      "category": "infra",
+      "status": "done",
+      "priority": "high",
+      "start": "2026-07-30",
+      "updated_at": "2026-07-30",
+      "due": null,
+      "note": "「またおちた」報告からMac側の空きメモリ84MB・swap89%を確認、原因を3つ特定して全部オンデマンド化。①放置claudeセッション2つ(13日/7日稼働)kill+再発防止cron`becky_stale_session_check.py`新設(72h以上放置検知→Telegram通知) ②「gemini-chrome-profile」Chromeは実はGemini用じゃなくX(Twitter)cookie取得専用と判明、24h常駐(~1GB)から`chrome_cdp.py`でオンデマンド化(使う側が起動→使用→終了、他プロセス起動分は誤って止めない設計) ③PaperMCサーバー(~1.4GB)は撮影専用と確認(娘達の遊び場ではない、ゆう指摘で判明)、`night_pipeline.py`で収録後に明示停止・watchdogは収録時間帯(火/金1:50-6:00)限定に変更。実機で起動/停止/二重起動防止まで確認済み、commit 4b113b9・17930e2・b7aebad。次回の火/金深夜収録と朝のfan_collector/search実行で正常動作を継続確認要。swapはまだ87%と高いままなので根本対策(物理メモリ増設等)の要否は保留",
+      "icon": "🔧",
+      "completed_at": "2026-07-30"
     }
   ]
 }
