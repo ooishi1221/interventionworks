@@ -183,6 +183,13 @@ def send_telegram(text: str) -> None:
         print(f"[night] Telegram送信失敗: {e}", flush=True)
 
 
+def stop_craft_server() -> None:
+    """収録・後処理(成功/失敗どちらでも)が終わったらPaperMCサーバー・botを止める。
+    24時間稼働だったが撮影専用サーバーで火/金深夜しか使わないため(2026-07-30メモリ危機対策)。"""
+    subprocess.run(["pkill", "-f", "becky-bot.js"], check=False)
+    subprocess.run(["pkill", "-f", "paper-1.21.4"], check=False)
+
+
 def restart_aivis() -> None:
     subprocess.run(["pkill", "-f", "AivisSpeech-Engine/macOS-arm64/run"], check=False)
     time.sleep(2)
@@ -218,6 +225,13 @@ def fail(msg: str) -> None:
 
 
 def main() -> None:
+    try:
+        _run()
+    finally:
+        stop_craft_server()
+
+
+def _run() -> None:
     now = dt.datetime.now(JST)
     lane_heading = lane_for(now.weekday())
     plan_text = PLAN_MD.read_text(encoding="utf-8")
