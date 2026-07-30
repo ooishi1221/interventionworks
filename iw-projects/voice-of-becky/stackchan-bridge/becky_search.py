@@ -45,11 +45,17 @@ _CLI_ENV = dict(os.environ)
 
 
 def _inject_cdp_cookies() -> None:
-    """専用Chrome(CDP:9223)からx.comのcookieを取り、_CLI_ENVへ注入する。
+    """専用Chrome(CDP:9223)を必要な時だけ起動してx.comのcookieを取り、
+    _CLI_ENVへ注入する。使い終わったら終了する(2026-07-30、常時起動をやめた)。
     cronではKeychain認可が下りずtwitter-cliのbrowser cookie抽出が無言で失敗するため
     (becky_fan_collector.py と同じ問題、becky_search.pyもcron実行、2026-07-22)。
     失敗時は何もしない(twitter-cli側のbrowser抽出にフォールバック)。"""
     try:
+        import chrome_cdp
+        alive, started_by_me = chrome_cdp.ensure_running()
+        if not alive:
+            print("[search] Chrome起動タイムアウト、browser抽出にフォールバック", flush=True)
+            return
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             browser = p.chromium.connect_over_cdp("http://localhost:9223")
@@ -57,6 +63,8 @@ def _inject_cdp_cookies() -> None:
         if cookies.get("auth_token") and cookies.get("ct0"):
             _CLI_ENV["TWITTER_AUTH_TOKEN"] = cookies["auth_token"]
             _CLI_ENV["TWITTER_CT0"] = cookies["ct0"]
+        if started_by_me:
+            chrome_cdp.stop()
     except Exception as e:
         print(f"[search] CDP cookie取得失敗、browser抽出にフォールバック: {e}", flush=True)
 

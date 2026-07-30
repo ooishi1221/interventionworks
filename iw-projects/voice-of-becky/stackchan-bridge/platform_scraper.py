@@ -123,26 +123,29 @@ def _release_chrome_lock() -> None:
     shutil.rmtree(CHROME_LOCK_DIR, ignore_errors=True)
 
 
-def ensure_chrome() -> None:
+def ensure_chrome() -> bool:
     """ベキたん専用Chrome（CDP :9223）が落ちてたら起動する。
+    戻り値: この呼び出しで新規起動したか(True→処理完了後に自分で閉じてよい、
+    2026-07-30: 常時起動をやめてオンデマンド化したため)。
 
     Mac再起動でこのChromeは自動復帰しない（launchd/cron管理外・手動spawn前提）ため、
     再起動後の初回cronで死んでいることがある（2026-07-16 実際に発生）。
 
-    becky-watchdog.sh（5分毎cron）も同じChromeの生死確認・起動をやっており、
-    lock無しだと両方が同時に「死んでる」と観測してChromeを二重起動しうる
-    （Codex adversarial review 2026-07-16 指摘）。lockで check→start を排他化する。
+    becky_fan_collector.py / becky_search.py も chrome_cdp.py 経由で同じChromeの
+    生死確認・起動をやっており、lock無しだと両方が同時に「死んでる」と観測して
+    Chromeを二重起動しうる（Codex adversarial review 2026-07-16 指摘）。lockで
+    check→start を排他化する。
     """
     if _cdp_alive():
-        return
+        return False
     if not _acquire_chrome_lock():
         # 他プロセスが起動処理中のままタイムアウト → 深追いせず現状を報告して終える
         if _cdp_alive():
-            return
+            return False
         raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) 起動ロック取得タイムアウト（他プロセスが処理中の可能性）")
     try:
         if _cdp_alive():  # ロック待ちの間に他プロセスが起動を終えているかもしれない
-            return
+            return False
         print("[scraper] Chrome (CDP :9223) 応答なし、起動する", flush=True)
         CHROME_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
         CHROME_STARTUP_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -165,7 +168,7 @@ def ensure_chrome() -> None:
             time.sleep(0.5)
             if _cdp_alive():
                 print("[scraper] Chrome 起動確認", flush=True)
-                return
+                return True
         raise RuntimeError(f"Chrome (CDP :{CDP_PORT}) が起動確認タイムアウト（10秒）。ログ: {CHROME_STARTUP_LOG}")
     finally:
         _release_chrome_lock()
@@ -516,7 +519,7 @@ def main() -> None:
     print("[scraper] 起動", flush=True)
     stats: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
-    ensure_chrome()
+    started_by_me = ensure_chrome()
     browser = pychrome.Browser(url=CDP_URL)
     tab = browser.new_tab()
     tab.start()
@@ -569,6 +572,10 @@ def main() -> None:
             f"{', '.join(login_required_platforms)}\n"
             "Gemini Chrome (CDP:9223) で手動再ログインお願い"
         )
+
+    if started_by_me:
+        import chrome_cdp
+        chrome_cdp.stop()
 
     # pychrome の daemon スレッドが終了時にノイズを出すのを防ぐ
     os._exit(0)
