@@ -56,6 +56,7 @@ Notion / それ以外（Figma, Canva, Linear...）は未認証のまま放置で
 | **Applio** | `/Volumes/SSD2TB/Applio/` | RVC歌声学習・変換 | ポートは7860じゃなく**6969**。KMP_DUPLICATE_LIB_OK=TRUE必須 |
 | **Rojo** | `brew`（CLI 7.7.0）+ Studioプラグイン | Roblox開発のファイル同期 | 7/23 Mac側セットアップ完了。Studio側Connect未確認（Studio再起動待ち） |
 | **agent-reach** | skill + CLI | X/Reddit/GitHub/YouTube横断読み取り（17 platforms） | マイケルの主武器 |
+| **last30days** | plugin（`last30days@last30days-skill`） | 20platform横断エンゲージメントスコアリング調査（55.9k star） | 7/31導入・即日検証で「イマイチ」判定。8ソース中Reddit/Xの2つしか無料枠で拾えず、コード内に「出典URLを隠せ」という自己指示ありでマイケルの出典明示原則と衝突。補助のソーシャル温度センサー止まり、主武器はagent-reachのまま |
 | **screenshot-to-code** | `/Volumes/SSD2TB/screenshot-to-code/` | スクショ/Figma/動画→HTML+Tailwind等のコード変換（OSS、73k star） | 7/30セットアップ済み・動作実証済み（企画書スライドを高精度で再現、画像アセット自動抽出も機能）。**既存サイト骨格を模倣する依頼が来た時に使う**。backend: `poetry run uvicorn main:app --port 7001`（`.env`にAnthropic/OpenAIキー設定済み）、frontend: `pnpm dev`→`localhost:5173`。ホスト版(screenshottocode.com)は無料プランなし($15〜/月)なので自前セットアップの方でOK |
 | **Jina reader** | `https://r.jina.ai/<URL>` | 直読みできないURLの抜け道 | インストール不要、URLに前置するだけ |
 | **gh** | brew | GitHub操作の標準経路 | GitHub MCPは不要（これで足りてる） |
