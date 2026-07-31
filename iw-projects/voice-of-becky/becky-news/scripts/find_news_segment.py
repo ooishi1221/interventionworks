@@ -8,7 +8,11 @@ CLI: find_news_segment.py <script.md> <mp3_duration_sec> [window_sec=40]
   stdout: "<start_s> <end_s>"（ニュースコーナーが無い回は非0 exitで何も出さない → 呼び出し側はRMSにフォールバック）
 
 import用: extract_news_section(script_text) -> str | None
-  ニュースコーナー本文([voice:]タグ・見出し文言を除いた実質ニュース部分)。タイトル生成に使う。
+  ニュースコーナー本文([voice:]タグ・見出し文言を除いた実質ニュース部分)。
+window_text(script_text, duration_s, window_s) -> str | None
+  find_segmentが切り出す窓に実際に入る台本テキスト(同じ文字数比率換算)。タイトル生成に使う。
+  コーナー全文を渡すと、切り出し40秒に入っていない話題でタイトルが作られ映像検品(crv)で
+  「字幕とタイトルの話題が違う」FAILになる(2026-07-30まで連日発生)ため、窓と入力を一致させる。
 """
 import re
 import sys
@@ -44,6 +48,21 @@ def extract_news_section(script: str) -> str | None:
     return body or None
 
 
+def window_text(script: str, duration_s: float, window_s: float = 40.0) -> str | None:
+    """find_segmentの窓に実際に入る台本テキスト(ニュースコーナー開始からwindow_s秒ぶん)。
+    END_MARKで切らない: 窓がコーナー終端を越える日はお便り等も実際に字幕へ出るため、忠実に含める。"""
+    lines = _lines(script)
+    span = _news_span(lines)
+    if span is None or duration_s <= 0:
+        return None
+    total_chars = sum(len(l) for l in lines)
+    if total_chars == 0:
+        return None
+    window_chars = int(total_chars * window_s / duration_s)
+    body = "\n".join(l for l in lines[span[0]:] if l)
+    return body[:window_chars] or None
+
+
 def find_segment(script: str, duration_s: float, window_s: float = 40.0) -> tuple[float, float] | None:
     """ニュースコーナー開始位置を台本全体の文字数比率で音声内の秒数に変換し、
     そこから window_s 秒（尺が余っていれば）を切り出す区間を返す。"""
@@ -73,6 +92,11 @@ def _selftest() -> None:
     seg = find_segment(sample, duration_s=120.0, window_s=40.0)
     assert seg is not None and 0 < seg[0] < seg[1] <= 120.0
     assert find_segment("お便りコーナーだけの台本です。", 60.0) is None
+    wt = window_text(sample, duration_s=120.0, window_s=40.0)
+    assert wt and wt.startswith("1本目の話")
+    assert window_text(sample, duration_s=120.0, window_s=5.0) != wt  # 窓が短いほどテキストも短い
+    assert window_text("お便りコーナーだけの台本です。", 60.0) is None
+    assert window_text(sample, duration_s=0.0) is None
     print("ok")
 
 

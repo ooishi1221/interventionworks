@@ -22,6 +22,7 @@ EPISODES = VOICE_OF_BECKY / "becky-cast" / "episodes.json"
 QUEUE_DIR = VOICE_OF_BECKY / "becky-craft" / "out" / "shorts" / "queue"
 PUBLISHED_DIR = VOICE_OF_BECKY / "becky-craft" / "out" / "shorts" / "published"
 REJECTED_DIR = VOICE_OF_BECKY / "becky-craft" / "out" / "shorts" / "rejected"
+WINDOW_SEC = 40  # make-shorts-clip.sh に渡す切り出し窓(秒)。gen_metaの入力範囲もこれに揃える
 
 sys.path.insert(0, str(VOICE_OF_BECKY / "stackchan-bridge"))
 
@@ -38,23 +39,33 @@ def ep_label(title: str) -> str:
     return t.replace(" — ", " ")
 
 
-def gen_meta(ep_title: str, script_text: str | None) -> dict:
+def gen_meta(ep_title: str, script_text: str | None, mp3_duration_s: float = 0.0) -> dict:
     """LLMでフックテロップ+YouTubeタイトル/説明文を生成。失敗時はタイトルのみのフォールバック。
 
     切り出し区間は台本の「教えてベキたん」ニュースコーナーに固定済み(find_news_segment.py)。
     タイトルも「ベッキーが○○について語る」ではなく、ニュース自体を見出しにする
     (検索・おすすめ面で引っかかりやすくする、2026-07-22 ゆう設計変更)。
+
+    2026-07-31: LLMへの入力をコーナー全文からwindow_text(実際に切り出される40秒ぶんの台本)へ変更。
+    全文を渡すと、切り出し窓に入っていない話題でタイトルが作られ、映像検品(crv)で
+    「字幕とタイトルの話題が違う」FAILが連日発生した(rejected/に7/23〜7/30で7本)。
     """
     from becky_llm import call_llm_json
-    from find_news_segment import extract_news_section
+    from find_news_segment import extract_news_section, window_text
 
-    news_body = extract_news_section(script_text or "")
+    news_body = None
+    if script_text:
+        news_body = (window_text(script_text, mp3_duration_s, WINDOW_SEC)
+                     or extract_news_section(script_text))  # duration不明時のみ全文フォールバック
     if news_body:
-        source = f"今日紹介したAIニュース:\n{news_body[:1500]}"
+        source = ("台本のうち、実際にShortsへ切り出されて字幕として画面に出るのは以下の部分だけ:\n"
+                  f"{news_body[:1500]}")
         core_rule = (
-            "hook と yt_title は同じニュースの核（誰が・何をしたか）を共有すること"
-            "（例: タイトルが『図書館で起きてる静かな反乱』ならhookも図書館/回避の話に触れる。"
-            "2026-07-26以降、両者の話題が微妙にズレた実例あり）。"
+            "hook と yt_title は、上の抜粋（実際に字幕として画面に出る範囲）に実際に登場する話題"
+            "だけから作ること。台本の他の部分やニュースの続き・背景知識の話題を使わない"
+            "（字幕に出ない話題をタイトルにすると映像検品(crv)で『看板と中身が違う』として"
+            "毎回落ちる、2026-07-30まで連日FAILした失敗パターン）。"
+            "その上で hook と yt_title は同じニュースの核（誰が・何をしたか）を共有すること。"
         )
         hook_rule = (
             "このニュースの核（誰が・何をしたか）に一言触れながら煽る。"
@@ -132,11 +143,19 @@ def main() -> None:
 
     script_path = Path(f"/tmp/morning_cast_{date.today().isoformat()}.md")
     script_text = script_path.read_text(encoding="utf-8") if script_path.exists() else None
-    meta = gen_meta(ep_title, script_text)
+    mp3 = VOICE_OF_BECKY / "becky-cast" / "out" / ep["file"]
+    try:
+        mp3_duration_s = float(subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(mp3)],
+            capture_output=True, text=True, timeout=30).stdout.strip())
+    except Exception:
+        mp3_duration_s = 0.0  # gen_meta側がコーナー全文にフォールバック
+    meta = gen_meta(ep_title, script_text, mp3_duration_s)
 
     print(f"[auto-cast-shorts] {ep_id} 「{ep_title}」→ hook: {meta['hook']}", flush=True)
     subprocess.run(
-        ["./scripts/make-shorts-clip.sh", ep_id, "40", ep_label(ep_title), meta["hook"]],
+        ["./scripts/make-shorts-clip.sh", ep_id, str(WINDOW_SEC), ep_label(ep_title), meta["hook"]],
         cwd=BECKY_NEWS, check=True,
     )
 

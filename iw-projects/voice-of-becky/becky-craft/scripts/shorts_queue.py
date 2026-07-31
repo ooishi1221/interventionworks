@@ -51,6 +51,31 @@ def _shorts_url(watch_url: str) -> str:
     return f"https://www.youtube.com/shorts/{m.group(1)}" if m else watch_url
 
 
+def retitle_from_verdict(old_title: str, verdict_line: str) -> str | None:
+    """検品FAIL理由(字幕で実際に語られている話題の記述を含む)から、字幕に合うタイトルだけ作り直す。
+    talking_head専用: 映像は表情芝居+字幕のみでタイトル差し替えに副作用がない(hookは焼き込み済みだが
+    検品対象はタイトルのみ)。切り直しは次の収録まで無いので、看板を中身に合わせて今日の1本を救う。
+    becky_llmが使えない環境ではNoneを返し、従来通りの見送りにフォールバック。"""
+    try:
+        sys.path.insert(0, str(HERE.parent.parent / "stackchan-bridge"))
+        from becky_llm import call_llm_json
+        prompt = (
+            "YouTube Shortsの公開前検品で、タイトルと映像内の字幕の話題が違うとしてFAILしました。\n"
+            f"元タイトル: 「{old_title}」\n検品結果: {verdict_line}\n\n"
+            "検品結果に書かれている「字幕で実際に語られている話題」に合わせてタイトルを作り直して。\n"
+            "- 30字程度。冒頭に固定の冠「【ベッキーの気になる】」を付け、"
+            "末尾は「#AINEWS #shorts」で締める。\n"
+            "- 「○○ってどうなの？」のような続きが気になる問いの形にする。結論・数字までは書かない。\n"
+            'JSON形式のみで出力: {"yt_title": "作り直したタイトル"}'
+        )
+        r = call_llm_json(prompt, max_tokens=200, model_key="script")
+        t = ((r or {}).get("yt_title") or "").strip()
+        return t or None
+    except Exception as e:
+        print(f"[queue] タイトル再生成失敗(従来通り見送りへ): {e}", flush=True)
+        return None
+
+
 def post_to_x(url_line: str, description: str | None = None) -> None:
     """Shorts公開をXへ告知（fail-open: 失敗してもYouTube公開自体は成功扱いのまま）。
     2026-07-27: 一方的な告知文はアルゴリズム評価が低いと裏付けが取れたため（マイケル調査）、
@@ -103,14 +128,28 @@ def main() -> None:
 
     # 公開前の映像検品（2026-07-18新設。タイトルの主役が絵に映っているか——森林浴ドラウンド事件の再発防止）
     # fail-open設計: 検品システム自体の故障(exit 1/例外/timeout)では公開を止めない。明確なFAIL(exit 2)のみ見送り
+    # 2026-07-31: talking_headのFAILは「字幕とタイトルの話題ズレ」が大半で、切り直しは次の収録まで
+    # 無い(=その日の公開ゼロが確定)ため、タイトルを字幕に合わせて1回だけ作り直して再検品する
     checker = HERE / "becky_video_check.py"
     venv_py = HERE.parent.parent / "stackchan-bridge" / ".venv" / "bin" / "python3"
     try:
-        chk = subprocess.run([str(venv_py), str(checker), str(video), "--title", title,
-                              "--genre", genre],
-                             capture_output=True, text=True, timeout=900)
-        verdict_line = next((l for l in (chk.stdout or "").splitlines() if l.startswith("VERDICT:")), "")
-        print(f"[queue] 映像検品: {verdict_line or f'エラー(exit {chk.returncode})'}", flush=True)
+        for attempt in (1, 2):
+            chk = subprocess.run([str(venv_py), str(checker), str(video), "--title", title,
+                                  "--genre", genre],
+                                 capture_output=True, text=True, timeout=900)
+            verdict_line = next((l for l in (chk.stdout or "").splitlines() if l.startswith("VERDICT:")), "")
+            print(f"[queue] 映像検品: {verdict_line or f'エラー(exit {chk.returncode})'}", flush=True)
+            if chk.returncode == 2 and attempt == 1 and genre == "talking_head":
+                new_title = retitle_from_verdict(title, verdict_line)
+                if new_title and new_title != title:
+                    title = new_title
+                    meta["title"] = title
+                    if meta_path.exists():
+                        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=1),
+                                             encoding="utf-8")
+                    print(f"[queue] タイトルを字幕に合わせて再生成→再検品: 「{title}」", flush=True)
+                    continue
+            break
         if chk.returncode == 2:
             rejected = HERE.parent / "out" / "shorts" / "rejected"
             rejected.mkdir(parents=True, exist_ok=True)
