@@ -117,9 +117,10 @@ def gen_meta(item: dict) -> dict:
         "書かない（映像はキャラの表情芝居+一言テロップのみで、ニュースの資料そのものは映らないため、"
         "答えを明かすタイトルにすると『看板と中身が違う』と映像検品(crv)で毎回落ちる）。"
         "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする。"
-        "冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、末尾の #shorts の直前に"
-        "固定のハッシュタグ「#AINEWS」を必ず含める"
-        "（例:「【ベッキーの気になる】○○が投げかけた問い #AINEWS #shorts」）"
+        "ニュース核の見出しを必ずタイトルの先頭に置き、その直後に固定の冠"
+        "「【ベッキーの気になる】」、末尾は「#AINEWS #shorts」で締める"
+        "（例:「○○が投げかけた問い【ベッキーの気になる】#AINEWS #shorts」。"
+        "Shortsフィードはタイトル先頭しか表示されないため、冠が先頭だとニュースが見切れる）"
     )
     prompt = (
         "以下はAIニュース一本。このニュースをネタにしたYouTube Shortsの見出しを作って。\n\n"
@@ -142,7 +143,7 @@ def gen_meta(item: dict) -> dict:
     return {
         "hook": label,
         "hook_highlight": "",
-        "yt_title": f"【ベッキーの気になる】{label} #AINEWS #shorts",
+        "yt_title": f"{label}【ベッキーの気になる】#AINEWS #shorts",
         "yt_description": item.get("summary_ja", "")[:120],
     }
 

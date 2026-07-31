@@ -85,9 +85,11 @@ def gen_meta(ep_title: str, script_text: str | None, mp3_duration_s: float = 0.0
             "とみなされ映像検品(crv)で毎回落ちる、2026-07-25判明）。"
             "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする。"
             "「ベッキーが○○について語る」という自己紹介的な言い回しにもしない。"
-            "加えて、タイトルの冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、"
-            "末尾の #shorts の直前に固定のハッシュタグ「#AINEWS」を必ず含める"
-            "（例:「【ベッキーの気になる】○○が投げかけた問い #AINEWS #shorts」）"
+            "加えて、ニュース核の見出しを必ずタイトルの先頭に置き、その直後に固定の冠"
+            "「【ベッキーの気になる】」、末尾は「#AINEWS #shorts」で締める"
+            "（例:「○○が投げかけた問い【ベッキーの気になる】#AINEWS #shorts」。"
+            "Shortsフィードはタイトル先頭しか表示されないため、冠が先頭だとニュースが"
+            "見切れて何の話か分からない、2026-07-31 ゆうFB）"
         )
     else:
         source = f"エピソードタイトル: {ep_title}\n台本:\n{(script_text or '')[:3000]}"
@@ -99,8 +101,8 @@ def gen_meta(ep_title: str, script_text: str | None, mp3_duration_s: float = 0.0
         )
         title_rule = (
             "yt_title はこの回の内容が伝わる見出しにする。"
-            "加えて、タイトルの冒頭に固定の冠「【ベッキーの気になる】」を必ず付け、"
-            "末尾の #shorts の直前に固定のハッシュタグ「#AINEWS」を必ず含める"
+            "加えて、内容の見出しを必ずタイトルの先頭に置き、その直後に固定の冠"
+            "「【ベッキーの気になる】」、末尾は「#AINEWS #shorts」で締める"
         )
 
     prompt = (
@@ -122,7 +124,7 @@ def gen_meta(ep_title: str, script_text: str | None, mp3_duration_s: float = 0.0
     label = ep_label(ep_title)
     return {
         "hook": label[:18],
-        "yt_title": f"【ベッキーの気になる】{label} #AINEWS #shorts",
+        "yt_title": f"{label}【ベッキーの気になる】#AINEWS #shorts",
         "yt_description": (
             "AIラジオ『Becky's Cast』の切り抜き。\n"
             "配信: https://mai.intervention.jp/media/podcast/feed.xml\n"
