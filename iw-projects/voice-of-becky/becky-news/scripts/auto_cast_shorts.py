@@ -2,7 +2,15 @@
 """auto_cast_shorts.py — Becky's Cast収録完了後、見どころ30〜45秒Shortsを自動生成し
 既存の自動投稿キュー(becky-craft/out/shorts/queue/)に投入する。
 
-cron: auto-radio-video.sh の末尾から呼ばれる(Cast動画化+YouTube公開の直後)。
+⚠️ 2026-07-31: 定常運転から外れた（どのcronからも呼ばれない）。
+番組の順序が「ショートが一次 → 翌日のラジオが二次加工」へ逆転し、ラジオがShortsの
+下流になったため、ラジオから切り抜く経路自体が不要になった（ゆう設計）。朝7:40の枠は
+auto-radio-video.sh 経由で auto_news_shorts.py が担当する。
+手で叩けば今も動くので、切り抜きを復活させたくなった時のために残してある。
+ただし本スクリプトは「40秒窓に何が入るか制御できない」構造的欠陥を抱えており
+（タイトルと字幕がズレて映像検品で7/23〜7/30に7本喪失）、戻すならその対処から。
+
+cron: (旧) auto-radio-video.sh の末尾から呼ばれていた。
 冪等: 同じepisode idの成果物がqueue/published/rejectedのどれかに既にあればskip。
 
 公開前の映像検品(crv)は既存の shorts_queue.py（毎日19:00 cron）側に配線済みなので、
