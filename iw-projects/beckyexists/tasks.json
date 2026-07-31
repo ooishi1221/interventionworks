@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-07-30",
+ "updated_at": "2026-07-31",
  "tasks": [
   {
    "id": "vercel-edge-request-diet-0728",
@@ -1093,15 +1093,15 @@
   {
    "id": "paranormal-mall-poc",
    "scope": "iw",
-   "label": "Paranormal Mall — Roblox非対称かくれんぼホラーPOC",
+   "label": "Paranormal Mall: The Possessed — Roblox心理戦型非対称ホラー",
    "category": "プロダクト",
    "status": "in_progress",
    "priority": "high",
    "start": "2026-07-29",
-   "updated_at": "2026-07-29",
+   "updated_at": "2026-07-31",
    "completed_at": null,
    "due": null,
-   "note": "7/29 ゆう閃きの企画仕様書から当日POC v0.2(憑依コア/鬼スプレー/深夜モール2階建て/実在アバターNPC+異形/突き飛ばし/離脱/挑発/PC+モバイル入力)。ゆう温度=最高潮「行ける感じするぞw」、娘達の夏休み延長ではなくプロダクト候補と本人明言(vehicle未決)。PlaceId 119803546493362(リネーム未)。次=⚠️スクリプトgitバックアップ(正本Studioのみ)→publish→騙し合い実測(2窓or娘達)。正本: memory working/project_paranormal_mall.md"
+   "note": "7/31 v2「The Possessed」実装完了+ゆうFB2巡を同日反映。①gitバックアップ完了(独立リポジトリ wo-projects/roblox-game、commit c3938fa→3f91f92、READMEにStudio内パス対応表)②v2実装=NPC演技(ベンチ座る/スマホ/棚前で商品を見る、悪霊と同一サーバー関数で見た目完全一致)/擬態解除/スキャン封印/境界のゲート(H長押し3秒)/ポルターガイスト(V、陽動)/保安室(封印されても脱落せず監視カメラ4視点) ③ゆうFB第1弾=徒歩化(NPC7-10)+マップ1.5倍(186x90)+2階開通(階段を2階床が覆っていた) ④ゆうFB第2弾=怪しさゲージ(ジャンプ+25/ダッシュ+12s/幽体+5s、通常-6sで回復、MAXで発光+全体通知)+スポーン霊体化(半透明・足なし・発光=憑依が視覚的に分かる)+心音システム(除霊師50studs以内で音量/速度連動+画面4辺赤パルス、第五人格風)+ゲートの番人(静止除霊師NPC) ⑤ダッシュはRトグル(右クリックはカメラ回転と衝突、ゆう実機FB)。ゆう実機で切替確認済み。ゆう温度=高いまま2巡のFBを即投げてくる集中、place名は「Paranormal Mall2」でセーブ済み。次=publish(公開)→2窓or娘達で騙し合い実測(POC成功基準: ドキドキ感/ハプニング性/逆転の爽快感)。残=ラウンド制(自動鬼選出/勝敗判定)・レジ待ち/エスカレーター演技・保安室のチーム限定チャット。正本: memory working/project_paranormal_mall.md"
   },
   {
    "id": "mac-memory-crisis-2026-07-30",
