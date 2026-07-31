@@ -515,15 +515,47 @@ def scrape_youtube(tab=None) -> dict:
 
 # ── main ─────────────────────────────────────────────────────────────────────
 
+def _run_tasks(tab, tasks: list) -> tuple[dict, list, int]:
+    """各プラットフォームを順に取得。戻り値 (結果, ログイン切れ一覧, 成功件数)。
+    成功件数は「タブ/CDP接続そのものが死んでいないか」の判定に使う。"""
+    results: dict = {}
+    login_required: list = []
+    ok = 0
+    for name, func in tasks:
+        try:
+            print(f"[scraper] {name} ...", flush=True)
+            result = func(tab)
+            result['scraped_at'] = datetime.now(timezone.utc).isoformat()
+            # ログインページに飛ばされてないか（0とセッション切れを区別する）
+            cur_url = js(tab, "location.href") or ""
+            result['login_required'] = bool(re.search(r'login|signin|/ap/|onboarding', cur_url))
+            if result['login_required']:
+                login_required.append(name)
+            results[name] = result
+            ok += 1
+            print(f"[scraper] {name} OK → {result}", flush=True)
+        except Exception as exc:
+            print(f"[scraper] {name} ERROR: {exc}", flush=True)
+            results[name] = {'scraped_at': None, 'error': str(exc)}
+    return results, login_required, ok
+
+
+def _close_tab(browser, tab) -> None:
+    """about:blank に戻してタブを閉じる（次回起動時に重いページを復元させない）。"""
+    try:
+        tab.Page.navigate(url="about:blank")
+        time.sleep(0.5)
+        tab.stop()
+        browser.close_tab(tab)
+    except Exception as e:
+        print(f'[warn] platform_scraper: {e}', flush=True)
+
+
 def main() -> None:
     print("[scraper] 起動", flush=True)
     stats: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
     started_by_me = ensure_chrome()
-    browser = pychrome.Browser(url=CDP_URL)
-    tab = browser.new_tab()
-    tab.start()
-    tab.Page.enable()
 
     tasks = [
         ("youtube",      scrape_youtube),
@@ -534,33 +566,31 @@ def main() -> None:
         ("x_dev",        scrape_x_dev),
     ]
 
-    login_required_platforms = []
-    try:
-        for name, func in tasks:
-            try:
-                print(f"[scraper] {name} ...", flush=True)
-                result = func(tab)
-                result['scraped_at'] = datetime.now(timezone.utc).isoformat()
-                # ログインページに飛ばされてないか（0とセッション切れを区別する）
-                cur_url = js(tab, "location.href") or ""
-                result['login_required'] = bool(re.search(r'login|signin|/ap/|onboarding', cur_url))
-                if result['login_required']:
-                    login_required_platforms.append(name)
-                stats[name] = result
-                print(f"[scraper] {name} OK → {result}", flush=True)
-            except Exception as exc:
-                print(f"[scraper] {name} ERROR: {exc}", flush=True)
-                stats[name] = {'scraped_at': None, 'error': str(exc)}
-    finally:
-        # 終わったら about:blank に戻してタブを閉じる
+    # 2026-07-31: Macのスリープ復帰直後は、Chromeのプロセスも /json/version も生きているのに
+    # WebSocketだけ死んでおり、全タスクが "Tab has been stopped" で全滅する（7/31朝、
+    # 遅延実行された 7:30 cron で発生し1日分のKPIを丸ごと落とした）。1件も取れなかった時に
+    # 限りChromeごと作り直して1回だけやり直す。部分的な失敗（ログイン切れ等）では再試行しない。
+    for attempt in (1, 2):
         try:
-            tab.Page.navigate(url="about:blank")
-            time.sleep(0.5)
-            tab.stop()
-            browser.close_tab(tab)
+            browser = pychrome.Browser(url=CDP_URL)
+            tab = browser.new_tab()
+            tab.start()
+            tab.Page.enable()
+            results, login_required_platforms, ok = _run_tasks(tab, tasks)
+            _close_tab(browser, tab)
         except Exception as e:
-            print(f'[warn] platform_scraper: {e}', flush=True)
+            print(f"[scraper] タブ準備に失敗: {e}", flush=True)
+            results, login_required_platforms, ok = {}, [], 0
+        if ok or attempt == 2:
+            break
+        print("[scraper] 全プラットフォーム失敗 → Chromeを作り直して1回だけリトライ", flush=True)
+        import chrome_cdp
+        chrome_cdp.stop()
+        time.sleep(3)
+        ensure_chrome()
+        started_by_me = True  # 作り直した以上、後始末は自分の責任
 
+    stats.update(results)
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
     _append_history(stats)
     print(f"[scraper] 完了: {OUTPUT}", flush=True)

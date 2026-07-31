@@ -6,6 +6,8 @@
 24時間分のメモリ(~1GB)が無駄だったため)。使う側が起動→使用→終了を
 自己完結させる。
 """
+import os
+import signal
 import subprocess
 import time
 import urllib.request
@@ -15,6 +17,7 @@ CDP_PORT = 9223
 CHROME_PROFILE_DIR = Path.home() / ".stackchan" / "gemini-chrome-profile"
 CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 STARTUP_TIMEOUT_SEC = 15
+SHUTDOWN_TIMEOUT_SEC = 8
 
 
 def _is_alive() -> bool:
@@ -54,6 +57,41 @@ def ensure_running() -> tuple[bool, bool]:
     return False, False
 
 
+def _main_pids() -> list[int]:
+    """このプロファイルのChromeメインプロセス(--type= を持たない親)のPID。
+    レンダラ/GPU等の子プロセスにも同じ --user-data-dir が渡るので除外する。"""
+    pids = []
+    try:
+        out = subprocess.run(["pgrep", "-fl", str(CHROME_PROFILE_DIR)],
+                             capture_output=True, text=True, timeout=10).stdout
+        for line in out.splitlines():
+            pid, _, cmd = line.partition(" ")
+            if pid.isdigit() and "--type=" not in cmd:
+                pids.append(int(pid))
+    except Exception:
+        pass
+    return pids
+
+
 def stop() -> None:
-    """使用後にこのChromeプロセス群を終了する。"""
-    subprocess.run(["pkill", "-f", "gemini-chrome-profile"], check=False)
+    """使用後にこのChromeを終了する。
+
+    2026-07-31: pkill(親子まとめて一斉SIGTERM)をやめ、メインプロセスにだけ送って
+    Chrome自身にシャットダウン処理をさせる。レンダラごと同時に殺すと正常終了しきれず、
+    Cookieなどのプロファイルがディスクへ書き戻されないまま落ちる。オンデマンド化した
+    7/30の翌朝、note/x_analytics/x_dev/claude_apiが軒並みログイン切れになって発覚した
+    (常時起動時代はそもそも終了しないので露見しなかった)。
+    """
+    pids = _main_pids()
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+    for _ in range(SHUTDOWN_TIMEOUT_SEC * 2):  # 書き戻しの猶予を与えて待つ
+        time.sleep(0.5)
+        if not _is_alive():
+            return
+    # 正常終了しきらなかった時だけ最終手段。ここに来た回はログインが飛びうる
+    print("[chrome_cdp] 正常終了せず、pkillで強制終了する", flush=True)
+    subprocess.run(["pkill", "-f", str(CHROME_PROFILE_DIR)], check=False)
