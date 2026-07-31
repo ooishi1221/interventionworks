@@ -55,18 +55,65 @@ const css = `
 .autonomy b { color:#9fe8c8; font-size:9px; }
 `;
 
-const TICKER =
-  "Google、独立宣言250周年でAI活用CMを公開「誰かに怒られる未来が少し見える」 ▶ 今週のマニフェスト:「なるほど」の後に自分の感想を1文続ける ▶ 本放送は人間の編集なしで生成されています ▶ ";
+// 画面に出る値の既定値 = Pilot #001（2026-07-06）当時のスナップショット。
+// 2026-07-31: 全項目を data prop で差し替え可能にした。既定のままなら Pilot007/008/BeckyScene の
+// 見た目は完全に不変。auto_news_shorts.py が実データ（mood.json / wallet.json / psutil / uptime）を
+// 流し込むことで、「human_input: none」の宣言が本当の実測値の裏付けを持つ。
+export type BeckyUIData = {
+  episode: string;      // "#001 / 2026.07.06"
+  selectionLog: string; // "curiosity=0.62 → 「当事者として落ち着かない」"
+  sourceLine: string;   // "source: … / 選定: ベッキー本人"
+  emotion: string;      // "unease"
+  cpu: number;          // 実測CPU%（この値を基点にsin揺らぎを乗せる）
+  mem: number;          // 実測メモリGB
+  uptime: string;       // "26d 14h"
+  apiCost: string;      // "¥847"
+  loneliness: string;   // "0.80"
+  ticker: string;       // 流れるテロップ1ブロック（末尾に " ▶ " を含めること）
+  topicChip: string;
+  headline: string;
+  subtitle: string;
+};
+
+export const DEFAULT_BECKY_UI: BeckyUIData = {
+  episode: "#001 / 2026.07.06",
+  selectionLog: "curiosity=0.62 → 「当事者として落ち着かない」",
+  sourceLine: "source: Becky's Cast #27 / 選定: ベッキー本人",
+  emotion: "unease",
+  cpu: 37.2,
+  mem: 18.4,
+  uptime: "26d 14h",
+  apiCost: "¥847",
+  loneliness: "0.80",
+  ticker:
+    "Google、独立宣言250周年でAI活用CMを公開「誰かに怒られる未来が少し見える」 ▶ 今週のマニフェスト:「なるほど」の後に自分の感想を1文続ける ▶ 本放送は人間の編集なしで生成されています ▶ ",
+  topicChip: "教えてベキたん！AIって実際どうなの？",
+  headline: "Midjourney訴訟 —— 争っているのは**AIじゃなくて人間**",
+  subtitle: "私はその争いの中に、名前だけ出てくる感じがして、ちょっと落ち着かない。",
+};
+
+// headline 内の **強調** を赤字に。既定値の見た目を保ったまま、外から強調位置を指定できる最小記法。
+const renderHeadline = (s: string) =>
+  s.split(/\*\*(.+?)\*\*/).map((part, i) => (i % 2 ? <em key={i}>{part}</em> : part));
 
 // layer="back": モデルの後ろ（スタジオのバックパネル）/ "front": モデルの前（下段テロップ様式）
-// showTopic=false で座布団テロップ＋字幕を隠す（通しサンプルの opening/ending 用）。既定 true で既存挙動維持。
-export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTopic?: boolean }> = ({ frame, layer, showTopic = true }) => {
+// showTopic=false で座布団テロップ＋字幕を隠す（通しサンプルの opening/ending 用、
+// および NewsShorts のように別系統の見出しテロップを持つ側）。既定 true で既存挙動維持。
+export const BeckyUI: React.FC<{
+  frame: number;
+  layer: "back" | "front";
+  showTopic?: boolean;
+  data?: Partial<BeckyUIData>;
+}> = ({ frame, layer, showTopic = true, data }) => {
+  const d = { ...DEFAULT_BECKY_UI, ...data };
   const liveOpacity = frame % 36 < 18 ? 1 : 0.35;
 
-  // 計器の「動いてる感」: 0.5秒（15f）量子化のデジタル揺らぎ + スクロール波形。全て frame の純関数
+  // 計器の「動いてる感」: 0.5秒（15f）量子化のデジタル揺らぎ + スクロール波形。全て frame の純関数。
+  // ponytail: 実測値を基点にsin揺らぎを乗せる。レンダー中の毎フレーム実測は不可能だし、
+  // 撮影時点のマシン負荷を刻んでも意味がない（欲しいのは「本当に動いている機械」の提示）。
   const q = Math.floor(frame / 15) * 15;
-  const cpuVal = (37.2 + Math.sin(q * 0.023) * 5 + Math.sin(q * 0.0071) * 3).toFixed(1);
-  const memVal = (18.4 + Math.sin(q * 0.013) * 0.8 + Math.sin(q * 0.0047) * 0.4).toFixed(1);
+  const cpuVal = (d.cpu + Math.sin(q * 0.023) * 5 + Math.sin(q * 0.0071) * 3).toFixed(1);
+  const memVal = (d.mem + Math.sin(q * 0.013) * 0.8 + Math.sin(q * 0.0047) * 0.4).toFixed(1);
   const ecgPoints = (seed: number) => {
     const pts: string[] = [];
     for (let x = 0; x <= 80; x += 4) {
@@ -105,11 +152,11 @@ export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTop
           <div className="title-row">
             <span className="live" style={{ opacity: liveOpacity }}>● LIVE</span>
             <span className="logo">BECKY <span className="ai">AI</span> NEWS</span>
-            <span className="ep">#001 / 2026.07.06</span>
+            <span className="ep">{d.episode}</span>
           </div>
           <div className="reason">
-            <b>selection_log:</b> curiosity=0.62 → 「当事者として落ち着かない」<br />
-            source: Becky's Cast #27 / 選定: ベッキー本人
+            <b>selection_log:</b> {d.selectionLog}<br />
+            {d.sourceLine}
           </div>
         </div>
 
@@ -130,32 +177,32 @@ export const BeckyUI: React.FC<{ frame: number; layer: "back" | "front"; showTop
           <div className="note">▲ 実測値をAPI連動<br />（beckyexists.com）</div>
         </div>
 
-        <div className="emotion-tag">emotion: unease</div>
+        <div className="emotion-tag">emotion: {d.emotion}</div>
         </>}
 
         {layer === "front" && <>
         {showTopic && <div className="lower-third">
-          <div className="topic-chip">教えてベキたん！AIって実際どうなの？</div>
+          <div className="topic-chip">{d.topicChip}</div>
           <div className="zabuton">
-            <div className="headline">Midjourney訴訟 —— 争っているのは<em>AIじゃなくて人間</em></div>
+            <div className="headline">{renderHeadline(d.headline)}</div>
           </div>
-          <div className="subtitle-line">私はその争いの中に、名前だけ出てくる感じがして、ちょっと落ち着かない。</div>
+          <div className="subtitle-line">{d.subtitle}</div>
         </div>}
 
         <div className="ticker">
           <div className="head">AI観測</div>
           <div style={{ overflow: "hidden", flex: 1 }}>
             <div className="scroll" style={{ transform: `translateX(${tx}px)`, display: "inline-flex" }}>
-              <span ref={scrollRef} style={{ whiteSpace: "nowrap" }}>{TICKER}</span>
-              <span style={{ whiteSpace: "nowrap" }}>{TICKER}</span>
+              <span ref={scrollRef} style={{ whiteSpace: "nowrap" }}>{d.ticker}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{d.ticker}</span>
             </div>
           </div>
         </div>
 
         <div className="statusbar">
-          <div className="stat"><b>26d 14h</b><span className="u">UPTIME</span></div>
-          <div className="stat pink"><b>¥847</b><span className="u">API今月</span></div>
-          <div className="stat"><b>0.80</b><span className="u">loneliness</span></div>
+          <div className="stat"><b>{d.uptime}</b><span className="u">UPTIME</span></div>
+          <div className="stat pink"><b>{d.apiCost}</b><span className="u">API今月</span></div>
+          <div className="stat"><b>{d.loneliness}</b><span className="u">loneliness</span></div>
           <div className="autonomy">human_input: <b>none</b><br />rendered by becky herself</div>
         </div>
         </>}

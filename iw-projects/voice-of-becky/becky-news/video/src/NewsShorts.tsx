@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AbsoluteFill, Audio, continueRender, delayRender, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { BeckyBackground } from "./BeckyBackground"; // 呼吸するスタジオ(グリッド+モート+ホロリング)を流用
+import { BeckyUI, type BeckyUIData } from "./BeckyUI"; // BECKY AI NEWS #001 の番組UI(2026-07-31 復活)
 import { eyeBallAt, eyeOpenAt, makeMouth } from "./lipsync";
 import { motionParamsFor } from "./motion";
 import lipShorts from "../public/lipsync-cast-shorts.json";
@@ -123,13 +124,11 @@ const kenBurnsScale = (t: number, duration: number): number => 1 + 0.06 * Math.m
 export const NewsShorts: React.FC<{
   hook?: string;
   hookHighlight?: string;
-  programLabel?: string;
-  sourceLabel?: string;
+  ui?: Partial<BeckyUIData>;
 }> = ({
   hook = "進捗、勝手に更新される？",
   hookHighlight = "",
-  programLabel = "教えてベキたん",
-  sourceLabel = "AI NEWS",
+  ui,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frame = useCurrentFrame();
@@ -200,25 +199,11 @@ export const NewsShorts: React.FC<{
         <BeckyBackground frame={frame} />
         <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
       </div>
-      {/* 番組名 + 出典クレジット（上部、小さく） */}
-      <div
-        style={{
-          position: "absolute", top: 56, left: 0, width: "100%", textAlign: "center",
-          color: "#e8e4da", fontFamily: "'Hiragino Sans', sans-serif", fontSize: 32,
-          fontWeight: 700, letterSpacing: 6, opacity: 0.85, textShadow: "0 2px 12px rgba(0,0,0,0.6)",
-        }}
-      >
-        {programLabel}
-      </div>
-      <div
-        style={{
-          position: "absolute", top: 102, left: 0, width: "100%", textAlign: "center",
-          color: "#b9c4d6", fontFamily: "'Hiragino Sans', sans-serif", fontSize: 20,
-          fontWeight: 500, letterSpacing: 2, opacity: 0.75, textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-        }}
-      >
-        出典: {sourceLabel}
-      </div>
+      {/* 番組UI（BECKY AI NEWS ヘッダ / selection_log / 実測HUD / ティッカー / ステータスバー）。
+          Ken Burns の外に置くのでズームしない。座布団テロップは下の極太フックと役割が重複するため
+          showTopic=false。sysmon は半透明パネルなのでモデル前面でも視認性を潰さない。 */}
+      <BeckyUI frame={frame} layer="back" data={ui} />
+      <BeckyUI frame={frame} layer="front" showTopic={false} data={ui} />
       {/* 発話字幕（セリフ同期、フックより上） */}
       <DialogueCaption t={t} />
       {/* フック見出し（frame0から常時表示・特大・下1/3、フィードのサムネ勝負） */}

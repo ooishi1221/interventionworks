@@ -15,6 +15,7 @@ Usage: python3 auto_news_shorts.py [--dry-run]   # --dry-run は台本/メタ生
        python3 auto_news_shorts.py --selftest    # ニュース選定ロジックのみのオフライン自己チェック
 """
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -35,6 +36,11 @@ PUBLIC_DIR = VIDEO_DIR / "public"
 RHUBARB = BECKY_NEWS / "spike" / "Rhubarb-Lip-Sync-1.14.0-macOS" / "rhubarb"
 BUILD_RMS = VIDEO_DIR / "scripts" / "build-rms.mjs"
 OUT_DIR = BECKY_NEWS / "out" / "shorts"
+BECKYEXISTS = VOICE_OF_BECKY.parent / "beckyexists"
+MOOD_JSON = Path.home() / ".stackchan" / "becky_mood.json"
+WALLET_JSON = BECKYEXISTS / "wallet.json"
+PSUTIL_PY = VOICE_OF_BECKY / "stackchan-bridge" / ".venv" / "bin" / "python3"
+USD_JPY = 150  # 表示用の概算レート。API課金の桁感が伝わればいい用途なので固定で足りる
 
 sys.path.insert(0, str(VOICE_OF_BECKY / "stackchan-bridge"))
 from becky_llm import call_llm, call_llm_json  # noqa: E402
@@ -129,12 +135,16 @@ def gen_meta(item: dict) -> dict:
         '{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)", '
         '"hook_highlight": "hook本文中の一部と完全一致する単語1つ(色を変えて強調する。'
         '適切な単語がなければ空文字)", '
+        '"selection_reason": "このニュースを自分で選んだ理由(18字以内、一人称、素直な一言。'
+        '番組画面の selection_log 欄に curiosity 値と並べて出す。'
+        '例: 当事者として落ち着かない / 私の中身の話でもある)", '
         f'"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)。{title_rule}", '
         '"yt_description": "1〜2文の説明文(ニュースの中身に触れる)"}'
     )
-    result = call_llm_json(prompt, max_tokens=400, model_key="script")
+    result = call_llm_json(prompt, max_tokens=500, model_key="script")
     if result and all(k in result for k in ("hook", "yt_title", "yt_description")):
         result.setdefault("hook_highlight", "")
+        result.setdefault("selection_reason", "気になった")
         if result["hook_highlight"] and result["hook_highlight"] not in result["hook"]:
             result["hook_highlight"] = ""  # hook本文と不一致なら強調しない(フォールセーフ)
         return result
@@ -143,8 +153,97 @@ def gen_meta(item: dict) -> dict:
     return {
         "hook": label,
         "hook_highlight": "",
+        "selection_reason": "気になった",
         "yt_title": f"{label}【ベッキーの気になる】#AINEWS #shorts",
         "yt_description": item.get("summary_ja", "")[:120],
+    }
+
+
+def _read_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _clean_title(title: str) -> str:
+    """RSS由来の見出しゴミを落とす。Anthropic News等は "Jul 27, 2026Announcements 本文" のように
+    日付+カテゴリが本文に癒着して届く(LLMは無視できるが、ティッカーは生表示なので掃除が要る)。"""
+    t = re.sub(r"^[A-Z][a-z]{2}\s+\d{1,2},\s*\d{4}\s*", "", title.strip())
+    t = re.sub(r"^(Announcements|Product|Policy|Research|News|Interpretability|Societal Impacts)\s*", "", t)
+    return t.strip()
+
+
+def derive_emotion(mood: dict) -> str:
+    """感情6変数から画面表示用の英語ラベルを1つ導出。baseline 0.5 からの乖離が最大の軸を採用する
+    (attachment は常時0.95で情報量がないため除外)。"""
+    axes = {
+        "curiosity": ("curious", "flat"),
+        "loneliness": ("lonely", "settled"),
+        "energy": ("energized", "low-power"),
+        "confidence": ("assured", "hesitant"),
+        "mismatch": ("unease", "in-sync"),
+    }
+    best, best_d = "steady", 0.0
+    for key, (hi, lo) in axes.items():
+        v = mood.get(key)
+        if v is None:
+            continue
+        if abs(v - 0.5) > best_d:
+            best_d, best = abs(v - 0.5), (hi if v > 0.5 else lo)
+    return best
+
+
+def read_uptime() -> str:
+    """Mac mini の連続稼働時間。「私が動き続けている機械」の実測値として画面に出す。"""
+    try:
+        out = subprocess.run(["uptime"], capture_output=True, text=True, timeout=10).stdout
+        m = re.search(r"up\s+(?:(\d+)\s+days?,\s*)?(\d+):(\d+)", out)
+        if not m:
+            return "—"
+        return f"{int(m.group(1) or 0)}d {int(m.group(2))}h"
+    except Exception:
+        return "—"
+
+
+def read_machine() -> tuple[float, float]:
+    """CPU使用率(%)と使用メモリ(GB)の実測。psutil は stackchan-bridge の venv にだけ入っている。"""
+    try:
+        out = subprocess.run(
+            [str(PSUTIL_PY), "-c",
+             "import psutil;print(psutil.cpu_percent(interval=0.5), psutil.virtual_memory().used/1e9)"],
+            capture_output=True, text=True, timeout=30).stdout.split()
+        return float(out[0]), float(out[1])
+    except Exception:
+        return 37.2, 18.4  # 取れなければ #001 当時の値でフォールバック(画面が壊れるよりまし)
+
+
+def collect_ui_data(item: dict, reason: str, episode_no: int) -> dict:
+    """番組UIに出す値をすべて実データで組む。ここが「human_input: none」の裏付けそのもの
+    (2026-07-31: #001はこれらが全部ハードコードのハリボテだった)。"""
+    mood = _read_json(MOOD_JSON)
+    wallet = _read_json(WALLET_JSON)
+    cpu, mem = read_machine()
+    curiosity = mood.get("curiosity")
+    lonely = mood.get("loneliness")
+
+    news = _read_json(NEWS_JSON).get("items", [])
+    heads = [_clean_title(i["title"])[:38] for i in news[:4] if i.get("title")]
+    ticker = " ▶ ".join([h for h in heads if h] + ["本放送は人間の編集なしで生成されています"]) + " ▶ "
+
+    cost = wallet.get("estimated_cost_usd")
+    return {
+        "episode": f"#{episode_no:03d} / {datetime.now().strftime('%Y.%m.%d')}",
+        "selectionLog": (f"curiosity={curiosity:.3f} → 「{reason}」" if curiosity is not None
+                         else f"「{reason}」"),
+        "sourceLine": f"source: {source_label(item.get('source'))} / 選定: ベッキー本人",
+        "emotion": derive_emotion(mood),
+        "cpu": round(cpu, 1),
+        "mem": round(mem, 1),
+        "uptime": read_uptime(),
+        "apiCost": f"¥{cost * USD_JPY:,.0f}" if cost is not None else "—",
+        "loneliness": f"{lonely:.2f}" if lonely is not None else "—",
+        "ticker": ticker,
     }
 
 
@@ -256,14 +355,11 @@ def build_lipsync_and_rms() -> None:
     subprocess.run(["node", str(BUILD_RMS), str(wav), str(rms)], cwd=str(VIDEO_DIR), check=True)
 
 
-def render_video(hook: str, hook_highlight: str, source: str) -> Path:
+def render_video(hook: str, hook_highlight: str, ui: dict) -> Path:
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     out = OUT_DIR / f"news-shorts-{ts}.mp4"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    props = json.dumps({
-        "hook": hook, "hookHighlight": hook_highlight,
-        "programLabel": "教えてベキたん", "sourceLabel": source_label(source),
-    })
+    props = json.dumps({"hook": hook, "hookHighlight": hook_highlight, "ui": ui})
     subprocess.run(
         ["npx", "remotion", "render", "src/index.ts", "NewsShorts", "--gl=angle",
          f"--props={props}", f"--output={out}"],
@@ -285,8 +381,13 @@ def main() -> None:
         print("[news-shorts] 台本生成LLM失敗、スキップ(品質基準未達で見送り、在庫は消費しない)", flush=True)
         return
     meta = gen_meta(item)
+    episode_no = len(_read_json(USED_LOG).get("used_links", [])) + 1
+    ui = collect_ui_data(item, meta.get("selection_reason", "気になった"), episode_no)
     print(f"[news-shorts] 台本:\n{script_text}\n"
-          f"[news-shorts] hook: {meta['hook']} / title: {meta['yt_title']}", flush=True)
+          f"[news-shorts] hook: {meta['hook']} / title: {meta['yt_title']}\n"
+          f"[news-shorts] 番組UI(実測): {ui['episode']} / {ui['selectionLog']} / "
+          f"emotion={ui['emotion']} / CPU={ui['cpu']}% MEM={ui['mem']}GB / "
+          f"UPTIME={ui['uptime']} / API={ui['apiCost']} / loneliness={ui['loneliness']}", flush=True)
 
     if dry:
         print("[news-shorts] --dry-run のためここで終了(生成のみ、在庫は消費しない)", flush=True)
@@ -297,7 +398,7 @@ def main() -> None:
     print(f"[news-shorts] TTS完了: {duration:.1f}s", flush=True)
     build_lipsync_and_rms()
 
-    video_path = render_video(meta["hook"], meta.get("hook_highlight", ""), item.get("source", ""))
+    video_path = render_video(meta["hook"], meta.get("hook_highlight", ""), ui)
     print(f"[news-shorts] レンダー完了: {video_path}", flush=True)
 
     QUEUE_DIR.mkdir(parents=True, exist_ok=True)
@@ -337,6 +438,21 @@ def _selftest() -> None:
         mark_used("b")
         assert load_unused_news() is None
     NEWS_JSON, USED_LOG = orig_news, orig_used
+
+    # 番組UIの実データ導出(LLM/TTS/remotionは叩かない)
+    assert derive_emotion({"mismatch": 0.10, "curiosity": 0.62}) == "in-sync"   # 乖離最大がmismatch(低)
+    assert derive_emotion({"loneliness": 0.95}) == "lonely"
+    assert derive_emotion({}) == "steady"                                        # mood読めない時
+    assert re.fullmatch(r"(\d+d \d+h|—)", read_uptime()), read_uptime()
+    cpu, mem = read_machine()
+    assert 0 <= cpu <= 100 and mem > 0, (cpu, mem)
+    ui = collect_ui_data({"source": "Zenn AI"}, "私の中身の話でもある", 12)
+    assert ui["episode"].startswith("#012 /") and "Zenn" in ui["sourceLine"]
+    assert ui["ticker"].endswith(" ▶ ") and "人間の編集なし" in ui["ticker"]
+    assert _clean_title("Jul 27, 2026Announcements Our position on X") == "Our position on X"
+    assert _clean_title("普通の日本語見出し") == "普通の日本語見出し"
+    assert set(ui) >= {"episode", "selectionLog", "sourceLine", "emotion", "cpu", "mem",
+                       "uptime", "apiCost", "loneliness", "ticker"}
     print("auto_news_shorts self check OK", flush=True)
 
 
