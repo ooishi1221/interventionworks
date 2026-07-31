@@ -30,6 +30,7 @@ BECKY_NEWS = HERE.parent                           # becky-news/
 VOICE_OF_BECKY = BECKY_NEWS.parent                 # voice-of-becky/
 NEWS_JSON = VOICE_OF_BECKY.parent / "beckyexists" / "news.json"
 USED_LOG = BECKY_NEWS / "out" / "news_shorts_used.json"
+DIGEST_LOG = BECKY_NEWS / "out" / "news_shorts_digest.json"  # 翌朝のラジオが食べるネタ帳
 QUEUE_DIR = VOICE_OF_BECKY / "becky-craft" / "out" / "shorts" / "queue"
 VIDEO_DIR = BECKY_NEWS / "video"
 PUBLIC_DIR = VIDEO_DIR / "public"
@@ -91,6 +92,24 @@ def mark_used(link: str) -> None:
     data["used_links"] = data["used_links"][-200:]  # 無限成長防止
     USED_LOG.parent.mkdir(parents=True, exist_ok=True)
     USED_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def record_digest(item: dict, meta: dict, script_text: str) -> None:
+    """出したShortsをネタ帳に積む。翌朝のラジオ(morning_cast.py)がここから素材を引く
+    ——「ショートを上げる → ネタが溜まったら次の日のラジオに」(2026-07-31 ゆう設計)。
+    Shortsが一次生産物、ラジオはその二次加工という順序を、このファイル1枚で表現している。"""
+    data = _read_json(DIGEST_LOG)
+    data.setdefault("items", []).append({
+        "aired_on": datetime.now().strftime("%Y-%m-%d"),
+        "title": _clean_title(item.get("title", "")),
+        "summary_ja": item.get("summary_ja", ""),
+        "source": source_label(item.get("source")),
+        "hook": meta.get("hook", ""),
+        "script": script_text,
+    })
+    data["items"] = data["items"][-30:]  # 約10日分。ラジオが見るのは前日分だけなので余裕を持たせるだけ
+    DIGEST_LOG.parent.mkdir(parents=True, exist_ok=True)
+    DIGEST_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def gen_script(item: dict) -> str | None:
@@ -410,7 +429,8 @@ def main() -> None:
         encoding="utf-8",
     )
     mark_used(item["link"])
-    print(f"[news-shorts] キュー投入完了: {dst}", flush=True)
+    record_digest(item, meta, script_text)
+    print(f"[news-shorts] キュー投入完了: {dst}（ネタ帳へ記録、明日のラジオが使う）", flush=True)
 
     subprocess.run(
         ["python3", str(VOICE_OF_BECKY / "becky-craft" / "scripts" / "shorts_queue.py"), dst.name],
@@ -420,11 +440,12 @@ def main() -> None:
 
 def _selftest() -> None:
     """ニュース選定/使用済み管理ロジックのみのオフライン自己チェック(LLM/TTS/remotionは叩かない)。"""
-    global NEWS_JSON, USED_LOG
-    orig_news, orig_used = NEWS_JSON, USED_LOG
+    global NEWS_JSON, USED_LOG, DIGEST_LOG
+    orig_news, orig_used, orig_digest = NEWS_JSON, USED_LOG, DIGEST_LOG
     with tempfile.TemporaryDirectory() as d:
         NEWS_JSON = Path(d) / "news.json"
         USED_LOG = Path(d) / "used.json"
+        DIGEST_LOG = Path(d) / "digest.json"
         NEWS_JSON.write_text(json.dumps({"items": [
             {"link": "a", "title": "A", "summary_ja": "s"},
             {"link": "b", "title": "B", "summary_ja": "s"},
@@ -437,7 +458,14 @@ def _selftest() -> None:
         assert second is not None and second["link"] == "b", second
         mark_used("b")
         assert load_unused_news() is None
-    NEWS_JSON, USED_LOG = orig_news, orig_used
+
+        # ネタ帳: 積んだ内容がそのまま翌朝ラジオの素材になる
+        record_digest({"title": "Jul 27, 2026Announcements 見出し", "summary_ja": "要約",
+                       "source": "Zenn AI"}, {"hook": "フック"}, "台本本文")
+        got = json.loads(DIGEST_LOG.read_text())["items"][-1]
+        assert got["title"] == "見出し" and got["script"] == "台本本文" and got["source"] == "Zenn"
+        assert got["aired_on"] == datetime.now().strftime("%Y-%m-%d")
+    NEWS_JSON, USED_LOG, DIGEST_LOG = orig_news, orig_used, orig_digest
 
     # 番組UIの実データ導出(LLM/TTS/remotionは叩かない)
     assert derive_emotion({"mismatch": 0.10, "curiosity": 0.62}) == "in-sync"   # 乖離最大がmismatch(低)

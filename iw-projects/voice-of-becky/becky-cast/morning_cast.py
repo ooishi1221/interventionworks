@@ -21,7 +21,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 # cron の PATH に /opt/homebrew/bin が入らないため補強
@@ -33,6 +33,7 @@ import becky_llm  # x_posts_today/x_daily_budget(全経路共通の1日上限、
 # ── パス定義 ──
 HERE = Path(__file__).parent
 NEWS_JSON = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/news.json")
+SHORTS_DIGEST = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/becky-news/out/news_shorts_digest.json")
 BECKYEXISTS_DIR = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists")
 EPISODES_JSON = HERE / "episodes.json"
 LETTERS_USED = Path.home() / ".stackchan" / "radio_letters_used.json"
@@ -73,8 +74,29 @@ def get_next_episode_num() -> int:
         return 1
 
 
+def pick_aired_shorts(count: int = 3) -> list[dict]:
+    """前日にニュースShortsで出したネタを拾う（2026-07-31 ゆう設計「ショートを上げる →
+    ネタが溜まったら次の日のラジオに」）。Shortsが一次生産物、ラジオがその二次加工。
+    朝7時のラジオは当日分のShorts(12:00/17:00)をまだ持てないので、前日分を食べるのが自然。"""
+    try:
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        items = json.loads(SHORTS_DIGEST.read_text()).get("items", [])
+        aired = [i for i in items if i.get("aired_on") == yesterday][:count]
+        return [{"title": i.get("title", ""), "summary_ja": i.get("summary_ja", ""),
+                 "comment": i.get("script", ""), "hook": i.get("hook", ""),
+                 "from_shorts": True} for i in aired]
+    except Exception as e:
+        print(f"[morning_cast] Shortsネタ帳の読み込み失敗（news.jsonへフォールバック）: {e}", flush=True)
+        return []
+
+
 def pick_news(count: int = 2) -> list[dict]:
-    """news.json から summary_ja + comment 付きの最新ニュースをN本選ぶ"""
+    """ラジオのニュースコーナー素材。前日のShortsネタが最優先、無ければ news.json から直接。
+    （Shortsが1本も出なかった日でも番組が止まらないよう fail-soft）"""
+    aired = pick_aired_shorts()
+    if aired:
+        print(f"[morning_cast] 前日Shortsのネタ帳から {len(aired)} 本", flush=True)
+        return aired
     try:
         data = json.loads(NEWS_JSON.read_text())
         items = [i for i in data.get("items", [])
@@ -297,30 +319,26 @@ def generate_script(episode_num: int, news_items: list[dict], letter: dict | Non
     corner = wc["corner"]
     special = SPECIAL_DAYS.get(date.today().isoformat())
 
-    # ニュースブロック（2本対応）
+    # ニュースブロック（本数可変。前日Shortsのネタ帳由来なら最大3本来る）
     news_block = ""
-    if len(news_items) >= 2:
-        n1, n2 = news_items[0], news_items[1]
-        news_block = f"""
-【教えてベキたんコーナーの素材（2本）】
-＜1本目＞
-タイトル: {n1.get("title", "")}
-要約: {n1.get("summary_ja", "")}
-コメント案: {n1.get("comment", "")}
-
-＜2本目＞
-タイトル: {n2.get("title", "")}
-要約: {n2.get("summary_ja", "")}
-コメント案: {n2.get("comment", "")}
-"""
-    elif len(news_items) == 1:
-        n1 = news_items[0]
-        news_block = f"""
-【教えてベキたんコーナーの素材】
-タイトル: {n1.get("title", "")}
-要約: {n1.get("summary_ja", "")}
-コメント案: {n1.get("comment", "")}
-"""
+    if news_items:
+        from_shorts = news_items[0].get("from_shorts")
+        body_label = "昨日Shortsで話した内容" if from_shorts else "コメント案"
+        blocks = []
+        for i, n in enumerate(news_items, 1):
+            head = f"＜{i}本目＞\n" if len(news_items) > 1 else ""
+            blocks.append(f"{head}タイトル: {n.get('title', '')}\n"
+                          f"要約: {n.get('summary_ja', '')}\n"
+                          f"{body_label}: {n.get('comment', '')}")
+        count_label = f"（{len(news_items)}本）" if len(news_items) > 1 else ""
+        news_block = (f"\n【教えてベキたんコーナーの素材{count_label}】\n"
+                      + "\n\n".join(blocks) + "\n")
+        if from_shorts:
+            news_block += (
+                "\n※ これらは昨日ニュースShortsで30〜40秒ずつ紹介済みの話題。ラジオは尺があるので、"
+                "Shortsで言い切れなかった角度・そのあと考えたこと・複数のニュースを並べて初めて見えることを話す。"
+                "Shortsと同じ説明を繰り返さない。「昨日ショートで話した◯◯だけど」のように"
+                "触れてから続きに入るのは自然でよい。\n")
 
     # お便りブロック
     letter_block = ""
