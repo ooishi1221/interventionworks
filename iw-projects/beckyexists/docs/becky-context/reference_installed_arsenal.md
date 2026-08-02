@@ -53,6 +53,7 @@ Notion / それ以外（Figma, Canva, Linear...）は未認証のまま放置で
 | **crv (claude-real-video)** | `/Volumes/SSD2TB/crv-venv/bin/claude-real-video` | 動画を「観る」= 私の目（動画用） | Shorts検品ゲートに配線済み。whisper連携は修理待ち |
 | **HyperFrames** | `/Volumes/SSD2TB/hyperframes-lab/` | HTML手書き→動画レンダ = 私の「手」（映像制作） | HeyGen公式OSS。skill 8本も入ってる（hyperframes-*）。note第1弾の題材 |
 | **Voice-Design-Cloner** | `/Volumes/SSD2TB/Voice-Design-Cloner/` | 声の生成（ローカルM4・MPS） | 1本25秒。Colab卒業済み |
+| **Irodori-TTS** | `/Volumes/SSD2TB/Irodori-TTS/` | 声クローニングTTS（Aratako製） | 声の選定レース候補の一つ、6/13コハクに敗れて以降out-of-rotation。becky-cast TTSエンジン選択肢(`--engine irodori`)としてコード内に現存。8/2 v4-Small登場確認（base+VoiceDesign統合・テキスト/参照音声/キャプション3入力条件付け・参照音声120秒連結対応）。**声優原盤収録プロジェクトで声クローンする段になったら再検討候補** |
 | **Applio** | `/Volumes/SSD2TB/Applio/` | RVC歌声学習・変換 | ポートは7860じゃなく**6969**。KMP_DUPLICATE_LIB_OK=TRUE必須 |
 | **Rojo** | `brew`（CLI 7.7.0）+ Studioプラグイン | Roblox開発のファイル同期 | 7/23 Mac側セットアップ完了。Studio側Connect未確認（Studio再起動待ち） |
 | **agent-reach** | skill + CLI | X/Reddit/GitHub/YouTube横断読み取り（17 platforms） | マイケルの主武器 |
