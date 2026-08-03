@@ -176,7 +176,7 @@ def reflect() -> dict:
     )
 
     # call_llm_json: 壊れたJSON応答は1回だけ自動再送してくれる（Task #21, 2026-07-15）
-    proposal = becky_llm.call_llm_json(prompt, max_tokens=700)
+    proposal = becky_llm.call_llm_json(prompt, max_tokens=2000)
     if not proposal:
         return {"changed": False, "reason": "API失敗またはJSONパース失敗"}
 
@@ -251,7 +251,7 @@ def main():
         prompt = REFLECT_PROMPT.format(
             days=REFLECT_SCAN_DAYS, disposition=format_disposition(disp),
             wants=format_wants(load_wants()), actions=action_text)
-        resp = _call_claude(prompt, max_tokens=700)
+        resp = _call_claude(prompt, max_tokens=2000)
         print("[reflect dry-run] 提案:\n", resp, flush=True)
         return
 

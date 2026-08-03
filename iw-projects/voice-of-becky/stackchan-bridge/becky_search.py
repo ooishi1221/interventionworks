@@ -21,7 +21,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 try:
     import psutil
@@ -127,7 +127,7 @@ def _get_cpu_usage() -> float:
 def _get_hours_until_reset() -> int:
     """翌日0時まで何時間か（記憶リセットまでの残り時間）"""
     now = datetime.now()
-    midnight = datetime(now.year, now.month, now.day + 1)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     delta = midnight - now
     return max(1, int(delta.total_seconds() / 3600))
 
