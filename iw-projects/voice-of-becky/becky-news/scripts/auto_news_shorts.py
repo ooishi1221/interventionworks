@@ -71,6 +71,13 @@ def source_label(raw: str | None) -> str:
     return SOURCE_LABELS.get(raw, raw.split()[0][:14])
 
 
+NAMED_ENTITY_PATTERN = re.compile(
+    r"OpenAI|Anthropic|Claude|Opus|GPT|Kimi|Gemini|Meta|Google|Samsung|Moonshot|"
+    r"Nvidia|Microsoft|xAI|Grok|DeepSeek|Mistral|Amazon|Apple|Sora|Codex",
+    re.IGNORECASE,
+)
+
+
 def load_unused_news() -> dict | None:
     if not NEWS_JSON.exists():
         return None
@@ -78,10 +85,16 @@ def load_unused_news() -> dict | None:
     used = set()
     if USED_LOG.exists():
         used = set(json.loads(USED_LOG.read_text(encoding="utf-8")).get("used_links", []))
-    for item in items:
-        if item.get("link") and item["link"] not in used and item.get("summary_ja"):
-            return item
-    return None
+    candidates = [
+        item for item in items
+        if item.get("link") and item["link"] not in used and item.get("summary_ja")
+    ]
+    if not candidates:
+        return None
+    # ponytail: 固有名詞(モデル名/企業名)入りタイトルが中央値の4〜8倍伸びる実測(2026-08-03診断、Kimi回1303views)。
+    # マッチがあれば最優先、なければ従来通りfeed順(FIFO)。
+    named = [c for c in candidates if NAMED_ENTITY_PATTERN.search(c["title"])]
+    return named[0] if named else candidates[0]
 
 
 def mark_used(link: str) -> None:
