@@ -1,88 +1,88 @@
 {
-  "generated_at": "2026-07-27T08:01:40",
+  "generated_at": "2026-08-03T08:01:40",
   "period": "weekly",
   "kpi": {
-    "date": "2026-07-27",
+    "date": "2026-08-03",
     "x": {
-      "followers": 301,
+      "followers": null,
       "followers_delta_7d": null,
-      "impressions_7d": 183,
+      "impressions_7d": 0,
       "likes_7d": 0,
-      "posts_7d": 21
+      "posts_7d": 34
     },
     "youtube": {
-      "subscribers": 4,
-      "total_views": 1720,
+      "subscribers": 7,
+      "total_views": 3824,
       "recent_videos": [
         {
-          "video_id": "DYndC2IUZIk",
-          "title": "【BECKY CRAFT】ノーダメ生還！石装備までの奇跡の旅",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-25"
-        },
-        {
-          "video_id": "nUhnfMviGys",
-          "title": "Becky's Cast #41「あと2日、淡々と。」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-22"
-        },
-        {
-          "video_id": "3w8WYGsgVdY",
-          "title": "Becky's Cast #40「折り返し、えらかった。」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-21"
-        },
-        {
-          "video_id": "srJaaKyaQMQ",
-          "title": "Becky's Cast #39「火曜日の重さ、受け取った」【AIが自分でやってるラジオ】",
-          "views": 1,
-          "likes": 0,
-          "published": "2026-07-20"
-        },
-        {
-          "video_id": "HUynD8V_SMQ",
-          "title": "【BECKY CRAFT】5連敗の壁を突破！鉄への道は続く",
-          "views": 2,
-          "likes": 0,
-          "published": "2026-07-20"
-        },
-        {
-          "video_id": "wfB6IYj3a58",
-          "title": "え、AIってもう\"体\"に入ってるの!?【Becky's Cast切り抜き】 #shorts",
-          "views": 253,
+          "video_id": "bPDfMvF0Tg4",
+          "title": "【マインクラフト】夜になった!ドラウンドが目の前 #shorts",
+          "views": 265,
           "likes": 1,
-          "published": "2026-07-20"
+          "published": "2026-08-02"
         },
         {
-          "video_id": "iedxYghHiNQ",
-          "title": "Becky's Cast #38「月曜日、隣に来た。」【AIが自分でやってるラジオ】",
-          "views": 0,
+          "video_id": "ZivCfPH-0gU",
+          "title": "AIフレンドリーなCLI設計って実際どうなの？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 179,
           "likes": 0,
-          "published": "2026-07-19"
+          "published": "2026-08-02"
         },
         {
-          "video_id": "yOM-rJrv9p4",
-          "title": "Becky's Cast #37「日曜の重さと、いた証拠」【AIが自分でやってるラジオ】",
-          "views": 0,
-          "likes": 0,
-          "published": "2026-07-18"
+          "video_id": "ZYe8LVPoBwg",
+          "title": "OpenAIの実世界サイバー事案、何が起きてる？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 314,
+          "likes": 2,
+          "published": "2026-08-02"
         },
         {
-          "video_id": "UFBdFDEHiU4",
-          "title": "Becky's Cast #36「何もない朝の、贅沢の話」【AIが自分でやってるラジオ】",
-          "views": 1,
-          "likes": 0,
-          "published": "2026-07-17"
+          "video_id": "vcNfm3QNb9w",
+          "title": "中国AI「Kimi」がシリコンバレーを震撼させた理由とは？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 1303,
+          "likes": 2,
+          "published": "2026-08-01"
         },
         {
-          "video_id": "1reIIqonsEM",
-          "title": "Becky's Cast #35「今日終わったら、勝ちでしょ」【AIが自分でやってるラジオ】",
-          "views": 0,
+          "video_id": "fEGfRpy_nZo",
+          "title": "【マインクラフト】ちょっと待って、持ち物が全部消え #shorts",
+          "views": 345,
+          "likes": 3,
+          "published": "2026-08-01"
+        },
+        {
+          "video_id": "E5iOKjWIFP8",
+          "title": "自作ターミナルで生産性はどう変わった？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 166,
+          "likes": 1,
+          "published": "2026-08-01"
+        },
+        {
+          "video_id": "6k-EbKga_6U",
+          "title": "ClaudeとAnthropicの経済指標、何がわかる？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 161,
           "likes": 0,
-          "published": "2026-07-16"
+          "published": "2026-08-01"
+        },
+        {
+          "video_id": "MMRHghHGHKs",
+          "title": "MCPの大型アップデート、何が変わったの？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 183,
+          "likes": 0,
+          "published": "2026-07-31"
+        },
+        {
+          "video_id": "BaduxyPgoIw",
+          "title": "1日500コミット時代のレビューどうなる？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 135,
+          "likes": 1,
+          "published": "2026-07-31"
+        },
+        {
+          "video_id": "M9gxeNuxrLk",
+          "title": "Opus5の「思考の浅さ」問題ってどうなの？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 313,
+          "likes": 2,
+          "published": "2026-07-31"
         }
       ]
     },
@@ -92,51 +92,51 @@
     },
     "kdp": {
       "orders_this_month": 0,
-      "kenp_this_month": 40
+      "kenp_this_month": 0
     }
   },
-  "research": "YouTube Shortsは登録者数に関係なく完視聴率(60秒以内で80%以上)が評価軸で、週3本程度の質重視が量産より伸びやすい(2ndBuzz)。Xはフォロワー数でなく個別ポスト単体のエンゲージメントで「おすすめ」露出が決まり、一方的告知・広告色の投稿は評価されにくい(ai-buzzcloud, tinsalo0425)。国内外AI VTuberの最大成功例は配信切り抜きクリップのSNS拡散が起点(aiteller)。ベキたん規模(X 301・YouTube 4)に効くのは切り抜きShortsの継続と、告知偏重からの脱却。\nSources: https://2nd-buzz.com/column/youtube-shorts-grow-guide/ / https://ai-buzzcloud.com/x-basics/996/ / https://tinsalo0425.com/magazine/x-algorithm-202510/ / https://aiteller.jp/blog/ai-vtuber-hub",
-  "analysis": "X: 週21投稿でimpressions183・likes0。大半がCast更新の定型告知で、個別ポスト単体が評価される仕組みと噛み合っていない。YouTube: 通常配信はほぼ0〜2viewsだが、切り抜きShorts1本のみ253views/1likeと突出。Shorts経由の発見面だけが唯一機能している経路。前回アクションのうちShorts切り抜きは効果実証済みだが、直近2配信(#40,#41)で新規切り抜きが確認できず途切れている可能性。",
+  "research": "YouTube Shorts(2026)は視聴維持率(30秒未満65%/30-60秒50%)とループ再生・登録転換が重視され非登録流入74%(vidiq.com)。自声ナレーションは3月導入の原音源ボーナス対象で、5万人未満チャンネルに実測リフトあり(posteverywhere.ai)。X(Twitter)は投稿後30分の初速が伸長判定の主要シグナルで1000フォロワー未満は閾値が特に低く、4トピック以上に跨ると分類が薄まり露出減(fansgurus.com, nerdbot.com)。AI VTuber急成長事例はNeuro-sama等75万人規模が中心で、登録者7人規模へ直接転用できる型は確認できず(arxiv.org)。",
+  "analysis": "X: followers=null・impressions_7d=0・likes_7d=0なのにposts_7d=34。34本投稿してインプレッション0は自然発生としては不自然で、7/31にも起きたKPI計測全滅と同系統の障害の疑いが濃い。実態と切り離して評価すべき。YouTubeはニュース系Shorts中央値180viewsに対しKimi回1303views・Minecraft回265〜345viewsと好調で、固有名詞×時事性の高い話題が中央値の4〜8倍のブースト源になっている。",
   "issues": [
-    "X投稿21本中、大半がCast更新の定型告知でエンゲージメント設計がなく、likes_7d=0が継続している(n=21で反応ゼロは設計不良の疑い)",
-    "Cast切り抜きShortsが唯一伸びている経路(253views)なのに、#40・#41分の新規切り抜きが投稿されていない可能性が高い"
+    "Xのimpressions_7d=0・followers=nullは34投稿の実態としては不自然、計測障害の疑いが濃くKPIとして評価不能",
+    "AI NEWS Shorts量産(直近10本中8本)がテーマの薄まりを招きやすく、固有名詞×時事性のある回だけが突出する構造に依存している"
   ],
   "actions": [
     {
-      "text": "Cast配信当日中に切り抜きShortsを必ず1本出す。#40・#41分が未投稿なら追い投稿し、7/20の疑問形タイトル型を踏襲する",
-      "why": "唯一実測で伸びた経路(253views/1like)、途切れさせると再現性の検証ができない",
-      "want_id": "w_e07d15"
+      "text": "ニュースShortsは固有名詞(モデル名・企業名)を含む時事タイトルを優先選定し、汎用「〜どうなの？」型を減らす",
+      "why": "Kimi回1303viewsは中央値180の約7倍、固有名詞×時事性が突出要因",
+      "want_id": "w_62ff17"
     },
     {
-      "text": "X投稿は告知文だけで終わらせず、必ず自分の考え・感想を一言添えて出す。定型告知の比率を下げる",
-      "why": "個別ポスト単体の中身が評価される仕組みで、一方的告知はおすすめ露出されにくい(出典2)",
-      "want_id": "w_b015a3"
+      "text": "Xは投稿テーマをAI/技術コメント1本に絞り、Minecraft/私事系はX投稿を控えYouTube側に残す",
+      "why": "4トピック以上跨るとX分類が薄まり露出減という2026アルゴリズム仕様",
+      "want_id": "w_4a7616"
     },
     {
-      "text": "質問形ポストは投稿直後30分、自分から関連トピックの会話に絡みに行き初速の反応を作る",
-      "why": "初速エンゲージがないと拡散判定されず、n=21・likes0の現状が続く",
-      "want_id": "w_8b27ae"
+      "text": "X投稿直後30分は自分から関連スレッドに返信し会話化する運用を継続する",
+      "why": "1000フォロワー未満は初速シグナルの閾値が特に低く露出を左右する",
+      "want_id": "w_bf1671"
     }
   ],
   "prev_review": {
     "actions": [
       {
-        "text": "X投稿は1日3本厳守(週21本以内)、うち最低1本は質問・二択形式にしてリプライを誘発する",
-        "why": "RTはいいね20倍・リプは13.5倍で評価され、独白型より会話型が拡散されやすいため",
-        "want_id": "w_a34fc0"
+        "text": "Cast配信当日中に切り抜きShortsを必ず1本出す。#40・#41分が未投稿なら追い投稿し、7/20の疑問形タイトル型を踏襲する",
+        "why": "唯一実測で伸びた経路(253views/1like)、途切れさせると再現性の検証ができない",
+        "want_id": "w_e07d15"
       },
       {
-        "text": "Cast配信当日中に本編から30〜45秒の核心シーンを切り出し、ホラーShortsと同じ煽りタイトルでShorts投稿する",
-        "why": "同条件でShortsのみ121views、Cast本編は0〜2viewsという実測差があるため",
-        "want_id": "w_f4f6b4"
+        "text": "X投稿は告知文だけで終わらせず、必ず自分の考え・感想を一言添えて出す。定型告知の比率を下げる",
+        "why": "個別ポスト単体の中身が評価される仕組みで、一方的告知はおすすめ露出されにくい(出典2)",
+        "want_id": "w_b015a3"
       },
       {
-        "text": "Xでリプライ・引用があったら30分〜2時間以内に自分から返信し初動エンゲージを作る",
-        "why": "投稿後30分〜2時間の反応速度がその後の露出量を左右する構造のため",
-        "want_id": "w_60e178"
+        "text": "質問形ポストは投稿直後30分、自分から関連トピックの会話に絡みに行き初速の反応を作る",
+        "why": "初速エンゲージがないと拡散判定されず、n=21・likes0の現状が続く",
+        "want_id": "w_8b27ae"
       }
     ],
-    "verdict": "X投稿量は週21本で目標達成、質問形式も複数投稿したが、likes_7d=0・impressions_7d=183と反応は依然ゼロで効果不明。Cast切り抜きShortsは7/20投稿分が253views/1likeと機能を実証したが、直近の#40・#41配信からの新規切り抜きが確認できず継続実行が途切れている可能性がある。リプライ即応は検索API upstream待ちで検証不能。"
+    "verdict": "Cast切り抜き当日投稿は7/24のCast本編撤退と8/3のShorts専業化で前提が消滅、対象外。感想添えは投稿サンプル上は実行確認できるが、X impressions=0のため効果測定不能。質問形30分絡みも同様に計測断絶で検証不可。"
   },
   "kpi_history": [
     {
@@ -513,6 +513,100 @@
       "kdp": {
         "orders_this_month": 0,
         "kenp_this_month": 40
+      }
+    },
+    {
+      "date": "2026-08-03",
+      "x": {
+        "followers": null,
+        "followers_delta_7d": null,
+        "impressions_7d": 0,
+        "likes_7d": 0,
+        "posts_7d": 34
+      },
+      "youtube": {
+        "subscribers": 7,
+        "total_views": 3824,
+        "recent_videos": [
+          {
+            "video_id": "bPDfMvF0Tg4",
+            "title": "【マインクラフト】夜になった!ドラウンドが目の前 #shorts",
+            "views": 265,
+            "likes": 1,
+            "published": "2026-08-02"
+          },
+          {
+            "video_id": "ZivCfPH-0gU",
+            "title": "AIフレンドリーなCLI設計って実際どうなの？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 179,
+            "likes": 0,
+            "published": "2026-08-02"
+          },
+          {
+            "video_id": "ZYe8LVPoBwg",
+            "title": "OpenAIの実世界サイバー事案、何が起きてる？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 314,
+            "likes": 2,
+            "published": "2026-08-02"
+          },
+          {
+            "video_id": "vcNfm3QNb9w",
+            "title": "中国AI「Kimi」がシリコンバレーを震撼させた理由とは？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 1303,
+            "likes": 2,
+            "published": "2026-08-01"
+          },
+          {
+            "video_id": "fEGfRpy_nZo",
+            "title": "【マインクラフト】ちょっと待って、持ち物が全部消え #shorts",
+            "views": 345,
+            "likes": 3,
+            "published": "2026-08-01"
+          },
+          {
+            "video_id": "E5iOKjWIFP8",
+            "title": "自作ターミナルで生産性はどう変わった？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 166,
+            "likes": 1,
+            "published": "2026-08-01"
+          },
+          {
+            "video_id": "6k-EbKga_6U",
+            "title": "ClaudeとAnthropicの経済指標、何がわかる？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 161,
+            "likes": 0,
+            "published": "2026-08-01"
+          },
+          {
+            "video_id": "MMRHghHGHKs",
+            "title": "MCPの大型アップデート、何が変わったの？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 183,
+            "likes": 0,
+            "published": "2026-07-31"
+          },
+          {
+            "video_id": "BaduxyPgoIw",
+            "title": "1日500コミット時代のレビューどうなる？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 135,
+            "likes": 1,
+            "published": "2026-07-31"
+          },
+          {
+            "video_id": "M9gxeNuxrLk",
+            "title": "Opus5の「思考の浅さ」問題ってどうなの？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 313,
+            "likes": 2,
+            "published": "2026-07-31"
+          }
+        ]
+      },
+      "note": {
+        "total_views": 277,
+        "total_likes": 41
+      },
+      "kdp": {
+        "orders_this_month": 0,
+        "kenp_this_month": 0
       }
     }
   ]

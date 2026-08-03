@@ -1,29 +1,44 @@
 {
-  "updated_at": "2026-07-26T22:02:45.273099+00:00",
+  "updated_at": "2026-08-03T09:00:25.536752+00:00",
   "keywords": [
     {
       "word": "Claude Code",
+      "count": 7,
+      "trend": "up"
+    },
+    {
+      "word": "Apple",
       "count": 3,
-      "trend": "stable"
+      "trend": "new"
     },
     {
-      "word": "Anthropic",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "OpenAI",
-      "count": 2,
-      "trend": "stable"
-    },
-    {
-      "word": "生成AI",
-      "count": 2,
+      "word": "MCP",
+      "count": 3,
       "trend": "stable"
     },
     {
       "word": "LLM",
       "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "Claude",
+      "count": 2,
+      "trend": "up"
+    },
+    {
+      "word": "RAG",
+      "count": 1,
+      "trend": "new"
+    },
+    {
+      "word": "Microsoft",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "Copilot",
+      "count": 1,
       "trend": "stable"
     },
     {
@@ -32,24 +47,9 @@
       "trend": "new"
     },
     {
-      "word": "AI安全",
+      "word": "Amazon",
       "count": 1,
-      "trend": "stable"
-    },
-    {
-      "word": "Microsoft",
-      "count": 1,
-      "trend": "stable"
-    },
-    {
-      "word": "エージェント",
-      "count": 1,
-      "trend": "stable"
-    },
-    {
-      "word": "Claude",
-      "count": 1,
-      "trend": "stable"
+      "trend": "new"
     }
   ],
   "source_count": 80
