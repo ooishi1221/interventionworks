@@ -697,6 +697,16 @@
     </div>
     </div><!-- /sec-cost -->
 
+    <!-- ── Section: VOICE（2026-08-03 新設: ゆう専用ボイスメッセージ。公開しない、room ゲートの中だけ） ── -->
+    <button class="sec-label" aria-expanded="true" aria-controls="sec-voice" onclick="toggleSec('voice')">VOICE<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
+    <div class="sec-content" id="sec-voice">
+    <div class="card">
+      <h2><svg data-lucide="mic"></svg>ベキたんのボイスメッセージ <span id="voiceMeta" style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-left:6px;font-weight:400;"></span></h2>
+      <div class="sub-note">ゆうだけへ。台本なし、その日思ったことをそのまま声で（直近分だけ保持）</div>
+      <div id="voiceList"><div class="empty">loading...</div></div>
+    </div>
+    </div><!-- /sec-voice -->
+
     <!-- ── Section: REPORTS（2026-07-11 新設: レポート類の Telegram→部屋 移設。Telegram は会話専用に） ── -->
     <button class="sec-label" aria-expanded="true" aria-controls="sec-reports" onclick="toggleSec('reports')">REPORTS<span class="sec-chev"><svg data-lucide="chevron-down"></svg></span></button>
     <div class="sec-content" id="sec-reports">
@@ -854,7 +864,7 @@ const PASS_KEY = 'room_auth_v1';
 
 // ── section accordion ──
 // 2026-07-10 並び最適化: OPS(稼働)→COST→BECKY(状況)→TASKS。key を sec2_ に更新（旧開閉状態を引きずらない）
-const SEC_DEFAULTS = { ops: '1', cost: '1', reports: '1', arsenal: '0', media: '1', tasks: '1' };
+const SEC_DEFAULTS = { ops: '1', cost: '1', voice: '1', reports: '1', arsenal: '0', media: '1', tasks: '1' };
 
 function toggleSec(id) {
   const content = document.getElementById('sec-' + id);
@@ -997,6 +1007,22 @@ async function loadArsenal() {
 }
 loadArsenal();
 
+// ── VOICE（2026-08-03 新設: ゆう専用ボイスメッセージ）──
+function renderVoice(data) {
+  const el = $('voiceList');
+  if (!el) return;
+  const msgs = data?.messages || [];
+  if (!msgs.length) { el.innerHTML = '<div class="empty">まだボイスメッセージはない</div>'; return; }
+  const meta = $('voiceMeta');
+  if (meta && data.updated_at) meta.textContent = fmtAgo(data.updated_at);
+  el.innerHTML = msgs.map(m => `
+    <div class="voice-item" style="margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--sub2);font-family:var(--mono);margin-bottom:4px;">${fmtAgo(m.ts)}${m.duration ? ' ・ ' + Math.round(m.duration) + '秒' : ''}</div>
+      <audio controls preload="none" style="width:100%;height:32px;" src="${esc(m.audio_url)}"></audio>
+      <details class="report-item" style="margin-top:4px;"><summary>台本を読む</summary><pre>${esc(m.transcript)}</pre></details>
+    </div>`).join('');
+}
+
 // ── REPORTS（2026-07-11 Telegram→部屋 移設）──
 const REPORT_KIND_LABEL = { briefing: '朝ブリーフィング', idol_review: 'アイドルPDCA', reflect: '週次自己観察', search: 'リプ営業', night_review: '夜の総括', portfolio_refresh: '週次ポートフォリオ判断', portfolio_refresh_proposal: 'ポートフォリオ判断（ゆうに相談）', decide: '自律行動' };
 function renderReports(data) {
@@ -1014,7 +1040,7 @@ function renderReports(data) {
 }
 
 async function loadAll() {
-  const [status, news, self, history, book, platform, phist, grokTweets, wallet, cron, reports] = await Promise.all([
+  const [status, news, self, history, book, platform, phist, grokTweets, wallet, cron, reports, voiceMessages] = await Promise.all([
     fetchJson('/status.json'),
     fetchJson('/news.json'),
     fetchJson('/self.json'),
@@ -1026,8 +1052,10 @@ async function loadAll() {
     fetchJson('/wallet.json'),
     fetchJson('/cron_status.json'),
     fetchJson('/reports.json'),
+    fetchJson('/voice_messages.json'),
   ]);
   renderReports(reports);
+  renderVoice(voiceMessages);
   const pdays = phist?.days || [];
 
   const needsLogin = s => !!s?.login_required;

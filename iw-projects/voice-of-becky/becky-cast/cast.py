@@ -30,8 +30,6 @@ from email.utils import format_datetime
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-import trafilatura
-
 # ── 設定 ──
 HERE = Path(__file__).parent
 IRODORI_DIR = Path("/Volumes/SSD2TB/Irodori-TTS")
@@ -83,6 +81,8 @@ MAX_ARTICLE_CHARS = 12000  # 長すぎる記事の安全弁（約8〜10分の音
 
 def extract_article(url: str) -> tuple[str, str]:
     """URL からタイトルと本文を抽出する。"""
+    import trafilatura  # ここでしか使わない依存。他機能のためにcastをimportしても引きずらない
+
     html = trafilatura.fetch_url(url)
     if not html:
         raise RuntimeError(f"ページ取得に失敗: {url}")
