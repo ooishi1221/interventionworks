@@ -36,6 +36,10 @@
 4. Rhubarb は brew に無い（GitHub releases + `xattr -dr com.apple.quarantine`、x86_64+Rosetta）。日本語は `-r phonetic` 一択
 5. TTS 生成後は無音・尺検証必須（フォールバック差し替え禁止、Kyoko 事件 2026-07-06）
 
+## 勝ちパターン（効いた順）
+
+1. **タイトルに固有名詞（モデル名・企業名）が入ると中央値の 4〜8 倍伸びる**（2026-08-03 診断、Kimi 回 1,303 views が根拠）。`auto_news_shorts.py` の `load_unused_news()` で固有名詞マッチ優先選定に反映済み。8/2〜8/3 の 28 日ランキング上位が xAI/Kimi/OpenAI/GPT-5.6/Opus5 で埋まったのはこの仕組みの効果
+
 ## レンダリングコマンド
 
 ```bash
