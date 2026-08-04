@@ -44,6 +44,7 @@ PSUTIL_PY = VOICE_OF_BECKY / "stackchan-bridge" / ".venv" / "bin" / "python3"
 USD_JPY = 150  # 表示用の概算レート。API課金の桁感が伝わればいい用途なので固定で足りる
 
 sys.path.insert(0, str(VOICE_OF_BECKY / "stackchan-bridge"))
+import aivis_engine  # noqa: E402
 from becky_llm import call_llm, call_llm_json  # noqa: E402
 from becky_voice import PRESETS, parse_voice_segments, voice_to_aivis  # noqa: E402
 
@@ -331,6 +332,7 @@ def synth_audio(script_text: str, tmp_dir: Path) -> float:
     (cron 12:00/17:00 は朝収録7:40台と重ならない前提。make-shorts-clip.sh 側もこのファイルを
     毎回無条件で上書き生成するため、片方が古い状態を掴む心配はない)。将来同時実行の可能性が
     出たらprops駆動でファイル名を分ける。"""
+    aivis_engine.ensure()  # エンジンが落ちていても無人で復帰する（2026-08-04）
     segments = parse_voice_segments(script_text) or [("通常", script_text)]
     seg_paths = []
     cues = []

@@ -136,31 +136,10 @@ def split_chunks(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
 
 
 def ensure_aivis_engine() -> None:
-    """AivisSpeech Engine が落ちてたら headless 起動して待つ（朝刊 cron 用）。"""
-    import urllib.request
-
-    try:
-        urllib.request.urlopen(f"{AIVIS_URL}/version", timeout=3)
-        return
-    except Exception:
-        pass  # エンジン未起動 → 次のブロックで起動処理
-    print("[cast] AivisSpeech Engine 起動中…（初回ロード約40秒）", flush=True)
-    subprocess.Popen(
-        [str(AIVIS_ENGINE_DIR / "run")],
-        cwd=str(AIVIS_ENGINE_DIR),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    import time
-    for _ in range(60):
-        time.sleep(2)
-        try:
-            urllib.request.urlopen(f"{AIVIS_URL}/version", timeout=3)
-            return
-        except Exception:
-            continue
-    raise RuntimeError("AivisSpeech Engine が 120 秒で起動しなかった")
+    """AivisSpeech Engine が落ちてたら headless 起動して待つ（正本: stackchan-bridge/aivis_engine.py）。"""
+    sys.path.insert(0, str(HERE.parent / "stackchan-bridge"))  # 記事モードは台本モード側の insert を通らない
+    import aivis_engine
+    aivis_engine.ensure()
 
 
 def run_tts_vvcompat(
