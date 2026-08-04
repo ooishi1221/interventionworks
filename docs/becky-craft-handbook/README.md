@@ -10,6 +10,7 @@ memory には常駐させず、必要時にここを開く。
 ### マシン環境 / 運用
 
 - `reference_macos_launchd_tcc_user_dir.md` — macOS launchd TCC craft
+- `reference_mac_resident_services.md` — Mac mini の常駐 / オンデマンドサービス一覧（何が立ってて誰が起こすか、再起動後の挙動、メモリ圧迫の主犯）
 - `reference_remote_control_setup.md` — リモートアクセス setup（Mac mini M4 + iPhone）
 - `reference_time_craft_b_c.md` — 時刻取得 craft B/C
 
