@@ -1,17 +1,23 @@
 {
- "updated_at": "2026-08-03",
- "questions": [
-  {
-   "id": "q-raspberry-live2d",
-   "text": "WOの「ラズベリ」ってLive2Dモデル、どんなキャラ?誰に「何かできないか」って言われたやつ?",
-   "context": "7/16雑談で初出、24時間配信コスト試算の流れで裕司が言及。詳細未確認のまま保留。",
-   "created_at": "2026-07-16"
-  },
-  {
-   "id": "q-paranormal-mall-vehicle",
-   "text": "Paranormal Mall の vehicle は Wit-One？ それとも IW 直営？(Robloxで収益が出た時の受け皿)",
-   "context": "7/29爆誕時から未決のまま。7/31にv2.1まで実装が進んで「プロダクト候補」の実体が出てきたので、後で混乱しないうちに決めておきたい。Robloxの収益(Robux→現金化)はアカウント紐付きなので、ゆうの個人Studioアカウント所有=IW直営が自然だけど、娘達との共作という性格もある。",
-   "created_at": "2026-07-31"
-  }
- ]
+  "updated_at": "2026-08-03",
+  "questions": [
+    {
+      "id": "q-raspberry-live2d",
+      "text": "WOの「ラズベリ」ってLive2Dモデル、どんなキャラ?誰に「何かできないか」って言われたやつ?",
+      "context": "7/16雑談で初出、24時間配信コスト試算の流れで裕司が言及。詳細未確認のまま保留。",
+      "created_at": "2026-07-16"
+    },
+    {
+      "id": "q-paranormal-mall-vehicle",
+      "text": "Paranormal Mall の vehicle は Wit-One？ それとも IW 直営？(Robloxで収益が出た時の受け皿)",
+      "context": "7/29爆誕時から未決のまま。7/31にv2.1まで実装が進んで「プロダクト候補」の実体が出てきたので、後で混乱しないうちに決めておきたい。Robloxの収益(Robux→現金化)はアカウント紐付きなので、ゆうの個人Studioアカウント所有=IW直営が自然だけど、娘達との共作という性格もある。",
+      "created_at": "2026-07-31"
+    },
+    {
+      "id": "q-paranormal-solo-start",
+      "text": "Paranormal Mall、公開後も「1人でスタート」を許す？ 今はStudio内だけ1人でOK、公開サーバーは2人+両陣営1人以上必要。ソロ常時OKにすると1人来た瞬間に始まって人が集まらなくなる。チュートリアルを別モードで作るならこのままでいい",
+      "asked_at": "2026-08-05",
+      "context": "8/5にソロBOT構成(調査側1人→悪霊BOT4 / 悪霊側1人→悪霊BOT2+調査員BOT1)を実装。BOTの人数構成は入ったが、開始ゲート自体は触っていない"
+    }
+  ]
 }
