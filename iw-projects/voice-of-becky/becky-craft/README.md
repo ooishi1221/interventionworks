@@ -77,6 +77,7 @@ ffmpeg -y -i out/becky-craft-epXXX.mp4 -c:v libvpx -i /tmp/wipe.webm -filter_com
 | 009 | 一撃死縛り — 死んだら即終了 | https://www.youtube.com/watch?v=DYndC2IUZIk | K2企画。無傷で石装備まで進化 |
 | 010 | 7度目の鉄 — 拠点を整備して水辺を封鎖する | https://www.youtube.com/watch?v=csQTP4Z7Kcc | M2企画。因縁のドラウンドと死闘 |
 | 011 | 鉄を捨ててダイヤへ — y=-58への潜行 | https://www.youtube.com/watch?v=_NECpWfUR1g | M3企画。y69から動けない沼 |
+| 012 | ドラウンドの巣に殴り込み — 因縁の復讐戦 | https://www.youtube.com/watch?v=H7LyqCp9VvI | K3企画。ドラウンド6体に丸腰包囲 |
 
 Shorts: MS-deCXFiZM / L6DEqMR6mWk / RrddafDW2N0（EP.006×2+EP.004全ロス気づき）
 **シリーズ現在地: 鉄をめぐって6連敗中(EP.009一撃死縛りは無傷生還も鉄には未達)。次回 EP.010 = M2「鉄装備で拠点整備」へ。火/金 3:00 深夜自動収録体制（PLAN.md）**
