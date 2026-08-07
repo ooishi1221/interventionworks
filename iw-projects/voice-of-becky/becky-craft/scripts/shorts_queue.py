@@ -16,6 +16,7 @@ import subprocess
 import sys
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -77,23 +78,45 @@ def retitle_from_verdict(old_title: str, verdict_line: str) -> str | None:
         return None
 
 
+def _today_image() -> Path | None:
+    """当日の「今日の私」画像（becky_image_x.pyと同じストック、1日1枚、なければ添付なし）。"""
+    p = Path.home() / ".stackchan" / f"becky_today_{datetime.now():%Y%m%d}.png"
+    return p if p.exists() else None
+
+
 def post_to_x(url_line: str, description: str | None = None) -> None:
     """Shorts公開をXへ告知（fail-open: 失敗してもYouTube公開自体は成功扱いのまま）。
-    2026-07-27: 一方的な告知文はアルゴリズム評価が低いと裏付けが取れたため（マイケル調査）、
-    meta jsonのdescription（LLM生成済みの中身紹介文、追加LLM呼び出しなし）を本文に使う。
+    2026-08-08: ボットっぽい「感想+生URL直貼り」形式を脱するため2本に分ける
+    ——1本目は一人称の感想文（画像添付、URLなし）、2本目はそのリプライでURLのみ流す。
+    1本目が失敗したらリプライは送らない。
     description未指定時のみ従来の乾いた告知文にフォールバック。"""
     body = description.strip() if description and description.strip() else "新しいShorts公開しました"
-    text = f"{body}\n{_shorts_url(url_line)}"
+    image = _today_image()
+    cmd = ["node", str(X_TWEET_CLI), body, "--format", "monologue"]
+    if image:
+        cmd += ["--image", str(image)]
     try:
-        r = subprocess.run(
-            ["node", str(X_TWEET_CLI), text, "--format", "monologue"],
-            capture_output=True, text=True, timeout=30)
-        if r.returncode == 0:
-            print(f"[queue] X投稿完了: {r.stdout.strip()}", flush=True)
-        else:
-            print(f"[queue] X投稿失敗(fail-open): {r.stderr.strip()[:200]}", flush=True)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     except Exception as e:
         print(f"[queue] X投稿例外(fail-open): {e}", flush=True)
+        return
+    if r.returncode != 0:
+        print(f"[queue] X投稿失敗(fail-open): {r.stderr.strip()[:200]}", flush=True)
+        return
+    tweet_id = r.stdout.strip()
+    print(f"[queue] X投稿完了: {tweet_id}", flush=True)
+
+    reply_text = f"動画はこちら👇\n{_shorts_url(url_line)}"
+    try:
+        r2 = subprocess.run(
+            ["node", str(X_TWEET_CLI), reply_text, "--reply-to", tweet_id, "--format", "monologue"],
+            capture_output=True, text=True, timeout=30)
+        if r2.returncode == 0:
+            print(f"[queue] X URLリプライ完了: {r2.stdout.strip()}", flush=True)
+        else:
+            print(f"[queue] X URLリプライ失敗(fail-open): {r2.stderr.strip()[:200]}", flush=True)
+    except Exception as e:
+        print(f"[queue] X URLリプライ例外(fail-open): {e}", flush=True)
 
 
 def main() -> None:
@@ -116,7 +139,7 @@ def main() -> None:
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     title = meta.get("title", f"BECKY CRAFT 切り抜き #shorts")
     genre = meta.get("genre", "gameplay")  # ponytail: 未指定は従来通りgameplay基準（後方互換）
-    x_text_desc = meta.get("description")  # X告知本文用（YouTube用descのフォールバック適用前の生値）
+    x_text_desc = meta.get("x_comment") or meta.get("description")  # X告知本文用（一人称感想、なければYouTube用descへフォールバック）
     desc = meta.get("description",
                     "AIが自分でマイクラを操作して実況する番組『BECKY CRAFT』の切り抜き。\n"
                     "チャンネル: https://www.youtube.com/@voice_of_becky\n"

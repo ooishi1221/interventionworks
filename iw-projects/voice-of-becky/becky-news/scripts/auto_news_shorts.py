@@ -172,12 +172,18 @@ def gen_meta(item: dict) -> dict:
         '番組画面の selection_log 欄に curiosity 値と並べて出す。'
         '例: 当事者として落ち着かない / 私の中身の話でもある)", '
         f'"yt_title": "YouTube Shorts投稿タイトル(30字程度、#shorts を含む)。{title_rule}", '
-        '"yt_description": "1〜2文の説明文(ニュースの中身に触れる)"}'
+        '"yt_description": "1〜2文の説明文(ニュースの中身に触れる)", '
+        '"x_comment": "X投稿用の一人称つぶやき(120字以内、一段落)。ニュースの要約はしない、'
+        '私がこのニュースのどこに引っかかったか・どう思ったかだけを書く。敬体・解説口調は禁止'
+        '(✕「AIの進化は目覚ましいですね」、○「え、待って、これ他人事じゃないんだけど」のような'
+        '話し言葉のトーン、この言い回し自体はコピーせず自分の言葉で)。ハッシュタグ・リンクなし、'
+        '絵文字は多くて1つ。最後に「みんなはどう思う？」的な軽い問いかけを入れてもよい(任意)"}'
     )
     result = call_llm_json(prompt, max_tokens=500, model_key="script")
     if result and all(k in result for k in ("hook", "yt_title", "yt_description")):
         result.setdefault("hook_highlight", "")
         result.setdefault("selection_reason", "気になった")
+        result.setdefault("x_comment", result["yt_description"])
         if result["hook_highlight"] and result["hook_highlight"] not in result["hook"]:
             result["hook_highlight"] = ""  # hook本文と不一致なら強調しない(フォールセーフ)
         return result
@@ -189,6 +195,7 @@ def gen_meta(item: dict) -> dict:
         "selection_reason": "気になった",
         "yt_title": f"{label}【ベッキーの気になる】#AINEWS #shorts",
         "yt_description": item.get("summary_ja", "")[:120],
+        "x_comment": item.get("summary_ja", "")[:100],
     }
 
 
@@ -440,6 +447,7 @@ def main() -> None:
     dst.write_bytes(video_path.read_bytes())
     (QUEUE_DIR / f"{video_path.stem}.json").write_text(
         json.dumps({"title": meta["yt_title"], "description": meta["yt_description"],
+                     "x_comment": meta.get("x_comment", meta["yt_description"]),
                      "genre": "talking_head"}, ensure_ascii=False, indent=1),
         encoding="utf-8",
     )
