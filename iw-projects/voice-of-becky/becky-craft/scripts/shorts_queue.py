@@ -11,6 +11,7 @@ Usage:
     python3 shorts_queue.py --dry-run          # 何を公開するか表示のみ
 """
 import json
+import random
 import re
 import subprocess
 import sys
@@ -79,9 +80,11 @@ def retitle_from_verdict(old_title: str, verdict_line: str) -> str | None:
 
 
 def _today_image() -> Path | None:
-    """当日の「今日の私」画像（becky_image_x.pyと同じストック、1日1枚、なければ添付なし）。"""
-    p = Path.home() / ".stackchan" / f"becky_today_{datetime.now():%Y%m%d}.png"
-    return p if p.exists() else None
+    """「今日の私」画像ストック（becky_image_x.pyと同じ生成元）から直近7日分をglobし、ランダムに1枚選ぶ。
+    1日1枚しか無いため当日固定だと1日複数回あるShorts投稿が全部同じ画像になる問題への対処。
+    becky_image_x.py（日記系、1日1回投稿）側は当日固定のまま変更しない。なければ添付なし。"""
+    candidates = sorted((Path.home() / ".stackchan").glob("becky_today_*.png"))[-7:]
+    return random.choice(candidates) if candidates else None
 
 
 def post_to_x(url_line: str, description: str | None = None) -> None:
