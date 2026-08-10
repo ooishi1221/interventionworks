@@ -1800,6 +1800,9 @@ def _search_twitter_cli(query: str, cli_env: dict, n: int = 10) -> list[dict]:
 def check_and_reply_mentions() -> int:
     """to:becky_exists の未返信コメント + 引用RTに自動リプする。
     返信件数を返す（1日 MENTION_REPLY_MAX_PER_DAY 件まで）。"""
+    # ponytail: twitter-cliのsearch系がClientTransaction生成失敗で404固定(2026-08-04)。
+    # X優先度をYouTube Shortsへ移した裕司判断でオミット。upstream直ったらこの2行を外す。
+    return 0
     replies_today = _mention_replies_today()
     if replies_today >= MENTION_REPLY_MAX_PER_DAY:
         return 0
@@ -2370,6 +2373,9 @@ def _task_mention_reply() -> None:
 
 
 def _task_overseas_buzz() -> None:
+    # ponytail: twitter-cliのsearch系がClientTransaction生成失敗で404固定(2026-08-04)。
+    # X優先度をYouTube Shortsへ移した裕司判断でオミット。upstream直ったらこの行を外す。
+    return
     venv_py = Path(__file__).parent / ".venv" / "bin" / "python3"
     subprocess.Popen(
         [str(venv_py), str(Path(__file__).parent / "becky_search.py"), "--overseas"],
