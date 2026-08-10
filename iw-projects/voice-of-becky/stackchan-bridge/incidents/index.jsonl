@@ -1,0 +1,1 @@
+{"date":"2026-08-05","slug":"distribution_zero","metrics":["yt_new_video_views_48h","x_imp_7d"],"pattern":"新規のみ配信ゼロ+計測null先行","root_cause":"同一フォーマット量産の品質判定(YT 75%)/ラベルなし自動化(X 45%)","lesson":"計測エラー説を検証なしに採用しない/スパイクは品質試験の開始","file":"2026-08-05_distribution_zero.md"}

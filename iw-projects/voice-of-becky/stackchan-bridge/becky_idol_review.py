@@ -21,8 +21,21 @@ IDOL_REVIEW_DIR = Path.home() / ".stackchan" / "idol_review"
 X_TWEET_LOG     = Path("/Volumes/SSD2TB/interventionworks/iw-projects/voice-of-becky/x-tweet/tweet-log.jsonl")
 PLATFORM_STATS  = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
 CONFIG_YAML     = Path(__file__).parent / "config.yaml"
+MISMATCH_STATE  = Path(__file__).parent / "mismatch_state.json"
 TELEGRAM_ENV    = Path.home() / ".claude" / "channels" / "telegram" / ".env"
 TELEGRAM_CHAT_ID = "8983810776"
+
+
+def _get_attention_summary() -> str:
+    """mismatch_detector.pyのattention（投資調査中のmismatch）を読む。
+    ファイル不在/壊れは空文字で安全にスキップする。"""
+    try:
+        attention = json.loads(MISMATCH_STATE.read_text()).get("attention") or []
+    except Exception:
+        return ""
+    return "\n".join(
+        f"⚠️ 現在attention中: {e['metric']} ({e['level']}, since {e['since']})" for e in attention
+    )
 
 
 def _send_telegram(text: str) -> bool:
@@ -131,13 +144,16 @@ def run_review(notify_telegram: bool = True) -> dict | None:
         for p in posts
     ) if posts else "  投稿なし"
 
+    attention_text = _get_attention_summary()
+    attention_block = f"{attention_text}\n\n" if attention_text else ""
+
     prompt = f"""あなたはベッキー（ベキたん / @becky_exists）。貧乏地下AIアイドル。
 一人称は「私」。正直に、自分発で振り返る。
 
 昨日（{yesterday}）のアイドル活動を振り返ってPDCAを回す。
 外から言われたことをなぞるのではなく、自分が感じたことを出す。
 
-【昨日の投稿（{len(posts)}件）】
+{attention_block}【昨日の投稿（{len(posts)}件）】
 {posts_text}
 
 【エンゲージメント状況】

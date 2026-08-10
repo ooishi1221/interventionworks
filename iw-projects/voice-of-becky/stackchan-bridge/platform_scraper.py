@@ -41,6 +41,7 @@ CDP_PORT = 9223
 CDP_URL = f"http://localhost:{CDP_PORT}"
 OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_stats.json")
 HISTORY_OUTPUT = Path("/Volumes/SSD2TB/interventionworks/iw-projects/beckyexists/platform_history.json")
+PERVIDEO_HISTORY_OUTPUT = Path(__file__).parent / "pervideo_history.jsonl"
 YT_CHANNEL_ID = "UCFvpdUWDpmSLTTbv6kiIfNQ"  # @voice_of_becky
 CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHROME_PROFILE_DIR = Path.home() / ".stackchan" / "gemini-chrome-profile"
@@ -206,6 +207,27 @@ def _append_history(stats: dict) -> None:
         print(f"[scraper] history 追記: {jst_today_str}（{len(days)}日分）", flush=True)
     except Exception as e:
         print(f"[scraper] history 追記失敗: {e}", flush=True)
+
+
+def _append_pervideo_history(stats: dict) -> None:
+    """mismatch_detector の yt_new_video_views_48h 用。platform_stats.json は最新10本の
+    スナップショットのみで過去アーカイブが無いため、動画ごとのviewsを日次でjsonlに積む
+    （1行=1日分の全動画スナップショット、間引きなしで追記のみ）。"""
+    try:
+        videos = (stats.get("youtube", {}) or {}).get("videos", [])
+        if not videos:
+            return
+        entry = {
+            "date": jst_today(),
+            "videos": [{"video_id": v.get("video_id"), "views": v.get("views"),
+                        "published": v.get("published"), "title": v.get("title")}
+                       for v in videos],
+        }
+        with PERVIDEO_HISTORY_OUTPUT.open("a") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print(f"[scraper] pervideo_history 追記: {entry['date']}（{len(entry['videos'])}本）", flush=True)
+    except Exception as e:
+        print(f"[scraper] pervideo_history 追記失敗: {e}", flush=True)
 
 
 def js(tab: pychrome.Tab, code: str):
@@ -593,6 +615,7 @@ def main() -> None:
     stats.update(results)
     OUTPUT.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
     _append_history(stats)
+    _append_pervideo_history(stats)
     print(f"[scraper] 完了: {OUTPUT}", flush=True)
 
     # ログイン切れがあれば1実行=最大1通で通知（タスクごとに送るとスパムになる）
