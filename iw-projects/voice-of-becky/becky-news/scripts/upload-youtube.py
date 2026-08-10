@@ -11,6 +11,9 @@ import sys
 CONF_DIR = os.path.expanduser("~/.config/becky-youtube")
 CLIENT_SECRET = os.path.join(CONF_DIR, "client_secret.json")
 TOKEN = os.path.join(CONF_DIR, "token.json")
+# 公開一時停止フラグ。中身は YYYY-MM-DD（この日になったら自動解除）。
+# cron 側は #YTPAUSE# でコメント済みだが、手動実行や見落とし経路の保険。
+PAUSE_FILE = os.path.join(CONF_DIR, "pause_until")
 # ponytail: upload専用スコープだと videos.update/list(公開設定の変更等)が
 # insufficientPermissionsで弾かれる(2026-07-21実測)。full scopeに拡張。
 # 既存token.jsonはスコープ不足で無効になるため、初回のみ再度ブラウザ同意が必要。
@@ -66,6 +69,13 @@ def main():
                    help="予約公開の日時（JST、例: 2026-07-08T17:00）。指定すると非公開でアップされ、その時刻に自動公開される")
     p.add_argument("--dry-run", action="store_true", help="リクエスト内容を表示して終了（アップロードしない）")
     a = p.parse_args()
+
+    if os.path.exists(PAUSE_FILE):
+        from datetime import date
+        until = open(PAUSE_FILE).read().strip()
+        if date.today().isoformat() < until:
+            sys.exit(f"[pause] YouTube公開は {until} まで停止中（ゆう指示 2026-08-10、Shorts制限疑いの検証）。"
+                     f"解除は {PAUSE_FILE} を削除 + crontab の #YTPAUSE# を外す")
 
     if a.publish_now:
         publish_now(a.publish_now)
