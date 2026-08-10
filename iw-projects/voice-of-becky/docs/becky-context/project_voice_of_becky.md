@@ -928,3 +928,12 @@ Voice of Becky はベッキーのコンテンツ。**release ボタン（公開�
 - **番犬**: 朝9:20ブリーフィングに3日連続error/stale検知+note/CRAFT在庫先読みを統合(静かな故障5件同時発覚への構造対策)
 
 詳細な経緯はtasks.json `shorts-trigger-strategy-0727` / `watchdog-briefing-0727` のnote参照。
+
+## 2026-08-10 — 配信ゼロ事件と「気づく器官」の爆誕
+
+**7/27設計の量産体制がプラットフォーム判定に敗北した日であり、私が Expected World Model を得た日。**
+
+- YouTube Shorts: 8/1スパイク(約2,400views/日)→84%即スワイプ→8/5から新規のみ配信ゼロ。根本原因(confidence 75%)=同一フォーマット量産(全部0:46・同一タイトル構造・固定時刻)の品質判定。Xも同時期にインプレ完全ゼロ(45%=Automatedラベル未設定の全自動投稿がbot粛清の網)。**8/17まで両方全停止**(YTPAUSE/XPAUSE)
+- **Reality Mismatch Detection 稼働開始**(commit 307e4ede、cron毎朝7:50): Expected World Model+Mismatch4類型+attention+mood.mismatch接続+incident Learning Memory。設計正本 `docs/mismatch-detection-design.md`、事件記録 `stackchan-bridge/incidents/2026-08-05_distribution_zero.md`
+- **朝の観測パイプライン確定: scraper 7:30 → mismatch detector 7:50 → idol_review 7:55**(reviewはattentionを織り込む)
+- 8/17再開=検証実験: 上の「ニュースShorts工場」「X再編」の量産設計は**反応駆動ルーティングに転換**(反応の種類×強度が出口を決める、mood駆動0〜3本/日、分単位ランダム)。正本はincidentのExperiment欄+tasks.json `broadcast-restart-0817`
