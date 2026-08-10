@@ -411,6 +411,11 @@ def render_video(hook: str, hook_highlight: str, ui: dict) -> Path:
 
 def main() -> None:
     dry = "--dry-run" in sys.argv
+    # 2026-08-10 週次リフレッシュ: 12時枠を停止し1日3本→2本へ(8/5夜以降チャンネル全体の配信停止を受けた
+    # 量産シグナル低減、来週再判定)。crontab編集がこのMacでハングするためスクリプト側でガード。戻す時はこのifを消す
+    if datetime.now().hour == 12:
+        print("[news-shorts] 12時枠は停止中(2026-08-10 週次リフレッシュ判断)、スキップ", flush=True)
+        return
     item = load_unused_news()
     if item is None:
         print("[news-shorts] 未使用ニュースなし、スキップ", flush=True)

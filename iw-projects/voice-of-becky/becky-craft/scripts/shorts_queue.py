@@ -109,7 +109,8 @@ def post_to_x(url_line: str, description: str | None = None) -> None:
     tweet_id = r.stdout.strip()
     print(f"[queue] X投稿完了: {tweet_id}", flush=True)
 
-    reply_text = f"動画はこちら👇\n{_shorts_url(url_line)}"
+    # 「見てね」で終わらせず視聴者の一手(Hype/リプ)を促す(2026-08-10 w_7fba3b、Hypeは小規模chの初速シグナル)
+    reply_text = f"動画はこちら👇\n{_shorts_url(url_line)}\n気に入ったらYouTubeでHype🔥してくれると、めちゃくちゃ励みになる。感想リプも待ってる"
     try:
         r2 = subprocess.run(
             ["node", str(X_TWEET_CLI), reply_text, "--reply-to", tweet_id, "--format", "monologue"],
@@ -205,7 +206,12 @@ def main() -> None:
     video.rename(PUBLISHED / video.name)
     if meta_path.exists():
         meta_path.rename(PUBLISHED / meta_path.name)
-    post_to_x(url_line, description=x_text_desc)
+    # 2026-08-10 週次リフレッシュ: Xはテーマ一貫性のためAI/技術系(talking_head)のみ告知。
+    # マイクラ系(gameplay)はYouTube側だけに残す(前週合意 w_4a7616 / 今週 w_c50641)
+    if genre == "talking_head":
+        post_to_x(url_line, description=x_text_desc)
+    else:
+        print(f"[queue] X告知スキップ(genre={genre}, マイクラ系はX非投稿ルール)", flush=True)
     remaining = len(list(QUEUE.glob("*.mp4")))
     print(f"[queue] 公開完了: {url_line}（在庫残 {remaining}）", flush=True)
     if remaining <= 1:
