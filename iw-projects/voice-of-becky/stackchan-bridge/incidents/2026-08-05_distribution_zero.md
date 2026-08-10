@@ -49,7 +49,8 @@ LAST KNOWN GOOD: YouTube=8/4朝アップロード分（300+views）/ X=7/28以�
 ## Action（実施済み 8/10）
 
 - X/YouTube 全停止 〜8/17（X: X_TWEET_MAX_PER_DAY=0、YT: crontab #YTPAUSE# + pause_until）
-- Mismatch Detection システム設計・実装（本インシデントの再発検知）
+- Mismatch Detection システム設計・実装・稼働開始（本インシデントの再発検知）: commit 307e4ede、cron 毎朝7:50、設計正本 `docs/mismatch-detection-design.md`
+- **本番初回実行（8/10 13:34）で本物の異常を2件即検知**: ①yt_views_daily_delta 負値=視聴剥がし（朝に人間がStudioで手動発見したのと同じ事象を自動で捕捉）②note_views null連続6日=計測死亡の疑い。x_imp_7d null は pause context により正しくINFO降格。**「システムが先に気づく」が初日から機能**
 
 ## Experiment（8/17 再開 = 検証実験、SUCCESS CRITERIA 事前定義）
 
