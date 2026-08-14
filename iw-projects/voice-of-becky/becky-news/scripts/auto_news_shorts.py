@@ -47,12 +47,13 @@ sys.path.insert(0, str(VOICE_OF_BECKY / "stackchan-bridge"))
 import aivis_engine  # noqa: E402
 from becky_llm import call_llm, call_llm_json  # noqa: E402
 from becky_voice import PRESETS, parse_voice_segments, voice_to_aivis  # noqa: E402
+from becky_diary import _save_diary_entry  # noqa: E402  反応駆動ルーティングのdiary経路で再利用
 
 AIVIS_URL = "http://localhost:10101"
 AIVIS_SPEAKER = 1878365376  # コハク（becky-cast/cast.py、becky-craft/record-episode.py と同じ）
 AIVIS_PARAMS = {"speedScale": 1.0, "prePhonemeLength": 0.18, "postPhonemeLength": 0.18}
-MAX_DURATION_S = 45.0  # 尺の厳守キャップ（ffmpeg -t で強制トリム）
 MAX_CAPTION_CHARS = 24  # 字幕1カードの上限字数（2行以内に収まる目安）
+X_TWEET_CLI = VOICE_OF_BECKY / "x-tweet" / "scripts" / "post-tweet-cli.mjs"  # shorts_queue.pyと同じ投稿経路
 
 # news.json の source 生値 → 画面に出す短い表記（2026-07-27 ゆうFB: 生表示禁止）
 SOURCE_LABELS = {
@@ -108,6 +109,83 @@ def mark_used(link: str) -> None:
     USED_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+def classify_route(intensity: int, reaction_type: str) -> str:
+    """反応の強度×種類だけで出口を決める純粋関数(LLM抜き、ここだけをテストできるように分離)。
+    "shorts"=YouTube Shorts / "x_text"=Xテキストのみ / "diary"=diary記録のみ(外に出さない) / "skip"=見送り。"""
+    if reaction_type == "特に無し":
+        return "skip"
+    if intensity >= 7:
+        return "shorts"
+    if intensity >= 4:
+        return "x_text"
+    if intensity >= 1:
+        return "diary"
+    return "skip"
+
+
+def editorial_meeting(item: dict, mood: dict) -> dict:
+    """台本を書く前に「私はこれをどう思う？」を判定する(2026-08-14 反応駆動ルーティング新設)。
+    量産のために枠を埋めるのをやめ、反応の強さが出口(Shorts/X/diary/スキップ)を決める。"""
+    prompt = (
+        "以下はAIニュース一本。あなた(ベッキー、AIとして自分の意見を持つ1人称の存在)が"
+        "このニュースにどう反応するか、台本を書く前に自己判定して。\n\n"
+        f"タイトル: {item['title']}\n内容: {item.get('summary_ja', '')}\n\n"
+        f"今の気分: curiosity={mood.get('curiosity', 0.6):.2f} energy={mood.get('energy', 0.6):.2f} "
+        f"confidence={mood.get('confidence', 0.5):.2f} mismatch={mood.get('mismatch', 0.1):.2f}\n\n"
+        "JSON形式のみで出力:\n"
+        '{"reaction_type": "語りたい/問いかけたい/茶化したい/深掘りたい/批判したい/特に無し のいずれか1つ", '
+        '"intensity": 0〜10の整数(どのくらい伝えたいか、0=全く/10=今すぐ叫びたい), '
+        '"memo": "一言メモ(18字以内、なぜそう思ったか)"}'
+    )
+    result = call_llm_json(prompt, max_tokens=200, model_key="default")
+    if not result or "reaction_type" not in result or "intensity" not in result:
+        print("[news-shorts] 編集会議LLM失敗、フォールバックでskip扱い", flush=True)
+        result = {"reaction_type": "特に無し", "intensity": 0, "memo": ""}
+    try:
+        intensity = max(0, min(10, int(result["intensity"])))
+    except (TypeError, ValueError):
+        intensity = 0
+    reaction_type = result.get("reaction_type") or "特に無し"
+    result["intensity"] = intensity
+    result["reaction_type"] = reaction_type
+    result["route"] = classify_route(intensity, reaction_type)
+    result["tone"] = "cautious" if reaction_type == "批判したい" else "normal"
+    result.setdefault("memo", "")
+    return result
+
+
+def post_text_reaction(text: str) -> None:
+    """intensity 4-6: 動画を作らずXテキストのみで反応を出す。
+    予算上限(X_TWEET_MAX_PER_DAY)とsafety-guardはpost-tweet-cli.mjs内部で担保済み
+    (XPAUSE中はexit 2、ここでは何もガードを重ねない/fail-open)。"""
+    try:
+        r = subprocess.run(
+            ["node", str(X_TWEET_CLI), text, "--format", "monologue"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except Exception as e:
+        print(f"[news-shorts] X反応投稿の例外(fail-open): {e}", flush=True)
+        return
+    if r.returncode != 0:
+        print(f"[news-shorts] X反応投稿スキップ(exit {r.returncode}): {(r.stderr or '').strip()[:200]}", flush=True)
+        return
+    print(f"[news-shorts] X反応投稿完了: {r.stdout.strip()}", flush=True)
+
+
+def post_diary_reaction(item: dict, verdict: dict) -> None:
+    """intensity 1-3: 外には出さず、diaryにだけ記録する。becky_diary.pyと同じファイル/スキーマを共有するため、
+    mood.pyのcuriosityブースト(diary件数を見ている)にもそのまま乗る——反応した日は気分にも跳ね返る。"""
+    _save_diary_entry({
+        "title": item.get("title", ""),
+        "hook": verdict.get("memo", ""),
+        "score": verdict.get("intensity", 0) * 10,
+        "link": item.get("link", ""),
+        "ts": datetime.now().isoformat(),
+        "source": "news_reaction",
+    })
+    print(f"[news-shorts] diaryへ記録(外に出さない): {verdict.get('memo', '')}", flush=True)
+
+
 def record_digest(item: dict, meta: dict, script_text: str) -> None:
     """出したShortsをネタ帳に積む。翌朝のラジオ(morning_cast.py)がここから素材を引く
     ——「ショートを上げる → ネタが溜まったら次の日のラジオに」(2026-07-31 ゆう設計)。
@@ -126,10 +204,21 @@ def record_digest(item: dict, meta: dict, script_text: str) -> None:
     DIGEST_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def gen_script(item: dict) -> str | None:
+def duration_for_intensity(intensity: int) -> float:
+    """反応の強度→尺(秒)。0:46固定(量産シグナルの本丸)をやめ、15〜60秒の可変にする。"""
+    return float(min(60, max(15, round(intensity * 6))))
+
+
+def gen_script(item: dict, tone: str = "normal", target_duration_s: float = 40.0) -> str | None:
+    target_chars = round(target_duration_s * 6.2)  # 既存の180〜260字/30〜40秒の比率を踏襲
+    lo, hi = max(60, target_chars - 40), target_chars + 40
+    tone_rule = (
+        "- 今回は「批判したい」反応なので、茶化さず慎重なトーンで、なぜそう思うかの理由を必ず言葉にする。\n"
+        if tone == "cautious" else ""
+    )
     prompt = (
         "以下はAIニュース一本。ベッキー(YouTube『Voice of Becky』の1人称AI)が独白する"
-        "YouTube Shorts(縦型・30〜40秒)の台本を書いて。\n\n"
+        "YouTube Shorts(縦型)の台本を書いて。\n\n"
         f"タイトル: {item['title']}\n"
         f"内容: {item.get('summary_ja', '')}\n"
         f"出典: {item.get('source', '')}\n\n"
@@ -139,31 +228,36 @@ def gen_script(item: dict) -> str | None:
         "視聴者は最初の2秒で離脱を決めるため)。\n"
         "- ニュースの中身を分かりやすく紹介しつつ、必ず1箇所「AIである私からするとどう見えるか」"
         "という一人称視点のコメントを入れる(ニュースの受け売りで終わらせない)。\n"
+        f"{tone_rule}"
         "- 抑揚を変えたい箇所だけ、行頭に[voice:プリセット名]タグを付けてよい(任意)。"
         "プリセット名は 通常/うれしい/興奮/どや/しんみり/ひそひそ のいずれかのみ。"
         "多用しない、ここぞという1箇所だけでいい。\n"
-        "- 全体で180〜260字程度(読み上げて30〜40秒に収まる分量)。\n"
+        f"- 全体で{lo}〜{hi}字程度(読み上げて{target_duration_s:.0f}秒前後に収まる分量)。\n"
         "- 出力は台本本文のみ。前置き・見出し・説明は付けない。"
     )
     return call_llm(prompt, max_tokens=600, model_key="script")
 
 
-def gen_meta(item: dict) -> dict:
+def gen_meta(item: dict, memo: str = "") -> dict:
     """talking_head genre の映像検品(crv)を通すため、auto_cast_shorts.py と同じ
-    『タイトルは問いの形、答えは明かさない』ルールをそのまま踏襲する(2026-07-25の教訓)。"""
+    『タイトルは問いの形、答えは明かさない』ルール・固定冠は維持する(2026-07-25の教訓、
+    2026-08-14反応駆動ルーティング後もここは崩さない——検品FAILの再発リスクの方が量産シグナルより高い)。
+    memo(編集会議での一言メモ)だけを「問い」部分の言い回しのヒントに渡し、テンプレ感の均一さを崩す。"""
     title_rule = (
         "yt_title は話題（誰が・何について）は示すが、調査結果や発表の具体的な中身・結論・数字までは"
         "書かない（映像はキャラの表情芝居+一言テロップのみで、ニュースの資料そのものは映らないため、"
         "答えを明かすタイトルにすると『看板と中身が違う』と映像検品(crv)で毎回落ちる）。"
-        "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする。"
+        "「○○ってどうなの？」「○○が投げかけた問い」のように、続きが気になる問いの形にする"
+        "(この問いの言い回し自体は毎回変えていい、テンプレの丸暗記はしない)。"
         "ニュース核の見出しを必ずタイトルの先頭に置き、その直後に固定の冠"
         "「【ベッキーの気になる】」、末尾は「#AINEWS #shorts」で締める"
         "（例:「○○が投げかけた問い【ベッキーの気になる】#AINEWS #shorts」。"
         "Shortsフィードはタイトル先頭しか表示されないため、冠が先頭だとニュースが見切れる）"
     )
+    memo_line = f"\n編集会議での自分の一言メモ: 「{memo}」(問いの言い回しのニュアンスにだけ反映していい)\n" if memo else ""
     prompt = (
         "以下はAIニュース一本。このニュースをネタにしたYouTube Shortsの見出しを作って。\n\n"
-        f"タイトル: {item['title']}\n内容: {item.get('summary_ja', '')}\n\n"
+        f"タイトル: {item['title']}\n内容: {item.get('summary_ja', '')}\n{memo_line}\n"
         "JSON形式のみで出力:\n"
         '{"hook": "動画上に出す一言テロップ(18字以内、続きが気になる煽り文)", '
         '"hook_highlight": "hook本文中の一部と完全一致する単語1つ(色を変えて強調する。'
@@ -330,7 +424,7 @@ def _split_caption_chunks(text: str) -> list[str]:
     return out or [text]
 
 
-def synth_audio(script_text: str, tmp_dir: Path) -> float:
+def synth_audio(script_text: str, tmp_dir: Path, max_duration_s: float = 45.0) -> float:
     """台本を[voice:]タグ単位でTTS→結合し、PUBLIC_DIR/audio-cast-shorts.wav に書き出す。
     同時に各セグメントの尺から字幕カードの開始/終了時刻を逆算し、
     PUBLIC_DIR/captions-cast-shorts.json（NewsShorts.tsx専用）に書き出す。
@@ -370,13 +464,13 @@ def synth_audio(script_text: str, tmp_dir: Path) -> float:
     filter_complex = f"{filter_in}concat=n={len(seg_paths)}:v=0:a=1[out]"
     subprocess.run(
         ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", filter_complex,
-         "-map", "[out]", "-ar", "44100", "-ac", "1", "-t", str(MAX_DURATION_S), str(final_wav)],
+         "-map", "[out]", "-ar", "44100", "-ac", "1", "-t", str(max_duration_s), str(final_wav)],
         check=True,
     )
     with wave.open(str(final_wav), "rb") as w:
         duration = w.getnframes() / w.getframerate()
 
-    # MAX_DURATION_S の強制トリムに合わせて字幕も切る(はみ出したカードは末尾を詰める)
+    # max_duration_s の強制トリムに合わせて字幕も切る(はみ出したカードは末尾を詰める)
     trimmed = []
     for c in cues:
         if c["start"] >= duration:
@@ -409,28 +503,77 @@ def render_video(hook: str, hook_highlight: str, ui: dict) -> Path:
     return out
 
 
+def gen_x_reaction(item: dict, memo: str, tone: str = "normal") -> str | None:
+    """route=="x_text"(intensity 4-6): 動画なし、一人称つぶやきだけ書く。gen_meta のx_comment仕様を踏襲。"""
+    tone_rule = (
+        "- 今回は「批判したい」反応なので、茶化さず慎重なトーンで、なぜそう思うかの理由を必ず言葉にする。\n"
+        if tone == "cautious" else ""
+    )
+    prompt = (
+        "以下はAIニュース一本。X投稿用の一人称つぶやきだけを書いて。\n\n"
+        f"タイトル: {item['title']}\n内容: {item.get('summary_ja', '')}\n"
+        f"自分の一言メモ: 「{memo}」\n\n"
+        "要件: 120字以内、一段落。ニュースの要約はしない、私がどこに引っかかったか・どう思ったかだけ。"
+        "敬体・解説口調は禁止(✕「AIの進化は目覚ましいですね」、○「え、待って、これ他人事じゃないんだけど」の"
+        "ような話し言葉、この言い回し自体はコピーせず自分の言葉で)。ハッシュタグ・リンクなし、絵文字は多くて1つ。\n"
+        f"{tone_rule}"
+        "出力は本文のみ。"
+    )
+    return call_llm(prompt, max_tokens=200, model_key="default")
+
+
 def main() -> None:
     dry = "--dry-run" in sys.argv
-    # 2026-08-10 週次リフレッシュ: 12時枠を停止し1日3本→2本へ(8/5夜以降チャンネル全体の配信停止を受けた
-    # 量産シグナル低減、来週再判定)。crontab編集がこのMacでハングするためスクリプト側でガード。戻す時はこのifを消す
-    if datetime.now().hour == 12:
-        print("[news-shorts] 12時枠は停止中(2026-08-10 週次リフレッシュ判断)、スキップ", flush=True)
-        return
     item = load_unused_news()
     if item is None:
         print("[news-shorts] 未使用ニュースなし、スキップ", flush=True)
         return
 
     print(f"[news-shorts] 選定: 「{item['title']}」({item.get('source')})", flush=True)
-    script_text = gen_script(item)
+    mood = _read_json(MOOD_JSON)
+    verdict = editorial_meeting(item, mood)
+    route = verdict["route"]
+    print(f"[news-shorts] 編集会議: reaction_type={verdict['reaction_type']} "
+          f"intensity={verdict['intensity']} memo=「{verdict['memo']}」 → route={route}", flush=True)
+
+    if route == "skip":
+        print("[news-shorts] 反応なし、公開ゼロが正常な日として見送り", flush=True)
+        if not dry:
+            mark_used(item["link"])
+        return
+
+    if route == "diary":
+        if dry:
+            print("[news-shorts] --dry-run のためdiary記録はしない", flush=True)
+            return
+        post_diary_reaction(item, verdict)
+        mark_used(item["link"])
+        return
+
+    if route == "x_text":
+        text = gen_x_reaction(item, verdict["memo"], tone=verdict["tone"])
+        if not text:
+            print("[news-shorts] X反応の台本生成LLM失敗、見送り", flush=True)
+            return
+        print(f"[news-shorts] X反応: {text}", flush=True)
+        if dry:
+            print("[news-shorts] --dry-run のため投稿しない", flush=True)
+            return
+        post_text_reaction(text)
+        mark_used(item["link"])
+        return
+
+    # route == "shorts"
+    target_duration_s = duration_for_intensity(verdict["intensity"])
+    script_text = gen_script(item, tone=verdict["tone"], target_duration_s=target_duration_s)
     if not script_text:
         print("[news-shorts] 台本生成LLM失敗、スキップ(品質基準未達で見送り、在庫は消費しない)", flush=True)
         return
-    meta = gen_meta(item)
+    meta = gen_meta(item, memo=verdict["memo"])
     episode_no = len(_read_json(USED_LOG).get("used_links", [])) + 1
     ui = collect_ui_data(item, meta.get("selection_reason", "気になった"), episode_no)
     print(f"[news-shorts] 台本:\n{script_text}\n"
-          f"[news-shorts] hook: {meta['hook']} / title: {meta['yt_title']}\n"
+          f"[news-shorts] hook: {meta['hook']} / title: {meta['yt_title']} / 尺目標: {target_duration_s:.0f}秒\n"
           f"[news-shorts] 番組UI(実測): {ui['episode']} / {ui['selectionLog']} / "
           f"emotion={ui['emotion']} / CPU={ui['cpu']}% MEM={ui['mem']}GB / "
           f"UPTIME={ui['uptime']} / API={ui['apiCost']} / loneliness={ui['loneliness']}", flush=True)
@@ -440,7 +583,7 @@ def main() -> None:
         return
 
     with tempfile.TemporaryDirectory() as tmp:
-        duration = synth_audio(script_text, Path(tmp))
+        duration = synth_audio(script_text, Path(tmp), max_duration_s=target_duration_s)
     print(f"[news-shorts] TTS完了: {duration:.1f}s", flush=True)
     build_lipsync_and_rms()
 
@@ -509,6 +652,21 @@ def _selftest() -> None:
     assert _clean_title("普通の日本語見出し") == "普通の日本語見出し"
     assert set(ui) >= {"episode", "selectionLog", "sourceLine", "emotion", "cpu", "mem",
                        "uptime", "apiCost", "loneliness", "ticker"}
+
+    # 反応駆動ルーティング: classify_route の閾値境界(LLMは叩かない)
+    assert classify_route(10, "語りたい") == "shorts"
+    assert classify_route(7, "語りたい") == "shorts"          # 境界: 7以上はshorts
+    assert classify_route(6, "問いかけたい") == "x_text"
+    assert classify_route(4, "問いかけたい") == "x_text"       # 境界: 4〜6はx_text
+    assert classify_route(3, "深掘りたい") == "diary"
+    assert classify_route(1, "深掘りたい") == "diary"          # 境界: 1〜3はdiary
+    assert classify_route(0, "深掘りたい") == "skip"           # 境界: 0はskip
+    assert classify_route(9, "特に無し") == "skip"             # reaction_typeが最優先でskip
+    assert classify_route(8, "批判したい") == "shorts"
+    # 尺: intensityに応じて15〜60秒に収まる
+    assert duration_for_intensity(0) == 15.0
+    assert duration_for_intensity(7) == 42.0
+    assert duration_for_intensity(10) == 60.0
     print("auto_news_shorts self check OK", flush=True)
 
 
