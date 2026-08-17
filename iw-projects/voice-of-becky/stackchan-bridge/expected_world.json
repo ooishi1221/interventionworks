@@ -1,16 +1,3 @@
 {
-  "contexts": [
-    {
-      "scope": "yt_*",
-      "until": "2026-08-17",
-      "expect": "paused",
-      "note": "配信停止実験 incident 2026-08-05"
-    },
-    {
-      "scope": "x_*",
-      "until": "2026-08-17",
-      "expect": "paused",
-      "note": "配信停止実験 incident 2026-08-05"
-    }
-  ]
+  "contexts": []
 }

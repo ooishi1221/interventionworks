@@ -24,6 +24,10 @@ PLAN_JSON = Path.home() / ".stackchan" / "delivery_plan.json"
 # 朝/昼/夕の3窓(HH:MM)。countがこれ未満なら先頭から使う。
 WINDOWS = [("09:00", "11:00"), ("11:30", "13:30"), ("16:00", "19:00")]
 
+# ponytail: 調査フェーズ中の上限(2026-08-17〜、可視性制限の原因切り分け中は1本/日に絞る)。
+# 反応が読めるようになったら len(WINDOWS) に戻す(=実質クランプなし)。
+INVESTIGATION_PHASE_MAX_COUNT = 1
+
 
 def decide_count(mood: dict) -> int:
     """energy/curiosityの平均で0〜3本を決める。energy低い日は本当に0本になる。"""
@@ -66,7 +70,7 @@ def load_mood() -> dict:
 def main() -> None:
     dry = "--dry-run" in sys.argv
     mood = load_mood()
-    count = decide_count(mood)
+    count = min(decide_count(mood), INVESTIGATION_PHASE_MAX_COUNT)
     slots = build_slots(count)
     print(f"[delivery-planner] energy={mood.get('energy', '—')} curiosity={mood.get('curiosity', '—')} "
           f"→ 本数={count} 時刻={slots}", flush=True)
@@ -95,6 +99,11 @@ def _selftest() -> None:
         hhmm = t.split("T")[1][:5]
         assert lo <= hhmm < hi, (t, lo, hi)
     assert len(build_slots(99)) == len(WINDOWS)  # countは窓の数(3)でクランプされる
+
+    # 調査フェーズ中クランプ: energy/curiosity高くても1本を超えない
+    assert min(decide_count({"energy": 0.9, "curiosity": 0.9}), INVESTIGATION_PHASE_MAX_COUNT) == 1
+    # 0本の日は0本のまま(クランプで底上げしない)
+    assert min(decide_count({"energy": 0.2, "curiosity": 0.2}), INVESTIGATION_PHASE_MAX_COUNT) == 0
     print("delivery_planner self check OK", flush=True)
 
 
