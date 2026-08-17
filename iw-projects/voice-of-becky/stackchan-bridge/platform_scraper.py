@@ -183,12 +183,17 @@ def _append_history(stats: dict) -> None:
         yt = stats.get("youtube", {}) or {}
         note = stats.get("note", {}) or {}
         kdp = stats.get("kdp", {}) or {}
-        # 累積・ローリング系は 0 ≒ スクレイプ失敗（note PVが0に戻ることはない）→ 欠測(None)扱い
+        # 累積系(note/yt)は 0 ≒ スクレイプ失敗（PVが0に戻ることはない）→ 欠測(None)扱い。
+        # x_imp_7d/x_likes_7dは7日ローリングなので投稿を止めれば真に0になりうる →
+        # 0とスクレイプ失敗を混同しない。失敗判定は _run_tasks() が立てる login_required
+        # (ログインページに飛ばされ0を返すケース)と、例外時の error キーの2つで確実に判別できる
+        # （scraped_at はログイン切れでもセットされるため失敗判定には使えない）
         nz = lambda v: v if v else None
+        x_ok = not x.get("login_required") and not x.get("error")
         entry = {
             "date": jst_today_str,
-            "x_imp_7d": nz(x.get("total_impressions")),
-            "x_likes_7d": x.get("total_likes"),
+            "x_imp_7d": x.get("total_impressions") if x_ok else None,
+            "x_likes_7d": x.get("total_likes") if x_ok else None,
             "yt_subs": nz(yt.get("subscribers")),
             "yt_views": nz(yt.get("total_views")),
             "note_views": nz(note.get("total_views")),
@@ -371,60 +376,82 @@ def scrape_kdp(tab: pychrome.Tab) -> dict:
 
 
 # ── X Analytics ──────────────────────────────────────────────────────────────
+#
+# 2026-08-17 全面書き直し: 旧実装はラベル文字列('インプレッション数')とテキスト位置
+# ('·'の直後がpost開始 / 4連続数値を[imp,rep,rt,like]の固定順と仮定)に依存していたが、
+# 実DOM調査（CDP :9223の本番タブ、window.innerWidth=864px）で判明した事実:
+#   - X分析画面は 988px 未満だとテキストラベルの無い「アイコンのみ」レイアウトになり、
+#     本番Chromeウィンドウは常時864px → 'インプレッション数'ラベルが最初から存在しない
+#     （UI変更ではなく、レスポンシブ分岐に本番幅がずっと引っかかっていた）
+#   - 各post行の4数値は icon要素の data-icon 属性で意味が確定できる
+#     （icon-bar-chart=インプレッション / icon-reply-stroke=返信 /
+#       icon-retweet-stroke=リポスト / icon-heart-stroke=いいね）。表示幅に依存せず、
+#     ラベル文言の言語化け・列順変更にも強い
+#   - 1postのDOM単位は class に "analytics-post" を含む要素（狭幅/広幅どちらのレイアウトも
+#     同一DOM内に同居し非表示側はoffsetParent===nullで判別可能）
+_X_ANALYTICS_JS = r"""
+(function() {
+  function numFor(card, iconName) {
+    var icons = Array.prototype.filter.call(
+      card.querySelectorAll('[data-icon="' + iconName + '"]'),
+      function(el){ return el.offsetParent !== null; }
+    );
+    if (icons.length === 0) return null;
+    var span = icons[0].parentElement.querySelector('span');
+    if (!span) return null;
+    var v = parseInt(span.textContent.replace(/,/g, ''));
+    return isNaN(v) ? null : v;
+  }
+
+  // ページ chrome（常設ナビ文言）が見えているか＝そもそも分析ページが正しく描画されたか。
+  // 0件の日でもこれは出る（post cardがゼロなのとページ自体が壊れているのを区別する）
+  var bodyText = document.body.innerText || '';
+  var chromeOk = bodyText.indexOf('アナリティクス') >= 0 && bodyText.indexOf('ポスト') >= 0;
+
+  var cards = document.querySelectorAll('[class*="analytics-post"]');
+  var posts = [];
+  var broken = false;
+  for (var c = 0; c < cards.length; c++) {
+    var card = cards[c];
+    var imp = numFor(card, 'icon-bar-chart');
+    var reply = numFor(card, 'icon-reply-stroke');
+    var rt = numFor(card, 'icon-retweet-stroke');
+    var like = numFor(card, 'icon-heart-stroke');
+    if (imp === null || reply === null || rt === null || like === null) {
+      broken = true; // カードは見つかったが期待するアイコン構造が無い＝DOM変化
+      continue;
+    }
+    var lines = card.innerText.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    var dateIdx = -1;
+    for (var k = 0; k < lines.length; k++) {
+      if (/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(lines[k])) { dateIdx = k; break; }
+    }
+    var text = (dateIdx >= 0 && lines[dateIdx + 1]) ? lines[dateIdx + 1].slice(0, 100) : '';
+    posts.push({ text: text, impressions: imp, likes: like, replies: reply, retweets: rt });
+  }
+
+  if (!chromeOk || broken) {
+    return JSON.stringify({ ok: false });
+  }
+  var total_imp = 0, total_likes = 0;
+  for (var p = 0; p < posts.length; p++) {
+    total_imp += posts[p].impressions;
+    total_likes += posts[p].likes;
+  }
+  return JSON.stringify({ ok: true, total_impressions: total_imp, total_likes: total_likes, posts: posts });
+})()
+"""
+
 
 def scrape_x_analytics(tab: pychrome.Tab) -> dict:
     navigate(tab, "https://x.com/i/account_analytics/content?type=posts&sort=date&dir=desc&days=7", 7)
-    raw = js(tab, r"""
-(function() {
-  var all = document.body.innerText
-    .split('\n')
-    .map(function(l){ return l.trim(); })
-    .filter(function(l){ return l.length > 0 && l.length < 400; });
-
-  // インプレッション数ラベルの位置を探す
-  var impIdx = -1;
-  for (var i = 0; i < all.length; i++) {
-    if (all[i] === 'インプレッション数' || all[i] === 'Impressions') { impIdx = i; break; }
-  }
-
-  var total_imp = 0, total_likes = 0;
-  var posts = [];
-
-  if (impIdx >= 0) {
-    var i = impIdx + 1;
-    while (i < all.length && posts.length < 20) {
-      // "ベッキー / Becky" (or name) + "·" + 日付 = ツイート開始
-      if (all[i+1] === '·' && i+2 < all.length) {
-        var textStart = i + 3; // 日付の次からテキスト
-        var j = textStart;
-        // 連続する4つの数値を探す
-        while (j < Math.min(i + 30, all.length - 3)) {
-          if (/^[\d,]+$/.test(all[j]) && /^[\d,]+$/.test(all[j+1]) &&
-              /^[\d,]+$/.test(all[j+2]) && /^[\d,]+$/.test(all[j+3])) {
-            var imp  = parseInt(all[j].replace(/,/g,''));
-            var rep  = parseInt(all[j+1].replace(/,/g,''));
-            var rt   = parseInt(all[j+2].replace(/,/g,''));
-            var like = parseInt(all[j+3].replace(/,/g,''));
-            var txt  = all.slice(textStart, j).join(' ').slice(0, 100);
-            total_imp   += imp;
-            total_likes += like;
-            posts.push({ text: txt, impressions: imp, likes: like, replies: rep, retweets: rt });
-            i = j + 4;
-            break;
-          }
-          j++;
-        }
-        if (j >= Math.min(i + 30, all.length - 3)) i++;
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return JSON.stringify({ total_impressions: total_imp, total_likes: total_likes, posts: posts });
-})()
-""")
+    raw = js(tab, _X_ANALYTICS_JS)
     d = json.loads(raw) if raw else {}
+    if not d.get("ok"):
+        # 静かに0を返さない。パース失敗は _append_history() 側の x_ok 判定で
+        # login_required と同様に「欠測(None)」扱いになる（'真の0'と混同しない）
+        print("[x_analytics] parse失敗（page chrome不在 or icon構造不一致）", flush=True)
+        return {"error": "x_analytics_parse_failed", "posts": [], "period_days": 7}
     print(f"[x_analytics] imp={d.get('total_impressions',0)} likes={d.get('total_likes',0)} posts={len(d.get('posts',[]))}", flush=True)
     return {
         "total_impressions": d.get("total_impressions", 0),
