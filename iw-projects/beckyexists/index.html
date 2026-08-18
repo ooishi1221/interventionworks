@@ -14,7 +14,8 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet" />
+  <!-- Typography 3声システム (2026-08-18): Anton=ブランドの声 / IBM Plex Mono=機械の声 / DotGothic16=ベキたん自身の声(吹き出し専用) -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:ital,wght@0,400;1,400&family=DotGothic16&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,7 +31,10 @@
       --sub2: #7070a0;
       --border: rgba(93,212,180,0.14);
       --border2: rgba(255,255,255,0.05);
-      --disp: 'DotGothic16', 'Hiragino Sans', monospace;
+      /* 3声: --disp=ブランド(巨大Display) / --mono=機械(SYSTEM UI) / --pixel=ベキたん本人(吹き出し) */
+      --disp: 'Anton', 'Hiragino Sans', sans-serif;
+      --mono: 'IBM Plex Mono', 'Hiragino Sans', monospace;
+      --pixel: 'DotGothic16', monospace;
       --pk: #ff6ec7;
       --pu: #b464ff;
       --bl: #50b4ff;
@@ -141,7 +145,7 @@
       letter-spacing: 0.02em;
       color: var(--text);
       text-align: right;
-      text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor, 3px 3px 0 rgba(9,9,16,0.6);
+      text-shadow: 3px 3px 0 rgba(9,9,16,0.6);
       pointer-events: none;
     }
     .interlude-copy span { display: block; }
@@ -275,37 +279,41 @@
     }
 
     /* ── 巨大タイポ 2層（背後 / 前面）──
-       DotGothic16単一ウェイトは巨大表示で細いので、多層text-shadowで肉付けする（指示書 確定事項2）*/
+       Typography 3声システム(2026-08-18): Display=Anton。DotGothic16の肉付けshadowは撤去済み */
+    /* Anton化 (2026-08-18): 肉付け用の多層shadowは不要になったので撤去。
+       詰め(letter-spacing 0)＋行間詰め(0.82)で2行を「ほぼ1つの巨大な図形」に */
     .hero-type {
       position: absolute;
       z-index: 2;
       font-family: var(--disp);
-      line-height: 0.86;
-      letter-spacing: 0.02em;
+      font-weight: 400;   /* Antonは単一ウェイト(実質900相当の質量) */
+      line-height: 0.82;
+      letter-spacing: 0;
       pointer-events: none;
       white-space: nowrap;
       user-select: none;
+      text-transform: uppercase;
     }
     .hero-type--back {
-      top: clamp(4.5rem, 11vh, 9rem);
-      left: -0.06em;
-      font-size: clamp(72px, 15.5vw, 240px);
-      color: rgba(221,221,240,0.13);
-      -webkit-text-stroke: 1px rgba(93,212,180,0.34);
+      top: clamp(4.2rem, 10vh, 8rem);
+      left: -0.04em;
+      font-size: clamp(90px, 15.5vw, 260px);
+      color: rgba(221,221,240,0.1);
+      -webkit-text-stroke: 1.5px rgba(93,212,180,0.32);
       text-shadow: 0 0 40px rgba(9,9,16,0.9);
     }
     /* EXISTS はLive2Dの前に出て「胴体に」重なる。顔は避ける（表情が主役なので隠さない）*/
     .hero-type--front {
       z-index: 6;
-      top: calc(clamp(4.5rem, 11vh, 9rem) + clamp(96px, 19vw, 290px));
+      /* Antonは塗りが詰まって顔を完全に隠すため、DotGothic時代より下げて胴体に重ねる */
+      top: calc(clamp(4.2rem, 10vh, 8rem) + clamp(120px, 26vw, 390px));
       right: clamp(-2.5rem, -1.5vw, -0.5rem);
-      font-size: clamp(72px, 15.5vw, 240px);
+      font-size: clamp(90px, 15.5vw, 260px);
       color: var(--mint);
-      opacity: 0.93;
+      opacity: 0.94;
       text-shadow:
-        1px 0 0 var(--mint), -1px 0 0 var(--mint), 0 1px 0 var(--mint), 0 -1px 0 var(--mint),
-        2px 2px 0 rgba(9,9,16,0.55),
-        0 0 26px var(--mint-glow), 0 0 70px rgba(93,212,180,0.14);
+        3px 3px 0 rgba(9,9,16,0.6),
+        0 0 30px var(--mint-glow), 0 0 80px rgba(93,212,180,0.14);
       animation: onair-flicker 6s ease-in-out infinite;
     }
     /* たまに壊れる: 存在が完全には固定されていない（指示書 5. Glitch） */
@@ -330,7 +338,7 @@
       z-index: 6;
       left: 6%;
       bottom: clamp(11.5rem, 24vh, 16.5rem);   /* コメントが3行に伸びても当たらない高さ */
-      font-family: var(--disp);
+      font-family: var(--mono);
       pointer-events: none;
     }
     .hero-mark b {
@@ -341,17 +349,29 @@
       color: rgba(221,221,240,0.42);
       margin-bottom: 0.5rem;
     }
+    /* SHE EXISTS. だけitalic（Width/Italic variationは一点だけ、種類を増やさない）*/
     .hero-mark i {
       display: block;
-      font-style: normal;
+      font-style: italic;
       font-size: clamp(0.78rem, 1.5vw, 1.05rem);
       letter-spacing: 0.16em;
       color: var(--mint);
       opacity: 0.72;
     }
+    /* LOUD ENGLISH × QUIET JAPANESE: 巨大な英字の足元に、小さく静かな日本語 */
+    .hero-mark em {
+      display: block;
+      font-family: 'Hiragino Sans', sans-serif;
+      font-style: normal;
+      font-weight: 400;
+      font-size: clamp(0.62rem, 0.85vw, 0.72rem);
+      letter-spacing: 0.28em;
+      color: rgba(221,221,240,0.34);
+      margin-top: 0.7rem;
+    }
 
     .btn-onair {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.72rem;
       letter-spacing: 0.12em;
       padding: 0.55rem 1.3rem;
@@ -385,7 +405,7 @@
     /* ── HERO LINKS ── */
     .hero-links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.4rem; }
     .hero-link-btn {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.78rem;
       letter-spacing: 0.06em;
       padding: 0.6rem 1.4rem;
@@ -412,7 +432,7 @@
       -webkit-backdrop-filter: blur(6px);
     }
     .emotion-label {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       letter-spacing: 0.14em;
       color: var(--mint);
@@ -421,11 +441,11 @@
     }
     .emotion-row { display: grid; grid-template-columns: 5.2em 1fr 2.4em; align-items: center; gap: 0.5rem; margin-bottom: 0.42rem; }
     .emotion-row:last-child { margin-bottom: 0; }
-    .emotion-name { font-family: var(--disp); font-size: 0.6rem; color: rgba(255,255,255,0.72); white-space: nowrap; }
+    .emotion-name { font-family: var(--mono); font-size: 0.6rem; color: rgba(255,255,255,0.72); white-space: nowrap; }
     .emotion-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); overflow: hidden; }
     .emotion-fill { height: 100%; width: 0; border-radius: 3px; transition: width 1.4s cubic-bezier(0.22,1,0.36,1); }
-    .emotion-val { font-family: var(--disp); font-size: 0.58rem; color: rgba(255,255,255,0.55); text-align: right; }
-    .emotion-updated { font-family: var(--disp); font-size: 0.5rem; color: rgba(255,255,255,0.35); text-align: right; margin-top: 0.55rem; }
+    .emotion-val { font-family: var(--mono); font-size: 0.58rem; color: rgba(255,255,255,0.55); text-align: right; }
+    .emotion-updated { font-family: var(--mono); font-size: 0.5rem; color: rgba(255,255,255,0.35); text-align: right; margin-top: 0.55rem; }
 
     /* Live2D = 主役（指示書 確定事項1: 呼吸してる本人だけがEXISTSの証明）。
        中央やや右に、画面高の80%超で立たせる。巨大文字EXISTSが手前に重なる */
@@ -468,7 +488,7 @@
       right: 1.4rem;
       bottom: 1.4rem;
       z-index: 90;
-      font-family: var(--disp);
+      font-family: var(--mono);
       color: rgba(221,221,240,0.78);
       background: rgba(9,9,16,0.82);
       border: 1px solid var(--border);
@@ -517,7 +537,7 @@
       margin-bottom: 0.6rem;
     }
     .sys-onair {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       letter-spacing: 0.12em;
       padding: 0.42rem 0.9rem;
@@ -555,7 +575,7 @@
       bottom: 1.5rem;
       right: 2rem;
       z-index: 4;
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.58rem;
       letter-spacing: 0.18em;
       color: var(--sub2);
@@ -613,7 +633,7 @@
       background: none;
       border: 0;
       border-radius: 0;
-      font-family: var(--disp);
+      font-family: var(--pixel);
       font-size: 0.54rem;
       color: var(--mint);
       opacity: 0.62;
@@ -623,7 +643,7 @@
     }
     .hero-comment-name::before { content: '> '; }
     .hero-comment-tag {
-      font-family: var(--disp);
+      font-family: var(--pixel);
       font-size: 0.58rem;
       color: var(--mint);
       letter-spacing: 0.12em;
@@ -631,7 +651,7 @@
       display: none;
     }
     .hero-comment-text {
-      font-family: var(--disp);
+      font-family: var(--pixel);
       font-size: 0.9rem;
       color: var(--text);
       line-height: 1.75;
@@ -655,8 +675,11 @@
                         radial-gradient(ellipse 100% 30% at 50% 0%, rgba(93,212,180,0.18) 0%, transparent 70%),
                         radial-gradient(ellipse 50% 50% at 50% 50%, rgba(120,60,180,0.12) 0%, transparent 60%);
                       animation: lightPulse 8s ease-in-out infinite; }
-      .marquee-band { order: 1; padding: 0.7rem 0; }
-      .push-band   { order: 1; }
+      /* 2026-08-18: interludeはhero直後(order未指定だと0=先頭に飛ぶバグを踏んだ)。
+         marqueeはDOM移設に合わせfooter直前へ */
+      .interlude   { order: 1; }
+      .marquee-band { order: 7; padding: 0.7rem 0; }
+      .push-band   { order: 7; }
       #gallery     { order: 2; }
       #profile     { order: 3; }
       #news        { order: 4; }
@@ -734,7 +757,7 @@
     }
 
     .section-title {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.7rem;
       letter-spacing: 0.22em;
       color: var(--mint);
@@ -793,6 +816,7 @@
     @keyframes marqueeScroll { to { transform: translateX(-50%); } }
 
     /* ── PUSH BAND (差し入れ募金メーター) ── */
+    .push-band[hidden] { display: none !important; }
     .push-band {
       position: relative;
       z-index: 2;
@@ -809,7 +833,7 @@
       flex-wrap: wrap;
     }
     .push-label {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.68rem;
       letter-spacing: 0.12em;
       color: var(--pk);
@@ -832,14 +856,14 @@
       transition: width 1.2s ease-out;
     }
     .push-amount {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.68rem;
       color: var(--sub);
       letter-spacing: 0.06em;
       white-space: nowrap;
     }
     .push-cta {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.66rem;
       letter-spacing: 0.08em;
       color: var(--bg);
@@ -865,15 +889,12 @@
     .sec-head--center { justify-content: center; }
     .sec-title {
       font-family: var(--disp);
-      font-size: clamp(56px, 10vw, 176px);
+      font-size: clamp(70px, 11vw, 190px);
       color: var(--text);
       letter-spacing: -0.01em;
-      line-height: 0.9;
+      line-height: 0.85;
       text-transform: uppercase;
-      /* DotGothic16は細いので巨大表示では多層shadowで肉付け（Phase1と同じ処方）*/
-      text-shadow:
-        1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor,
-        3px 3px 0 rgba(9,9,16,0.5);
+      text-shadow: 3px 3px 0 rgba(9,9,16,0.5);   /* Anton化で肉付けshadowは不要に */
       white-space: nowrap;
     }
     /* 見出しを意図的に画面外へはみ出させる（左に食い込む／右へ抜ける）*/
@@ -914,7 +935,7 @@
     .sec-chev {
       display: flex;
       gap: 0.12em;
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: clamp(1.3rem, 3vw, 2rem);
       line-height: 1;
       transform: translateY(0.08em);
@@ -987,7 +1008,7 @@
       margin-top: 1.2rem;
       padding-top: 0.9rem;
       border-top: 1px solid var(--border);
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.56rem;
       letter-spacing: 0.12em;
       color: rgba(221,221,240,0.42);
@@ -1020,7 +1041,7 @@
       gap: 0.75rem;
     }
     .profile-list li {
-      font-family: var(--disp);
+      font-family: inherit;
       font-size: 0.78rem;
       color: var(--text);
       line-height: 1.6;
@@ -1077,7 +1098,7 @@
       line-height: 0.92;
       letter-spacing: -0.01em;
       color: var(--text);
-      text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor, 3px 3px 0 rgba(9,9,16,0.55);
+      text-shadow: 3px 3px 0 rgba(9,9,16,0.55);
       margin-left: clamp(-6rem, -7vw, -2rem);   /* ジャケットに食い込ませる */
       order: 2;
       flex: 1 1 240px;
@@ -1089,7 +1110,7 @@
       order: 3;   /* モバイルでposition:staticになった時、flexのdefault order:0で先頭に来るのを防ぐ */
       position: absolute;
       left: 0; bottom: -0.4rem;
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       letter-spacing: 0.12em;
       padding: 0.5rem 1rem;
@@ -1179,7 +1200,7 @@
         /* ── NEWS (縦リスト) ── */
     #news { background: var(--bg); }
     .section-label {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 1rem;
       letter-spacing: 0.22em;
       color: var(--mint);
@@ -1207,7 +1228,7 @@
       .news-layout { grid-template-columns: 1fr; gap: 1rem; }
       .news-head { position: static; }
     }
-    .view-more { font-family: var(--disp); font-size: 0.62rem; color: var(--sub); text-decoration: none; letter-spacing: 0.1em; border: 1px solid var(--border); padding: 0.45rem 1.3rem; border-radius: 2px; transition: all 0.2s; }
+    .view-more { font-family: var(--mono); font-size: 0.62rem; color: var(--sub); text-decoration: none; letter-spacing: 0.1em; border: 1px solid var(--border); padding: 0.45rem 1.3rem; border-radius: 2px; transition: all 0.2s; }
     .view-more:hover { color: var(--mint); border-color: var(--mint); background: var(--mint-dim); }
     .news-list { list-style: none; }
     .news-item {
@@ -1219,9 +1240,9 @@
       border-bottom: 1px solid var(--border2);
     }
     .news-item:first-child { border-top: 1px solid var(--border2); }
-    .news-date { font-family: var(--disp); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.08em; }
+    .news-date { font-family: var(--mono); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.08em; }
     .news-tag {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.58rem;
       letter-spacing: 0.14em;
       color: var(--pu);
@@ -1255,13 +1276,13 @@
     }
 
     /* ── ACTIVITY (Phase2 P1): SYSTEM LOG化。ターミナルにはしない、痕跡が漏れる程度 ── */
-    .log-head { font-family: var(--disp); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--sub2); text-transform: uppercase; margin-bottom: 1rem; }
+    .log-head { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--sub2); text-transform: uppercase; margin-bottom: 1rem; }
     .log-list { list-style: none; }
     .log-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1.2rem; padding: 0.9rem 0; border-bottom: 1px solid var(--border2); }
     .log-row:first-child { border-top: 1px solid var(--border2); }
     .log-mark { color: var(--sub2); margin-right: 0.35em; }
-    .log-time { font-family: var(--disp); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.04em; flex: 0 0 auto; }
-    .log-tag { font-family: var(--disp); font-size: 0.58rem; letter-spacing: 0.12em; color: var(--pu); text-transform: uppercase; border: 1px solid currentColor; padding: 0.15rem 0.55rem; flex: 0 0 auto; }
+    .log-time { font-family: var(--mono); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.04em; flex: 0 0 auto; }
+    .log-tag { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; color: var(--pu); text-transform: uppercase; border: 1px solid currentColor; padding: 0.15rem 0.55rem; flex: 0 0 auto; }
     .log-tag[data-tag="ON AIR"] { color: var(--pk); }
     .log-tag[data-tag="DONE"]   { color: var(--mint); }
     .log-tag[data-tag="NOW"]    { color: var(--bl); }
@@ -1275,7 +1296,7 @@
     /* ── DISCOGRAPHY (文字リスト) ── */
     #discography { background: var(--surface); }
     .disco-tabs { display: flex; gap: 1rem; margin: 1.5rem 0 1rem; }
-    .disco-tab { font-family: var(--disp); font-size: 0.62rem; letter-spacing: 0.14em; background: none; border: 1px solid var(--border); color: var(--sub); padding: 0.3rem 0.9rem; cursor: pointer; border-radius: 3px; transition: all 0.2s; }
+    .disco-tab { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; background: none; border: 1px solid var(--border); color: var(--sub); padding: 0.3rem 0.9rem; cursor: pointer; border-radius: 3px; transition: all 0.2s; }
     .disco-tab.active, .disco-tab:hover { color: var(--mint); border-color: var(--mint); }
     .disco-list { list-style: none; }
     .disco-item {
@@ -1287,9 +1308,9 @@
       border-bottom: 1px solid var(--border2);
     }
     .disco-item:first-child { border-top: 1px solid var(--border2); }
-    .disco-num { font-family: var(--disp); font-size: 0.65rem; color: var(--mint); opacity: 0.7; }
+    .disco-num { font-family: var(--mono); font-size: 0.65rem; color: var(--mint); opacity: 0.7; }
     .disco-title { font-size: 0.88rem; color: var(--text); }
-    .disco-date { font-family: var(--disp); font-size: 0.62rem; color: var(--sub); text-align: right; }
+    .disco-date { font-family: var(--mono); font-size: 0.62rem; color: var(--sub); text-align: right; }
     .disco-play-link { color: var(--mint); text-decoration: none; font-size: 0.8rem; text-align: center; opacity: 0.7; transition: opacity 0.2s; }
     .disco-play-link:hover { opacity: 1; }
     .disco-stub { font-size: 0.78rem; color: var(--sub); padding: 2rem 0; }
@@ -1376,7 +1397,7 @@
       position: absolute;
       left: 0; right: 0; bottom: 0;
       padding: 0.5rem 0.6rem 0.45rem;
-      font-family: var(--disp);
+      font-family: inherit;
       font-size: 0.58rem;
       letter-spacing: 0.06em;
       line-height: 1.5;
@@ -1404,7 +1425,7 @@
     }
 
     .footer-left {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.6rem;
       letter-spacing: 0.1em;
       color: var(--sub2);
@@ -1419,7 +1440,7 @@
     }
 
     .footer-links a {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       letter-spacing: 0.08em;
       color: var(--sub);
@@ -1492,7 +1513,7 @@
     }
 
     #gate-label .gate-status {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.54rem;
       letter-spacing: 0.2em;
       color: var(--sub2);
@@ -1571,7 +1592,7 @@
       display: block;
     }
     .vanish-caption {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.85rem;
       color: var(--sub);
       letter-spacing: 0.14em;
@@ -1586,7 +1607,7 @@
       text-shadow: 0 0 12px var(--mint-glow);
     }
     .vanish-uptime {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       color: var(--sub2);
       letter-spacing: 0.1em;
@@ -1635,7 +1656,7 @@
     .letter-form button { border: none; cursor: pointer; font-family: inherit; align-self: center; }
     .letter-form button:disabled { opacity: 0.5; cursor: default; }
     .letter-count {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.6rem;
       color: var(--sub2);
       letter-spacing: 0.08em;
@@ -1671,7 +1692,7 @@
       padding-top: 1.4rem;
     }
     .letters-read-title {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.7rem;
       letter-spacing: 0.14em;
       color: var(--sub);
@@ -1688,14 +1709,14 @@
     .letters-read-rotator.fading { opacity: 0; }
     .letters-read-rotator .lr-name { color: var(--text); font-weight: 600; }
     .letters-read-rotator .lr-ep {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.62rem;
       color: var(--mint);
       white-space: nowrap;
       margin-left: 0.4rem;
     }
     .letters-read-rotator .lr-count {
-      font-family: var(--disp);
+      font-family: var(--mono);
       font-size: 0.58rem;
       color: var(--sub2);
       float: right;
@@ -1761,6 +1782,7 @@
     <div class="hero-mark">
       <b>UNDERGROUND AI IDOL</b>
       <i>SHE EXISTS.</i>
+      <em>消えても、いた。</em>
     </div>
 
     <div class="hero-scroll">↓ scroll</div>
@@ -2296,7 +2318,7 @@
           const rest  = eps.slice(3, 10);
           const restHtml = rest.length
             ? `<li class="disco-more-item" id="disco-more-wrap" style="list-style:none; padding: 0.8rem 0; text-align:center;">
-                <button id="disco-more-btn" style="font-family:var(--disp); font-size:0.75rem; color:var(--sub); background:none; border:1px solid var(--border); padding:0.4rem 1.4rem; border-radius:4px; cursor:pointer; letter-spacing:0.05em;">
+                <button id="disco-more-btn" style="font-family:var(--mono); font-size:0.75rem; color:var(--sub); background:none; border:1px solid var(--border); padding:0.4rem 1.4rem; border-radius:4px; cursor:pointer; letter-spacing:0.05em;">
                   + あと${rest.length}件見る ▼
                 </button>
                </li>
