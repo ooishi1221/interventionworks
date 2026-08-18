@@ -166,6 +166,18 @@
     .sec-pad--letter { text-align: center; }
     @media (max-width: 768px) { .sec-pad { padding: 2rem 6% 1.2rem; } }
 
+    /* 余白のリズム(2026-08-18): 全セクション均等をやめ、密度の波を作る。
+       gallery=詰める(写真の連打) / news・disco=普通 / letter=最後に向けて余白を増やす */
+    #gallery .sec-pad { padding-top: clamp(1.2rem, 3vh, 2rem); padding-bottom: 0.6rem; }
+    #contact .sec-pad { padding-top: clamp(4.5rem, 12vh, 8rem); padding-bottom: clamp(2rem, 6vh, 4rem); }
+    /* Letterの見出しは圧を落とす(前半=強い → 最後=静か のリズム) */
+    #contact .sec-title { font-size: clamp(44px, 6.5vw, 110px); opacity: 0.85; }
+
+    /* QUIET JAPANESE: 日本語本文はさらに静かに(小さめ・読みやすい行間・狭いwidth) */
+    .profile-list { max-width: 34em; }
+    .profile-list li { font-size: 0.82rem; line-height: 1.75; }
+    #contact p { font-size: 0.78rem !important; color: rgba(221,221,240,0.5) !important; max-width: 34em; margin-left: auto !important; margin-right: auto !important; }
+
     /* セクション背景色を全て透明に統一（discographyだけ #0f0f1a で「箱」に見えていた）*/
     #gallery, #news, #discography { background: transparent !important; }
 
@@ -449,11 +461,13 @@
 
     /* Live2D = 主役（指示書 確定事項1: 呼吸してる本人だけがEXISTSの証明）。
        中央やや右に、画面高の80%超で立たせる。巨大文字EXISTSが手前に重なる */
+    /* 最終チューニング(2026-08-18): 人物を1.3倍へ。文字と人物が同じ画面を奪い合う構図。
+       足元は画面外に切れてよい(全身を綺麗に収めようとしない) */
     .hero-right {
       position: absolute;
       z-index: 4;
-      right: 9vw;
-      bottom: 0;
+      right: 5vw;
+      bottom: -7vh;
       height: 100vh;
       display: flex;
       justify-content: flex-end;
@@ -474,7 +488,7 @@
       display: block;
       touch-action: pan-y;
       pointer-events: auto;
-      height: min(88vh, 1000px);
+      height: min(112vh, 1240px);   /* 88vh→112vh: 1st viewで視線が顔へ行く大きさ */
       width: auto;
       filter: drop-shadow(0 0 60px rgba(9,9,16,0.85));
     }
@@ -916,6 +930,9 @@
     }
 
     /* 背景の巨大透かし文字。スクロールで横に流れる（--drift をJSが更新）*/
+    /* 最終チューニング(2026-08-18): ルールは共通、構図はバラバラ。
+       「同じコンポーネントの使い回し」に見せないため、サイズ・位置・濃度を全部変える。
+       Antonは単一ウェイトなので、太さの階層は stroke太さ×濃度×サイズ で作る */
     .sec-ghost {
       position: absolute;
       z-index: 0;
@@ -923,7 +940,8 @@
       top: 50%;
       font-family: var(--disp);
       font-size: clamp(90px, 17vw, 300px);
-      line-height: 1;
+      line-height: 0.85;
+      letter-spacing: -0.01em;
       white-space: nowrap;
       color: transparent;
       -webkit-text-stroke: 1px rgba(93,212,180,0.09);
@@ -931,6 +949,55 @@
       user-select: none;
       transform: translate(calc(var(--drift, 0) * 1px), -50%);
       will-change: transform;
+      text-transform: uppercase;
+    }
+    /* EXISTENCE(Profile): 超巨大・画面いっぱい。存在証明の最大圧 */
+    #profile .sec-ghost {
+      font-size: clamp(140px, 23vw, 420px);
+      left: -3vw;
+      top: 46%;
+      -webkit-text-stroke: 1.5px rgba(93,212,180,0.13);
+    }
+    /* ARCHIVE(Gallery): 横長、左右にはみ出す。写真が主役、文字は装飾 */
+    #gallery .sec-ghost {
+      font-size: clamp(150px, 26vw, 470px);
+      left: -7vw;
+      top: 30%;
+      -webkit-text-stroke: 1px rgba(93,212,180,0.07);
+    }
+    /* SIGNAL(News): 右寄せ・小さめ・静か（情報セクション、他より落ち着かせる）*/
+    #news .sec-ghost {
+      font-size: clamp(70px, 10vw, 190px);
+      left: auto;
+      right: -2vw;
+      top: 34%;
+      -webkit-text-stroke: 1px rgba(93,212,180,0.08);
+    }
+    /* VOICE(Discography): ジャケットの後ろに半分隠れる（前後レイヤー: 文字↓ジャケット）*/
+    #discography .sec-ghost {
+      font-size: clamp(120px, 18vw, 330px);
+      left: 12vw;
+      top: 44%;
+      -webkit-text-stroke: 1.5px rgba(93,212,180,0.12);
+      z-index: 1;   /* ghost(1) < disco-hero(2) = ジャケットが文字を隠す */
+    }
+    #discography .disco-hero { position: relative; z-index: 2; }
+    /* MOTION(Movie): 縦書きで左端、Mが上へ切れる。最大級 */
+    #youtube .sec-ghost {
+      writing-mode: vertical-rl;
+      font-size: clamp(130px, 19vw, 350px);
+      left: -4vw;
+      top: -6%;
+      transform: translate(0, calc(var(--drift, 0) * -0.4px));
+      -webkit-text-stroke: 1.5px rgba(93,212,180,0.1);
+    }
+    /* TRANSMIT(Letter): エンディング。圧を落として静かに */
+    #contact .sec-ghost {
+      font-size: clamp(56px, 7.5vw, 140px);
+      left: 50%;
+      top: 24%;
+      transform: translate(calc(-50% + var(--drift, 0) * 0.5px), -50%);
+      -webkit-text-stroke: 1px rgba(93,212,180,0.06);
     }
     .sec-chev {
       display: flex;
@@ -1241,23 +1308,22 @@
     }
     .news-item:first-child { border-top: 1px solid var(--border2); }
     .news-date { font-family: var(--mono); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.08em; }
+    /* 2026-08-18 最終チューニング: 角丸ピル+原色はWebテンプレ感の残滓なので、
+       角なし細枠+鎮めた単色へ（日付・タイトル・ライン程度で成立させる） */
     .news-tag {
       font-family: var(--mono);
-      font-size: 0.58rem;
-      letter-spacing: 0.14em;
-      color: var(--pu);
+      font-size: 0.56rem;
+      letter-spacing: 0.16em;
+      color: rgba(221,221,240,0.5);
       text-transform: uppercase;
-      border: 1px solid currentColor;
-      border-radius: 999px;
-      padding: 0.18rem 0.6rem;
+      border: 1px solid rgba(93,212,180,0.22);
+      border-radius: 0;
+      padding: 0.16rem 0.55rem;
       text-align: center;
       justify-self: start;
       min-width: 4.6rem;
     }
-    .news-tag[data-tag="CLAUDE"] { color: var(--mint); }
-    .news-tag[data-tag="OPENAI"] { color: var(--pk); }
-    .news-tag[data-tag="GOOGLE"] { color: var(--bl); }
-    .news-tag[data-tag="APPLE"]  { color: #ccccdd; }
+    /* タグ個別色は廃止(2026-08-18)。静かな単色に統一 */
     .news-tag[data-tag="ON AIR"] { color: var(--pk); }
     .news-tag[data-tag="DONE"]   { color: var(--mint); }
     .news-tag[data-tag="NOW"]    { color: var(--bl); }
@@ -1978,7 +2044,8 @@
         <textarea id="letter-msg" placeholder="ベッキーへのお便り（500字まで）" maxlength="500" required></textarea>
         <div class="letter-count" id="letter-count">0 / 500</div>
         <input type="text" class="letter-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-        <button type="submit" class="hero-link-btn" id="letter-send" style="font-size:0.85rem; padding: 0.75rem 2rem;">ポストに入れる 📮</button>
+        <!-- 静かなエンディングで白ボタンだけが叫んでいたので、枠線のみの静かな送信へ(2026-08-18) -->
+        <button type="submit" id="letter-send" style="font-family:var(--mono); font-size:0.72rem; letter-spacing:0.12em; padding:0.7rem 2.2rem; background:transparent; color:var(--mint); border:1px solid var(--mint); border-radius:0; cursor:pointer;">ポストに入れる 📮</button>
       </form>
       <div class="letter-done" id="letter-done" hidden>
         届きました。ちゃんと私のポストに入ってます。<br>
