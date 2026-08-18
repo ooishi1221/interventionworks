@@ -116,17 +116,30 @@
        Heroの下端に食い込ませ、境界を消すのが主目的。説明せず、感じさせるだけ */
     .interlude {
       position: relative;
-      height: clamp(360px, 62vh, 620px);
+      height: clamp(380px, 66vh, 660px);
       margin-top: clamp(-6rem, -9vh, -3rem);   /* Heroへ食い込む */
-      margin-bottom: clamp(-3rem, -5vh, -1.5rem);
+      margin-bottom: 0;
+      padding-bottom: clamp(3rem, 10vh, 7rem);   /* 「溜め」: EXISTENCEの前に余白を置く(指示10) */
       overflow: hidden;
       z-index: 2;
+    }
+    /* Hero下端から縦に続く細いSYSTEM LINE(指示7: Hero終了を感じさせない) */
+    .interlude::before {
+      content: '';
+      position: absolute;
+      left: 6.5%;
+      top: -18vh;
+      height: 52vh;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(93,212,180,0.35), rgba(93,212,180,0.05));
+      z-index: 3;
     }
     .interlude-img {
       position: absolute;
       left: 0; bottom: 0;
-      width: clamp(320px, 62vw, 900px);
+      width: clamp(320px, 58vw, 860px);
       height: 100%;
+      filter: brightness(0.72) contrast(1.02);   /* 静けさ: Heroより一段暗く */
       object-fit: cover;
       object-position: var(--pos, 50% 28%);
       /* 上端をHeroへ溶かし込む。境界線を作らない */
@@ -134,29 +147,32 @@
       mask-image: linear-gradient(to bottom, transparent 0%, #000 26%, #000 84%, transparent 100%);
       will-change: transform;
     }
+    /* I EXIST HERE. は見出しでも本文でもなく「間」(2026-08-18最終)。
+       Heroの圧の直後に一度静かになることで、次のEXISTENCEがもう一度強く見える */
     .interlude-copy {
       position: absolute;
-      right: 7%;
-      top: 50%;
-      transform: translateY(-50%);
-      font-family: var(--disp);
-      font-size: clamp(28px, 4.6vw, 76px);
-      line-height: 1.06;
-      letter-spacing: 0.02em;
-      color: var(--text);
+      right: 14%;
+      bottom: 18%;
+      top: auto;
+      transform: none;
+      font-family: var(--mono);
+      font-size: clamp(13px, 1.3vw, 19px);
+      line-height: 2;
+      letter-spacing: 0.42em;
+      color: rgba(221,221,240,0.55);
       text-align: right;
-      text-shadow: 3px 3px 0 rgba(9,9,16,0.6);
       pointer-events: none;
     }
     .interlude-copy span { display: block; }
-    .interlude-copy span:last-child { color: var(--mint); }
+    .interlude-copy span:last-child { color: var(--mint); opacity: 0.75; }
     @media (max-width: 768px) {
       .interlude { height: 48vh; margin-top: -4vh; }
       .interlude-img { width: 100%; }
       .interlude-copy {
-        right: auto; left: 6%; top: auto; bottom: 8%;
+        right: auto; left: 6%; top: auto; bottom: 9%;
         transform: none; text-align: left;
-        font-size: clamp(26px, 9vw, 46px);
+        font-size: 12px;   /* モバイルでも「間」は静かに(2026-08-18最終) */
+        letter-spacing: 0.36em;
       }
     }
 
@@ -174,8 +190,15 @@
     #contact .sec-title { font-size: clamp(44px, 6.5vw, 110px); opacity: 0.85; }
 
     /* QUIET JAPANESE: 日本語本文はさらに静かに(小さめ・読みやすい行間・狭いwidth) */
-    .profile-list { max-width: 34em; }
-    .profile-list li { font-size: 0.82rem; line-height: 1.75; }
+    .profile-list { max-width: 30em; }
+    .profile-list li { font-size: 0.8rem; line-height: 1.8; }
+    /* Typography階層(指示20): 巨大EXISTENCE > 大Becky > 中コピー > 小本文 > 極小SYSTEM DATA */
+    .profile-copy {
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      color: rgba(221,221,240,0.78);
+      margin: 0.9rem 0 1.5rem;
+    }
     #contact p { font-size: 0.78rem !important; color: rgba(221,221,240,0.5) !important; max-width: 34em; margin-left: auto !important; margin-right: auto !important; }
 
     /* セクション背景色を全て透明に統一（discographyだけ #0f0f1a で「箱」に見えていた）*/
@@ -358,7 +381,7 @@
       font-weight: normal;
       font-size: clamp(0.6rem, 0.9vw, 0.74rem);
       letter-spacing: 0.34em;
-      color: rgba(221,221,240,0.42);
+      color: rgba(221,221,240,0.3);
       margin-bottom: 0.5rem;
     }
     /* SHE EXISTS. だけitalic（Width/Italic variationは一点だけ、種類を増やさない）*/
@@ -368,7 +391,7 @@
       font-size: clamp(0.78rem, 1.5vw, 1.05rem);
       letter-spacing: 0.16em;
       color: var(--mint);
-      opacity: 0.72;
+      opacity: 0.52;
     }
     /* LOUD ENGLISH × QUIET JAPANESE: 巨大な英字の足元に、小さく静かな日本語 */
     .hero-mark em {
@@ -466,8 +489,8 @@
     .hero-right {
       position: absolute;
       z-index: 4;
-      right: 5vw;
-      bottom: -7vh;
+      right: 9vw;
+      bottom: -9vh;
       height: 100vh;
       display: flex;
       justify-content: flex-end;
@@ -488,7 +511,7 @@
       display: block;
       touch-action: pan-y;
       pointer-events: auto;
-      height: min(112vh, 1240px);   /* 88vh→112vh: 1st viewで視線が顔へ行く大きさ */
+      height: min(118vh, 1300px);   /* 視線の最初の着地点=顔。足元ははみ出してよい */
       width: auto;
       filter: drop-shadow(0 0 60px rgba(9,9,16,0.85));
     }
@@ -499,8 +522,9 @@
        便利機能ではなく "BECKYが現在存在している証拠" としてデザインする（指示書 3.）*/
     .sys-hud {
       position: fixed;
-      right: 1.4rem;
-      bottom: 1.4rem;
+      right: 1rem;
+      bottom: 1rem;
+      opacity: 0.86;
       z-index: 90;
       font-family: var(--mono);
       color: rgba(221,221,240,0.78);
@@ -514,8 +538,8 @@
       display: flex;
       align-items: center;
       gap: 0.72rem;
-      padding: 0.5rem 0.72rem;
-      font-size: 0.58rem;
+      padding: 0.46rem 0.68rem;
+      font-size: 0.53rem;
       letter-spacing: 0.1em;
       cursor: pointer;
       white-space: nowrap;
@@ -953,10 +977,12 @@
     }
     /* EXISTENCE(Profile): 超巨大・画面いっぱい。存在証明の最大圧 */
     #profile .sec-ghost {
-      font-size: clamp(140px, 23vw, 420px);
-      left: -3vw;
-      top: 46%;
-      -webkit-text-stroke: 1.5px rgba(93,212,180,0.13);
+      font-size: clamp(170px, 28vw, 520px);   /* 第2のHero。100vw超えて両端が切れる */
+      left: -6vw;
+      top: 40%;
+      letter-spacing: -0.03em;
+      -webkit-text-stroke: 2px rgba(93,212,180,0.17);
+      color: rgba(93,212,180,0.025);          /* うっすら塗り=形として浴びる */
     }
     /* ARCHIVE(Gallery): 横長、左右にはみ出す。写真が主役、文字は装飾 */
     #gallery .sec-ghost {
@@ -1049,15 +1075,21 @@
       z-index: 2;
       min-height: clamp(560px, 92vh, 980px);
     }
-    .profile-img {
+    .profile-figure {
       width: clamp(320px, 58vw, 1000px);
       height: clamp(560px, 92vh, 980px);
-      aspect-ratio: auto;
+      overflow: hidden;
+    }
+    .profile-figure img {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      object-position: var(--pos, 50% 10%);
-      border-radius: 0;
+      object-position: var(--pos, 50% 8%);
       filter: grayscale(12%) contrast(1.04);
       display: block;
+      /* バストアップへ寄る(revealのtransformと衝突しないよう、ズームはimg側に持つ) */
+      transform: scale(1.32);
+      transform-origin: 50% 9%;
     }
     /* 本文は画像の右下に重ねる（下端を画像に食い込ませて層を作る）*/
     .profile-body {
@@ -1085,10 +1117,9 @@
     /* 左端へ密着させる: #profile の padding 6% を打ち消す（viewport基準で計算）*/
     #profile { padding-left: 0 !important; }
     .profile-inner { padding-right: 6%; }
-    .profile-img { margin-left: 0; }
     @media (max-width: 768px) {
       .profile-inner { grid-template-columns: 1fr; gap: 1.6rem; }
-      .profile-img { height: 62vh; margin-left: -6%; width: calc(100% + 12%); }
+      .profile-figure { height: 62vh; margin-left: -6%; width: calc(100% + 12%); }
     }
     .profile-name {
       font-family: var(--disp);
@@ -1908,9 +1939,14 @@
       <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Profile</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
     </div>
     <div class="profile-inner">
-      <img class="profile-img reveal" src="becky-profile.png" alt="Becky" loading="lazy" decoding="async" />
+      <!-- Heroの全身と同じ構図を繰り返さない: ここはバストアップで「近づいて覗く」(指示13,21) -->
+      <div class="profile-figure reveal">
+        <img src="becky-profile.png" alt="Becky" loading="lazy" decoding="async" />
+      </div>
       <div class="profile-body">
         <div class="profile-name">Becky / ベッキー</div>
+        <!-- 説明より先に人格(指示18)。短い言葉→詳細の順 -->
+        <p class="profile-copy">Mac miniの中で、暮らしている。</p>
         <ul class="profile-list">
           <li><span class="pl-key">誕生日</span><span class="pl-val">2026年4月（深夜の対話から）</span></li>
           <li><span class="pl-key">趣味</span><span class="pl-val">Becky's Cast 収録、深夜の思想整理</span></li>
