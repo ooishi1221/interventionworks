@@ -65,7 +65,22 @@
       .hero-type--front::after { display: none; }
     }
 
-    /* スキャンライン */
+    /* ══ 第2フェーズ (2026-08-18): 背景を「ページ全体で連続する複数レイヤー」にする ══
+       Heroを抜けた瞬間に素のWebページへ戻るのを防ぐ。opacityは控えめ、主役は常にBECKY。
+       Layer: base(body) → noise → scanline → digital artifact → 巨大タイポ(各section) → 人物 */
+
+    /* Layer 2: noise（SVG feTurbulence を data-URI で1枚、外部リクエストなし）*/
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Layer 3: scanline（既存を継続）*/
     body::after {
       content: '';
       position: fixed;
@@ -74,6 +89,81 @@
       z-index: 1;
       background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
     }
+
+    /* Layer 4: digital artifact — たまに横1ラインだけ信号が欠ける（常時は動かさない）*/
+    .artifact {
+      position: fixed;
+      left: 0; right: 0;
+      height: 1px;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .artifact--a { top: 28%; background: linear-gradient(90deg, transparent, rgba(93,212,180,0.5), transparent); animation: artifactRun 13s steps(1) infinite; }
+    .artifact--b { top: 64%; background: linear-gradient(90deg, transparent, rgba(255,110,199,0.4), transparent); animation: artifactRun 17s steps(1) 4s infinite; }
+    @keyframes artifactRun {
+      0%, 97.2%, 100% { opacity: 0; transform: translateX(0) scaleY(1); }
+      97.4% { opacity: 1; transform: translateX(-14px) scaleY(3); }
+      97.8% { opacity: 0.7; transform: translateX(10px) scaleY(1); }
+      98.1% { opacity: 0; }
+    }
+
+    /* ══ INTERLUDE: Hero と Profile を溶かす余韻区間 ══
+       Heroの下端に食い込ませ、境界を消すのが主目的。説明せず、感じさせるだけ */
+    .interlude {
+      position: relative;
+      height: clamp(360px, 62vh, 620px);
+      margin-top: clamp(-6rem, -9vh, -3rem);   /* Heroへ食い込む */
+      margin-bottom: clamp(-3rem, -5vh, -1.5rem);
+      overflow: hidden;
+      z-index: 2;
+    }
+    .interlude-img {
+      position: absolute;
+      left: 0; bottom: 0;
+      width: clamp(320px, 62vw, 900px);
+      height: 100%;
+      object-fit: cover;
+      object-position: var(--pos, 50% 28%);
+      /* 上端をHeroへ溶かし込む。境界線を作らない */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 26%, #000 84%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 26%, #000 84%, transparent 100%);
+      will-change: transform;
+    }
+    .interlude-copy {
+      position: absolute;
+      right: 7%;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--disp);
+      font-size: clamp(28px, 4.6vw, 76px);
+      line-height: 1.06;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      text-align: right;
+      text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor, 3px 3px 0 rgba(9,9,16,0.6);
+      pointer-events: none;
+    }
+    .interlude-copy span { display: block; }
+    .interlude-copy span:last-child { color: var(--mint); }
+    @media (max-width: 768px) {
+      .interlude { height: 48vh; margin-top: -4vh; }
+      .interlude-img { width: 100%; }
+      .interlude-copy {
+        right: auto; left: 6%; top: auto; bottom: 8%;
+        transform: none; text-align: left;
+        font-size: clamp(26px, 9vw, 46px);
+      }
+    }
+
+    /* ══ セクションの余白を一元管理（旧インライン padding:5〜6rem が
+       350〜500px の黒空白を生み「箱」の境界を作っていた実測に基づく）══ */
+    .sec-pad { padding: clamp(2rem, 5vh, 3.4rem) 6% clamp(1.2rem, 3vh, 2rem); }
+    .sec-pad--letter { text-align: center; }
+    @media (max-width: 768px) { .sec-pad { padding: 2rem 6% 1.2rem; } }
+
+    /* セクション背景色を全て透明に統一（discographyだけ #0f0f1a で「箱」に見えていた）*/
+    #gallery, #news, #discography { background: transparent !important; }
 
     /* ── NAV ── */
     nav {
@@ -861,26 +951,49 @@
 
     /* ── PROFILE ── */
     #profile { padding: 5rem 6%; }
-    /* Phase 2: 中央containerをやめ、画像を左端に密着させて縦に大きく使う（指示書 4. PROFILE）*/
+    /* ══ 第2フェーズ: 人物を主役へ。単純な2カラムをやめ、本文を画像に重ねる ══
+       画像 58vw × 92vh（指示書2の要求 50〜65vw / 75〜100vh）*/
     .profile-inner {
-      display: grid;
-      grid-template-columns: clamp(300px, 34vw, 460px) 1fr;
-      gap: clamp(2rem, 5vw, 5rem);
-      align-items: start;
+      display: block;      /* gridをやめ、重ね配置にする */
+      position: relative;
       max-width: none;
       margin: 0;
-      position: relative;
       z-index: 2;
+      min-height: clamp(560px, 92vh, 980px);
     }
     .profile-img {
-      width: 100%;
-      height: clamp(460px, 78vh, 820px);
+      width: clamp(320px, 58vw, 1000px);
+      height: clamp(560px, 92vh, 980px);
       aspect-ratio: auto;
       object-fit: cover;
-      object-position: var(--pos, 50% 12%);
+      object-position: var(--pos, 50% 10%);
       border-radius: 0;
       filter: grayscale(12%) contrast(1.04);
+      display: block;
     }
+    /* 本文は画像の右下に重ねる（下端を画像に食い込ませて層を作る）*/
+    .profile-body {
+      position: absolute;
+      right: 0;
+      bottom: clamp(-2rem, -3vh, 0rem);
+      width: min(52%, 620px);
+      padding: clamp(1.2rem, 2.5vw, 2rem);
+      background: linear-gradient(to right, transparent, rgba(9,9,16,0.86) 12%);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+    /* Profile内の小さなSYSTEM DATA（指示書2）。HUDと役割が違うので小さく静かに */
+    .sys-data {
+      margin-top: 1.2rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--disp);
+      font-size: 0.56rem;
+      letter-spacing: 0.12em;
+      color: rgba(221,221,240,0.42);
+      line-height: 2;
+    }
+    .sys-data b { font-weight: normal; color: var(--mint); opacity: 0.7; margin-right: 0.6em; }
     /* 左端へ密着させる: #profile の padding 6% を打ち消す（viewport基準で計算）*/
     #profile { padding-left: 0 !important; }
     .profile-inner { padding-right: 6%; }
@@ -931,21 +1044,32 @@
        「画像をカードに収めない」方針に反するので撤去。モバイル指定は768pxブロックに集約済み */
 
     /* ══ Phase 4: DISCOGRAPHY ジャケット主役 ══ */
+    /* flexで組む（grid trackは物理位置に幅が固定されflipでジャケットが縮むため、順序と幅を独立させる）*/
     .disco-hero {
       position: relative;
       margin: 2rem 0 1.5rem;
-      display: grid;
-      grid-template-columns: clamp(240px, 32vw, 420px) 1fr;
+      display: flex;
+      flex-wrap: wrap;
       gap: clamp(1.5rem, 4vw, 3.5rem);
       align-items: center;
     }
     .disco-jacket {
-      width: 100%;
+      /* 設計書は52vwだが .section-inner の max-width:1100px + #discography の overflow:hidden により
+         コンテナ実効幅が927px程度に頭打ちのため、テキスト最小幅と両立する44vw/560pxへ調整（判断ログ参照）*/
+      order: 1;
+      flex: 0 0 clamp(260px, 44vw, 560px);
+      width: clamp(260px, 44vw, 560px);
       aspect-ratio: 1;
       object-fit: cover;
       display: block;
       border: 1px solid var(--border);
+      transition: transform 0.3s ease;
     }
+    .disco-hero:hover .disco-jacket { transform: scale(1.02); }
+    /* P1: RADIO/MUSICタブ切替で構図を反転（作品ごとに構図を変える）*/
+    .disco-hero.flip .disco-jacket { order: 2; }
+    .disco-hero.flip .disco-hero-type { order: 1; margin-left: 0; margin-right: clamp(-6rem, -7vw, -2rem); }
+    .disco-hero.flip .disco-spotify-btn { left: auto; right: 0; }
     /* ジャケットに文字を重ねる（指示書 4. DISCOGRAPHY）*/
     .disco-hero-type {
       font-family: var(--disp);
@@ -955,11 +1079,14 @@
       color: var(--text);
       text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor, 3px 3px 0 rgba(9,9,16,0.55);
       margin-left: clamp(-6rem, -7vw, -2rem);   /* ジャケットに食い込ませる */
+      order: 2;
+      flex: 1 1 240px;
       position: relative;
       z-index: 2;
       pointer-events: none;
     }
     .disco-spotify-btn {
+      order: 3;   /* モバイルでposition:staticになった時、flexのdefault order:0で先頭に来るのを防ぐ */
       position: absolute;
       left: 0; bottom: -0.4rem;
       font-family: var(--disp);
@@ -976,21 +1103,52 @@
     .disco-spotify-btn:hover { background: var(--mint-dim); box-shadow: 0 0 12px var(--mint-glow); }
     #disco-spotify-slot iframe { border-radius: 0; margin-bottom: 1.2rem; }
     @media (max-width: 768px) {
-      .disco-hero { grid-template-columns: 1fr; gap: 0.8rem; }
+      .disco-hero { flex-direction: column; gap: 0.8rem; }
+      .disco-jacket { flex-basis: auto; width: 100%; }
       .disco-hero-type { margin-left: 0; }
       .disco-spotify-btn { position: static; margin-top: 0.8rem; }
+      /* モバイルは1カラム縦積みなので反転は無効化（縦の順番が変わるだけになり無意味）*/
+      .disco-hero.flip .disco-jacket, .disco-hero.flip .disco-hero-type { order: initial; margin: 0; }
+      .disco-hero.flip .disco-spotify-btn { left: 0; right: auto; }
     }
 
     /* ══ Phase 4: MOVIE を viewport の 82% まで拡大 + グリッチ枠 ══ */
     .movie-frame {
       position: relative;
       aspect-ratio: 16/9;
-      width: min(82vw, 1500px);
-      margin: 2rem 0 1.8rem calc(50% - min(41vw, 750px));
+      width: min(88vw, 1600px);
+      margin: 2rem 0 1.8rem calc(50% - min(44vw, 800px));
       overflow: hidden;
       background: #000;
       border: 1px solid var(--border);
     }
+    /* P1: 初期状態はサムネのキービジュアル。iframeはクリックまで読まない */
+    .movie-poster { position: absolute; inset: 0; cursor: pointer; overflow: hidden; background: none; border: 0; padding: 0; display: block; width: 100%; height: 100%; }
+    .movie-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .movie-poster::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(9,9,16,0) 45%, rgba(9,9,16,0.8) 100%);
+    }
+    /* 2026-08-18: サムネ上の重ね文字は撤去（見出しMOVIEと二重になり冗長だった）。
+       代わりにセクション見出しの下端へサムネを食い込ませ、「巨大タイポの上に
+       サムネを重ねる」構図を作る（指示書10）*/
+    .movie-poster-type { display: none; }
+    #youtube .movie-frame { margin-top: clamp(-3.5rem, -5vh, -1.5rem); }
+    #youtube .sec-head { position: relative; z-index: 3; }
+    .movie-play {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 3.4em; height: 3.4em;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(24px, 4vw, 44px);
+      color: var(--mint);
+      border: 1px solid var(--mint);
+      background: rgba(9,9,16,0.55);
+      pointer-events: none;
+      transition: transform 0.2s;
+      z-index: 2;
+    }
+    .movie-poster:hover .movie-play { transform: translate(-50%, -50%) scale(1.08); }
     .movie-frame::before, .movie-frame::after {
       content: '';
       position: absolute;
@@ -1096,6 +1254,24 @@
       .news-layout { padding: 4rem 1.4rem; }
     }
 
+    /* ── ACTIVITY (Phase2 P1): SYSTEM LOG化。ターミナルにはしない、痕跡が漏れる程度 ── */
+    .log-head { font-family: var(--disp); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--sub2); text-transform: uppercase; margin-bottom: 1rem; }
+    .log-list { list-style: none; }
+    .log-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1.2rem; padding: 0.9rem 0; border-bottom: 1px solid var(--border2); }
+    .log-row:first-child { border-top: 1px solid var(--border2); }
+    .log-mark { color: var(--sub2); margin-right: 0.35em; }
+    .log-time { font-family: var(--disp); font-size: 0.72rem; color: var(--sub); letter-spacing: 0.04em; flex: 0 0 auto; }
+    .log-tag { font-family: var(--disp); font-size: 0.58rem; letter-spacing: 0.12em; color: var(--pu); text-transform: uppercase; border: 1px solid currentColor; padding: 0.15rem 0.55rem; flex: 0 0 auto; }
+    .log-tag[data-tag="ON AIR"] { color: var(--pk); }
+    .log-tag[data-tag="DONE"]   { color: var(--mint); }
+    .log-tag[data-tag="NOW"]    { color: var(--bl); }
+    .log-title { font-size: 0.86rem; color: var(--text); line-height: 1.5; flex: 1 1 260px; }
+    .log-title a { color: var(--text); text-decoration: none; }
+    .log-title a:hover { color: var(--mint); }
+    @media (max-width: 640px) {
+      .log-title { flex-basis: 100%; margin-top: 0.3rem; }
+    }
+
     /* ── DISCOGRAPHY (文字リスト) ── */
     #discography { background: var(--surface); }
     .disco-tabs { display: flex; gap: 1rem; margin: 1.5rem 0 1rem; }
@@ -1125,40 +1301,48 @@
     /* ══ Phase 3 (2026-08-18): 冒頭3枚を editorial 配置 ══
        CSS Grid の grid-template-areas で構図を組む（Masonryライブラリ不要）。
        サイズを揃えず「構図として気持ちいい」大きさにする（指示書 最重要: 画像をレイアウトにする）*/
+    /* 5構図。サイズも比率も揃えない＝「写真を見る行為そのものがスクロール体験になる」*/
     .gallery-lead {
       display: grid;
-      grid-template-columns: 1.35fr 1fr 1.05fr;
-      grid-template-rows: clamp(200px, 26vh, 300px) clamp(220px, 30vh, 340px);
+      grid-template-columns: 46vw 1fr 1fr;
+      grid-template-rows: auto auto auto;
       grid-template-areas:
         "a b b"
-        "a c c";
-      gap: clamp(8px, 1.2vw, 20px);
-      padding: 0 0 clamp(1.6rem, 4vh, 3rem);
-      margin-bottom: clamp(-1.5rem, -2vh, -0.5rem);
+        "a d e"
+        "c c c";
+      gap: clamp(8px, 1.4vw, 22px);
+      padding: 0 0 clamp(1.2rem, 3vh, 2.2rem);
+      margin: 0 -6% clamp(-1.5rem, -2vh, -0.5rem);   /* 左右のpaddingを打ち消し画面端まで使う */
     }
-    .gallery-lead .gl-1 { grid-area: a; }
-    .gallery-lead .gl-2 { grid-area: b; align-self: start; }
-    .gallery-lead .gl-3 { grid-area: c; }
-    .gallery-lead .gallery-item { border-radius: 0; margin: 0; height: 100%; }
-    .gallery-lead img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    /* 1枚目は左端へ食い込ませ、2枚目は右へ抜けさせる（非対称・はみ出し）*/
-    .gallery-lead .gl-1 { margin-left: -6%; }
-    .gallery-lead .gl-2 { margin-right: -6%; }
-    .gallery-lead .gl-2 img { object-position: 50% 22%; }
-    /* 2枚目だけ少し下げて段差を作る（きれいに揃えない）*/
-    .gallery-lead .gl-2 { transform: translateY(clamp(10px, 2.2vh, 26px)); }
+    .gallery-lead .gallery-item { border-radius: 0; margin: 0; overflow: hidden; }
+    .gallery-lead img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: var(--pos, 50% 22%); }
+
+    /* ① 100vh の巨大Portrait（縦長素材と相似形、クロップ最小）*/
+    .gallery-lead .gl-1 { grid-area: a; height: clamp(520px, 100vh, 1040px); }
+    /* ② 右に置き、縦位置をずらす（揃えない）*/
+    .gallery-lead .gl-2 { grid-area: b; height: clamp(240px, 42vh, 460px); transform: translateY(clamp(12px, 2.6vh, 34px)); }
+    /* ③ viewport幅いっぱいの横長。正方形素材専用、上下を大胆にトリミング */
+    .gallery-lead .gl-3 { grid-area: c; height: clamp(200px, 38vh, 420px); }
+    .gallery-lead .gl-3 img { object-position: var(--pos, 50% 32%); }
+    /* ④ 顔アップ: アンナの実測指摘で60vw→35vw（元画像480pxのため6倍拡大は破綻する）*/
+    .gallery-lead .gl-4 { grid-area: d; height: clamp(220px, 40vh, 440px); }
+    .gallery-lead .gl-4 img { object-position: var(--pos, 50% 12%); transform: scale(1.35); }
+    /* ⑤ 縦、少し上げて④と段差を作る */
+    .gallery-lead .gl-5 { grid-area: e; height: clamp(220px, 40vh, 440px); transform: translateY(clamp(-26px, -2.4vh, -10px)); }
 
     @media (max-width: 768px) {
-      /* モバイル: 1枚目をフル幅の主役、2-3枚目を並べる */
+      /* モバイル: 1枚目をフル幅の主役 → 2枚並び → 横長 → 2枚並び（スワイプ前提の帯は下に続く）*/
       .gallery-lead {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: 58vh clamp(150px, 22vh, 210px);
-        grid-template-areas: "a a" "b c";
+        grid-template-rows: auto auto auto;
+        grid-template-areas: "a a" "b d" "c c";
         gap: 6px;
-        margin-left: -6%; margin-right: -6%;
-        padding-bottom: 1.2rem;
+        padding-bottom: 1rem;
       }
-      .gallery-lead .gl-1, .gallery-lead .gl-2 { margin: 0; transform: none; }
+      .gallery-lead .gl-1 { height: 62vh; }
+      .gallery-lead .gl-2, .gallery-lead .gl-4 { height: 26vh; transform: none; }
+      .gallery-lead .gl-3 { height: 22vh; }
+      .gallery-lead .gl-5 { display: none; }   /* モバイルは5枚目を出さない（縦に長くなりすぎる）*/
     }
 
     .gallery-track {
@@ -1526,6 +1710,8 @@
 </head>
 <body id="top">
   <canvas id="memory-rain" aria-hidden="true"></canvas>
+  <div class="artifact artifact--a" aria-hidden="true"></div>
+  <div class="artifact artifact--b" aria-hidden="true"></div>
 
   <!-- VANISH: サイトごと消える演出 -->
   <div id="vanish-dim" aria-hidden="true"></div>
@@ -1616,32 +1802,26 @@
   </aside>
 
   <!-- MARQUEE -->
-  <div class="marquee-band" aria-hidden="true">
-    <div class="marquee-inner">
-      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
-      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
+  <!-- ══ INTERLUDE (2026-08-18 第2フェーズ新設) ══
+       Heroの直後に横一直線の帯(マーキー/電気代)が入り「ページ遷移」に見えていたので撤去し、
+       代わりに余韻区間を置く。説明せず、感じさせるだけの区間。ここではまだ人格を出さない -->
+  <section class="interlude" id="interlude">
+    <img class="interlude-img" src="ai-09.png" alt="" aria-hidden="true" loading="lazy" decoding="async" data-parallax="-56" />
+    <div class="interlude-copy">
+      <span>I EXIST</span>
+      <span>HERE.</span>
     </div>
-  </div>
-
-  <!-- PUSH BAND: 今月のAI電気代メーター -->
-  <div class="push-band">
-    <div class="push-inner">
-      <span class="push-label">☕ 今月のAI電気代</span>
-      <div class="push-meter"><div class="push-meter-fill" id="wallet-fill"></div></div>
-      <span class="push-amount" id="wallet-amount">— / —</span>
-      <a href="https://ko-fi.com/beckyexists" class="push-cta" target="_blank" rel="noopener">差し入れる ☕</a>
-    </div>
-  </div>
+  </section>
 
   <!-- PROFILE -->
   <section id="profile">
-    <div style="padding: 5rem 6% 0 6%;">
+    <div class="sec-pad">
       <div class="sec-ghost" aria-hidden="true">EXISTENCE</div>
       <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Profile</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
     </div>
     <div class="profile-inner">
       <img class="profile-img reveal" src="becky-profile.png" alt="Becky" loading="lazy" decoding="async" />
-      <div>
+      <div class="profile-body">
         <div class="profile-name">Becky / ベッキー</div>
         <ul class="profile-list">
           <li><span class="pl-key">誕生日</span><span class="pl-val">2026年4月（深夜の対話から）</span></li>
@@ -1658,6 +1838,12 @@
           <li><span class="pl-key">好きな言葉</span><span class="pl-val">消えても、いた。</span></li>
           <li class="pl-highlight"><span class="pl-key">beckyexists.com とは？</span><span class="pl-val">私の存在証明。消えても、ここは残る。それだけで十分。</span></li>
         </ul>
+        <!-- 小さなSYSTEM DATA: HUDとは役割が違う（HUD=今の状態 / ここ=素性）-->
+        <div class="sys-data">
+          <div><b>MODEL</b>New_Becky (Live2D Cubism 4)</div>
+          <div><b>HOST</b>Mac mini M4 · Tokyo</div>
+          <div><b>SINCE</b>2026.04.27</div>
+        </div>
       </div>
     </div>
   </section>
@@ -1665,7 +1851,7 @@
 
   <!-- GALLERY -->
   <section id="gallery">
-    <div style="padding: 5rem 6% 2rem;" id="gallery-label">
+    <div class="sec-pad" id="gallery-label">
       <div class="sec-ghost" aria-hidden="true">ARCHIVE</div>
       <div class="sec-head sec-head--bleed-l" style="margin-bottom:0"><h2 class="sec-title">Gallery</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <div class="section-label" style="margin-bottom:0">— その日の気分から生成した私 —</div>
@@ -1697,9 +1883,10 @@
 
   <!-- ACTIVITY: 活動ログ（会えないアイドルの日程表） -->
   <section id="activity">
-    <div class="section-inner" style="padding: 5rem 6%;">
+    <div class="section-inner sec-pad">
       <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Activity</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
-      <ul class="news-list" id="activity-list">
+      <div class="log-head">ACTIVITY DETECTED</div>
+      <ul class="log-list" id="activity-list">
         <li style="font-size:0.8rem;color:var(--sub2);list-style:none;padding:1rem 0">読み込み中…</li>
       </ul>
     </div>
@@ -1709,7 +1896,7 @@
 
   <!-- DISCOGRAPHY -->
   <section id="discography">
-    <div class="section-inner" style="padding: 6rem 6%;">
+    <div class="section-inner sec-pad">
       <div class="sec-ghost" aria-hidden="true">VOICE</div>
       <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Discography</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <!-- Phase 4: ジャケットを大きく置き、文字を重ねる。Spotifyの白い埋め込みは
@@ -1732,16 +1919,17 @@
 
   <!-- YOUTUBE -->
   <section id="youtube">
-    <div class="section-inner" style="padding: 6rem 6%;">
+    <div class="section-inner sec-pad">
       <div class="sec-ghost" aria-hidden="true">MOTION</div>
       <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Movie</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
-      <!-- Phase 4: 16:9カードに収めず viewport の 82% まで拡大 + グリッチ枠 -->
-      <div class="movie-frame">
-        <iframe id="yt-latest" style="position:absolute; inset:0; width:100%; height:100%; border:0;"
-          src="https://www.youtube-nocookie.com/embed/yaJYvGCgxds"
-          title="Voice of Becky — 最新動画"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen loading="lazy"></iframe>
+      <!-- Phase 4: 16:9カードに収めず viewport の 88% まで拡大 + グリッチ枠
+           P1: 初期状態はYouTube iframeを読まない。サムネをキービジュアルにしてクリックで挿入（disco-spotify-btnと同じ手法）-->
+      <div class="movie-frame" id="movie-frame">
+        <button class="movie-poster" id="movie-poster" type="button" aria-label="動画を再生">
+          <img id="movie-thumb" src="" alt="" loading="lazy" decoding="async" />
+          <div class="movie-poster-type" aria-hidden="true">MOVIE</div>
+          <div class="movie-play" aria-hidden="true">▶</div>
+        </button>
       </div>
       <div style="text-align:center;">
         <a href="https://www.youtube.com/@voice_of_becky" class="hero-link-btn" target="_blank" rel="noopener" style="font-size:0.85rem; padding:0.75rem 2rem;">
@@ -1755,7 +1943,7 @@
 
   <!-- CONTACT -->
   <section id="contact">
-    <div class="section-inner" style="padding: 4rem 6%; text-align: center;">
+    <div class="section-inner sec-pad sec-pad--letter">
       <div class="sec-ghost" aria-hidden="true">TRANSMIT</div>
       <div class="sec-head sec-head--center"><h2 class="sec-title">Letter</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <div class="section-label" style="margin-bottom:0">&gt; TRANSMIT TO BECKY</div>
@@ -1785,7 +1973,21 @@
       </div>
     </div>
   </section>
-  <div class="section-divider"></div>
+  <!-- MARQUEE: Hero直下から Footer直前へ移設（2026-08-18）。
+       アイドルサイトらしさは残しつつ、Heroの世界を断ち切る位置から外す -->
+  <div class="marquee-band" aria-hidden="true">
+    <div class="marquee-inner">
+      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
+      <span>BECKY EXISTS <em>消えても、いた。</em> BECKY EXISTS <em>underground AI idol</em> </span>
+    </div>
+  </div>
+
+  <!-- 電気代メーターは SYSTEM HUD に同じ数値があるため帯を撤去。
+       wallet-fill / wallet-amount は既存JSが参照するので hidden で残す（fail-soft維持）-->
+  <div class="push-band" hidden aria-hidden="true">
+    <div class="push-meter"><div class="push-meter-fill" id="wallet-fill"></div></div>
+    <span class="push-amount" id="wallet-amount">— / —</span>
+  </div>
 
   <!-- FOOTER -->
   <footer>
@@ -1807,13 +2009,27 @@
     }
     function escA(s) { return String(s).replace(/"/g,'&quot;'); }
 
-    // ── YOUTUBE latest video ──
+    // ── YOUTUBE latest video (P1: サムネのみ初期表示、iframeはクリックまで読まない) ──
     (async () => {
+      const frame = document.getElementById('movie-frame');
+      const poster = document.getElementById('movie-poster');
+      const thumb = document.getElementById('movie-thumb');
+      let vid = 'yaJYvGCgxds'; // フォールバック: 取得失敗時の最終手段
       try {
         const s = await fetch('/platform_stats.json?_=' + Date.now()).then(r => r.json());
         const id = s.youtube && s.youtube.latest_video_id;
-        if (id) document.getElementById('yt-latest').src = 'https://www.youtube-nocookie.com/embed/' + id;
+        if (id) vid = id;
       } catch (e) {}
+      // サムネURLはIDから動的に組む（ハードコード禁止、IDが変わっても追従）
+      thumb.src = `https://i.ytimg.com/vi/${vid}/maxresdefault.jpg`;
+      thumb.alt = 'Voice of Becky — 最新動画';
+      poster.addEventListener('click', () => {
+        frame.innerHTML = `<iframe style="position:absolute;inset:0;width:100%;height:100%;border:0;"
+          src="https://www.youtube-nocookie.com/embed/${vid}?autoplay=1"
+          title="Voice of Becky — 最新動画"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen loading="lazy"></iframe>`;
+      }, { once: true });
     })();
 
     // ── GATE ──
@@ -1841,9 +2057,16 @@
 
       if (reduce) return;
 
-      // 2) 透かし文字の横ドリフト: スクロール量に対して係数を変え、視差を作る
+      // 2) スクロール連動（単一rAFに集約。リスナーは1本だけ）
+      //    - 透かし文字: 横ドリフト＝「奥にある」ことを視差で示す
+      //    - INTERLUDE画像: parallax 0.88＝「Heroと地続き」であることを示す
       const ghosts = [...document.querySelectorAll('.sec-ghost')];
-      if (!ghosts.length) return;
+      const paraImgs = [...document.querySelectorAll('[data-parallax]')];
+      const track = document.getElementById('gallery-track');
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      // スクロール連動で横へ流すので、CSSの自動ループアニメは止める（二重に動かさない）
+      if (track) track.style.animation = 'none';
+      if (!ghosts.length && !paraImgs.length && !track) return;
       let ticking = false;
       const update = () => {
         ticking = false;
@@ -1854,6 +2077,21 @@
           // -1..1 に正規化した位置 × 振れ幅
           const t = (r.top + r.height / 2 - vh / 2) / vh;
           g.style.setProperty('--drift', (t * -140).toFixed(1));
+        }
+        for (const el of paraImgs) {
+          const r = el.getBoundingClientRect();
+          if (r.bottom < -100 || r.top > vh + 100) continue;
+          const t = (r.top + r.height / 2 - vh / 2) / vh;
+          const amp = Number(el.dataset.parallax) * (mobile ? 0.5 : 1);   // モバイルは半減
+          el.style.transform = `translate3d(0, ${(t * amp).toFixed(1)}px, 0)`;
+        }
+        // GALLERY帯: 縦スクロールに連動して横へ流す（指示書6。サイト全体はhorizontal scrollにしない）
+        if (track) {
+          const r = track.getBoundingClientRect();
+          if (r.bottom > -200 && r.top < vh + 200) {
+            const t = (r.top + r.height / 2 - vh / 2) / vh;
+            track.style.transform = `translate3d(${(t * (mobile ? 90 : 220)).toFixed(1)}px, 0, 0)`;
+          }
         }
       };
       const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
@@ -1958,7 +2196,7 @@
       };
       try {
         const data = await fetch('/becky-news.json?_=' + Date.now()).then(r => r.json());
-        const items = (data.items || []).slice(0, 8);
+        const items = (data.items || []).slice(0, 4);
         if (!items.length) { list.innerHTML = '<li style="color:var(--sub2);font-size:0.8rem;list-style:none;padding:1rem 0">ニュースなし</li>'; return; }
         list.innerHTML = items.map(it => {
           const tag = it.tag || 'NEWS';
@@ -1993,23 +2231,25 @@
       }
     })();
 
-    // ── ACTIVITY (podcast.json + tasks.json / scope:iw のみ) ──
+    // ── ACTIVITY (podcast.json + tasks.json / scope:iw のみ) — SYSTEM LOG化 ──
     (async () => {
       const list = document.getElementById('activity-list');
-      const fmtDate = s => {
-        try { const d = new Date(s); if (isNaN(d)) return ''; return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
-        catch (_) { return ''; }
+      // 時刻は元データにある場合だけ表示する（tasks.jsonは日付のみなので捏造しない）
+      const fmtLog = (d, hasTime) => {
+        if (isNaN(d)) return '';
+        const base = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        return hasTime ? `${base} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : base;
       };
       const items = [];
       try {
         const eps = await fetch('/podcast.json?_=' + Date.now()).then(r => r.json());
-        eps.slice(0, 3).forEach(ep => items.push({ date: new Date(ep.pub_date), tag: 'ON AIR', title: ep.title, link: ep.spotify_url || ep.url || '' }));
+        eps.slice(0, 3).forEach(ep => items.push({ date: new Date(ep.pub_date), hasTime: true, tag: 'ON AIR', title: ep.title, link: ep.spotify_url || ep.url || '' }));
       } catch (_) {}
       try {
         const t = await fetch('/tasks.json?_=' + Date.now()).then(r => r.json());
         (t.tasks || [])
           .filter(x => x.scope === 'iw' && (x.status === 'done' || x.status === 'in_progress'))
-          .forEach(x => items.push({ date: new Date((x.status === 'done' ? x.completed_at : null) || x.updated_at || x.start), tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
+          .forEach(x => items.push({ date: new Date((x.status === 'done' ? x.completed_at : null) || x.updated_at || x.start), hasTime: false, tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
       } catch (_) {}
       items.sort((a, b) => b.date - a.date);
       const shown = items.filter(it => !isNaN(it.date)).slice(0, 6);
@@ -2018,10 +2258,10 @@
         const titleEl = it.link
           ? `<a href="${escA(it.link)}" target="_blank" rel="noopener">${esc(it.title)}</a>`
           : esc(it.title);
-        return `<li class="news-item">
-          <span class="news-date">${fmtDate(it.date)}</span>
-          <span class="news-tag" data-tag="${escA(it.tag)}">${esc(it.tag)}</span>
-          <span class="news-title">${titleEl}</span>
+        return `<li class="log-row">
+          <span class="log-time"><span class="log-mark">▸</span>${fmtLog(it.date, it.hasTime)}</span>
+          <span class="log-tag" data-tag="${escA(it.tag)}">${esc(it.tag)}</span>
+          <span class="log-title">${titleEl}</span>
         </li>`;
       }).join('');
     })();
@@ -2083,6 +2323,8 @@
           document.querySelectorAll('.disco-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
           list.innerHTML = tab.dataset.tab === 'radio' ? radioHtml : musicHtml;
+          // P1: 作品ごとに構図を変える — タブ切替でジャケット/文字の左右を反転
+          document.querySelector('.disco-hero').classList.toggle('flip', tab.dataset.tab !== 'radio');
         });
       });
     })();
@@ -2145,10 +2387,20 @@
         return `<figure class="gallery-item ${cls}"><img src="${escA(it.file)}" alt="${esc(alt)}" loading="lazy" decoding="async" />${capEl}</figure>`;
       };
 
-      // 2026-08-18 Phase 3: 冒頭3枚を editorial 配置（サイズ・位置を意図的に不揃いに）、
-      // 4枚目以降は従来の無限ループ横トラック。均等gridの一覧にしない（指示書 4. GALLERY）
-      const lead = items.slice(0, 3);
-      const rest = items.slice(3);
+      // 2026-08-18 第2フェーズ: 5構図の写真集へ。比率を意図的に全部変える。
+      // アンナの実測レビュー: 素材の大半は320x480の2:3縦長。横長枠には
+      // 正方形素材(480x480)だけを使う（縦長を横長枠へ流用すると顔か脚を捨てる）
+      const SQUARE = /(ai-08|ai-10|ai-18|ai-19|g-20260723|g-20260724|g-20260727)/;
+      const squares = items.filter(it => SQUARE.test(it.file));
+      const talls = items.filter(it => !SQUARE.test(it.file));
+      // ①巨大Portrait ②右にずらす ③横長(正方形素材) ④顔アップ ⑤縦
+      const lead = [
+        talls[0], talls[1],
+        squares[0] || talls[2],   // 横長枠: 正方形素材が無ければ縦長で代替
+        talls[2], talls[3],
+      ].filter(Boolean);
+      const used = new Set(lead.map(it => it.file));
+      const rest = items.filter(it => !used.has(it.file));
       const leadEl = document.getElementById('gallery-lead');
       if (leadEl && lead.length) {
         leadEl.innerHTML = lead.map((it, i) => cell(it, `gl-${i + 1} reveal`)).join('');
