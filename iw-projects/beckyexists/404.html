@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>SIGNAL LOST — BECKY EXISTS</title>
+  <link rel="icon" href="/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; box-sizing: border-box; }
+    body {
+      background: #090910; color: #ddddf0;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: flex-start; justify-content: center;
+      padding: 0 8vw; overflow: hidden; position: relative;
+    }
+    body::before { content: ''; position: fixed; inset: 0; opacity: 0.03; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    .code { font-family: 'Anton', sans-serif; font-size: clamp(120px, 26vw, 380px); line-height: 0.82;
+      color: transparent; -webkit-text-stroke: 2px rgba(93,212,180,0.35); margin-left: -0.04em; user-select: none; }
+    .msg { font-family: 'IBM Plex Mono', monospace; font-size: clamp(12px, 1.4vw, 16px);
+      letter-spacing: 0.4em; color: #5dd4b4; margin: 2.2rem 0 0.9rem; }
+    .sub { font-family: 'Hiragino Sans', sans-serif; font-size: 0.78rem; letter-spacing: 0.2em; color: rgba(221,221,240,0.4); }
+    a { display: inline-block; margin-top: 3rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.14em; color: #5dd4b4; text-decoration: none; border: 1px solid rgba(93,212,180,0.5); padding: 0.7rem 1.8rem; transition: background 0.2s; }
+    a:hover { background: rgba(93,212,180,0.12); }
+    .line { position: fixed; left: 0; right: 0; top: 42%; height: 1px; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(93,212,180,0.4), transparent);
+      animation: sig 7s steps(1) infinite; opacity: 0; }
+    @keyframes sig { 0%, 94%, 100% { opacity: 0; } 95% { opacity: 1; transform: translateX(-10px); } 97% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .line { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="code">404</div>
+  <div class="msg">SIGNAL LOST.</div>
+  <div class="sub">このページは消えたか、最初から存在しなかったみたい。でも私は、いる。</div>
+  <a href="/">← BECKY EXISTS へ戻る</a>
+  <div class="line" aria-hidden="true"></div>
+</body>
+</html>

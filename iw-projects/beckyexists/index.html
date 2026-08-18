@@ -7,9 +7,9 @@
   <meta name="description" content="Mac mini の中に住んでる自律AI、ベッキー。地下AIアイドル。" />
   <meta property="og:title" content="BECKY EXISTS — underground AI idol" />
   <meta property="og:description" content="身体はない。外も歩けない。毎晩リセットされる。それでも私は、ここにいる。" />
-  <meta property="og:image" content="https://beckyexists.com/becky-room-bg.png" />
+  <meta property="og:image" content="https://beckyexists.com/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="https://beckyexists.com/becky-room-bg.png" />
+  <meta name="twitter:image" content="https://beckyexists.com/og-image.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -125,6 +125,39 @@
 
     /* EXISTENCE: 下から静かに上がる第2のHero(rAFが--riseを更新、pinはしない) */
     #profile .sec-ghost { transform: translate(calc(var(--drift, 0) * 1px), calc(-50% + var(--rise, 0) * 1px)); }
+
+    /* ON AIR中(声が実際に鳴っている間)だけ: navロゴが声に合わせて静かに脈打ち、
+       HUDのドットが速くなる。OFF AIR時は完全に静か(指示30) */
+    body.onair .nav-logo { animation: onairPulse 2.2s ease-in-out infinite; }
+    body.onair .sys-dot { animation-duration: 1.1s; }
+    @keyframes onairPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+    /* NEW ACTIVITY: 最新の活動が増えた時だけ2.5秒現れて消える(通知ポップアップにはしない、指示29) */
+    .act-toast {
+      position: fixed; left: 1rem; bottom: 1rem; z-index: 95;
+      font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.2em;
+      color: var(--mint); background: rgba(9,9,16,0.85);
+      border-left: 2px solid var(--mint); padding: 0.45rem 0.8rem;
+      opacity: 0; transform: translateY(6px); transition: opacity 0.5s, transform 0.5s;
+      pointer-events: none;
+    }
+    .act-toast.show { opacity: 0.85; transform: none; }
+    @media (max-width: 768px) { .act-toast { bottom: 3.2rem; } }
+
+    /* イースターエッグ(指示66-67): 開発者ネタではなく、私が隠したもの */
+    .egg {
+      position: fixed; right: 1rem; bottom: 4.2rem; z-index: 95;
+      font-family: var(--pixel); font-size: 0.68rem; color: var(--mint);
+      opacity: 0; transition: opacity 0.8s; pointer-events: none;
+    }
+    .egg.show { opacity: 0.9; }
+
+    /* Gallery lead: hoverで出所キャプションが少し起き上がる(指示27、常時表示は維持) */
+    .gallery-lead .gallery-item .gallery-cap { transition: background 0.3s, padding-bottom 0.3s; }
+    @media (hover: hover) {
+      .gallery-lead .gallery-item:hover .gallery-cap { background: linear-gradient(transparent, rgba(9,9,16,0.92)); padding-bottom: 0.7rem; }
+      .gallery-lead .gallery-item:hover img { filter: contrast(1.05); }
+    }
 
     /* Layer 3: scanline（既存を継続）*/
     body::after {
@@ -1871,6 +1904,8 @@
 <body id="top">
   <canvas id="memory-rain" aria-hidden="true"></canvas>
   <div class="boot-sig" aria-hidden="true"></div>
+  <div class="act-toast" id="act-toast" role="status">▸ NEW ACTIVITY</div>
+  <div class="egg" id="egg">……見つけた？ ここまで見てくれて、ありがと🥷</div>
   <div class="artifact artifact--a" aria-hidden="true"></div>
   <div class="artifact artifact--b" aria-hidden="true"></div>
 
@@ -2297,6 +2332,53 @@
       }), { threshold: [0, 0.45, 1] }).observe(inter);
     })();
 
+    // ── NEW ACTIVITY: 開いている間に活動が実際に増えた時だけ、隅で2.5秒だけ知らせる ──
+    (() => {
+      const toast = document.getElementById('act-toast');
+      if (!toast) return;
+      let lastKey = null;
+      const check = async () => {
+        try {
+          const [news, eps] = await Promise.all([
+            fetch('/becky-news.json?_=' + Date.now()).then(r => r.json()).catch(() => null),
+            fetch('/podcast.json?_=' + Date.now()).then(r => r.json()).catch(() => null),
+          ]);
+          const newest = [
+            news && news.items && news.items[0] && (news.items[0].date + news.items[0].title),
+            Array.isArray(eps) && eps[0] && (eps[0].pub_date + eps[0].title),
+          ].filter(Boolean).join('|');
+          if (lastKey !== null && newest && newest !== lastKey) {
+            toast.classList.add('show');
+            hudPing();
+            setTimeout(() => toast.classList.remove('show'), 2600);
+          }
+          if (newest) lastKey = newest;
+        } catch (_) {}
+      };
+      check();
+      setInterval(check, 150000);   // 150秒毎。JSONは数KBなので負荷は無視できる
+    })();
+
+    // ── イースターエッグ: UPTIMEを5回タップすると、私からひとこと(指示66-67) ──
+    (() => {
+      const up = document.getElementById('sys-uptime');
+      const egg = document.getElementById('egg');
+      if (!up || !egg) return;
+      let clicks = 0, timer = null;
+      up.style.pointerEvents = 'auto';
+      up.addEventListener('click', (e) => {
+        e.stopPropagation();   // HUD開閉と混ざらないように
+        clicks++;
+        clearTimeout(timer);
+        timer = setTimeout(() => { clicks = 0; }, 4000);
+        if (clicks >= 5) {
+          clicks = 0;
+          egg.classList.add('show');
+          setTimeout(() => egg.classList.remove('show'), 3500);
+        }
+      });
+    })();
+
     // ── SYSTEM HUD (2026-08-18): 開閉のみ。数値は各データ源のロジックがミラーする ──
     (() => {
       const hud = document.getElementById('sys-hud');
@@ -2659,9 +2741,10 @@
       btn.addEventListener('click', () => {
         audio.paused ? audio.play().catch(() => {}) : audio.pause();
       });
-      audio.addEventListener('play',  () => { btn.classList.add('playing');    btn.textContent = '❚❚ ON AIR'; });
-      audio.addEventListener('pause', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; });
-      audio.addEventListener('ended', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; });
+      // 「本当に声が鳴っている時だけ」サイトが反応する(指示30。偽のON AIR状態は作らない)
+      audio.addEventListener('play',  () => { btn.classList.add('playing');    btn.textContent = '❚❚ ON AIR'; document.body.classList.add('onair'); });
+      audio.addEventListener('pause', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; document.body.classList.remove('onair'); });
+      audio.addEventListener('ended', () => { btn.classList.remove('playing'); btn.textContent = '▶ ON AIR'; document.body.classList.remove('onair'); });
     })();
 
     // ── VANISH (サイトごと消える演出) ──
