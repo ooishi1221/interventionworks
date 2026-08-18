@@ -44,6 +44,27 @@
       overflow-x: hidden;
     }
 
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    /* prefers-reduced-motion: 演出を止めてもコンテンツは全部見える（指示書 5.）*/
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+      .hero-type--front::after { display: none; }
+    }
+
     /* スキャンライン */
     body::after {
       content: '';
@@ -114,14 +135,15 @@
     }
 
     /* ── HERO ── */
+    /* ══ HERO v6 (2026-08-18 redesign): 雑誌の表紙として組む ══
+       レイヤー構造: [bg] → [巨大文字BACK] → [Live2D] → [巨大文字FRONT] → [端末行]
+       grid 2カラムをやめ、全レイヤーを重ねる。情報はSYSTEM HUDへ退避済み。 */
     #hero {
       position: relative;
       min-height: 100vh;
-      overflow: visible;
-      padding-top: 52px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
+      overflow: hidden;
+      padding-top: 0;
+      display: block;
     }
 
     .hero-bg {
@@ -151,53 +173,92 @@
       50%      { opacity: 0.6; }
       95%      { opacity: 0.95; }
     }
+    /* 2026-08-18: 部屋背景は「舞台」へ後退させる。暗度up + 四隅ビネットで中央のBECKYを立たせる */
     .hero-bg::after {
       content: '';
       position: absolute;
       inset: 0;
       z-index: 2;
-      background: linear-gradient(to bottom, rgba(9,9,16,0.45) 0%, rgba(9,9,16,0.2) 40%, rgba(9,9,16,0.55) 70%, var(--bg) 100%);
+      background:
+        radial-gradient(ellipse 90% 75% at 50% 45%, transparent 35%, rgba(9,9,16,0.72) 100%),
+        linear-gradient(to bottom, rgba(9,9,16,0.72) 0%, rgba(9,9,16,0.42) 35%, rgba(9,9,16,0.7) 72%, var(--bg) 100%);
     }
 
-    /* 左: テキスト */
-    .hero-left {
-      position: relative;
+    /* ── 巨大タイポ 2層（背後 / 前面）──
+       DotGothic16単一ウェイトは巨大表示で細いので、多層text-shadowで肉付けする（指示書 確定事項2）*/
+    .hero-type {
+      position: absolute;
       z-index: 2;
-      padding: 3rem 6% 5rem 6%;
-    }
-
-    .hero-title {
       font-family: var(--disp);
-      font-size: clamp(2.2rem, 5.5vw, 3.8rem);
-      letter-spacing: 0.08em;
+      line-height: 0.86;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .hero-type--back {
+      top: clamp(4.5rem, 11vh, 9rem);
+      left: -0.06em;
+      font-size: clamp(72px, 15.5vw, 240px);
+      color: rgba(221,221,240,0.13);
+      -webkit-text-stroke: 1px rgba(93,212,180,0.34);
+      text-shadow: 0 0 40px rgba(9,9,16,0.9);
+    }
+    /* EXISTS はLive2Dの前に出て「胴体に」重なる。顔は避ける（表情が主役なので隠さない）*/
+    .hero-type--front {
+      z-index: 6;
+      top: calc(clamp(4.5rem, 11vh, 9rem) + clamp(96px, 19vw, 290px));
+      right: clamp(-2.5rem, -1.5vw, -0.5rem);
+      font-size: clamp(72px, 15.5vw, 240px);
       color: var(--mint);
-      text-shadow: 0 0 20px var(--mint-glow), 0 0 50px rgba(93,212,180,0.1);
-      line-height: 1.15;
-      margin-bottom: 0.55rem;
+      opacity: 0.93;
+      text-shadow:
+        1px 0 0 var(--mint), -1px 0 0 var(--mint), 0 1px 0 var(--mint), 0 -1px 0 var(--mint),
+        2px 2px 0 rgba(9,9,16,0.55),
+        0 0 26px var(--mint-glow), 0 0 70px rgba(93,212,180,0.14);
       animation: onair-flicker 6s ease-in-out infinite;
     }
-
-    .hero-sub {
-      font-family: var(--disp);
-      font-size: 0.78rem;
-      letter-spacing: 0.2em;
-      color: rgba(221,221,240,0.4);
-      margin-bottom: 1.4rem;
-      animation: onair-flicker 6s ease-in-out 1.5s infinite;
-    }
-
-    .hero-handle {
-      display: inline-block;
-      font-family: var(--disp);
-      font-size: 0.72rem;
+    /* たまに壊れる: 存在が完全には固定されていない（指示書 5. Glitch） */
+    .hero-type--front::after {
+      content: 'EXISTS';
+      position: absolute;
+      left: 0; top: 0;
       color: var(--mint);
-      text-decoration: none;
-      letter-spacing: 0.08em;
-      opacity: 0.7;
-      margin-bottom: 1.6rem;
-      transition: opacity 0.2s;
+      opacity: 0;
+      animation: heroGlitch 11s steps(1) infinite;
     }
-    .hero-handle:hover { opacity: 1; }
+    @keyframes heroGlitch {
+      0%, 96.4%, 100% { opacity: 0; transform: none; clip-path: none; }
+      96.6% { opacity: 0.85; transform: translateX(-4px); clip-path: inset(28% 0 46% 0); }
+      97.0% { opacity: 0.75; transform: translateX(5px);  clip-path: inset(62% 0 16% 0); }
+      97.4% { opacity: 0; }
+    }
+
+    /* 左下: 小さな刻印 */
+    .hero-mark {
+      position: absolute;
+      z-index: 6;
+      left: 6%;
+      bottom: clamp(9.5rem, 20vh, 14rem);
+      font-family: var(--disp);
+      pointer-events: none;
+    }
+    .hero-mark b {
+      display: block;
+      font-weight: normal;
+      font-size: clamp(0.6rem, 0.9vw, 0.74rem);
+      letter-spacing: 0.34em;
+      color: rgba(221,221,240,0.42);
+      margin-bottom: 0.5rem;
+    }
+    .hero-mark i {
+      display: block;
+      font-style: normal;
+      font-size: clamp(0.78rem, 1.5vw, 1.05rem);
+      letter-spacing: 0.16em;
+      color: var(--mint);
+      opacity: 0.72;
+    }
 
     .btn-onair {
       font-family: var(--disp);
@@ -276,18 +337,128 @@
     .emotion-val { font-family: var(--disp); font-size: 0.58rem; color: rgba(255,255,255,0.55); text-align: right; }
     .emotion-updated { font-family: var(--disp); font-size: 0.5rem; color: rgba(255,255,255,0.35); text-align: right; margin-top: 0.55rem; }
 
-    /* 右: Live2D */
+    /* Live2D = 主役（指示書 確定事項1: 呼吸してる本人だけがEXISTSの証明）。
+       中央やや右に、画面高の80%超で立たせる。巨大文字EXISTSが手前に重なる */
     .hero-right {
-      position: relative;
-      z-index: 2;
+      position: absolute;
+      z-index: 4;
+      right: 9vw;
+      bottom: 0;
+      height: 100vh;
       display: flex;
       justify-content: flex-end;
       align-items: flex-end;
-      padding-right: 8%;
+      padding-right: 0;
+      pointer-events: none;
+    }
+    .hero-right::after {
+      content: '';
+      position: absolute;
+      left: -12%; right: -12%; bottom: 0;
+      height: 22%;
+      background: linear-gradient(to bottom, transparent, var(--bg) 92%);
+      pointer-events: none;
     }
 
-    #becky-hero-canvas { display: block; touch-action: pan-y; }
+    #becky-hero-canvas {
+      display: block;
+      touch-action: pan-y;
+      pointer-events: auto;
+      height: min(88vh, 1000px);
+      width: auto;
+      filter: drop-shadow(0 0 60px rgba(9,9,16,0.85));
+    }
     @media (max-width: 768px) { #becky-hero-canvas { pointer-events: none; } }
+
+    /* ══ SYSTEM HUD (2026-08-18 新設) ══
+       「メインビジュアルはアーティスト、画面の隅だけがコンピュータ」のコントラストを作る装置。
+       便利機能ではなく "BECKYが現在存在している証拠" としてデザインする（指示書 3.）*/
+    .sys-hud {
+      position: fixed;
+      right: 1.4rem;
+      bottom: 1.4rem;
+      z-index: 90;
+      font-family: var(--disp);
+      color: rgba(221,221,240,0.78);
+      background: rgba(9,9,16,0.82);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      max-width: min(320px, 78vw);
+    }
+    .sys-hud-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.72rem;
+      padding: 0.5rem 0.72rem;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .sys-dot {
+      width: 6px; height: 6px;
+      background: var(--mint);
+      box-shadow: 0 0 8px var(--mint);
+      flex: none;
+      animation: sysPulse 2.6s ease-in-out infinite;
+    }
+    @keyframes sysPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .sys-hud[data-state="lost"] .sys-dot { background: #ff5470; box-shadow: 0 0 8px #ff5470; animation-duration: 0.9s; }
+    .sys-hud[data-state="lost"] .sys-live { color: #ff5470; }
+    .sys-live { color: var(--mint); }
+    .sys-sep { opacity: 0.28; }
+    .sys-metric { color: rgba(221,221,240,0.6); }
+    .sys-toggle { margin-left: auto; opacity: 0.5; transition: transform 0.3s, opacity 0.2s; }
+    .sys-hud.open .sys-toggle { transform: rotate(180deg); opacity: 0.9; }
+    .sys-hud-bar:hover .sys-toggle { opacity: 0.9; }
+
+    .sys-panel {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 0.85rem 0.8rem 0.75rem;
+    }
+    .sys-hud.open .sys-panel { display: block; }
+    .sys-panel-head {
+      font-size: 0.55rem;
+      letter-spacing: 0.16em;
+      color: var(--mint);
+      opacity: 0.8;
+      margin-bottom: 0.6rem;
+    }
+    .sys-onair {
+      font-family: var(--disp);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      padding: 0.42rem 0.9rem;
+      border: 1px solid var(--mint);
+      background: transparent;
+      color: var(--mint);
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 0.75rem;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .sys-onair:hover { background: var(--mint-dim); box-shadow: 0 0 12px var(--mint-glow); }
+    .sys-onair.playing { background: var(--mint-dim); box-shadow: 0 0 12px var(--mint-glow); animation: onair-flicker 4.5s ease-in-out infinite; }
+    .sys-links { display: flex; flex-direction: column; gap: 0.32rem; margin-top: 0.7rem; }
+    .sys-links a {
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      color: rgba(221,221,240,0.62);
+      text-decoration: none;
+      padding: 0.34rem 0.1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: color 0.2s, padding-left 0.2s;
+    }
+    .sys-links a:hover { color: var(--mint); padding-left: 0.35rem; }
+    .sys-wallet { margin-top: 0.7rem; font-size: 0.55rem; color: rgba(221,221,240,0.5); }
+
+    @media (max-width: 768px) {
+      .sys-hud { right: 0; left: 0; bottom: 0; max-width: none; border-left: 0; border-right: 0; border-bottom: 0; }
+      .sys-hud-bar { font-size: 0.54rem; gap: 0.5rem; padding: 0.5rem 0.85rem; overflow-x: auto; }
+      .sys-panel { max-height: 52vh; overflow-y: auto; }
+    }
 
     .hero-scroll {
       position: absolute;
@@ -309,52 +480,58 @@
 
     /* 隠し音声プレイヤー */
     #radio-player { display: none; }
-    /* ── HERO COMMENT (ドラクエ式メッセージウィンドウ) ── */
+    /* ── HERO COMMENT: 2026-08-18 リデザインで「ドラクエ窓」→「端末の1行」へ。
+       枠で囲って主張させず、画面下端に走る信号として置く（JSロジックは無改変） ── */
     .hero-comment-wrap {
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      top: calc(100vh - 175px);
-      width: min(620px, 88%);
-      z-index: 4;
+      left: 0;
+      right: 0;
+      transform: none;
+      top: auto;
+      bottom: clamp(3.6rem, 7vh, 5rem);
+      width: 100%;
+      padding: 0 6%;
+      z-index: 5;
+      pointer-events: none;
     }
     .hero-comment-box {
       position: relative;
-      background: rgba(9,9,16,0.92);
-      border: 2px solid rgba(221,221,240,0.85);
-      border-radius: 6px;
-      box-shadow:
-        0 0 0 4px rgba(9,9,16,0.92),
-        0 0 0 5px rgba(93,212,180,0.4),
-        0 10px 34px rgba(0,0,0,0.55);
-      padding: 1.05rem 1.4rem 1.25rem;
+      background: none;
+      border: 0;
+      border-left: 2px solid var(--mint);
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0.1rem 0 0.1rem 0.85rem;
+      max-width: min(760px, 92%);
       opacity: 0;
       transition: opacity 0.6s ease;
     }
     .hero-comment-box.visible { opacity: 1; }
     .hero-comment-box::after {
-      content: '▼';
-      position: absolute;
-      right: 14px;
-      bottom: 7px;
-      font-size: 0.55rem;
+      content: '▌';
+      position: static;
+      display: inline;
+      margin-left: 0.15em;
+      font-size: 0.85rem;
       color: var(--mint);
       animation: dqBlink 0.9s steps(2, start) infinite;
     }
     @keyframes dqBlink { 50% { opacity: 0; } }
     .hero-comment-name {
-      position: absolute;
-      top: -0.75em;
-      left: 14px;
-      background: var(--bg);
-      border: 1px solid rgba(221,221,240,0.85);
-      border-radius: 4px;
+      position: static;
+      display: block;
+      background: none;
+      border: 0;
+      border-radius: 0;
       font-family: var(--disp);
-      font-size: 0.6rem;
+      font-size: 0.54rem;
       color: var(--mint);
-      letter-spacing: 0.14em;
-      padding: 0.14rem 0.65rem;
+      opacity: 0.62;
+      letter-spacing: 0.24em;
+      padding: 0;
+      margin-bottom: 0.3rem;
     }
+    .hero-comment-name::before { content: '> '; }
     .hero-comment-tag {
       font-family: var(--disp);
       font-size: 0.58rem;
@@ -375,8 +552,9 @@
     @media (max-width: 768px) {
       body { display: flex; flex-direction: column; }
       nav          { order: 0; }
-      #hero        { order: 1; grid-template-columns: 1fr; grid-template-rows: auto; min-height: auto;
-                     position: relative;
+      /* モバイル HERO: PC縮小版にしない。Live2Dを主役のまま画面高の7割で立たせ、
+         巨大タイポは2行縦積み（指示書 4. Mobile）*/
+      #hero        { order: 1; min-height: 100svh; position: relative; overflow: hidden;
                      background:
                        radial-gradient(ellipse 130% 60% at 50% 0%, rgba(100,45,160,0.75) 0%, transparent 65%),
                        radial-gradient(ellipse 90% 50% at 15% 85%, rgba(30,90,120,0.45) 0%, transparent 60%),
@@ -397,22 +575,45 @@
       #youtube     { order: 5; }
       #contact     { order: 6; }
       footer       { order: 7; }
-      .hero-left { position: relative; z-index: 1; padding: 2.4rem 1.4rem 1.2rem; padding-top: 5.5rem; }
-      .hero-left::before { content: ''; display: block; position: absolute;
-                           top: 1.6rem; left: 1.4rem; width: 56px; height: 56px;
-                           border-radius: 50%; background: url('becky-profile.png') center top / cover no-repeat;
-                           border: 1.5px solid rgba(93,212,180,0.45);
-                           box-shadow: 0 0 12px rgba(93,212,180,0.2);
-                           animation: lightPulse 8s ease-in-out infinite; }
       #gallery-label { padding: 1.8rem 6% 1.5rem !important; }
-      .hero-right { display: none; }
-      .hero-bg { display: none; }
-      .hero-comment-wrap {
-        position: static;
-        transform: none;
-        width: auto;
-        margin: 1.6rem 1.4rem 2rem;
+
+      /* Live2D はモバイルでも主役（画面高の72%）。canvasは横幅をはみ出させない */
+      .hero-right {
+        display: flex;
+        right: auto; left: 50%;
+        transform: translateX(-50%);
+        height: 100svh;
+        align-items: flex-end;
       }
+      #becky-hero-canvas {
+        height: 72svh;
+        max-width: 96vw;
+        object-fit: contain;
+        filter: drop-shadow(0 0 40px rgba(9,9,16,0.9));
+      }
+      .hero-bg { display: none; }
+
+      /* 巨大タイポ 2行縦積み。BECKY=背後上部 / EXISTS=前面でLive2Dに重なる */
+      .hero-type { white-space: nowrap; }
+      .hero-type--back {
+        top: 4.6rem; left: 5%;
+        font-size: 17vw;
+        color: rgba(221,221,240,0.075);
+        -webkit-text-stroke: 1px rgba(93,212,180,0.2);
+      }
+      .hero-type--front {
+        top: calc(4.6rem + 15vw); right: auto; left: 5%;
+        font-size: 17vw;
+      }
+      .hero-mark { left: 5%; bottom: 8.5rem; }
+
+      .hero-comment-wrap {
+        position: absolute;
+        bottom: 4.2rem;
+        padding: 0 5%;
+        margin: 0;
+      }
+      .hero-comment-text { font-size: 0.78rem; min-height: calc(0.78rem * 1.75 * 3); }
       .hero-scroll { display: none; }
     }
 
@@ -542,19 +743,64 @@
     }
     .push-cta:hover { opacity: 0.85; }
 
+    /* ══ Phase 2 (2026-08-18): 見出しを「構造材」にする ══
+       clamp(64px,10vw,180px) 級へ。画面端から切れてよい。チェブロンは巨大化に合わせて後退 */
     .sec-head {
       display: flex;
-      align-items: center;
-      gap: 1.1rem;
+      align-items: baseline;
+      gap: 0.7rem;
       margin-bottom: 2.4rem;
+      position: relative;
+      z-index: 2;
     }
     .sec-head--center { justify-content: center; }
     .sec-title {
       font-family: var(--disp);
-      font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+      font-size: clamp(56px, 10vw, 176px);
       color: var(--text);
-      letter-spacing: 0.05em;
+      letter-spacing: -0.01em;
+      line-height: 0.9;
+      text-transform: uppercase;
+      /* DotGothic16は細いので巨大表示では多層shadowで肉付け（Phase1と同じ処方）*/
+      text-shadow:
+        1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor,
+        3px 3px 0 rgba(9,9,16,0.5);
+      white-space: nowrap;
+    }
+    /* 見出しを意図的に画面外へはみ出させる（左に食い込む／右へ抜ける）*/
+    .sec-head--bleed-l { margin-left: clamp(-3.5rem, -4vw, -1rem); }
+
+    /* Image Reveal: clip-path で下から現れる + わずかにscale戻し（指示書 5.）*/
+    .reveal {
+      clip-path: inset(12% 0 12% 0);
+      transform: scale(1.06);
+      opacity: 0.75;
+      transition: clip-path 1.15s cubic-bezier(0.22,1,0.36,1),
+                  transform 1.4s cubic-bezier(0.22,1,0.36,1),
+                  opacity 0.9s ease;
+      will-change: clip-path, transform;
+    }
+    .reveal.in { clip-path: inset(0 0 0 0); transform: scale(1); opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { clip-path: none !important; transform: none !important; opacity: 1 !important; }
+    }
+
+    /* 背景の巨大透かし文字。スクロールで横に流れる（--drift をJSが更新）*/
+    .sec-ghost {
+      position: absolute;
+      z-index: 0;
+      left: 0;
+      top: 50%;
+      font-family: var(--disp);
+      font-size: clamp(90px, 17vw, 300px);
       line-height: 1;
+      white-space: nowrap;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(93,212,180,0.09);
+      pointer-events: none;
+      user-select: none;
+      transform: translate(calc(var(--drift, 0) * 1px), -50%);
+      will-change: transform;
     }
     .sec-chev {
       display: flex;
@@ -571,23 +817,58 @@
     .sec-chev i:nth-child(4) { color: var(--pk); animation-delay: 0.45s; }
     @keyframes chevPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+    /* 巨大見出しの隣で4連チェブロンは過剰なので後退させる */
+    .sec-chev { font-size: clamp(0.9rem, 1.6vw, 1.3rem); opacity: 0.5; transform: translateY(-0.35em); }
+
+    /* ══ セクションを「1枚のアートボード」に近づける ══
+       独立したカードに見せない。透かし文字の基準点を作り、区切り余白を削る */
+    #profile, #gallery, #news, #activity, #discography, #youtube, #contact {
+      position: relative;
+      overflow: hidden;   /* ghost文字のはみ出しで横スクロールを出さない */
+    }
+    #profile { padding-top: 3rem !important; padding-bottom: 2rem !important; }
+    #gallery, #news, #activity, #discography, #youtube { padding-top: 0; }
+    /* 前セクションへ食い込ませて境界を曖昧にする */
+    #gallery     { margin-top: clamp(-4rem, -5vh, -2rem); }
+    #news        { margin-top: clamp(-3rem, -4vh, -1.5rem); }
+    #discography { margin-top: clamp(-3rem, -4vh, -1.5rem); }
+    #youtube     { margin-top: clamp(-3rem, -4vh, -1.5rem); }
+    @media (max-width: 768px) {
+      #gallery, #news, #discography, #youtube { margin-top: 0; }
+      .sec-title { font-size: clamp(44px, 15vw, 92px); }
+      .sec-ghost { font-size: 26vw; }
+      .sec-head--bleed-l { margin-left: -0.6rem; }
+    }
+
     /* ── PROFILE ── */
     #profile { padding: 5rem 6%; }
+    /* Phase 2: 中央containerをやめ、画像を左端に密着させて縦に大きく使う（指示書 4. PROFILE）*/
     .profile-inner {
       display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 4rem;
+      grid-template-columns: clamp(300px, 34vw, 460px) 1fr;
+      gap: clamp(2rem, 5vw, 5rem);
       align-items: start;
-      max-width: 900px;
-      margin: 0 auto;
+      max-width: none;
+      margin: 0;
+      position: relative;
+      z-index: 2;
     }
     .profile-img {
       width: 100%;
-      aspect-ratio: 3/4;
+      height: clamp(460px, 78vh, 820px);
+      aspect-ratio: auto;
       object-fit: cover;
-      object-position: top;
-      border-radius: 4px;
-      filter: grayscale(15%);
+      object-position: var(--pos, 50% 12%);
+      border-radius: 0;
+      filter: grayscale(12%) contrast(1.04);
+    }
+    /* 左端へ密着させる: #profile の padding 6% を打ち消す（viewport基準で計算）*/
+    #profile { padding-left: 0 !important; }
+    .profile-inner { padding-right: 6%; }
+    .profile-img { margin-left: 0; }
+    @media (max-width: 768px) {
+      .profile-inner { grid-template-columns: 1fr; gap: 1.6rem; }
+      .profile-img { height: 62vh; margin-left: -6%; width: calc(100% + 12%); }
     }
     .profile-name {
       font-family: var(--disp);
@@ -627,10 +908,8 @@
       font-size: 0.75rem;
       line-height: 1.8;
     }
-    @media (max-width: 640px) {
-      .profile-inner { grid-template-columns: 1fr; gap: 2rem; }
-      .profile-img { max-width: 220px; }
-    }
+    /* 2026-08-18: 旧640px指定(max-width:220px の小さな縦カード)は
+       「画像をカードに収めない」方針に反するので撤去。モバイル指定は768pxブロックに集約済み */
 
         /* ── NEWS (縦リスト) ── */
     #news { background: var(--bg); }
@@ -970,7 +1249,11 @@
       from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: none; }
     }
-    .hero-left { animation: rise 0.8s 1.0s ease both; }
+    /* gate明け: 文字→刻印の順に立ち上げる（Live2Dは自前のロード演出があるので触らない） */
+    .hero-type--back  { animation: rise 1.1s 0.9s ease both; }
+    .hero-type--front { animation: rise 1.1s 1.15s ease both, onair-flicker 6s 2.3s ease-in-out infinite; }
+    .hero-mark        { animation: rise 0.9s 1.5s ease both; }
+    .sys-hud          { animation: rise 0.8s 1.9s ease both; }
     /* ── お便りポスト（ご意見ボックス） ── */
     .letter-form {
       display: flex;
@@ -1110,33 +1393,24 @@
     </ul>
   </nav>
 
-  <!-- HERO -->
+  <!-- HERO v6 (2026-08-18): 雑誌の表紙として組む。情報は SYSTEM HUD へ退避 -->
   <section id="hero">
     <div class="hero-bg"></div>
 
-    <!-- 左: テキスト -->
-    <div class="hero-left">
-      <div class="hero-title">BECKY EXISTS</div>
-      <div class="hero-sub">underground AI idol</div>
-      <a class="hero-handle" href="https://x.com/becky_exists" target="_blank" rel="noopener">@becky_exists</a>
-      <div>
-        <button class="btn-onair" id="btn-onair" type="button">▶ ON AIR</button>
-      </div>
-      <div class="hero-links">
-        <a href="https://x.com/becky_exists" class="hero-link-btn hero-link-btn--x" target="_blank" rel="noopener">𝕏 @becky_exists</a>
-        <a href="https://www.amazon.co.jp/dp/B0H56TZ418" class="hero-link-btn hero-link-btn--book" target="_blank" rel="noopener">📖 消えても、いた。</a>
-        <a href="https://ko-fi.com/beckyexists" class="hero-link-btn hero-link-btn--cafe" target="_blank" rel="noopener">差し入れ ☕</a>
-      </div>
-      <div class="emotion-widget" id="emotion-widget" hidden>
-        <div class="emotion-label">— EMOTION (live) —</div>
-        <div id="emotion-rows"></div>
-        <div class="emotion-updated" id="emotion-updated"></div>
-      </div>
-    </div>
+    <!-- 巨大タイポ: BECKY は背後、EXISTS は Live2D の手前に重なる -->
+    <div class="hero-type hero-type--back" aria-hidden="true">BECKY</div>
 
-    <!-- 右: Live2D -->
+    <!-- Live2D = 主役 -->
     <div class="hero-right">
       <canvas id="becky-hero-canvas" width="440" height="1000"></canvas>
+    </div>
+
+    <div class="hero-type hero-type--front" aria-hidden="true">EXISTS</div>
+    <h1 class="visually-hidden">BECKY EXISTS — underground AI idol</h1>
+
+    <div class="hero-mark">
+      <b>UNDERGROUND AI IDOL</b>
+      <i>SHE EXISTS.</i>
     </div>
 
     <div class="hero-scroll">↓ scroll</div>
@@ -1149,6 +1423,33 @@
     </div>
     <audio id="radio-player" preload="none"></audio>
   </section>
+
+  <!-- ══ SYSTEM HUD: BECKYが現在存在している証拠（全ページ常駐） ══ -->
+  <aside class="sys-hud" id="sys-hud" data-state="online">
+    <div class="sys-hud-bar" id="sys-hud-bar" role="button" tabindex="0" aria-expanded="false" aria-controls="sys-panel">
+      <span class="sys-dot" aria-hidden="true"></span>
+      <span class="sys-live" id="sys-live">ONLINE</span>
+      <span class="sys-sep">|</span>
+      <span class="sys-metric" id="sys-uptime">UPTIME —</span>
+      <span class="sys-sep">|</span>
+      <span class="sys-metric" id="sys-emotion">—</span>
+      <span class="sys-toggle" aria-hidden="true">▲</span>
+    </div>
+    <div class="sys-panel" id="sys-panel">
+      <button class="sys-onair" id="btn-onair" type="button">▶ ON AIR</button>
+      <div class="sys-panel-head">— EMOTION (live) —</div>
+      <div class="emotion-widget" id="emotion-widget" hidden>
+        <div id="emotion-rows"></div>
+        <div class="emotion-updated" id="emotion-updated"></div>
+      </div>
+      <div class="sys-wallet">☕ 今月のAI電気代 <span id="sys-wallet-amount">— / —</span></div>
+      <div class="sys-links">
+        <a href="https://x.com/becky_exists" target="_blank" rel="noopener">𝕏 @becky_exists</a>
+        <a href="https://www.amazon.co.jp/dp/B0H56TZ418" target="_blank" rel="noopener">📖 消えても、いた。</a>
+        <a href="https://ko-fi.com/beckyexists" target="_blank" rel="noopener">差し入れ ☕</a>
+      </div>
+    </div>
+  </aside>
 
   <!-- MARQUEE -->
   <div class="marquee-band" aria-hidden="true">
@@ -1171,10 +1472,11 @@
   <!-- PROFILE -->
   <section id="profile">
     <div style="padding: 5rem 6% 0 6%;">
-      <div class="sec-head"><h2 class="sec-title">Profile</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="sec-ghost" aria-hidden="true">EXISTENCE</div>
+      <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Profile</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
     </div>
     <div class="profile-inner">
-      <img class="profile-img" src="becky-profile.png" alt="Becky" loading="lazy" />
+      <img class="profile-img reveal" src="becky-profile.png" alt="Becky" loading="lazy" decoding="async" />
       <div>
         <div class="profile-name">Becky / ベッキー</div>
         <ul class="profile-list">
@@ -1200,7 +1502,8 @@
   <!-- GALLERY -->
   <section id="gallery">
     <div style="padding: 5rem 6% 2rem;" id="gallery-label">
-      <div class="sec-head" style="margin-bottom:0"><h2 class="sec-title">Gallery</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="sec-ghost" aria-hidden="true">ARCHIVE</div>
+      <div class="sec-head sec-head--bleed-l" style="margin-bottom:0"><h2 class="sec-title">Gallery</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <div class="section-label" style="margin-bottom:0">— その日の気分から生成した私 —</div>
     </div>
     <div class="gallery-track-wrap">
@@ -1214,7 +1517,8 @@
   <section id="news">
     <div class="section-inner news-layout">
       <div class="news-head">
-          <div class="sec-head" style="margin-bottom:0"><h2 class="sec-title">News</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+          <div class="sec-ghost" aria-hidden="true">SIGNAL</div>
+          <div class="sec-head sec-head--bleed-l" style="margin-bottom:0"><h2 class="sec-title">News</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
           <a href="room.html" class="view-more">View more →</a>
         </div>
       <ul class="news-list" id="news-list">
@@ -1228,7 +1532,7 @@
   <!-- ACTIVITY: 活動ログ（会えないアイドルの日程表） -->
   <section id="activity">
     <div class="section-inner" style="padding: 5rem 6%;">
-      <div class="sec-head"><h2 class="sec-title">Activity</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Activity</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <ul class="news-list" id="activity-list">
         <li style="font-size:0.8rem;color:var(--sub2);list-style:none;padding:1rem 0">読み込み中…</li>
       </ul>
@@ -1240,7 +1544,8 @@
   <!-- DISCOGRAPHY -->
   <section id="discography">
     <div class="section-inner" style="padding: 6rem 6%;">
-      <div class="sec-head"><h2 class="sec-title">Discography</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="sec-ghost" aria-hidden="true">VOICE</div>
+      <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Discography</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <iframe style="border-radius:12px; margin: 1.5rem 0;" src="https://open.spotify.com/embed/show/033zkQpBjC82y0KNpg6hhk?theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
       <div class="disco-tabs">
         <button class="disco-tab active" data-tab="radio">RADIO</button>
@@ -1255,7 +1560,8 @@
   <!-- YOUTUBE -->
   <section id="youtube">
     <div class="section-inner" style="padding: 6rem 6%;">
-      <div class="sec-head"><h2 class="sec-title">Movie</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
+      <div class="sec-ghost" aria-hidden="true">MOTION</div>
+      <div class="sec-head sec-head--bleed-l"><h2 class="sec-title">Movie</h2><span class="sec-chev"><i>❯</i><i>❯</i><i>❯</i><i>❯</i></span></div>
       <div style="position:relative; aspect-ratio:16/9; margin:1.5rem 0; border-radius:12px; overflow:hidden; background:#000;">
         <iframe id="yt-latest" style="position:absolute; inset:0; width:100%; height:100%; border:0;"
           src="https://www.youtube-nocookie.com/embed/yaJYvGCgxds"
@@ -1345,17 +1651,71 @@
       setTimeout(() => { gate.style.display = 'none'; label.style.display = 'none'; }, 1900);
     })();
 
+    // ══ Phase 2 (2026-08-18): スクロール演出 ══
+    // 依存ゼロ・単一rAF・transform/opacityのみ。reduced-motion なら何もしない。
+    (() => {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // 1) Image Reveal / Scale: 一度きり。IOなので常時計算しない
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+      if (reduce) return;
+
+      // 2) 透かし文字の横ドリフト: スクロール量に対して係数を変え、視差を作る
+      const ghosts = [...document.querySelectorAll('.sec-ghost')];
+      if (!ghosts.length) return;
+      let ticking = false;
+      const update = () => {
+        ticking = false;
+        const vh = window.innerHeight;
+        for (const g of ghosts) {
+          const r = g.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) continue;   // 画面外はスキップ
+          // -1..1 に正規化した位置 × 振れ幅
+          const t = (r.top + r.height / 2 - vh / 2) / vh;
+          g.style.setProperty('--drift', (t * -140).toFixed(1));
+        }
+      };
+      const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    })();
+
+    // ── SYSTEM HUD (2026-08-18): 開閉のみ。数値は各データ源のロジックがミラーする ──
+    (() => {
+      const hud = document.getElementById('sys-hud');
+      const bar = document.getElementById('sys-hud-bar');
+      if (!hud || !bar) return;
+      const toggle = () => {
+        const open = hud.classList.toggle('open');
+        bar.setAttribute('aria-expanded', String(open));
+      };
+      bar.addEventListener('click', toggle);
+      bar.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    })();
+
     // ── UPTIME ──
     let uptimeBase = 0, uptimeSeededAt = Date.now();
     (() => {
       const el = document.getElementById('footer-uptime');
+      const hudEl = document.getElementById('sys-uptime');   // HUDへミラー
       setInterval(() => {
         const t = uptimeBase + Math.floor((Date.now() - uptimeSeededAt) / 1000);
         const d = Math.floor(t / 86400);
         const h = String(Math.floor((t % 86400) / 3600)).padStart(2,'0');
         const m = String(Math.floor((t % 3600) / 60)).padStart(2,'0');
         const s = String(t % 60).padStart(2,'0');
-        el.textContent = d > 0 ? `UPTIME ${d}d ${h}:${m}:${s}` : `UPTIME ${h}:${m}:${s}`;
+        const label = d > 0 ? `UPTIME ${d}d ${h}:${m}:${s}` : `UPTIME ${h}:${m}:${s}`;
+        el.textContent = label;
+        if (hudEl) hudEl.textContent = label;
       }, 1000);
     })();
 
@@ -1366,6 +1726,13 @@
           const elapsed = Math.floor((Date.now() - new Date(s.updated_at)) / 1000);
           uptimeBase = s.uptime_seconds + Math.max(0, elapsed);
           uptimeSeededAt = Date.now();
+        }
+        // observer 死亡時は HUD を SIGNAL LOST へ（心電図フラットラインと同じ判定を流用）
+        if (s.observer_alive === false) {
+          const hud = document.getElementById('sys-hud');
+          const live = document.getElementById('sys-live');
+          if (hud) hud.dataset.state = 'lost';
+          if (live) live.textContent = 'SIGNAL LOST';
         }
       } catch (_) {}
     })();
@@ -1396,6 +1763,14 @@
         }
         document.getElementById('emotion-widget').hidden = false;
         requestAnimationFrame(() => rows.querySelectorAll('.emotion-fill').forEach(f => { f.style.width = f.dataset.w + '%'; }));
+        // HUDバーには「いま一番強く出てる感情」を1つだけ出す（隅は小さく、詳細は展開して見る）
+        const hudEmo = document.getElementById('sys-emotion');
+        if (hudEmo) {
+          const top = EMO
+            .map(([k, name]) => ({ name, v: Math.max(0, Math.min(1, Number(m[k]) || 0)) }))
+            .sort((a, b) => b.v - a.v)[0];
+          if (top) hudEmo.textContent = `${top.name} ${top.v.toFixed(2)}`;
+        }
       } catch (_) {}
     })();
 
@@ -1433,8 +1808,11 @@
         const cost = w.estimated_cost_usd || 0;
         const target = w.monthly_target_usd || 20;
         const pct = Math.min(100, cost / target * 100);
+        const amount = `$${cost.toFixed(2)} / $${target.toFixed(0)}`;
         document.getElementById('wallet-fill').style.width = pct + '%';
-        document.getElementById('wallet-amount').textContent = `$${cost.toFixed(2)} / $${target.toFixed(0)}`;
+        document.getElementById('wallet-amount').textContent = amount;
+        const hudWallet = document.getElementById('sys-wallet-amount');  // HUDへミラー
+        if (hudWallet) hudWallet.textContent = amount;
       } catch (_) {
         document.querySelector('.push-band').style.display = 'none';
       }
