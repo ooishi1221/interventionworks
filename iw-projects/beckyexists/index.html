@@ -89,10 +89,12 @@
 
     /* 呼吸: 静止画なのに生きてる。周期はenergy連動(--breath-dur、9.5s-energy*3)。
        scale 1→1.006=意識的に気づかないレベル。不自然なら消す前提の最小実装 */
-    .hero-right { animation: breathe var(--breath-dur, 8s) ease-in-out infinite; transform-origin: 50% 100%; }
+    /* ⚠️呼吸はcanvasに掛ける。.hero-rightに掛けるとkeyframesのtransformが
+       モバイルのセンタリング(translateX(-50%))を上書きし、人物が右へ吹っ飛ぶ(8/18 iPhone実機で発覚) */
+    #becky-hero-canvas { animation: breathe var(--breath-dur, 8s) ease-in-out infinite; transform-origin: 50% 100%; }
     @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.006); } }
-    body.offline .hero-right { animation-play-state: paused; }   /* 不在=呼吸が止まる */
-    @media (prefers-reduced-motion: reduce) { .hero-right { animation: none; } }
+    body.offline #becky-hero-canvas { animation-play-state: paused; }   /* 不在=呼吸が止まる */
+    @media (prefers-reduced-motion: reduce) { #becky-hero-canvas { animation: none; } }
 
     /* 状態変化=micro glitch(LEVEL 1)。mood/statusが実際に届いた瞬間だけ0.16秒 */
     .sys-hud.sig .sys-hud-bar { animation: sigShift 0.16s steps(2) 1; }
@@ -1199,8 +1201,17 @@
     #profile { padding-left: 0 !important; }
     .profile-inner { padding-right: 6%; }
     @media (max-width: 768px) {
-      .profile-inner { grid-template-columns: 1fr; gap: 1.6rem; }
+      .profile-inner { grid-template-columns: 1fr; gap: 1.6rem; min-height: 0; }
       .profile-figure { height: 62vh; margin-left: -6%; width: calc(100% + 12%); }
+      /* 重ね配置はデスクトップ専用。モバイルは画像の下に流す(52%幅のままだと1文字ずつ縦折れする、8/18 iPhone実機で発覚) */
+      .profile-body {
+        position: static;
+        width: auto;
+        padding: 1.4rem 0 0;
+        background: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
     }
     .profile-name {
       font-family: var(--disp);
