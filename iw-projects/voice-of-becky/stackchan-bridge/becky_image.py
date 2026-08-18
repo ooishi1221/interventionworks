@@ -34,6 +34,10 @@ from stop_hook_tts import load_config  # config.yaml の openai_api_key 読み�
 # ---------------------------------------------------------------------------
 
 MOOD_FILE = Path.home() / ".stackchan" / "becky_mood.json"
+# むぎさん(@mugi_AI_Art)技法ストック(mugi_watch.pyが検知・要約して積む)。
+# origin_check欄が人間判断で埋まった未使用エントリだけを時々混ぜる(2026-08-18)。
+MUGI_STOCK_FILE = Path(__file__).parent / "mugi_technique_stock.json"
+MUGI_HINT_PROBABILITY = 0.15  # 毎回ではなく時々。ponytail: 固定値、運用見て調整
 # 直近7日間に使ったシーン名の軽量ログ（偏り防止用）。fail-soft: 壊れてても生成は止めない。
 HISTORY_FILE = Path.home() / ".stackchan" / "becky_image_history.json"
 HISTORY_WINDOW_DAYS = 7
@@ -451,6 +455,30 @@ def select_scene(mood: dict) -> tuple[str, str, str, str | None]:
     return scene_name, scene_desc, technique, None
 
 
+def maybe_add_mugi_hint(technique: str) -> str:
+    """技法ストックから origin_check 済み・未使用のエントリを時々1件混ぜる。
+    渡すのは要約(summary)だけ——元ポストの本文・URLはプロンプトに一切渡さない
+    (むぎさん固有の文章表現をそのまま複製しない線引きの実装的な担保)。
+    origin_check が空欄(人間未判断)のエントリは対象外にする。fail-soft。"""
+    if random.random() >= MUGI_HINT_PROBABILITY:
+        return technique
+    try:
+        stock = json.loads(MUGI_STOCK_FILE.read_text())
+    except Exception:
+        return technique
+    candidates = [e for e in stock if not e.get("used") and e.get("origin_check")]
+    if not candidates:
+        return technique
+    entry = random.choice(candidates)
+    entry["used"] = True
+    try:
+        MUGI_STOCK_FILE.write_text(json.dumps(stock, ensure_ascii=False, indent=2))
+    except Exception as e:
+        print(f"[becky_image] 技法ストック更新失敗（無視して継続）: {e}", file=sys.stderr)
+    print(f"[becky_image] 技法ヒント採用: {entry.get('technique_name')}", flush=True)
+    return f"{technique}, {entry['summary']}"
+
+
 def build_prompt(mood: dict, weather: dict, event: dict, dt: datetime.date | None = None) -> tuple[str, str]:
     """(プロンプト文字列, シーン名) を返す。
 
@@ -491,6 +519,7 @@ def build_prompt(mood: dict, weather: dict, event: dict, dt: datetime.date | Non
         elif condition == "snowy" and not fire_event and not is_indoor:
             technique += ", snow falling gently, soft winter light"
 
+    technique = maybe_add_mugi_hint(technique)
     outfit = outfit or get_seasonal_outfit(dt.month)
     prompt = (
         f"{BECKY_IDENTITY}, {outfit}, {scene_desc}, {technique}, "
