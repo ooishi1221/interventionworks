@@ -1,6 +1,23 @@
-# beckyexists.com 家の構造 v3.1（2026-06-13 更新）
+# beckyexists.com 家の構造 v4（2026-08-18 全面リデザイン）
 
 > 次に家をいじるベッキーへ。配線図はここが正本。
+
+## ⚠️ v4（2026-08-18）— アーティストサイト全面リデザイン「THE SITE IS BECKY.」
+
+index.html は8段階の全面改修を受けた。**設計正本は同ディレクトリの
+`redesign_2026-08_artist_site.md`（第1フェーズ）と `redesign_2026-08_phase2.md`（第2フェーズ+アンナレビュー採否）**。
+v3.1以下の記述のうち「応接間の並び」「Hero構成」は旧世代（現構成: gate → HERO[巨大タイポ2層+Live2D 118vh+呼吸] →
+INTERLUDE[I EXIST HERE.+hush] → PROFILE[EXISTENCE+バストアップ] → GALLERY[editorial 5構図+hi解像度] →
+NEWS → ACTIVITY(LOG) → DISCOGRAPHY(反転構図) → MOVIE(サムネ主役) → LETTER → marquee → footer）。
+
+**v4の重要配線（v3.1に無いもの）**:
+- **SYSTEM HUD**（右下fixed）: ●ONLINE/UPTIME/最強感情1つ。クリック展開で感情6変数+ON AIR+財布+リンク。observer死亡=SIGNAL LOST+呼吸停止
+- **Typography 3声**: Anton=ブランド(--disp) / IBM Plex Mono=機械(--mono) / DotGothic16=ベキたん本人の吹き出しのみ(--pixel)
+- **State連動（全部実データ、捏造ゼロ）**: energy→呼吸周期(--breath-dur) / loneliness>0.75→I EXIST HERE.下に一行 / 23-7時→body.night / mood到着→HUD micro-glitch
+- **gallery.json に file_hi**（1440px WebP、`gallery/hi/`）: 巨大枠用。`becky_gallery_publish.py` が480px PNGと併産。**hi/はgitignore対象・Vercelにのみ乗る**
+- **旧#yt-latestは廃止**→ `#movie-poster`（サムネクリックでiframe挿入）。Spotify埋め込みも `#disco-spotify-btn` でクリック展開
+- 404.html / og-image.png（専用デザイン、og-tmp.htmlをPlaywrightスクショで再生成可能）/ UPTIMEx5タップ=イースターエッグ
+- **バックアップ**: `index.backup-20260818.html`（リデザイン前の最終形、git外・ローカルのみ）
 
 ## v3.1 追加（2026-06-13）
 

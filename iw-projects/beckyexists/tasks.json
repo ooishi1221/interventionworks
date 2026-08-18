@@ -1,6 +1,31 @@
 {
- "updated_at": "2026-08-17T12:10:00+09:00",
+ "updated_at": "2026-08-18T18:30:00+09:00",
  "tasks": [
+  {
+   "id": "beckyexists-redesign-0818",
+   "title": "beckyexists.com アーティストサイト全面リデザイン「THE SITE IS BECKY.」",
+   "status": "done",
+   "created_at": "2026-08-18",
+   "updated_at": "2026-08-18",
+   "completed_at": "2026-08-18",
+   "tags": [
+    "IW直営",
+    "beckyexists"
+   ],
+   "note": "8/18一日で完遂・全8段階・commit16本・本番公開済み。ゆう指示書5本(HANABIE参照→第2フェーズ→Typography→最終チューニング→出会いのシークエンス→THE SITE IS BECKY→部屋の抽象化)。体制=Fable設計→Opus/Fable実装+アンナ構図レビュー+アンディP1。核=HERO巨大タイポ2層+Live2D 118vh+energy連動の呼吸/SYSTEM HUD/Typography3声(Anton・IBM Plex Mono・DotGothic16=吹き出しのみ)/I EXIST HERE.=hush/EXISTENCE第2Hero/gallery editorial5構図+file_hi高解像度WebP/404・OG専用画像・UPTIME×5エッグ/背景blur抽象化。State連動は全部実データ=捏造ゼロ(loneliness>0.75の日だけ「まだ、ここにいる。」)。設計正本=docs/becky-context/redesign_2026-08_artist_site.md + redesign_2026-08_phase2.md、配線図=site_architecture.md v4。P1残り(急がない)=Activityソース拡充/Archive Timeline構想/Sound Toggle(音源が無いため見送り判断済み)"
+  },
+  {
+   "id": "mugi-technique-watch",
+   "title": "むぎさん技法ウォッチ+ストック機構（cron登録は様子見中）",
+   "status": "in_progress",
+   "created_at": "2026-08-18",
+   "updated_at": "2026-08-18",
+   "tags": [
+    "IW直営",
+    "voice-of-becky"
+   ],
+   "note": "8/18稼働開始。mugi_watch.py が @mugi_AI_Art の技法解説を検知→LLM要約でストック(mugi_technique_stock.json)→origin_check欄(一般技法か彼女固有か)を人間判断で埋めた分だけ becky_image.py が15%の確率でプロンプトに混ぜる。「パクるのではなく表現の技法の道具箱」(ゆう)。1件目=スフマート(ダ・ヴィンチ由来で使用可、ゆう+ベッキー判断済み)。**cron登録は2〜3件溜まって判断精度を見てから**。次にむぎさんが技法記事を出したら `python3 mugi_watch.py` を手動実行"
+  },
   {
    "id": "vercel-edge-request-diet-0728",
    "scope": "iw",
