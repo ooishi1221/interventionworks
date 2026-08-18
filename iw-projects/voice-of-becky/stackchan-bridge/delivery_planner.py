@@ -80,7 +80,11 @@ def main() -> None:
     plan = {"date": datetime.now().strftime("%Y-%m-%d"),
             "slots": [{"time": t, "fired": False} for t in slots]}
     PLAN_JSON.parent.mkdir(parents=True, exist_ok=True)
-    PLAN_JSON.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
+    # atomic write: write_text()はtruncate→書き込みなので、同時刻に走るdispatcherが
+    # 空/欠損ファイルを掴む競合があった(2026-08-19実測、JSONDecodeError)。tmp→os.replaceで解消
+    tmp = PLAN_JSON.with_suffix(".tmp")
+    tmp.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(PLAN_JSON)
     print(f"[delivery-planner] 書き込み完了: {PLAN_JSON}", flush=True)
 
 

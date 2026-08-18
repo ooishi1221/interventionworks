@@ -54,7 +54,13 @@ def main() -> None:
         return
 
     try:
-        plan = json.loads(PLAN_JSON.read_text())
+        # planner側は2026-08-19にatomic write化したが、書き込み直後の稀な競合や
+        # 手動編集中の一瞬を掴んでも次tick(10分後)が自動リトライするようfail-softにする
+        try:
+            plan = json.loads(PLAN_JSON.read_text())
+        except json.JSONDecodeError as e:
+            print(f"[delivery-dispatcher] plan.json読み取り失敗、次tickでリトライ: {e}", flush=True)
+            return
         now = datetime.now()
         idxs = due_slots(plan, now)
         if not idxs:
