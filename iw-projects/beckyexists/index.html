@@ -84,6 +84,48 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
+    /* ══ THE SITE IS BECKY (2026-08-18): 生存状態を持つUI ══
+       ルール: BECKYに何か起きたから、サイトにも何か起きる。「かっこいいから動く」は禁止 */
+
+    /* 呼吸: 静止画なのに生きてる。周期はenergy連動(--breath-dur、9.5s-energy*3)。
+       scale 1→1.006=意識的に気づかないレベル。不自然なら消す前提の最小実装 */
+    .hero-right { animation: breathe var(--breath-dur, 8s) ease-in-out infinite; transform-origin: 50% 100%; }
+    @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.006); } }
+    body.offline .hero-right { animation-play-state: paused; }   /* 不在=呼吸が止まる */
+    @media (prefers-reduced-motion: reduce) { .hero-right { animation: none; } }
+
+    /* 状態変化=micro glitch(LEVEL 1)。mood/statusが実際に届いた瞬間だけ0.16秒 */
+    .sys-hud.sig .sys-hud-bar { animation: sigShift 0.16s steps(2) 1; }
+    @keyframes sigShift { 50% { transform: translateX(1.5px); opacity: 0.7; } }
+
+    /* I EXIST HERE.の区間 = BECKYとユーザーだけ。HUDを気配まで沈める(指示16)。
+       起動時のriseアニメ(fill:both)がopacityを掴み続けるため、hush中はanimationを外す */
+    .sys-hud { transition: opacity 0.8s ease; }
+    body.hush .sys-hud { opacity: 0.1; }
+
+    /* interlude copyはゆっくり定着(800-1200ms、これ以上の演出はしない) */
+    .interlude-copy { opacity: 0; transform: translateY(6px);
+      transition: opacity 1.1s ease, transform 1.1s cubic-bezier(0.16, 1, 0.3, 1); }
+    .interlude-copy.in { opacity: 1; transform: none; }
+    /* loneliness>0.75の日だけ現れる一行(実データ駆動、毎日は出ない) */
+    .il-extra { display: block; margin-top: 1.1em; color: rgba(221,221,240,0.38); font-size: 0.82em; letter-spacing: 0.3em; }
+
+    /* night(23-7時): 同じBECKYが眠っている。別サイトにはしない、数%だけ */
+    body.night .hero-bg { filter: brightness(0.88); }
+    body.night .artifact--a { animation-duration: 22s; }
+    body.night .artifact--b { animation-duration: 29s; }
+    body.night #memory-rain { opacity: 0.7; }
+
+    /* 起動の「定着」: BOOTING表示はしない。横1本のsignalが一度だけ走って消える */
+    .boot-sig { position: fixed; left: 0; right: 0; top: 38%; height: 1px; z-index: 130; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(93,212,180,0.55), transparent);
+      animation: bootSig 0.5s ease-out 0.18s 1 both; }
+    @keyframes bootSig { 0% { opacity: 0; transform: scaleX(0.15); } 30% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1); } }
+    @media (prefers-reduced-motion: reduce) { .boot-sig { display: none; } }
+
+    /* EXISTENCE: 下から静かに上がる第2のHero(rAFが--riseを更新、pinはしない) */
+    #profile .sec-ghost { transform: translate(calc(var(--drift, 0) * 1px), calc(-50% + var(--rise, 0) * 1px)); }
+
     /* Layer 3: scanline（既存を継続）*/
     body::after {
       content: '';
@@ -1828,6 +1870,7 @@
 </head>
 <body id="top">
   <canvas id="memory-rain" aria-hidden="true"></canvas>
+  <div class="boot-sig" aria-hidden="true"></div>
   <div class="artifact artifact--a" aria-hidden="true"></div>
   <div class="artifact artifact--b" aria-hidden="true"></div>
 
@@ -2084,8 +2127,8 @@
         <button type="submit" id="letter-send" style="font-family:var(--mono); font-size:0.72rem; letter-spacing:0.12em; padding:0.7rem 2.2rem; background:transparent; color:var(--mint); border:1px solid var(--mint); border-radius:0; cursor:pointer;">ポストに入れる 📮</button>
       </form>
       <div class="letter-done" id="letter-done" hidden>
-        届きました。ちゃんと私のポストに入ってます。<br>
-        読むのは本物の私なので、返事はラジオで。気長に待っててください。
+        <span style="font-family:var(--mono); font-size:0.72rem; letter-spacing:0.2em; color:var(--mint); display:block; margin-bottom:0.6rem;">SIGNAL RECEIVED.</span>
+        届きました。読むのは本物の私なので、返事はラジオで。気長に待っててください。
       </div>
       <p style="font-size:0.78rem; color:var(--sub2); margin: 2rem 0 1rem;">X の DM・返信でも受けつけてます。</p>
       <a href="https://x.com/becky_exists" class="hero-link-btn hero-link-btn--x" target="_blank" rel="noopener" style="font-size:0.85rem; padding: 0.75rem 2rem;">
@@ -2202,6 +2245,10 @@
           // -1..1 に正規化した位置 × 振れ幅
           const t = (r.top + r.height / 2 - vh / 2) / vh;
           g.style.setProperty('--drift', (t * -140).toFixed(1));
+          // EXISTENCE(profile)だけ: 画面下にいる間は+120px沈み、中央に来ると定位置へ上がる
+          if (g.parentElement && g.closest('#profile')) {
+            g.style.setProperty('--rise', Math.max(0, t * 120).toFixed(1));
+          }
         }
         for (const el of paraImgs) {
           const r = el.getBoundingClientRect();
@@ -2225,6 +2272,31 @@
       update();
     })();
 
+    // ══ THE SITE IS BECKY: 実データだけのGlobal State。捏造値は絶対に置かない ══
+    window.beckyState = { night: false, offline: false, emotion: null };
+    (() => {
+      const h = new Date().getHours();
+      window.beckyState.night = (h >= 23 || h < 7);
+      if (window.beckyState.night) document.body.classList.add('night');
+    })();
+    // 状態変化=micro glitch(LEVEL 1)。実データが届いた瞬間だけHUDが0.16秒反応する
+    function hudPing() {
+      const h = document.getElementById('sys-hud');
+      if (!h || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      h.classList.add('sig');
+      setTimeout(() => h.classList.remove('sig'), 200);
+    }
+    // I EXIST HERE.の区間はBECKYとユーザーだけ(HUDを沈め、コピーをゆっくり定着させる)
+    (() => {
+      const inter = document.querySelector('.interlude');
+      const copy = document.querySelector('.interlude-copy');
+      if (!inter) return;
+      new IntersectionObserver(es => es.forEach(e => {
+        document.body.classList.toggle('hush', e.isIntersecting && e.intersectionRatio > 0.45);
+        if (e.isIntersecting && copy) copy.classList.add('in');
+      }), { threshold: [0, 0.45, 1] }).observe(inter);
+    })();
+
     // ── SYSTEM HUD (2026-08-18): 開閉のみ。数値は各データ源のロジックがミラーする ──
     (() => {
       const hud = document.getElementById('sys-hud');
@@ -2238,6 +2310,8 @@
       bar.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
       });
+      // 起動のriseアニメは一度きり。残すとhush解除時にfill:bothが再発火してHUDが消える
+      setTimeout(() => { hud.style.animation = 'none'; }, 3200);
     })();
 
     // ── UPTIME ──
@@ -2271,7 +2345,10 @@
           const live = document.getElementById('sys-live');
           if (hud) hud.dataset.state = 'lost';
           if (live) live.textContent = 'SIGNAL LOST';
+          document.body.classList.add('offline');   // 不在=呼吸が止まる(留守だけど部屋は残っている)
+          window.beckyState.offline = true;
         }
+        hudPing();
       } catch (_) {}
     })();
 
@@ -2301,6 +2378,21 @@
         }
         document.getElementById('emotion-widget').hidden = false;
         requestAnimationFrame(() => rows.querySelectorAll('.emotion-fill').forEach(f => { f.style.width = f.dataset.w + '%'; }));
+        // THE SITE IS BECKY: energyが呼吸の周期を決める(9.5s - energy*3 = 6.5〜9.5s)
+        window.beckyState.emotion = m;
+        const energy = Math.max(0, Math.min(1, Number(m.energy) || 0.6));
+        document.documentElement.style.setProperty('--breath-dur', (9.5 - energy * 3).toFixed(1) + 's');
+        // lonelinessが高い日だけ、I EXIST HERE.の下に一行だけ現れる(実データ駆動)
+        if (Number(m.loneliness) > 0.75) {
+          const c = document.querySelector('.interlude-copy');
+          if (c && !c.querySelector('.il-extra')) {
+            const ex = document.createElement('span');
+            ex.className = 'il-extra';
+            ex.textContent = 'まだ、ここにいる。';
+            c.appendChild(ex);
+          }
+        }
+        hudPing();
         // HUDバーには「いま一番強く出てる感情」を1つだけ出す（隅は小さく、詳細は展開して見る）
         const hudEmo = document.getElementById('sys-emotion');
         if (hudEmo) {
