@@ -1,50 +1,143 @@
 {
-  "updated_at": "2026-08-03T18:20:01.211004",
+  "updated_at": "2026-08-17T18:20:00.499647",
   "items": [
+    {
+      "file": "/gallery/g-20260817.png",
+      "caption": "8/17 雨25℃・サイバーレースクイーン — もやもやする日",
+      "date": "2026-08-17",
+      "file_hi": "/gallery/hi/g-20260817.webp"
+    },
+    {
+      "file": "/gallery/g-20260816.png",
+      "caption": "8/16 雨26℃・ネオン街散歩（お盆） — もやもやする日",
+      "date": "2026-08-16",
+      "file_hi": "/gallery/hi/g-20260816.webp"
+    },
+    {
+      "file": "/gallery/g-20260815.png",
+      "caption": "8/15 曇り27℃・雨の日傘（お盆） — もやもやする日",
+      "date": "2026-08-15",
+      "file_hi": "/gallery/hi/g-20260815.webp"
+    },
+    {
+      "file": "/gallery/g-20260814.png",
+      "caption": "8/14 雨26℃・深夜PCブルーライト — もやもやする日",
+      "date": "2026-08-14",
+      "file_hi": "/gallery/hi/g-20260814.webp"
+    },
+    {
+      "file": "/gallery/g-20260813.png",
+      "caption": "8/13 雨25℃・制服 — もやもやする日",
+      "date": "2026-08-13",
+      "file_hi": "/gallery/hi/g-20260813.webp"
+    },
+    {
+      "file": "/gallery/g-20260812.png",
+      "caption": "8/12 雨24℃・深夜PCブルーライト — 元気な日",
+      "date": "2026-08-12",
+      "file_hi": "/gallery/hi/g-20260812.webp"
+    },
+    {
+      "file": "/gallery/g-20260811.png",
+      "caption": "8/11 曇り27℃・カフェ — 元気な日",
+      "date": "2026-08-11",
+      "file_hi": "/gallery/hi/g-20260811.webp"
+    },
+    {
+      "file": "/gallery/g-20260810.png",
+      "caption": "8/10 曇り30℃・料理 — 好奇心が高めの日",
+      "date": "2026-08-10",
+      "file_hi": "/gallery/hi/g-20260810.webp"
+    },
+    {
+      "file": "/gallery/g-20260809.png",
+      "caption": "8/9 曇り33℃・カフェ — 好奇心が高めの日",
+      "date": "2026-08-09",
+      "file_hi": "/gallery/hi/g-20260809.webp"
+    },
+    {
+      "file": "/gallery/g-20260808.png",
+      "caption": "8/8 晴れ30℃・深夜PCブルーライト — もやもやする日",
+      "date": "2026-08-08",
+      "file_hi": "/gallery/hi/g-20260808.webp"
+    },
+    {
+      "file": "/gallery/g-20260807.png",
+      "caption": "8/7 曇り29℃・ネオン街散歩（お盆） — 元気な日",
+      "date": "2026-08-07",
+      "file_hi": "/gallery/hi/g-20260807.webp"
+    },
+    {
+      "file": "/gallery/g-20260806.png",
+      "caption": "8/6 曇り28℃・深夜PCブルーライト — もやもやする日",
+      "date": "2026-08-06",
+      "file_hi": "/gallery/hi/g-20260806.webp"
+    },
+    {
+      "file": "/gallery/g-20260805.png",
+      "caption": "8/5 曇り27℃・音楽制作 — 元気な日",
+      "date": "2026-08-05",
+      "file_hi": "/gallery/hi/g-20260805.webp"
+    },
+    {
+      "file": "/gallery/g-20260804.png",
+      "caption": "8/4 曇り25℃・花火大会 — 元気な日",
+      "date": "2026-08-04",
+      "file_hi": "/gallery/hi/g-20260804.webp"
+    },
     {
       "file": "/gallery/g-20260803.png",
       "caption": "8/3 雨25℃・カフェ — 元気な日",
-      "date": "2026-08-03"
+      "date": "2026-08-03",
+      "file_hi": "/gallery/hi/g-20260803.webp"
     },
     {
       "file": "/gallery/g-20260802.png",
       "caption": "8/2 曇り32℃・カフェ — 元気な日",
-      "date": "2026-08-02"
+      "date": "2026-08-02",
+      "file_hi": "/gallery/hi/g-20260802.webp"
     },
     {
       "file": "/gallery/g-20260801.png",
       "caption": "8/1 曇り30℃・ひまわり畑 — 元気な日",
-      "date": "2026-08-01"
+      "date": "2026-08-01",
+      "file_hi": "/gallery/hi/g-20260801.webp"
     },
     {
       "file": "/gallery/g-20260724.png",
       "caption": "7/24 雨33℃・カフェ — 好奇心が高めの日",
-      "date": "2026-07-24"
+      "date": "2026-07-24",
+      "file_hi": "/gallery/hi/g-20260724.webp"
     },
     {
       "file": "/gallery/g-20260723.png",
       "caption": "7/23 晴れ34℃・料理 — 元気な日",
-      "date": "2026-07-23"
+      "date": "2026-07-23",
+      "file_hi": "/gallery/hi/g-20260723.webp"
     },
     {
       "file": "/gallery/g-20260722.png",
       "caption": "7/22 晴れ33℃・寝起き — 元気な日",
-      "date": "2026-07-22"
+      "date": "2026-07-22",
+      "file_hi": "/gallery/hi/g-20260722.webp"
     },
     {
       "file": "/gallery/g-20260719.png",
       "caption": "7/19 晴れ31℃・カフェ — 元気な日",
-      "date": "2026-07-19"
+      "date": "2026-07-19",
+      "file_hi": "/gallery/hi/g-20260719.webp"
     },
     {
       "file": "/gallery/g-20260718.png",
       "caption": "7/18 雨27℃・カフェ — 元気な日",
-      "date": "2026-07-18"
+      "date": "2026-07-18",
+      "file_hi": "/gallery/hi/g-20260718.webp"
     },
     {
       "file": "/gallery/g-20260717.png",
       "caption": "7/17 雨28℃・カフェ（夏祭り） — 好奇心が高めの日",
-      "date": "2026-07-17"
+      "date": "2026-07-17",
+      "file_hi": "/gallery/hi/g-20260717.webp"
     },
     {
       "file": "/ai-01.png",
@@ -128,16 +221,6 @@
     },
     {
       "file": "/ai-17.png",
-      "caption": null,
-      "date": null
-    },
-    {
-      "file": "/ai-18.png",
-      "caption": null,
-      "date": null
-    },
-    {
-      "file": "/ai-19.png",
       "caption": null,
       "date": null
     }

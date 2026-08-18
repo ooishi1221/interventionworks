@@ -1894,7 +1894,7 @@
        Heroの直後に横一直線の帯(マーキー/電気代)が入り「ページ遷移」に見えていたので撤去し、
        代わりに余韻区間を置く。説明せず、感じさせるだけの区間。ここではまだ人格を出さない -->
   <section class="interlude" id="interlude">
-    <img class="interlude-img" src="ai-09.png" alt="" aria-hidden="true" loading="lazy" decoding="async" data-parallax="-56" />
+    <img class="interlude-img" src="/gallery/hi/g-20260808.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" data-parallax="-56" />
     <div class="interlude-copy">
       <span>I EXIST</span>
       <span>HERE.</span>
@@ -2470,10 +2470,12 @@
         items = Array.from({ length: 19 }, (_, i) => ({ file: `/ai-${String(i + 1).padStart(2, '0')}.png`, caption: null }));
       }
       // caption(出所)は画像下に常時表示（スマホでも見える）— 嘘ゼロの一部なので必ず維持
-      const cell = (it, cls) => {
+      const cell = (it, cls, hi) => {
         const alt = it.caption || it.file.replace(/.*\//, '').replace(/\.[^.]+$/, '').replace(/-/g, ' ');
         const capEl = it.caption ? `<div class="gallery-cap">${esc(it.caption)}</div>` : '';
-        return `<figure class="gallery-item ${cls}"><img src="${escA(it.file)}" alt="${esc(alt)}" loading="lazy" decoding="async" />${capEl}</figure>`;
+        // 巨大枠(lead)は900px級表示になるため file_hi(1440px WebP)を優先。帯は480px版で軽く
+        const src = (hi && it.file_hi) ? it.file_hi : it.file;
+        return `<figure class="gallery-item ${cls}"><img src="${escA(src)}" alt="${esc(alt)}" loading="lazy" decoding="async" />${capEl}</figure>`;
       };
 
       // 2026-08-18 第2フェーズ: 5構図の写真集へ。比率を意図的に全部変える。
@@ -2492,7 +2494,7 @@
       const rest = items.filter(it => !used.has(it.file));
       const leadEl = document.getElementById('gallery-lead');
       if (leadEl && lead.length) {
-        leadEl.innerHTML = lead.map((it, i) => cell(it, `gl-${i + 1} reveal`)).join('');
+        leadEl.innerHTML = lead.map((it, i) => cell(it, `gl-${i + 1} reveal`, true)).join('');
         // reveal は Phase2 の IO が既に走った後なので、ここで個別に監視を張り直す
         const io2 = new IntersectionObserver((es) => {
           es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io2.unobserve(e.target); } });

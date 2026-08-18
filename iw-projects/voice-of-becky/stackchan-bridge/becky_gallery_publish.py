@@ -92,19 +92,30 @@ def main() -> None:
             print(f"[gallery] 画像生成失敗、中断:\n{r.stderr[-500:]}", flush=True)
             sys.exit(1)
 
-    # 2. gallery/ へリサイズしてコピー（表示は240x240pxなのでフル解像度は不要）
+    # 2. gallery/ へリサイズしてコピー（横スクロール帯は340px表示なので480pxで足りる）
     GALLERY_DIR.mkdir(exist_ok=True)
     dest = GALLERY_DIR / f"g-{ymd}.png"
     with Image.open(img) as im:
         im.thumbnail((GALLERY_MAX_DIM, GALLERY_MAX_DIM))
         im.save(dest, "PNG")
 
+    # 2.5. 高解像度版WebP（2026-08-18 リデザインで冒頭5枠が最大900px級表示になり、
+    # 480px縮小版では2倍拡大で荒れる=ゆう指摘。元1024x1536から1440px上限のWebPを併置し、
+    # gallery.json に file_hi として記録。読み手側は巨大枠だけ file_hi を使う）
+    hi_dir = GALLERY_DIR / "hi"
+    hi_dir.mkdir(exist_ok=True)
+    hi_dest = hi_dir / f"g-{ymd}.webp"
+    with Image.open(img) as im:
+        im.thumbnail((1440, 1440))
+        im.save(hi_dest, "WEBP", quality=82)
+
     # 3. キャプション生成 + gallery.json 先頭へ（同日置換で冪等）
     meta_path = STACKCHAN / f"becky_today_{ymd}.json"
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
     date_iso = today.isoformat()
     caption = build_caption(meta, date_iso)
-    entry = {"file": f"/gallery/g-{ymd}.png", "caption": caption, "date": date_iso}
+    entry = {"file": f"/gallery/g-{ymd}.png", "file_hi": f"/gallery/hi/g-{ymd}.webp",
+             "caption": caption, "date": date_iso}
 
     gallery = load_gallery()
     items = [it for it in gallery.get("items", []) if it.get("date") != date_iso]
