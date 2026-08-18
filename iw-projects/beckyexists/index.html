@@ -111,7 +111,7 @@
     .il-extra { display: block; margin-top: 1.1em; color: rgba(221,221,240,0.38); font-size: 0.82em; letter-spacing: 0.3em; }
 
     /* night(23-7時): 同じBECKYが眠っている。別サイトにはしない、数%だけ */
-    body.night .hero-bg { filter: brightness(0.88); }
+    body.night { --bg-b: 0.84; }   /* nightは明度だけさらに沈める(filter合成) */
     body.night .artifact--a { animation-duration: 22s; }
     body.night .artifact--b { animation-duration: 29s; }
     body.night #memory-rain { opacity: 0.7; }
@@ -350,11 +350,17 @@
       display: block;
     }
 
+    /* 部屋の抽象化(2026-08-18 ゆう指示): 「BECKYの部屋」ではなく
+       "現実なのか内部空間なのか分からない場所"。家具・小物の情報量と
+       コントラストを1〜2割落とし、光のグロー(::before)だけ鮮明に残す。
+       素材は無傷、戻すのはfilter行の削除だけ */
     .hero-bg {
       position: absolute;
       inset: 0;
       background: url('becky-room-bg.png') center center / cover no-repeat;
       z-index: 0;
+      filter: blur(2.5px) saturate(0.82) contrast(0.9) brightness(var(--bg-b, 0.96));
+      transform: scale(1.03);   /* blurの縁のにじみを画面外へ */
     }
 
     /* 光るライト */
