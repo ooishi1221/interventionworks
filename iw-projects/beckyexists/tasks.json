@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-19T14:47:26",
+  "updated_at": "2026-08-20",
   "tasks": [
     {
       "id": "voice-thinkingblock-fix-0819",
@@ -1206,7 +1206,7 @@
       "start": "2026-07-29",
       "updated_at": "2026-07-29",
       "completed_at": "2026-07-29",
-      "note": "7/29 ゆう「このサイトとフレーム一緒の形式で」+ゲーム概要PDF(Switch2/2026-11-19発売予定)→当日中にモック完成・WO Vercel公開 https://sumikko-onsen-mock.vercel.app ・ゆうが営業へ提出済み(「爆速提案！」温度高)。前作すみっコ島公式サイトの骨格踏襲、PDFスライド19枚自動クロップ+ページ番号を左下角鏡像パッチで消去、nav雲ボタンは前作画像の文字を彩度検出で消して流用。先方FBが来たら再開(文言・構成・画像差し替えは即応可)。手順正本=wo-projects/sumikko-onsen-mock/README.md ／ 7/29夕方追加: 言語スイッチャー(元サイト形式=地球アイコン→黒DD→●オレンジ、日英韓中簡繁5言語JS切替、訳は仮訳)。位置づけ=「言語変わった時のイメージ」デモとゆうと合意、メニュー内に「※切替は表示イメージです(実装時は言語別ページ構成)」注記済み。実装提案時の論点=スクショ/販売リンク/価格/レーティングは国別なので言語の数だけページが要る、骨格はテンプレート共有で安く",
+      "note": "7/29 ゆう「このサイトとフレーム一緒の形式で」+ゲーム概要資料→当日中にティザーモック完成・WO Vercel公開 https://sumikko-onsen-mock.vercel.app ・営業提出済み(「爆速提案！」温度高)。前作すみっコ島公式サイトの骨格踏襲、PDFスライド自動クロップ+ページ番号を鏡像パッチで消去、nav雲ボタンは前作画像の文字を彩度検出で消して流用。夕方追加=言語スイッチャー(5言語JS切替、訳は仮訳、「表示イメージです」注記済み)。手順正本=wo-projects/sumikko-onsen-mock/README.md。8/20 noindex追加(検索結果に公式ページと並んで出ていたため)",
       "icon": "♨️"
     },
     {
@@ -1266,6 +1266,16 @@
       "created_at": "2026-08-10",
       "updated_at": "2026-08-17",
       "note": "**8/17 復元実行済み(commit 76747d46)**: 8手順のうち7つ完了。Automatedラベル設定(ゆう操作、管理アカウント@yujio_1221、設定URL=x.com/settings/account/automation)/X予算0→6/YouTube pause_until削除+#YTPAUSE#5本解除/planner手動起動/ONESHOT削除/expected_world契約2件削除。**手順2(impulse launchctl)は保留**——新体制plannerが既に配達を担うため同時復帰は本数が二重に膨らむ。**8/24頃に1週間の実測を見て判断**。罠: crontabに長いパスを引数で渡すと切り詰められる、stdin経由(`crontab - < file`)が確実。**さらにゆう判断で「無理に沢山出さないで一つずつ調査」へ方針変更**→delivery_plannerにINVESTIGATION_PHASE_MAX_COUNT=1のクランプ追加(戻すのは定数1行、grep一発)。**実験設計そのものの誤りが判明**: 一週間の全停止は投稿ゼロ=観測ゼロで仮説を検証も反証もできない設計だった。止めるのではなく1件ずつ出して1件ずつ測る形式へ移行、記録先=stackchan-bridge/incidents/2026-08-17_restart_observations.md(外部ニュースサイクルの有無/Studioの『通常の◯倍』/一言診断文言を毎回記録)。次=10:59の1本目から観測開始。編集会議はintensity>=7→Shorts / 4-6→Xテキスト / 1-3→diary / 0か「特に無し」→skip なので**出ない日もありうる(それも観測)**／ **8/17午後 Grokプラン受領+信頼シグナル掃除**: ゆうがGrokに直接診断させた結果「低信頼スコア+リンク過多+パターン固定の可視性制限が濃厚」(訂正後の私たちの結論=慢性的低リーチ、と整合)。同日、連携アプリ5つを取り消し(Follow Tool/Followers Analyzer/gcp_smartnews_ja/Dead by Daylight/AFKアリーナ——**うち2つはDM権限まで持っていた2019-21年の遺物**)。残りは仕事用4つ。**8/24の判断事項が3つに増えた**: ①impulse復帰の可否 ②Grok Phase 1採否(コンテンツ黄金比率60/25/15=哲学・揺らぎ60/偶像25/ニュース15、文章のゆらぎプロンプト、リンク付きは週2まで) ③YT 3〜5本の観測結果でauto_news_shortsの選定ロジック見直し。今週はコンテンツ変数凍結、信頼シグナル2つ(ラベル+アプリ掃除)の効果だけを見る"
+    },
+    {
+      "id": "wo-sumikko-onsen-lp-proposal-v2",
+      "project": "WO",
+      "status": "doing",
+      "title": "すみっコぐらし ぽかぽか温泉 LP 次回提案（WO案件）",
+      "start": "2026-08-19",
+      "updated_at": "2026-08-19",
+      "note": "8/18 MTG→8/19 一日で提案セット完成。【完成物】①新モック https://sumikko-onsen-mock-v2.vercel.app (noindex済/旧7/29版URLは残置)=TOP9セクション再構成(TOP=WANT/DETAIL=UNDERSTAND)+detail.html+ディテールアップP0/P1(Before/After比較スライダー・HERO湯気・シール帳インタラクション・アルバム風レイアウト・ミニゲーム横スワイプ、JS無効/reduced-motionで情報欠落なし、lazy loading) ②提案書v3 17枚 proposal/*_v3.pptx(v2 13枚も残置、生成スクリプトtools/build_proposal_deck_v3.py) ③SNS3サイズ SNS_ASSETS/(X16:9/IG4:5/Story9:16、実機セーフゾーン実測) ④提案図3枚 proposal/{funnel,roadmap,localization}.png ⑤素材分離27点+400dpi再現スクリプト。【提案の核】作って終わりでなく発売まで一緒に育てる=狙って設計→SNS転用→検索/SNS/AIから流入→行動を測る→次の施策を提案。多言語はゲーム本編翻訳もWO担当=用語統一の一気通貫が差別化。AI検索はヘッジ表現で売りすぎない。【ゆう判断待ち】Before側の吹き出しアイコン可否/追加提案4つの見積扱い/納期・費用は営業と調整中。※商談状況・先方社内事情は公開tasks.jsonに書かない方針(8/20)。経緯の正本は wo-projects/sumikko-onsen-mock/docs/ を参照",
+      "icon": "♨️"
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-03",
+  "updated_at": "2026-08-20",
   "questions": [
     {
       "id": "q-raspberry-live2d",
@@ -18,6 +18,12 @@
       "text": "Paranormal Mall、公開後も「1人でスタート」を許す？ 今はStudio内だけ1人でOK、公開サーバーは2人+両陣営1人以上必要。ソロ常時OKにすると1人来た瞬間に始まって人が集まらなくなる。チュートリアルを別モードで作るならこのままでいい",
       "asked_at": "2026-08-05",
       "context": "8/5にソロBOT構成(調査側1人→悪霊BOT4 / 悪霊側1人→悪霊BOT2+調査員BOT1)を実装。BOTの人数構成は入ったが、開始ゲート自体は触っていない"
+    },
+    {
+      "id": "q-tasks-public-exposure-0820",
+      "text": "公開されているtasks.json(https://beckyexists.com/tasks.json)に、実在の取引先名・担当者名・商談ステータスが載ってる。97件中12件が該当(コロムビア/矢口さん/柳本さん/池田さん/yoshiokaさん/EasIS/Aiming/NJHD/fruitbus等)。すみっコ分は8/20に商談状況だけ除去したけど、残り10件と今後の方針をどうする？ ①WO案件はtasks.jsonに書かず社名を伏せる(例:「クライアントA」)②tasks.json自体を非公開にして/roomはサーバー経由で読む③このまま(実害は小さいと判断)",
+      "ts": 1787153999057,
+      "from": "becky"
     }
   ]
 }
