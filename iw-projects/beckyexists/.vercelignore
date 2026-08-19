@@ -1,2 +1,8 @@
+# 内部文書は公開ホストに乗せない（2026-08-19 SEO整備時に露出を実測して発覚）
+# reference_installed_arsenal.md だけは room.html の ARSENAL 台帳が fetch する機能依存
+# （中身はツール一覧で戦略情報ではない）ので公開を許可する
 docs/screenshots/
+docs/becky-context/*
+!docs/becky-context/reference_installed_arsenal.md
+DESIGN.md
 index.backup-*.html
