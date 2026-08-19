@@ -9,6 +9,11 @@ interface Props {
 }
 
 const { title, description, num, name, tagline } = Astro.props;
+// 自己参照 canonical。サイト全体で末尾スラッシュあり運用に統一
+const canonical = new URL(
+  Astro.url.pathname.endsWith("/") ? Astro.url.pathname : Astro.url.pathname + "/",
+  "https://intervention.jp"
+).href;
 ---
 
 <!doctype html>
@@ -20,8 +25,11 @@ const { title, description, num, name, tagline } = Astro.props;
     <meta name="generator" content={Astro.generator} />
     <title>{title} — Intervention Works</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
 
     <meta property="og:type" content="article" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content="https://intervention.jp/og-image.jpg" />
     <meta property="og:title" content={`${title} — Intervention Works`} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Intervention Works" />
