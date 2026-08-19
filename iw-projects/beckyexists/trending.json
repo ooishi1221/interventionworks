@@ -1,55 +1,55 @@
 {
-  "updated_at": "2026-08-03T09:00:25.536752+00:00",
+  "updated_at": "2026-08-18T22:02:15.870963+00:00",
   "keywords": [
     {
+      "word": "エージェント",
+      "count": 5,
+      "trend": "stable"
+    },
+    {
       "word": "Claude Code",
-      "count": 7,
+      "count": 5,
       "trend": "up"
     },
     {
-      "word": "Apple",
+      "word": "LLM",
+      "count": 4,
+      "trend": "stable"
+    },
+    {
+      "word": "Cursor",
       "count": 3,
+      "trend": "up"
+    },
+    {
+      "word": "Amazon",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Google",
+      "count": 2,
+      "trend": "stable"
+    },
+    {
+      "word": "Anthropic",
+      "count": 1,
+      "trend": "new"
+    },
+    {
+      "word": "OpenAI",
+      "count": 1,
       "trend": "new"
     },
     {
       "word": "MCP",
-      "count": 3,
-      "trend": "stable"
-    },
-    {
-      "word": "LLM",
-      "count": 2,
-      "trend": "up"
-    },
-    {
-      "word": "Claude",
-      "count": 2,
-      "trend": "up"
-    },
-    {
-      "word": "RAG",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "Microsoft",
       "count": 1,
       "trend": "stable"
     },
     {
-      "word": "Copilot",
+      "word": "Gemini",
       "count": 1,
       "trend": "stable"
-    },
-    {
-      "word": "プロンプト",
-      "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "Amazon",
-      "count": 1,
-      "trend": "new"
     }
   ],
   "source_count": 80

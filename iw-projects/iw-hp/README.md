@@ -64,6 +64,12 @@ Case 4 本（`src/pages/index.astro` の各 `<article class="case-0N">`。**全�
 > - 落としたもの: Brand Vocabulary の背面演出（巨大タイポと重なり Texture でなく「二重の文字」に見えたため実測して撤回）/ 14 語 rotator / `.project-item` の GSAP デッドコード
 > - 旧 id（`#works` `#company`）は空アンカーで互換維持
 
+## Art Direction（2026-08-19 EDITORIAL INTERVENTION）
+
+同日午後、ゆう指示書95項目でVisualのみ再構成（情報設計・コピー・GA4・SEOは不変）。設計正本 `docs/redesign_2026-08_art_direction.md`。要点: Hero3層レイヤー（WORKSは`-webkit-text-stroke`の版ズレ縁取りで重なる）/ Case番号のVisual Asset化 / Slightの巨大`0.5` / Vibe-Guardの`[危険]`誌面組み / 背景格子は「設計方眼紙」化（DRIFT 0.05）。
+
+**踏んだ罠2つ**: ①clip-pathで面積0になった要素はIntersectionObserverが交差なしと判定しrevealが永遠に発火しない（+内部のlazy画像もロードされない）→ 観測はarticle側・clipは子要素に分離 ②大画面でフォントのclamp上限に達すると負マージンだけが効いて文字が切れすぎる → 1800px+のMQで調整（2560実測）。
+
 ## GA4（2026-08-19 導入）
 
 - **Measurement ID**: `G-QBR8XM8HV0` / 実装: `src/components/GA.astro`（全ページの head に挿入済み: index / service / thanks / 404 / works共通layout / demo/cafe）

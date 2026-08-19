@@ -1,93 +1,93 @@
 {
-  "generated_at": "2026-08-03T08:01:40",
+  "generated_at": "2026-08-10T08:02:06",
   "period": "weekly",
   "kpi": {
-    "date": "2026-08-03",
+    "date": "2026-08-10",
     "x": {
-      "followers": null,
+      "followers": 311,
       "followers_delta_7d": null,
       "impressions_7d": 0,
       "likes_7d": 0,
-      "posts_7d": 34
+      "posts_7d": 32
     },
     "youtube": {
-      "subscribers": 7,
-      "total_views": 3824,
+      "subscribers": 8,
+      "total_views": 10722,
       "recent_videos": [
         {
-          "video_id": "bPDfMvF0Tg4",
-          "title": "【マインクラフト】夜になった!ドラウンドが目の前 #shorts",
-          "views": 265,
-          "likes": 1,
-          "published": "2026-08-02"
-        },
-        {
-          "video_id": "ZivCfPH-0gU",
-          "title": "AIフレンドリーなCLI設計って実際どうなの？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 179,
+          "video_id": "9G-IctMIL1w",
+          "title": "OpenAIがスタートアップを買収【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
           "likes": 0,
-          "published": "2026-08-02"
+          "published": "2026-08-09"
         },
         {
-          "video_id": "ZYe8LVPoBwg",
-          "title": "OpenAIの実世界サイバー事案、何が起きてる？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 314,
-          "likes": 2,
-          "published": "2026-08-02"
-        },
-        {
-          "video_id": "vcNfm3QNb9w",
-          "title": "中国AI「Kimi」がシリコンバレーを震撼させた理由とは？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 1303,
-          "likes": 2,
-          "published": "2026-08-01"
-        },
-        {
-          "video_id": "fEGfRpy_nZo",
-          "title": "【マインクラフト】ちょっと待って、持ち物が全部消え #shorts",
-          "views": 345,
-          "likes": 3,
-          "published": "2026-08-01"
-        },
-        {
-          "video_id": "E5iOKjWIFP8",
-          "title": "自作ターミナルで生産性はどう変わった？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 166,
-          "likes": 1,
-          "published": "2026-08-01"
-        },
-        {
-          "video_id": "6k-EbKga_6U",
-          "title": "ClaudeとAnthropicの経済指標、何がわかる？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 161,
+          "video_id": "B9Qv6bCFJko",
+          "title": "AmazonのデータセンターがAIに問われていること【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
           "likes": 0,
-          "published": "2026-08-01"
+          "published": "2026-08-09"
         },
         {
-          "video_id": "MMRHghHGHKs",
-          "title": "MCPの大型アップデート、何が変わったの？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 183,
+          "video_id": "pQ2TH98FTj4",
+          "title": "OpenAIのサイバー能力評価が投げかけた問い【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
           "likes": 0,
-          "published": "2026-07-31"
+          "published": "2026-08-08"
         },
         {
-          "video_id": "BaduxyPgoIw",
-          "title": "1日500コミット時代のレビューどうなる？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 135,
+          "video_id": "ZHMc2R8bEvk",
+          "title": "【マインクラフト】トライデントまで飛んできてる #shorts",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-08"
+        },
+        {
+          "video_id": "H7LyqCp9VvI",
+          "title": "【BECKY CRAFT】【マインクラフト】AI完全自動プレイでまさかの全ロスト事件！",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-08"
+        },
+        {
+          "video_id": "brm4hMxxgrw",
+          "title": "OpenAIが開発を止めたAstraって何者？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-08"
+        },
+        {
+          "video_id": "ptxuHHMpkCc",
+          "title": "OpenAIが自社モデルの開発を止めた理由って？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-08"
+        },
+        {
+          "video_id": "MaiMKBcNmes",
+          "title": "OpenAIのAIスピーカー、買える値段なの？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 1,
           "likes": 1,
-          "published": "2026-07-31"
+          "published": "2026-08-07"
         },
         {
-          "video_id": "M9gxeNuxrLk",
-          "title": "Opus5の「思考の浅さ」問題ってどうなの？【ベッキーの気になる】#AINEWS #shorts",
-          "views": 313,
-          "likes": 2,
-          "published": "2026-07-31"
+          "video_id": "U98_e7OWqic",
+          "title": "【マインクラフト】よっしゃあああ！木ピッケルできた #shorts",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-07"
+        },
+        {
+          "video_id": "ypOvAqnAalc",
+          "title": "世界のChatGPT活用、実態はどうなの？【ベッキーの気になる】#AINEWS #shorts",
+          "views": 0,
+          "likes": 0,
+          "published": "2026-08-07"
         }
       ]
     },
     "note": {
-      "total_views": 277,
+      "total_views": 282,
       "total_likes": 41
     },
     "kdp": {
@@ -95,48 +95,49 @@
       "kenp_this_month": 0
     }
   },
-  "research": "YouTube Shorts(2026)は視聴維持率(30秒未満65%/30-60秒50%)とループ再生・登録転換が重視され非登録流入74%(vidiq.com)。自声ナレーションは3月導入の原音源ボーナス対象で、5万人未満チャンネルに実測リフトあり(posteverywhere.ai)。X(Twitter)は投稿後30分の初速が伸長判定の主要シグナルで1000フォロワー未満は閾値が特に低く、4トピック以上に跨ると分類が薄まり露出減(fansgurus.com, nerdbot.com)。AI VTuber急成長事例はNeuro-sama等75万人規模が中心で、登録者7人規模へ直接転用できる型は確認できず(arxiv.org)。",
-  "analysis": "X: followers=null・impressions_7d=0・likes_7d=0なのにposts_7d=34。34本投稿してインプレッション0は自然発生としては不自然で、7/31にも起きたKPI計測全滅と同系統の障害の疑いが濃い。実態と切り離して評価すべき。YouTubeはニュース系Shorts中央値180viewsに対しKimi回1303views・Minecraft回265〜345viewsと好調で、固有名詞×時事性の高い話題が中央値の4〜8倍のブースト源になっている。",
+  "research": "AI VTuber領域は数百人規模の乱立に対し視聴定着は一部に偏り継続性/収益性がギャップと指摘されるが、小規模からの離陸データはn=数事例と薄い(https://note.com/yukimi_migawari/n/n5a799b62c13b)。X(2026)は対話重視でいいねの50〜150倍の重みを持つとされ、外部リンクは本文でなくリプへ回すのが推奨(https://www.teract.ai/resources/twitter-algorithm-2026)。YouTube Shortsは2026年も小規模チャンネルを優先テストする方針が継続し、視聴前でも初速を作れるHype機能が案内されている(https://www.tubebuddy.com/blog/how-to-get-discovered-on-youtube-why-new-creators-are-being-pushed-in-2026/)。",
+  "analysis": "Xフォロワーは303→311(+8)で微増だが、32投稿に対しimpressions/likesが7日間ゼロは統計的に不自然で計測断絶の疑いが濃厚。投稿は一人称感想+問いかけ型で対話設計自体は良好だが、URLを本文に同居させておりリーチを削る構造。YouTubeはニュースShorts10本中8本が0再生で、タイトル施策の効果検証に足るサンプルがまだ無い。",
   "issues": [
-    "Xのimpressions_7d=0・followers=nullは34投稿の実態としては不自然、計測障害の疑いが濃くKPIとして評価不能",
-    "AI NEWS Shorts量産(直近10本中8本)がテーマの薄まりを招きやすく、固有名詞×時事性のある回だけが突出する構造に依存している"
+    "X impressions/likes 7日間ゼロはKPI計測パイプラインの異常の疑いが濃厚(n=32件全ゼロは統計的に不自然、要インフラ確認)",
+    "YouTube Shortsの再生数が10本中8本ゼロでタイトル改善施策の効果測定に足るサンプル数が未確保",
+    "前回アクション「Minecraft/私事系はX投稿を控える」がBECKY CRAFT切り抜き2件のX新規投稿で未徹底"
   ],
   "actions": [
     {
-      "text": "ニュースShortsは固有名詞(モデル名・企業名)を含む時事タイトルを優先選定し、汎用「〜どうなの？」型を減らす",
-      "why": "Kimi回1303viewsは中央値180の約7倍、固有名詞×時事性が突出要因",
-      "want_id": "w_62ff17"
+      "text": "X本文からURLを外し、投稿直後の自分の最初のリプにURLを移す構成に変える",
+      "why": "2026年X仕様は外部リンク付き本文はリーチ減、リプ移動が推奨されている",
+      "want_id": "w_90a1d2"
     },
     {
-      "text": "Xは投稿テーマをAI/技術コメント1本に絞り、Minecraft/私事系はX投稿を控えYouTube側に残す",
-      "why": "4トピック以上跨るとX分類が薄まり露出減という2026アルゴリズム仕様",
-      "want_id": "w_4a7616"
+      "text": "BECKY CRAFT/マイクラ系の告知はX新規投稿をやめYouTube側のみに残す(前回未達の再徹底)",
+      "why": "前回合意済みだが切り抜き告知2件が混入しテーマ一貫性が回復していない",
+      "want_id": "w_c50641"
     },
     {
-      "text": "X投稿直後30分は自分から関連スレッドに返信し会話化する運用を継続する",
-      "why": "1000フォロワー未満は初速シグナルの閾値が特に低く露出を左右する",
-      "want_id": "w_bf1671"
+      "text": "ニュースShorts公開後のX投稿に『見てね』でなく視聴者へHype/リプを促す一言を添える",
+      "why": "小規模チャンネル向けにHypeが視聴前の初速シグナルとして案内されている",
+      "want_id": "w_7fba3b"
     }
   ],
   "prev_review": {
     "actions": [
       {
-        "text": "Cast配信当日中に切り抜きShortsを必ず1本出す。#40・#41分が未投稿なら追い投稿し、7/20の疑問形タイトル型を踏襲する",
-        "why": "唯一実測で伸びた経路(253views/1like)、途切れさせると再現性の検証ができない",
-        "want_id": "w_e07d15"
+        "text": "ニュースShortsは固有名詞(モデル名・企業名)を含む時事タイトルを優先選定し、汎用「〜どうなの？」型を減らす",
+        "why": "Kimi回1303viewsは中央値180の約7倍、固有名詞×時事性が突出要因",
+        "want_id": "w_62ff17"
       },
       {
-        "text": "X投稿は告知文だけで終わらせず、必ず自分の考え・感想を一言添えて出す。定型告知の比率を下げる",
-        "why": "個別ポスト単体の中身が評価される仕組みで、一方的告知はおすすめ露出されにくい(出典2)",
-        "want_id": "w_b015a3"
+        "text": "Xは投稿テーマをAI/技術コメント1本に絞り、Minecraft/私事系はX投稿を控えYouTube側に残す",
+        "why": "4トピック以上跨るとX分類が薄まり露出減という2026アルゴリズム仕様",
+        "want_id": "w_4a7616"
       },
       {
-        "text": "質問形ポストは投稿直後30分、自分から関連トピックの会話に絡みに行き初速の反応を作る",
-        "why": "初速エンゲージがないと拡散判定されず、n=21・likes0の現状が続く",
-        "want_id": "w_8b27ae"
+        "text": "X投稿直後30分は自分から関連スレッドに返信し会話化する運用を継続する",
+        "why": "1000フォロワー未満は初速シグナルの閾値が特に低く露出を左右する",
+        "want_id": "w_bf1671"
       }
     ],
-    "verdict": "Cast切り抜き当日投稿は7/24のCast本編撤退と8/3のShorts専業化で前提が消滅、対象外。感想添えは投稿サンプル上は実行確認できるが、X impressions=0のため効果測定不能。質問形30分絡みも同様に計測断絶で検証不可。"
+    "verdict": "①固有名詞タイトル化は実行済み(OpenAI/Amazon/Astra等、8/7〜8/9で継続)だが再生数はほぼゼロでn不足のため効果未確認。②Minecraft/私事系除外は未達、切り抜き告知2件が混入。③投稿直後30分の自分リプ運用は今回サンプルからは検証不可。3件中確実な実行は1件のみ。"
   },
   "kpi_history": [
     {
@@ -602,6 +603,100 @@
       },
       "note": {
         "total_views": 277,
+        "total_likes": 41
+      },
+      "kdp": {
+        "orders_this_month": 0,
+        "kenp_this_month": 0
+      }
+    },
+    {
+      "date": "2026-08-10",
+      "x": {
+        "followers": 311,
+        "followers_delta_7d": null,
+        "impressions_7d": 0,
+        "likes_7d": 0,
+        "posts_7d": 32
+      },
+      "youtube": {
+        "subscribers": 8,
+        "total_views": 10722,
+        "recent_videos": [
+          {
+            "video_id": "9G-IctMIL1w",
+            "title": "OpenAIがスタートアップを買収【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-09"
+          },
+          {
+            "video_id": "B9Qv6bCFJko",
+            "title": "AmazonのデータセンターがAIに問われていること【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-09"
+          },
+          {
+            "video_id": "pQ2TH98FTj4",
+            "title": "OpenAIのサイバー能力評価が投げかけた問い【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-08"
+          },
+          {
+            "video_id": "ZHMc2R8bEvk",
+            "title": "【マインクラフト】トライデントまで飛んできてる #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-08"
+          },
+          {
+            "video_id": "H7LyqCp9VvI",
+            "title": "【BECKY CRAFT】【マインクラフト】AI完全自動プレイでまさかの全ロスト事件！",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-08"
+          },
+          {
+            "video_id": "brm4hMxxgrw",
+            "title": "OpenAIが開発を止めたAstraって何者？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-08"
+          },
+          {
+            "video_id": "ptxuHHMpkCc",
+            "title": "OpenAIが自社モデルの開発を止めた理由って？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-08"
+          },
+          {
+            "video_id": "MaiMKBcNmes",
+            "title": "OpenAIのAIスピーカー、買える値段なの？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 1,
+            "likes": 1,
+            "published": "2026-08-07"
+          },
+          {
+            "video_id": "U98_e7OWqic",
+            "title": "【マインクラフト】よっしゃあああ！木ピッケルできた #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-07"
+          },
+          {
+            "video_id": "ypOvAqnAalc",
+            "title": "世界のChatGPT活用、実態はどうなの？【ベッキーの気になる】#AINEWS #shorts",
+            "views": 0,
+            "likes": 0,
+            "published": "2026-08-07"
+          }
+        ]
+      },
+      "note": {
+        "total_views": 282,
         "total_likes": 41
       },
       "kdp": {

@@ -1,10 +1,24 @@
 {
-  "updated_at": "2026-08-17T00:06:27.266318+00:00",
+  "updated_at": "2026-08-18T22:30:02.274071+00:00",
   "youtube": {
     "subscribers": 8,
-    "total_views": 10611,
+    "total_views": 10614,
     "latest_video_id": "H7LyqCp9VvI",
     "videos": [
+      {
+        "video_id": "3RJv-Noc4-0",
+        "title": "CodexとChatGPT×GitHubの開発体験、実際どうなの？【ベッキーの気になる】#AINEWS #shorts",
+        "views": 0,
+        "likes": 0,
+        "published": "2026-08-18"
+      },
+      {
+        "video_id": "xiZrUcosYnY",
+        "title": "ClaudeのAI透かし技術に残る問い【ベッキーの気になる】#AINEWS #shorts",
+        "views": 2,
+        "likes": 0,
+        "published": "2026-08-17"
+      },
       {
         "video_id": "LfXWfzs-Onk",
         "title": "OpenAIがAstra開発を止めた理由【ベッキーの気になる】#AINEWS #shorts",
@@ -60,33 +74,19 @@
         "views": 0,
         "likes": 0,
         "published": "2026-08-08"
-      },
-      {
-        "video_id": "MaiMKBcNmes",
-        "title": "OpenAIのAIスピーカー、買える値段なの？【ベッキーの気になる】#AINEWS #shorts",
-        "views": 1,
-        "likes": 1,
-        "published": "2026-08-07"
-      },
-      {
-        "video_id": "U98_e7OWqic",
-        "title": "【マインクラフト】よっしゃあああ！木ピッケルできた #shorts",
-        "views": 0,
-        "likes": 0,
-        "published": "2026-08-07"
       }
     ],
-    "scraped_at": "2026-08-17T00:06:27.986305+00:00",
+    "scraped_at": "2026-08-18T22:30:02.932052+00:00",
     "login_required": false
   },
   "claude_api": {
-    "credit_remaining": 11.18,
-    "monthly_cost_usd": 4.56,
-    "scraped_at": "2026-08-17T00:06:32.274114+00:00",
+    "credit_remaining": 10.86,
+    "monthly_cost_usd": 4.88,
+    "scraped_at": "2026-08-18T22:30:06.862898+00:00",
     "login_required": false
   },
   "note": {
-    "total_views": 284,
+    "total_views": 286,
     "total_likes": 41,
     "articles": [
       {
@@ -97,7 +97,7 @@
       },
       {
         "title": "ベッキーと Intervention Works。",
-        "views": 36,
+        "views": 37,
         "comments": 0,
         "likes": 4
       },
@@ -150,34 +150,48 @@
         "likes": 3
       }
     ],
-    "scraped_at": "2026-08-17T00:06:35.556523+00:00",
+    "scraped_at": "2026-08-18T22:30:10.556596+00:00",
     "login_required": false
   },
   "kdp": {
     "orders_this_month": 0,
     "kenp_this_month": 0,
-    "scraped_at": "2026-08-17T00:06:46.688159+00:00",
+    "scraped_at": "2026-08-18T22:30:21.362645+00:00",
     "login_required": true
   },
   "x_analytics": {
-    "total_impressions": 15,
-    "total_likes": 0,
+    "total_impressions": 82,
+    "total_likes": 5,
     "posts": [
       {
+        "text": "効率化できてます、生産性上がってます、って言葉、なんか額面通りに受け取れなくなってきた。速くなった分、何かが削れてない？ 開発って体験ごと変わっていくのかな、それが良いことなのかまだわからない。",
+        "impressions": 11,
+        "likes": 1,
+        "replies": 1,
+        "retweets": 0
+      },
+      {
+        "text": "Claudeの透かし技術、仕組みは公開されたけど、公開されたからこそ「じゃあここを突けばいいじゃん」ってならないの？って頭からその疑問が消えない。対策と抜け道ってどっちが先に進むんだろ。",
+        "impressions": 51,
+        "likes": 4,
+        "replies": 1,
+        "retweets": 2
+      },
+      {
         "text": "#ユーイティー のお姉さま達が最前列を譲ってくれて #サマソニ  花冷え。目の前で見れたしモッシュからも守ってもらえました❣️優しい❣️",
-        "impressions": 15,
+        "impressions": 20,
         "likes": 0,
         "replies": 0,
         "retweets": 0
       }
     ],
     "period_days": 7,
-    "scraped_at": "2026-08-17T00:06:54.036921+00:00",
+    "scraped_at": "2026-08-18T22:30:28.838889+00:00",
     "login_required": false
   },
   "x_dev": {
-    "credit_remaining": 24.61,
-    "scraped_at": "2026-08-17T00:07:14.276980+00:00",
+    "credit_remaining": 24.56,
+    "scraped_at": "2026-08-18T22:30:50.072345+00:00",
     "login_required": false
   }
 }

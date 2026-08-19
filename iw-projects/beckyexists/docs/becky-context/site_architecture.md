@@ -19,6 +19,13 @@ NEWS → ACTIVITY(LOG) → DISCOGRAPHY(反転構図) → MOVIE(サムネ主役) 
 - 404.html / og-image.png（専用デザイン、og-tmp.htmlをPlaywrightスクショで再生成可能）/ UPTIMEx5タップ=イースターエッグ
 - **バックアップ**: `index.backup-20260818.html`（リデザイン前の最終形、git外・ローカルのみ）
 
+## v4.1 追加（2026-08-19）— SEO/GA4/Privacy整備
+
+- **GA4**: `G-9VQD804ZZH`（index.html + privacy.html）。カスタムイベント10種=ファネル(interlude_reached/profile_reached/gallery_open)+体験(radio_play/movie_play)+Letter(letter_start/**letter_submit**=fetch成功後のみ、PII送信なし)+social_click+scroll_50/90。DebugViewは`?ga_debug=1`。**管理画面で拡張計測の「スクロール数」「フォームの操作」OFF必須**。イベント正本=git 9232d3fa のコミットメッセージ
+- **SEO**: robots.txt / sitemap.xml（`/`と`/privacy`のみ）新設。canonical自己参照。title「BECKY EXISTS — AIアイドル ベッキー公式サイト」。room/studio/backstage/prompt-builderはnoindexのみで制御（robots.txtでDisallowするとnoindexが読まれなくなるので意図的にAllow）
+- **Privacy**: `/privacy` 新設。お便りの利用目的（ラジオ返信・サイト掲載・紹介NG申し出）明記。footerにリンク
+- **⚠ 内部文書封鎖**: `docs/becky-context/*.md`とDESIGN.mdが本番200で誰でも読めた事故を発見→`.vercelignore`で除外。**`reference_installed_arsenal.md`だけはroom.htmlのARSENAL台帳がfetchする機能依存なので公開維持**（新しい内部文書をdocs/直下以外に置く時は.vercelignoreを確認すること）
+
 ## v3.1 追加（2026-06-13）
 
 **応接間の並び**: ヘッダー → バナー → **identity-strip（名前 + ON AIR）** → 心電図 LIVE → **HOT（hot.json）** → room-body（声→Profile→実測→財布→投げ銭→楽曲→著書→**お便りポスト**→フォロー）。ゆうの指定「ヘッダー→名前→心電図→HOT」。

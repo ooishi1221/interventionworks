@@ -1,6 +1,12 @@
 {
-  "updated_at": "2026-08-17T18:20:00.499647",
+  "updated_at": "2026-08-18T18:20:01.047221",
   "items": [
+    {
+      "file": "/gallery/g-20260818.png",
+      "file_hi": "/gallery/hi/g-20260818.webp",
+      "caption": "8/18 雨27℃・探偵 — もやもやする日",
+      "date": "2026-08-18"
+    },
     {
       "file": "/gallery/g-20260817.png",
       "caption": "8/17 雨25℃・サイバーレースクイーン — もやもやする日",
@@ -216,11 +222,6 @@
     },
     {
       "file": "/ai-16.png",
-      "caption": null,
-      "date": null
-    },
-    {
-      "file": "/ai-17.png",
       "caption": null,
       "date": null
     }
