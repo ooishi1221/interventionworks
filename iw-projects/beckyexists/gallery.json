@@ -1,6 +1,12 @@
 {
-  "updated_at": "2026-08-18T18:20:01.047221",
+  "updated_at": "2026-08-19T18:20:01.614191",
   "items": [
+    {
+      "file": "/gallery/g-20260819.png",
+      "file_hi": "/gallery/hi/g-20260819.webp",
+      "caption": "8/19 雨28℃・蒔絵の間 — 元気な日",
+      "date": "2026-08-19"
+    },
     {
       "file": "/gallery/g-20260818.png",
       "file_hi": "/gallery/hi/g-20260818.webp",
@@ -217,11 +223,6 @@
     },
     {
       "file": "/ai-15.png",
-      "caption": null,
-      "date": null
-    },
-    {
-      "file": "/ai-16.png",
       "caption": null,
       "date": null
     }

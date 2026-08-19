@@ -1,14 +1,14 @@
 {
-  "updated_at": "2026-08-18T22:02:15.870963+00:00",
+  "updated_at": "2026-08-19T09:02:26.976372+00:00",
   "keywords": [
     {
-      "word": "エージェント",
-      "count": 5,
-      "trend": "stable"
+      "word": "Claude Code",
+      "count": 10,
+      "trend": "up"
     },
     {
-      "word": "Claude Code",
-      "count": 5,
+      "word": "エージェント",
+      "count": 7,
       "trend": "up"
     },
     {
@@ -19,35 +19,35 @@
     {
       "word": "Cursor",
       "count": 3,
-      "trend": "up"
-    },
-    {
-      "word": "Amazon",
-      "count": 2,
       "trend": "stable"
     },
     {
-      "word": "Google",
+      "word": "Agent",
       "count": 2,
-      "trend": "stable"
+      "trend": "new"
+    },
+    {
+      "word": "RAG",
+      "count": 2,
+      "trend": "new"
     },
     {
       "word": "Anthropic",
+      "count": 1,
+      "trend": "stable"
+    },
+    {
+      "word": "Claude",
       "count": 1,
       "trend": "new"
     },
     {
       "word": "OpenAI",
       "count": 1,
-      "trend": "new"
-    },
-    {
-      "word": "MCP",
-      "count": 1,
       "trend": "stable"
     },
     {
-      "word": "Gemini",
+      "word": "Amazon",
       "count": 1,
       "trend": "stable"
     }

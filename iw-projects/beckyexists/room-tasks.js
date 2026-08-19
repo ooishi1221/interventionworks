@@ -193,17 +193,31 @@ function renderDoneLog(done) {
   }).join('') || '<div class="empty">完了タスクなし</div>';
 }
 
+// タスク管理は private repo ooishi1221/iw-tasks (GitHub Issues) へ移行済み（2026-08-20）。
+// 公開ホストには件数集計のみの task_summary.json を配信する（scripts/build_public_task_feed.py 生成）。
 async function loadTasks() {
-  const data = await fetchJson('tasks.json');
-  if (!data?.tasks?.length) { $('taskTable').innerHTML = '<div class="empty">タスクなし</div>'; return; }
-  _taskActive = data.tasks.filter(t => t.status !== 'done');
-  _taskDone = data.tasks.filter(t => t.status === 'done');
-  const upd = data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  // 完了ログ／ゴールバンドはデータ源が消えたためセクションごと非表示（DOM は残す＝将来戻せる）
+  const doneLogPane = $('doneLogList')?.closest('details');
+  if (doneLogPane) doneLogPane.style.display = 'none';
+
+  const data = await fetchJson('task_summary.json');
+  const el = $('taskTable');
+  if (!data) { el.innerHTML = '<div class="empty">タスクなし</div>'; return; }
   const meta = $('taskMeta');
-  if (meta) meta.textContent = `残 ${_taskActive.length} / 全 ${data.tasks.length} タスク — ${upd} 更新`;
-  renderGoalBand(_taskActive);
-  renderTaskTable();
-  renderDoneLog(_taskDone);
+  if (meta) meta.textContent = `${data.updated_at} 更新`;
+  el.innerHTML = `<div class="card" style="margin:0;padding:16px">
+      <p style="margin:0 0 12px">タスクは GitHub Issues で管理しています。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="tbl-status-badge in_progress">残 ${data.open}件</span>
+        <span class="tbl-status-badge waiting">先方待ち ${data.waiting}</span>
+        <span class="tbl-status-badge pending">保留 ${data.pending}</span>
+        <span class="tbl-scope iw">IW ${data.iw}</span>
+        <span class="tbl-scope wo">WO ${data.wo}</span>
+      </div>
+      <a href="${esc(data.repo_url)}" target="_blank" rel="noopener" style="color:var(--green);font-family:var(--mono);font-size:12.5px">Issues を見る →</a>
+      <p class="sub-note" style="margin:10px 0 0">private repo のため、ログインが必要です</p>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
 }
 
 // room.html の startRoom から呼ぶ。コメントを先に読んでからタスク表を描く。

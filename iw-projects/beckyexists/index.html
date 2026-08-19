@@ -2567,10 +2567,10 @@
       }
     })();
 
-    // ── ACTIVITY (podcast.json + tasks.json / scope:iw のみ) — SYSTEM LOG化 ──
+    // ── ACTIVITY (podcast.json + activity.json / scope:IW issueのみ) — SYSTEM LOG化 ──
     (async () => {
       const list = document.getElementById('activity-list');
-      // 時刻は元データにある場合だけ表示する（tasks.jsonは日付のみなので捏造しない）
+      // 時刻は元データにある場合だけ表示する（activity.jsonは日付のみなので捏造しない）
       const fmtLog = (d, hasTime) => {
         if (isNaN(d)) return '';
         const base = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
@@ -2582,10 +2582,9 @@
         eps.slice(0, 3).forEach(ep => items.push({ date: new Date(ep.pub_date), hasTime: true, tag: 'ON AIR', title: ep.title, link: ep.spotify_url || ep.url || '' }));
       } catch (_) {}
       try {
-        const t = await fetch('/tasks.json?_=' + Date.now()).then(r => r.json());
-        (t.tasks || [])
-          .filter(x => x.scope === 'iw' && (x.status === 'done' || x.status === 'in_progress'))
-          .forEach(x => items.push({ date: new Date((x.status === 'done' ? x.completed_at : null) || x.updated_at || x.start), hasTime: false, tag: x.status === 'done' ? 'DONE' : 'NOW', title: x.label, link: '' }));
+        const a = await fetch('/activity.json?_=' + Date.now()).then(r => r.json());
+        (a.items || [])
+          .forEach(x => items.push({ date: new Date(x.date), hasTime: false, tag: x.tag, title: x.title, link: '' }));
       } catch (_) {}
       items.sort((a, b) => b.date - a.date);
       const shown = items.filter(it => !isNaN(it.date)).slice(0, 6);

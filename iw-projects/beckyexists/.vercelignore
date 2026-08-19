@@ -6,3 +6,8 @@ docs/becky-context/*
 !docs/becky-context/reference_installed_arsenal.md
 DESIGN.md
 index.backup-*.html
+
+# タスク管理は private repo (ooishi1221/iw-tasks) へ移行（2026-08-20）
+# 公開静的JSONに取引先名・商談状況が載る構造だったため、公開ホストには乗せない
+tasks.json
+task_comments.json
