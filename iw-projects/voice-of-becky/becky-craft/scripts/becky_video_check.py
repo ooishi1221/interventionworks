@@ -76,10 +76,13 @@ def judge(frames: list[Path], title: str, genre: str = "gameplay") -> dict:
         f"タイトル: 「{title}」\n\n"
         f"{criteria}\n\n"
         'JSONのみで回答: {"verdict": "PASS"または"FAIL", "reason": "日本語1文"}')})
+    # max_tokens はthinking分も食う(claude-sonnet-5はthinkingがデフォ有効)。
+    # 200だとthinkingで使い切りtextが空になることがある(2026-08-19実測)ので余裕を持たせる
     msg = client.messages.create(
-        model="claude-sonnet-5", max_tokens=200,
+        model="claude-sonnet-5", max_tokens=2000,
         messages=[{"role": "user", "content": content}])
-    text = msg.content[0].text
+    # content[0] は thinking 対応モデルだと ThinkingBlock のことがある。text ブロックだけ拾う
+    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     m = re.search(r'\{.*\}', text, re.DOTALL)
     if not m:
         raise RuntimeError(f"判定JSONが取れない: {text[:120]}")

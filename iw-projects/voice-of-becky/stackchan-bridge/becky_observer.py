@@ -1541,7 +1541,8 @@ def is_person_present() -> bool:
                 ],
             }],
         )
-        answer = msg.content[0].text.strip().upper()
+        # content[0] は thinking 対応モデルだと ThinkingBlock のことがある。text ブロックだけ拾う
+        answer = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip().upper()
         print(f"[observer] カメラ判定: {answer}", flush=True)
         return answer.startswith("YES")
     except Exception as e:

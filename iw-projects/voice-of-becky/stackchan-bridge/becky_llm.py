@@ -85,11 +85,12 @@ def call_llm(prompt: str, *, max_tokens: int = 1024, model_key: str = "default",
         if msg.stop_reason == "max_tokens":
             print("[llm] warning: max_tokens切れ（2倍でも切れた。そのまま返す）", flush=True)
 
-        try:
-            return msg.content[0].text.strip()
-        except (IndexError, AttributeError) as e:
-            print(f"[llm] error: 応答が空 ({e})", flush=True)
-            return None
+        # content[0] は thinking 対応モデルだと ThinkingBlock のことがある。text ブロックだけ拾う
+        text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+        if text:
+            return text
+        print("[llm] error: 応答に text ブロックがない", flush=True)
+        return None
 
 
 def call_gpt(prompt: str, *, max_tokens: int = 2048, retries: int = 2) -> str | None:
