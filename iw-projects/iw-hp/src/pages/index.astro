@@ -1900,6 +1900,15 @@ const nav = [
     margin: clamp(30px, 4vw, 46px) 0 0;
   }
 
+  /* ══════════ 大画面(1800px+) — clamp上限で文字幅が頭打ちになり
+     負マージンだけが効いて「TERVENTION」まで切れる(2560実測)。cropはIだけに留める ══════════ */
+  @media (min-width: 1800px) {
+    .hero-type { width: 108vw; margin-left: -4vw; }
+    .hero-type .line-1 { font-size: clamp(84px, 15.5vw, 330px); }
+    .hero-type .line-2 { font-size: clamp(76px, 13vw, 280px); padding-right: 10vw; }
+    .hero-copy { padding-left: clamp(220px, 18vw, 480px); }
+  }
+
   /* ══════════════════════════════════════════════
      MOBILE — PCの2カラムを縦に潰すのではなく、専用のリズムを作る
      ══════════════════════════════════════════════ */
