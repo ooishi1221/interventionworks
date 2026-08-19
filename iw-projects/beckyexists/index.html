@@ -21,6 +21,18 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- GA4 (2026-08-19)。DebugView確認は ?ga_debug=1。カスタムイベントは本文末尾の計測ブロック参照 -->
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9VQD804ZZH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    var gaCfg = {};
+    if (location.search.indexOf('ga_debug=1') !== -1) gaCfg.debug_mode = true;
+    gtag('config', 'G-9VQD804ZZH', gaCfg);
+  </script>
   <!-- Typography 3声システム (2026-08-18): Anton=ブランドの声 / IBM Plex Mono=機械の声 / DotGothic16=ベキたん自身の声(吹き出し専用) -->
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:ital,wght@0,400;1,400&family=DotGothic16&display=swap" rel="stylesheet" />
   <style>
@@ -2981,6 +2993,11 @@
           }),
         });
         if (!res.ok) throw new Error();
+        // GA4: サーバー側成功のみをトリガーにする(ボタン押下では送らない)。本文・名前はPIIなので送らない
+        if (window.gtag) gtag('event', 'letter_submit', {
+          has_name: !!document.getElementById('letter-name').value.trim(),
+          message_length: msg.value.length,
+        });
         form.reset();
         count.textContent = '0 / 500';
         form.hidden = true;
@@ -3021,6 +3038,107 @@
         }, 5500);
       }
     } catch (_) {}
+  })();
+  </script>
+
+  <script>
+  // ══ GA4 カスタムイベント (2026-08-19) ══
+  // 「何人来たか」ではなくファン化の兆候を測る。
+  // Hero → interlude(I EXIST HERE.) → profile の到達ファネル + 体験接触 + Letter。
+  // EXISTENCE(第2Hero)は #profile 内の背景タイポなので existence_reached は
+  // profile_reached と同値になるため送らない。gallery_image_open / activity_open は
+  // 対象UI(拡大表示・開閉)がこのサイトに存在しないため送らない。
+  // Enhanced Measurement 重複対処: scroll(90%)は管理画面でOFFにする運用。
+  // YouTube埋め込みは enablejsapi なし = EMのvideo計測は発火しないので movie_play と重複しない。
+  (() => {
+    const ga = (name, params) => {
+      if (typeof window.gtag === 'function') window.gtag('event', name, params || {});
+    };
+
+    // ── 到達ファネル: interlude / profile / gallery(閲覧開始) — 各1回/load ──
+    const reachTargets = [
+      ['#interlude', 'interlude_reached', 0.4],
+      ['#profile', 'profile_reached', 0.25],
+      ['#gallery', 'gallery_open', 0.25],
+    ];
+    for (const [sel, name, th] of reachTargets) {
+      const el = document.querySelector(sel);
+      if (!el) continue;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          ga(name);
+          obs.unobserve(entry.target);
+        });
+      }, { threshold: th });
+      obs.observe(el);
+    }
+
+    // ── scroll_50 / scroll_90 — 各1回/load ──
+    const scrollFired = { 50: false, 90: false };
+    window.addEventListener('scroll', () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max <= 0) return;
+      const pct = (window.scrollY / max) * 100;
+      for (const t of [50, 90]) {
+        if (!scrollFired[t] && pct >= t) {
+          scrollFired[t] = true;
+          ga('scroll_' + t, { percent: t });
+        }
+      }
+    }, { passive: true });
+
+    // ── radio_play — 音が実際に鳴り始めた時(audioのplayイベント)、1回/load ──
+    const radio = document.getElementById('radio-player');
+    if (radio) {
+      let radioFired = false;
+      radio.addEventListener('play', () => {
+        if (radioFired) return;
+        radioFired = true;
+        // episode_id は音声ファイル名(例: ep012.mp3)。PIIなし
+        const file = (radio.src || '').split('/').pop() || 'unknown';
+        ga('radio_play', { episode_id: file, placement: 'onair_button' });
+      });
+    }
+
+    // ── movie_play — サムネclickでYouTube iframeが挿入される瞬間(既存がonceなので1回) ──
+    const poster = document.getElementById('movie-poster');
+    if (poster) {
+      poster.addEventListener('click', () => {
+        const thumb = document.getElementById('movie-thumb');
+        // movie_id はサムネURL(i.ytimg.com/vi/<id>/...)から復元。PIIなし
+        const m = (thumb && thumb.src || '').match(/\/vi\/([^/]+)\//);
+        ga('movie_play', { movie_id: m ? m[1] : 'unknown', placement: 'movie_section' });
+      }, { once: true });
+    }
+
+    // ── letter_start — お便り入力欄への初回focus、1回/load ──
+    const letterMsg = document.getElementById('letter-msg');
+    if (letterMsg) {
+      letterMsg.addEventListener('focus', () => ga('letter_start'), { once: true });
+    }
+    // letter_submit は送信処理内(fetch成功後)で送信済み — このブロックには置かない
+
+    // ── social_click — 外部SNSリンク、委譲1本。イベント名は増やさずplatformで区別 ──
+    const PLATFORMS = [
+      ['x.com', 'x'], ['twitter.com', 'x'],
+      ['youtube.com', 'youtube'], ['youtu.be', 'youtube'],
+      ['spotify.com', 'spotify'],
+      ['note.com', 'note'],
+    ];
+    document.addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      const href = a.href || '';
+      const hit = PLATFORMS.find(([host]) => href.includes(host));
+      if (!hit) return;
+      const placement =
+        a.closest('#hero') ? 'hero' :
+        a.closest('#discography') ? 'discography' :
+        a.closest('#youtube') ? 'movie_section' :
+        a.closest('footer, .footer-links') ? 'footer' : 'body';
+      ga('social_click', { platform: hit[1], placement });
+    });
   })();
   </script>
 </body>
