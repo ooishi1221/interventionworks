@@ -494,12 +494,9 @@ main push で Vercel 自動デプロイ(Root Directory=`iw-projects/iw-hp` 修�
 
 ---
 
-## PART F — 要確認事項(ゆう判断、実装前に確定)
+## PART F — ゆう判断結果(2026-08-19 確定済み)
 
-1. **Case 4本の選定**: BECKY / Moto-Logos / Slight / Vibe-Guard で組んだ。
-   - ennichi は NJHD 商談前なので**掲載しない**判断にした → OK?
-   - Moto-Logos は β 前だが自社プロダクトなので「作っている最中」として掲載 → OK?
-   - Moto-Logos / Slight は Wit-One vehicle。IW サイトへの掲載は現行 works/slight の前例ありと判断 → OK?
-2. **Slight の検品生写真**をそのまま(最小加工で)使う路線 → OK? 嫌なら Slight はタイポ+図版のみで組む
-3. **Founder の 2〜3 行**: C-5 の文面は仮置き。ゆうの言葉で確定させたい
-4. **中心コピーの読点**: 指示書内で「魂の震えに介入せよ」(現サイト)と「魂の震えに、介入せよ。」が混在。**読点あり**で統一する想定 → OK?
+1. **Case 4本 = BECKY / Moto-Logos / Slight / Vibe-Guard で確定**。ennichi は NJHD 商談前のため掲載しない。Moto-Logos は β 前でも「作っている最中」として掲載。WO vehicle 製品の IW サイト掲載は現行 works/slight の前例踏襲
+2. **Slight = 検品生写真 RAW 路線で確定**(最小加工、キャプションで隠さない)
+3. **中心コピー = 「魂の震えに、介入せよ。」(読点あり)で統一確定**。現サイトの読点なし表記は全箇所置換
+4. **Founder の 2〜3 行のみ未確定**: C-5 の文面は仮置き。実装レビュー時にゆうの言葉で差し替える(実装ブロッカーではない)
