@@ -128,6 +128,8 @@ const nav = [
 
         <h1 class="sr-only">Intervention Works</h1>
 
+        <!-- 3層構造: INTERVENTION=背景層 / WORKS=前景層(版ズレの縁取りで重なる) / 日本語=中景。
+             文字はロゴでなく物体(AD指示書#7)。 -->
         <div class="hero-type" aria-hidden="true">
           <span class="hero-type-line line-1">INTERVENTION</span>
           <span class="hero-type-line line-2">WORKS</span>
@@ -136,10 +138,13 @@ const nav = [
         <div class="hero-copy">
           <p class="hero-statement">魂の震えに、<span class="accent">介入</span>せよ。</p>
           <p class="hero-meta">AI / PRODUCT / STRATEGY / ENGINEERING</p>
-          <p class="hero-sub">Intervene in the world. Rebel against their values.</p>
         </div>
 
-        <div class="scroll-hint" aria-hidden="true">↓ scroll</div>
+        <!-- 英文はキャッチコピーではなく footnote(AD指示書#9)。scroll hint も editor annotation へ -->
+        <div class="hero-footnote" aria-hidden="true">
+          <span class="hero-footnote-note">Intervene in the world. Rebel against their values.</span>
+          <span class="hero-footnote-scroll">SCROLL / 01</span>
+        </div>
       </section>
 
       <!-- ══════════ 01 SELECTED INTERVENTIONS ══════════ -->
@@ -148,17 +153,21 @@ const nav = [
 
         <header class="sec-head reveal">
           <p class="sec-num">01 — SELECTED INTERVENTIONS</p>
+          <!-- SELECTED は単独で100vw幅の1枚(AD指示書#28)。INTERVENTIONS が続く -->
           <h2 class="sec-type" aria-hidden="true">
-            <span class="sec-type-line crop-left">SELECTED</span>
-            <span class="sec-type-line">INTERVENTIONS</span>
+            <span class="sec-type-line sec-type-selected">SELECTED</span>
+            <span class="sec-type-line sec-type-interventions">INTERVENTIONS</span>
           </h2>
           <span class="sr-only">Selected Interventions</span>
-          <p class="sec-sub">何に、どう介入したか。</p>
+          <p class="sec-sub sec-sub--right">何に、どう介入したか。</p>
         </header>
 
-        <!-- CASE 01 — BECKY : 左Text / 右Visual(縦) -->
-        <article class="case case-01 reveal">
-          <div class="case-body">
+        <!-- CASE 01 — BECKY : 巨大01背面 / 左Text / 右Visual(稼働中の実物、左からclip reveal) -->
+        <!-- clip-reveal は article 側で観測する。clip-path で面積0になった要素は
+             IntersectionObserver が交差なしと判定して永遠に発火しない(2026-08-19実測) -->
+        <article class="case case-01 clip-reveal">
+          <span class="case-no case-no--left" aria-hidden="true">01</span>
+          <div class="case-body reveal">
             <p class="case-meta">01 / AI IDOL — AUTONOMOUS AGENT / 2026—</p>
             <h3 class="case-lead">AIを、道具ではなく<br />相棒として育てる。</h3>
             <p class="case-text">
@@ -166,7 +175,7 @@ const nav = [
             </p>
             <ul class="case-links">
               <li><a href="https://beckyexists.com" target="_blank" rel="noopener">beckyexists.com <span class="arrow">↗</span></a></li>
-              <li><a href="/works/voice-of-becky/">設計を読む <span class="arrow">→</span></a></li>
+              <li><a href="/works/voice-of-becky/">介入の設計を見る <span class="arrow">→</span></a></li>
             </ul>
           </div>
           <div class="case-visual">
@@ -175,38 +184,42 @@ const nav = [
               alt="beckyexists.com — 稼働時間と感情値を実データで表示し、彼女の感情で呼吸するサイト"
               width="1440" height="900" loading="lazy" class="case-img"
             />
+            <p class="case-caption">fig.01 — beckyexists.com / state-driven UI, live</p>
             <img
               src="/images/case-becky.webp"
               alt="BECKY — 自律的に活動するAIアイドル"
               width="960" height="1440" loading="lazy" class="case-img-inset"
             />
+            <p class="case-caption case-caption--inset">specimen: BECKY / autonomous agent, 2026—</p>
           </div>
         </article>
 
-        <!-- CASE 02 — MOTO-LOGOS : Visual Full Width / 下Text -->
+        <!-- CASE 02 — MOTO-LOGOS : Full Width、テキストを画像下端に重ねる。02は右上で対角 -->
         <article class="case case-02 reveal">
           <div class="case-visual-full">
+            <span class="case-no case-no--right" aria-hidden="true">02</span>
             <img
               src="/images/case-motologos.webp"
               alt="Moto-Logos — 都市ライダーの存在証明"
               width="1920" height="1072" loading="lazy" class="case-img"
             />
-            <p class="case-meta over">02 / MOBILE APP — EXISTENCE PROOF / β</p>
+            <div class="case-overlay">
+              <p class="case-meta">02 / MOBILE APP — EXISTENCE PROOF / β</p>
+              <h3 class="case-lead">評価も、ランキングも、<br />通知もない地図。</h3>
+              <p class="case-text">
+                「バイク駐車場の検索アプリ」を作らなかった。写真1枚で都市ライダーの「いた」が刻まれる存在証明に組み替えた。エンゲージメント漬けのアプリ業界への反乱として設計している。
+              </p>
+            </div>
             <img
               src="/images/case-motologos-ui.webp"
               alt="Moto-Logos の実UI — 撮った場所が地図に刻まれる"
-              width="720" height="1561" loading="lazy" class="case-img-inset ui"
+              width="1080" height="2341" loading="lazy" class="case-img-inset ui"
             />
-          </div>
-          <div class="case-body wide">
-            <h3 class="case-lead">評価も、ランキングも、<br />通知もない地図。</h3>
-            <p class="case-text">
-              「バイク駐車場の検索アプリ」を作らなかった。写真1枚で都市ライダーの「いた」が刻まれる存在証明に組み替えた。エンゲージメント漬けのアプリ業界への反乱として設計している。
-            </p>
+            <p class="case-caption case-caption--map">urban existence map / β</p>
           </div>
         </article>
 
-        <!-- CASE 03 — SLIGHT : 右Text / 左Visual(生写真) -->
+        <!-- CASE 03 — SLIGHT : industrial catalog。0.5の巨大タイポが第2の主役、余白最大 -->
         <article class="case case-03 reveal">
           <div class="case-visual">
             <img
@@ -217,18 +230,24 @@ const nav = [
             <p class="case-caption">sample #3 — thermal test, Jun 2026</p>
           </div>
           <div class="case-body">
+            <span class="case-no case-no--behind" aria-hidden="true">03</span>
+            <div class="slight-spec" aria-hidden="true">
+              <span class="slight-num">0.5</span>
+              <span class="slight-unit">MM /<br />THERMAL<br />LAYER</span>
+            </div>
             <p class="case-meta">03 / D2C PRODUCT — 0.5mm / MFG</p>
             <h3 class="case-lead">電熱グローブは分厚くて<br />当然、を疑った。</h3>
             <p class="case-text">
               0.5mmで指先だけ温める。操作性を殺す防寒は本末転倒だから。企画・仕様・ファブレス製造・クラウドファンディングまで、自分たちの手で確かめながら進めている。
             </p>
             <ul class="case-links">
-              <li><a href="/works/slight/">設計を読む <span class="arrow">→</span></a></li>
+              <li><a href="/works/slight/">介入の設計を見る <span class="arrow">→</span></a></li>
             </ul>
           </div>
         </article>
 
-        <!-- CASE 04 — VIBE-GUARD : ターミナル実出力の組版（画像なしを逆手に） -->
+        <!-- CASE 04 — VIBE-GUARD : 黒箱を解体し、実出力を誌面として再組版(AD指示書#23)。
+             [危険]がこのページ唯一の日本語LOUD -->
         <article class="case case-04 reveal">
           <div class="case-body wide">
             <p class="case-meta">04 / MCP SERVER — OSS</p>
@@ -237,21 +256,19 @@ const nav = [
               危険なコマンドも、漏れかけた秘密鍵も実行前に検知する。ただし警告で終わらせない。「なぜ危ないか・どうあるべきか・今どうするか」の3段で返す。自分たちの開発で毎日使っているものを、そのまま公開した。
             </p>
             <ul class="case-links">
-              <li><a href="/works/vibe-guard/">設計を読む <span class="arrow">→</span></a></li>
+              <li><a href="/works/vibe-guard/">介入の設計を見る <span class="arrow">→</span></a></li>
             </ul>
           </div>
-          <div class="terminal">
-            <p class="terminal-head">
-              <span class="t-mark">▸</span> vibe-guard · explain-command
-            </p>
-            <p class="terminal-in">"git push --force origin main"</p>
-            <p class="terminal-verdict"><span class="danger">[危険]</span> git-history-rewrite</p>
-            <p class="terminal-scope">影響範囲: リモートリポジトリの履歴書き換え</p>
+          <div class="vg-spread">
+            <span class="case-no case-no--behind" aria-hidden="true">04</span>
+            <p class="vg-cmd">$ git push --force origin main</p>
+            <p class="vg-verdict"><span class="vg-danger">[危険]</span><span class="vg-cat">git-history-rewrite</span></p>
             <dl class="whn">
               <div><dt>Why</dt><dd>リモートの履歴を上書きする。他のメンバーが pull した分が消える / 競合する。</dd></div>
               <div><dt>How</dt><dd>共有ブランチでは使わない。<span class="mono">--force-with-lease</span> か <span class="mono">git revert</span> で打ち消す commit を作る。</dd></div>
               <div><dt>Now</dt><dd>branch 名を確認。共有なら事前に同意を取る。</dd></div>
             </dl>
+            <p class="case-caption">vibe-guard / explain-command — actual output, unedited</p>
           </div>
         </article>
 
@@ -280,10 +297,10 @@ const nav = [
         </ul>
 
         <div class="do-reason reveal">
-          <p class="reason-line">戦略だけ渡して、終わらない。</p>
-          <p class="reason-line">作るだけでも、終わらない。</p>
-          <p class="reason-line">必要なら企画まで戻る。</p>
-          <p class="reason-line">必要なら運用まで残る。</p>
+          <p class="reason-line">戦略だけ渡して、<strong>終わらない。</strong></p>
+          <p class="reason-line">作るだけでも、<strong>終わらない。</strong></p>
+          <p class="reason-line">必要なら企画まで<strong>戻る。</strong></p>
+          <p class="reason-line">必要なら運用まで<strong>残る。</strong></p>
         </div>
 
         <div class="entry reveal">
@@ -320,6 +337,8 @@ const nav = [
           ))}
         </ol>
 
+        <!-- RELATEの末尾から細いruleが上へ伸びる=「03→01で戻る」のVisual化(AD指示書#37) -->
+        <div class="loop-return reveal" aria-hidden="true"><span class="loop-return-line"></span></div>
         <p class="loop-note reveal">この仕事は、一方通行では終わらない。何度でも 01 に戻る。</p>
 
         <p class="how-ai reveal">
@@ -330,6 +349,7 @@ const nav = [
       <!-- ══════════ 04 ABOUT ══════════ -->
       <section id="about" class="about" data-num="04">
         <span id="company" class="anchor-alias" aria-hidden="true"></span>
+        <span class="about-ghost" aria-hidden="true">ABOUT</span>
 
         <header class="sec-head reveal">
           <p class="sec-num">04 — ABOUT</p>
@@ -365,7 +385,8 @@ const nav = [
       <section id="contact" class="contact" data-num="05">
         <header class="sec-head reveal">
           <p class="sec-num">05 — TALK</p>
-          <p class="contact-en" aria-hidden="true">LET'S INTERVENE.</p>
+          <!-- 主役は英字(AD指示書#62)。日本語は静かにその下 -->
+          <p class="contact-en" aria-hidden="true"><span>LET'S</span><span class="contact-en-2">INTERVENE.</span></p>
           <h2 class="contact-jp">話してみる。</h2>
           <p class="contact-note">
             依頼内容が決まっていなくても大丈夫です。雑談からでも。
@@ -457,7 +478,7 @@ const nav = [
         const R = 150;          // 介入半径
         const FORCE = 36;       // 最大変位
         const RELAX = 0.90;     // 揺り戻し（1に近いほど余韻が長い）
-        const DRIFT = 0.18;     // 秩序のゆらぎ振幅(px)
+        const DRIFT = 0.05;     // 2026-08-19 AD: 常時の揺らぎをほぼ止め「設計方眼紙」に。介入した時だけ歪む
 
         let W = 0, H = 0, dpr = 1;
         let cols = 0, rows = 0;
@@ -513,13 +534,13 @@ const nav = [
           pointer.px = pointer.x;
           pointer.py = pointer.y;
 
-          // 自律パルス（7〜13秒ごと、ふっと一箇所が震える）
+          // 自律パルス（AD後: 18〜30秒ごとに弱く。紙は基本静かで、ときどきだけ震える）
           pulse.t--;
           if (pulse.t <= 0) {
             pulse.x = W * (0.15 + Math.random() * 0.7);
             pulse.y = H * (0.15 + Math.random() * 0.7);
-            disturb(pulse.x, pulse.y, FORCE * 0.5);
-            pulse.t = 420 + Math.random() * 360;
+            disturb(pulse.x, pulse.y, FORCE * 0.3);
+            pulse.t = 1080 + Math.random() * 720;
           }
 
           ctx.clearRect(0, 0, W, H);
@@ -608,8 +629,9 @@ const nav = [
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      // ─── reveal（情報の順番を演出する。一度きり、opacity + translateY のみ）
-      const revealEls = document.querySelectorAll(".reveal");
+      // ─── reveal（情報の順番を演出する。一度きり）
+      // .reveal=fadeUp / .clip-reveal=IMAGE REVEAL / .loop-return=EDITORIAL REVEAL(rule伸び)
+      const revealEls = document.querySelectorAll(".reveal, .clip-reveal, .loop-return");
       const revealObs = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -631,12 +653,13 @@ const nav = [
           const l1 = document.querySelector(".hero-type .line-1");
           const l2 = document.querySelector(".hero-type .line-2");
           if (l1 && l2) {
+            // 巨大な印刷物の上を viewport が通過している程度の微細な速度差(AD指示書#10)
             gsap.to(l1, {
-              xPercent: -6, ease: "none",
+              xPercent: -3, ease: "none",
               scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
             });
             gsap.to(l2, {
-              xPercent: 6, ease: "none",
+              xPercent: 3, ease: "none",
               scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
             });
           }
@@ -1028,93 +1051,98 @@ const nav = [
     z-index: 0;
     pointer-events: none;
   }
+  /* 3層のレイヤー: INTERVENTION(背景層) > WORKS(前景層・版ズレ縁取りで0.2em重なる) > 日本語(中景) */
   .hero-type {
     position: relative;
     z-index: 2;
     display: flex;
     flex-direction: column;
-    width: 110vw;
-    margin-left: -5vw;
-    line-height: 0.84;
+    width: 128vw;
+    margin-left: -14vw;
+    line-height: 0.8;
   }
   .hero-type-line {
     font-family: var(--font-display);
-    font-size: clamp(80px, 14vw, 240px);
-    letter-spacing: -0.028em;
+    letter-spacing: -0.035em;
     color: var(--paper);
     white-space: nowrap;
-    opacity: 0;
-    animation: typeIn 1.25s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    /* 初期表示: clip reveal(上から静かに定着、AD指示書#11)。派手なintroにしない */
+    clip-path: inset(0 0 100% 0);
+    animation: clipIn 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
-  .hero-type .line-1 { animation-delay: 1.05s; padding-left: 3vw; }
+  .hero-type .line-1 {
+    font-size: clamp(84px, 15.5vw, 265px);
+    animation-delay: 0.85s;
+  }
   .hero-type .line-2 {
-    animation-delay: 1.3s;
+    font-size: clamp(76px, 13vw, 225px);
+    animation-delay: 1.15s;
     align-self: flex-end;
-    padding-right: 6vw;
-    letter-spacing: 0.1em;
+    padding-right: 18vw;
+    margin-top: -0.2em; /* 前景として INTERVENTION に重なる */
+    letter-spacing: 0.06em;
+    -webkit-text-stroke: 2px var(--ink-bg); /* 版ズレ: 重なりを読ませる縁取り */
+    paint-order: stroke fill;
+    z-index: 1;
   }
-  @keyframes typeIn {
-    from { opacity: 0; transform: translateY(0.14em); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes clipIn {
+    from { clip-path: inset(0 0 100% 0); transform: translateY(0.06em); }
+    to { clip-path: inset(0 0 -10% 0); transform: translateY(0); }
   }
 
   .hero-copy {
     position: relative;
     z-index: 2;
     max-width: var(--container);
-    margin: clamp(34px, 5vw, 62px) auto 0;
+    margin: clamp(30px, 4vw, 52px) auto 0;
     width: 100%;
-    padding: 0 var(--pad);
+    padding: 0 var(--pad) 0 clamp(20px, 12vw, 220px); /* WORKSの左下の余白の中に「見つけさせる」 */
   }
   .hero-statement {
     font-family: var(--font-serif);
     font-weight: 900;
-    font-size: clamp(24px, 3.2vw, 44px);
-    line-height: 1.5;
-    letter-spacing: 0.02em;
-    margin: 0 0 22px;
+    font-size: clamp(17px, 1.9vw, 26px);
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+    margin: 0 0 12px;
     opacity: 0;
-    animation: fadeUp 1.1s ease 1.6s forwards;
+    animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 1.55s forwards;
   }
   .hero-meta {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.2em;
     color: var(--teal);
-    margin: 0 0 10px;
-    opacity: 0;
-    animation: fadeUp 1.1s ease 1.85s forwards;
-  }
-  .hero-sub {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--paper-faint);
     margin: 0;
     opacity: 0;
-    animation: fadeUp 1.1s ease 2.05s forwards;
+    animation: fadeUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 1.8s forwards;
   }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .scroll-hint {
+  /* footnote行: 英文コピーとscroll annotation を誌面の脚注として並べる */
+  .hero-footnote {
     position: absolute;
-    bottom: 34px; left: 50%;
-    transform: translateX(-50%);
+    bottom: 30px;
+    left: 0; right: 0;
     z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 20px;
+    padding: 0 var(--pad);
+    max-width: var(--container);
+    margin: 0 auto;
     font-family: var(--font-mono);
     font-size: 10px;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.12em;
     color: var(--paper-faint);
     opacity: 0;
-    animation: fadeUp 1s ease 2.4s forwards, bounce 2.6s ease-in-out 3.4s infinite;
+    animation: fadeUp 1s ease 2.2s forwards;
   }
-  @keyframes bounce {
-    0%, 100% { transform: translate(-50%, 0); }
-    50% { transform: translate(-50%, 7px); }
-  }
+  .hero-footnote-scroll { color: var(--teal); letter-spacing: 0.22em; flex: 0 0 auto; }
 
   /* ══════════ 共通: セクション ══════════ */
   section { position: relative; }
@@ -1159,10 +1187,37 @@ const nav = [
 
   /* ══════════ 01 SELECTED INTERVENTIONS ══════════ */
   .work { padding: clamp(110px, 15vw, 200px) 0 clamp(80px, 10vw, 130px); }
-  .work .sec-type { font-size: clamp(60px, 9vw, 160px); }
-  /* container を破って左端を切る（Typography は装飾として扱う） */
-  .work .crop-left { margin-left: -0.055em; }
-  .work .sec-type-line:last-child { padding-left: clamp(20px, 5vw, 90px); }
+  /* SELECTED は単独で viewport 幅の1枚。INTERVENTIONS がインデントして続く(AD指示書#28) */
+  .work .sec-type-selected {
+    display: block;
+    font-size: clamp(64px, 12.2vw, 224px);
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding-left: 2vw;
+  }
+  .work .sec-type-interventions {
+    display: block;
+    font-size: clamp(40px, 6.4vw, 118px);
+    padding-left: clamp(24px, 8vw, 150px);
+    color: var(--paper-dim);
+  }
+  .sec-sub--right { text-align: right; }
+
+  /* ── Case number = Visual Asset(AD指示書#17)。Caseごとに位置を変える ── */
+  .case-no {
+    position: absolute;
+    font-family: var(--font-display);
+    font-size: clamp(140px, 22vw, 320px);
+    line-height: 0.8;
+    color: var(--paper);
+    opacity: 0.08;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+  .case-no--left { top: -0.12em; left: calc(50% - 50vw - 0.25em); }
+  .case-no--right { top: -0.14em; right: -0.22em; z-index: 3; opacity: 0.5; mix-blend-mode: overlay; }
+  .case-no--behind { top: -0.3em; right: -0.1em; opacity: 0.06; }
 
   .case {
     max-width: var(--container);
@@ -1211,37 +1266,53 @@ const nav = [
   }
   .case-links a:hover { border-color: var(--yellow); color: var(--yellow); }
   .case-links a:hover .arrow { transform: translateX(4px); }
+  /* caption は画像幅より必ず狭い(Controlled Misalignment 規則2) */
   .case-caption {
     font-family: var(--font-mono);
     font-size: 10px;
     letter-spacing: 0.1em;
     color: var(--paper-faint);
     margin: 14px 0 0;
+    max-width: 60%;
   }
   .case-img { width: 100%; }
   .case-visual { position: relative; }
 
-  /* — CASE 01: 左Text / 右Visual(稼働中のサイト実物 + キャラをインセット) — */
+  /* IMAGE REVEAL: 左からの clip(Case 01 専用。全画像同じ reveal は禁止 #56)。
+     clip は visual に掛けるが、観測は article(.clip-reveal)側 — 面積0要素は IO が拾えない */
+  .clip-reveal .case-visual { clip-path: inset(0 100% 0 0); transition: clip-path 1s cubic-bezier(0.16, 1, 0.3, 1); }
+  .clip-reveal.in-view .case-visual { clip-path: inset(0 0 0 0); }
+
+  /* — CASE 01: 巨大01が背面・左端はみ出し。画像は拡大し右端をviewport外へ逃がす — */
   .case-01 {
+    position: relative;
     display: grid;
-    grid-template-columns: 0.86fr 1.14fr;
+    grid-template-columns: 0.72fr 1.28fr;
     gap: clamp(40px, 5vw, 74px);
     align-items: center;
     margin-top: clamp(80px, 11vw, 150px);
   }
-  .case-01 .case-visual { padding-bottom: 13%; }
+  /* 見出しの上端を画像上端からわざと下げる(Controlled Misalignment) */
+  .case-01 .case-body { position: relative; z-index: 1; padding-top: 8%; }
+  .case-01 .case-visual { padding-bottom: 13%; margin-right: -6vw; }
   .case-01 .case-img { border: 1px solid var(--rule-soft); }
-  /* インセットは大きく外へ出す。サイトSSの "EXISTS" を潰さない位置（実測で決めた） */
   .case-01 .case-img-inset {
     position: absolute;
-    right: -9%;
-    bottom: -3%;
-    width: 23%;
+    right: 2vw;
+    bottom: 4%;
+    width: 21%;
     border: 1px solid var(--rule-soft);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
   }
+  .case-caption--inset {
+    position: absolute;
+    right: 2vw;
+    bottom: -3.2em; /* インセット画像の下端より外へ(重なり実測で修正) */
+    text-align: right;
+    max-width: 40%;
+  }
 
-  /* — CASE 02: Visual Full Width / 下Text — */
+  /* — CASE 02: Full Width。テキストは画像下端に重ねる(#21)。02は右上・対角 — */
   .case-02 {
     max-width: none;
     padding: 0;
@@ -1251,68 +1322,138 @@ const nav = [
     position: relative;
     width: 92vw;
     margin: 0 auto;
+    overflow: hidden;
   }
-  .case-meta.over {
+  .case-visual-full > .case-img { display: block; }
+  /* 重ねテキストの可読性は単色透過の scrim 1枚だけで確保(gradient blob ではない) */
+  .case-overlay {
     position: absolute;
-    top: clamp(16px, 3vw, 34px);
-    left: clamp(16px, 3vw, 34px);
-    margin: 0;
-    color: var(--paper);
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+    left: 0; right: 0; bottom: 0;
+    z-index: 2;
+    padding: clamp(90px, 12vw, 180px) clamp(20px, 4vw, 60px) clamp(24px, 3.5vw, 52px);
+    background: linear-gradient(to top, rgba(5, 13, 26, 0.88) 0%, rgba(5, 13, 26, 0.45) 55%, transparent 100%);
+    max-width: none;
   }
+  .case-overlay .case-lead { margin-bottom: 16px; }
+  .case-overlay .case-text { max-width: 36em; }
   .case-02 .case-img-inset.ui {
     position: absolute;
     right: clamp(16px, 4vw, 60px);
-    bottom: -14%;
-    width: clamp(110px, 13vw, 190px);
+    bottom: clamp(16px, 3vw, 44px);
+    width: clamp(110px, 12vw, 180px);
     border: 1px solid var(--rule-soft);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    z-index: 3;
   }
-  .case-02 .case-body {
-    max-width: var(--container);
-    margin: clamp(60px, 8vw, 100px) auto 0;
-    padding: 0 var(--pad);
+  .case-caption--map {
+    position: absolute;
+    right: clamp(16px, 4vw, 60px);
+    bottom: 2px;
+    z-index: 3;
+    text-align: right;
   }
   .case-body.wide .case-text { max-width: 40em; }
 
-  /* — CASE 03: 右Text / 左Visual(生写真) — */
+  /* — CASE 03: industrial catalog。写真は絞り、0.5 の巨大タイポが第2の主役、余白最大(#22) — */
   .case-03 {
     display: grid;
-    grid-template-columns: 0.85fr 1fr;
-    gap: clamp(40px, 6vw, 88px);
-    align-items: center;
-    margin-top: clamp(80px, 10vw, 140px);
+    grid-template-columns: 0.72fr 1.28fr;
+    gap: clamp(48px, 8vw, 120px);
+    align-items: start;
+    margin-top: clamp(140px, 18vw, 260px);
+  }
+  .case-03 .case-body { position: relative; }
+  .slight-spec {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(14px, 1.6vw, 26px);
+    margin-bottom: clamp(28px, 4vw, 52px);
+  }
+  .slight-num {
+    font-family: var(--font-display);
+    font-size: clamp(110px, 16vw, 250px);
+    line-height: 0.82;
+    letter-spacing: -0.04em;
+    color: var(--paper);
+    /* TYPE MOTION: 数字だけ clip reveal */
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.in-view .slight-num { clip-path: inset(0 0 -10% 0); }
+  .slight-unit {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    line-height: 1.9;
+    color: var(--teal);
   }
 
-  /* — CASE 04: ターミナル実出力の組版 — */
+  /* — CASE 04: 黒箱を解体、実出力を誌面として組む(#23)。[危険]が唯一の日本語LOUD — */
   .case-04 {
     display: grid;
-    grid-template-columns: 1fr 1.05fr;
+    grid-template-columns: 0.9fr 1.1fr;
     gap: clamp(40px, 6vw, 80px);
     align-items: center;
     margin-top: clamp(120px, 16vw, 220px);
   }
-  .terminal {
-    background: #000;
-    border: 1px solid var(--rule);
-    padding: clamp(20px, 2.6vw, 34px);
+  .vg-spread { position: relative; padding: clamp(8px, 1.5vw, 20px) 0; }
+  .vg-cmd {
     font-family: var(--font-mono);
     font-size: 12px;
-    line-height: 1.85;
+    letter-spacing: 0.04em;
+    color: var(--paper-dim);
+    margin: 0 0 10px;
   }
-  .terminal p { margin: 0; }
-  .terminal-head { color: var(--paper-dim); letter-spacing: 0.06em; }
-  .terminal-head .t-mark { color: var(--teal); }
-  .terminal-in { color: var(--paper); margin: 4px 0 18px !important; padding-left: 14px; }
-  .terminal-verdict { letter-spacing: 0.06em; color: var(--paper); }
-  .terminal-verdict .danger { color: var(--yellow); font-weight: 500; }
-  .terminal-scope { color: var(--paper-faint); font-size: 11px; margin-bottom: 16px !important; }
-  .whn { margin: 0; padding: 16px 0 0; border-top: 1px solid rgba(233, 230, 223, 0.1); }
-  .whn > div { display: grid; grid-template-columns: 42px 1fr; gap: 10px; margin-bottom: 10px; }
-  .whn > div:last-child { margin-bottom: 0; }
-  .whn dt { color: var(--teal); letter-spacing: 0.08em; }
-  .whn dd { margin: 0; color: var(--paper-dim); font-size: 11.5px; line-height: 1.8; }
+  .vg-verdict {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(12px, 1.6vw, 22px);
+    margin: 0 0 clamp(20px, 2.6vw, 34px);
+  }
+  .vg-danger {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: clamp(52px, 6.4vw, 104px);
+    line-height: 1.1;
+    color: var(--yellow);
+  }
+  .vg-cat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--paper-faint);
+  }
+  /* Why/How/Now: 罫線で区切る誌面の3段組み。EDITORIAL REVEAL(罫が左から伸びる) */
+  .whn { margin: 0; padding: 0; }
+  .whn > div {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: clamp(14px, 2vw, 26px);
+    padding: 14px 0;
+    border-top: 1px solid var(--rule);
+    position: relative;
+  }
+  .reveal .whn > div { border-top-color: transparent; }
+  .reveal .whn > div::before {
+    content: "";
+    position: absolute;
+    top: -1px; left: 0;
+    height: 1px;
+    width: 0;
+    background: var(--rule);
+    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.in-view .whn > div::before { width: 62%; } /* ruleは途中で切る(規則) */
+  .whn dt {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--teal);
+    padding-top: 0.35em;
+  }
+  .whn dd { margin: 0; color: var(--paper-dim); font-size: 13px; line-height: 1.95; }
   .whn .mono { color: var(--paper); }
+  .vg-spread .case-caption { margin-top: clamp(18px, 2.4vw, 30px); }
 
   /* — 中間CTA（1箇所だけ。巨大ボタンは置かない） — */
   .mid-cta {
@@ -1382,10 +1523,16 @@ const nav = [
   .reason-line {
     font-family: var(--font-serif);
     font-weight: 900;
-    font-size: clamp(19px, 2.2vw, 28px);
-    line-height: 1.85;
+    font-size: clamp(17px, 1.9vw, 24px);
+    line-height: 2;
     margin: 0;
+    color: var(--paper-dim);
+  }
+  /* 「終わらない。」「戻る。」「残る。」だけを強調(スクロール演出はしない #34) */
+  .reason-line strong {
+    font-size: 1.35em;
     color: var(--paper);
+    font-weight: 900;
   }
 
   .entry {
@@ -1431,21 +1578,22 @@ const nav = [
     padding: 0 var(--pad);
     counter-reset: none;
   }
+  /* 1 step ≈ 0.8 viewport 使う(AD指示書#36)。annotation は Editorial サイズへ拡大(#37) */
   .loop-step {
     display: grid;
-    grid-template-columns: 120px 1fr;
+    grid-template-columns: minmax(120px, 180px) 1fr;
     gap: clamp(20px, 4vw, 60px);
     align-items: start;
-    padding: clamp(34px, 4.5vw, 58px) 0;
+    padding: clamp(70px, 11vh, 140px) 0;
     border-bottom: 1px solid var(--rule-soft);
   }
   .loop-step:first-child { border-top: 1px solid var(--rule-soft); }
   .loop-arrow {
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
+    font-size: clamp(18px, 2.2vw, 32px);
+    letter-spacing: 0.1em;
     color: var(--teal);
-    padding-top: 0.9em;
+    padding-top: 0.5em;
   }
   .loop-arrow .to { color: var(--paper-faint); }
   .loop-body { min-width: 0; }
@@ -1466,6 +1614,23 @@ const nav = [
   }
   /* 03 → 01 が直線プロセスを壊す。ここだけ色を変えて「戻る」を可視化 */
   .loop-step:last-child .loop-arrow { color: var(--yellow); }
+  /* RELATE の末尾から細い rule が上へ伸びる=「戻る」のVisual化(円形Diagramにしない #37) */
+  .loop-return {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 var(--pad);
+    height: 0;
+  }
+  .loop-return-line {
+    display: block;
+    width: 1px;
+    height: 0;
+    margin-left: clamp(40px, 6vw, 90px);
+    margin-top: -130px;
+    background: var(--yellow);
+    transition: height 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .loop-return.in-view .loop-return-line { height: 130px; }
   .loop-note {
     max-width: var(--container);
     margin: clamp(40px, 5vw, 64px) auto 0;
@@ -1485,8 +1650,20 @@ const nav = [
     color: var(--paper-dim);
   }
 
-  /* ══════════ 04 ABOUT ══════════ */
-  .about { padding: clamp(120px, 16vw, 210px) 0 clamp(100px, 13vw, 170px); }
+  /* ══════════ 04 ABOUT — 呼吸のセクション。背景に薄いABOUT(AD指示書#61) ══════════ */
+  .about { padding: clamp(120px, 16vw, 210px) 0 clamp(100px, 13vw, 170px); position: relative; overflow: hidden; }
+  .about-ghost {
+    position: absolute;
+    top: 0.1em;
+    right: -0.15em;
+    font-family: var(--font-display);
+    font-size: clamp(120px, 20vw, 300px);
+    line-height: 0.8;
+    color: var(--paper);
+    opacity: 0.04;
+    pointer-events: none;
+    user-select: none;
+  }
   .about-body {
     max-width: var(--container);
     margin: clamp(50px, 7vw, 90px) auto 0;
@@ -1528,10 +1705,13 @@ const nav = [
     margin: 0 0 16px;
     color: var(--paper);
   }
+  /* 経歴一覧よりこの2文(AD指示書#60)。本文からserif 900へ格上げ */
   .founder-text {
-    font-size: 14px;
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: clamp(18px, 2vw, 27px);
     line-height: 2;
-    color: var(--paper-dim);
+    color: var(--paper);
     margin: 0;
   }
   .info {
@@ -1561,20 +1741,25 @@ const nav = [
 
   /* ══════════ 05 CONTACT ══════════ */
   .contact { padding: clamp(120px, 16vw, 200px) 0 clamp(80px, 10vw, 120px); }
+  /* 主役は英字の巨大2行(AD指示書#62)。日本語は静かにその下 */
   .contact-en {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.24em;
-    color: var(--teal);
-    margin: 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-display);
+    font-size: clamp(58px, 9.5vw, 172px);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    color: var(--paper);
+    margin: 0 0 clamp(26px, 3.5vw, 46px);
   }
+  .contact-en-2 { padding-left: clamp(24px, 6vw, 110px); } /* 2行目インデント(見出し規則3) */
   .contact-jp {
     font-family: var(--font-serif);
     font-weight: 900;
-    font-size: clamp(38px, 6vw, 82px);
-    line-height: 1.3;
-    letter-spacing: 0.01em;
-    margin: 0 0 24px;
+    font-size: clamp(24px, 3vw, 40px);
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    margin: 0 0 20px;
     color: var(--paper);
   }
   .contact-note {
@@ -1724,33 +1909,45 @@ const nav = [
     .site-nav { display: none; }
     .menu-toggle { display: flex; }
 
-    /* Hero: 巨大タイポは残す。ただしブランド名が読めなくなるまで crop しない
-       （17vw だと "INTERVENT" で切れて意味が壊れると実測したので 13.5vw） */
+    /* Hero: 縦長ポスター(AD指示書#66-67)。一画面に一部しか見えなくてもよい、
+       Scrollで全体を理解する。17vw の大胆な crop(ゆう確認済み 8/19)。
+       sr-only の h1 と title は完全なブランド名を保持 */
     .hero { padding: 100px 0 80px; }
     .hero-type {
-      width: 100vw;
-      margin-left: 0;
-      line-height: 0.92;
+      width: 116vw;
+      margin-left: -8vw;
+      line-height: 0.86;
     }
-    .hero-type-line { font-size: clamp(42px, 13.5vw, 96px); }
-    .hero-type .line-1 { padding-left: 3vw; }
-    .hero-type .line-2 { padding-right: 4vw; }
-    .hero-statement { font-size: clamp(21px, 5.6vw, 30px); }
+    .hero-type .line-1 { font-size: clamp(58px, 17vw, 120px); }
+    .hero-type .line-2 {
+      font-size: clamp(50px, 14vw, 104px);
+      padding-right: 10vw;
+      -webkit-text-stroke: 0; /* 低性能端末の描画コスト回避: Mobileはベタ */
+      margin-top: -0.12em;
+    }
+    .hero-statement { font-size: clamp(18px, 4.8vw, 26px); }
+    .hero-copy { padding-left: var(--pad); }
+    .hero-footnote { flex-direction: column; gap: 6px; align-items: flex-start; }
 
-    .work .sec-type, .sec-type-mid { font-size: clamp(38px, 11vw, 64px); }
-    .work .sec-type-line:last-child { padding-left: 0; }
+    .sec-type-mid { font-size: clamp(38px, 11vw, 64px); }
+    .work .sec-type-selected { font-size: clamp(52px, 15.5vw, 90px); padding-left: 3vw; }
+    .work .sec-type-interventions { font-size: clamp(30px, 8.6vw, 52px); padding-left: 12vw; }
+    .sec-sub--right { text-align: left; }
 
-    /* Case: モバイルこそ画像を大きく（100vw） */
+    /* Case: 画像100vw、番号はMobileでも巨大(#68) */
+    .case-no { font-size: clamp(120px, 36vw, 200px); }
     .case-01, .case-03, .case-04 {
       display: block;
-      margin-top: clamp(60px, 14vw, 90px);
+      margin-top: clamp(70px, 16vw, 100px);
     }
     .case-01 .case-visual, .case-03 .case-visual {
       width: 100vw;
       margin-left: calc(50% - 50vw);
+      margin-right: 0;
       margin-bottom: 34px;
     }
-    /* インセットは重ねず、下に分離して並べる（縦画像なので幅は控えめ） */
+    .case-01 .case-body { padding: 0; }
+    /* インセットは重ねず、下に分離して並べる */
     .case-01 .case-visual { padding-bottom: 0; }
     .case-01 .case-img-inset {
       position: static;
@@ -1758,27 +1955,32 @@ const nav = [
       margin: 20px var(--pad) 0 auto;
       right: auto; bottom: auto;
     }
-    .case-01 .case-body, .case-03 .case-body { padding: 0; }
+    .case-caption { padding: 0 var(--pad); max-width: 86%; }
+    .case-caption--inset { position: static; text-align: right; margin: 8px 0 0 auto; max-width: 60%; }
+    .case-03 .case-body { padding: 0; }
     .case-03 .case-visual { margin-bottom: 30px; }
-    .case-03 .case-caption { padding: 0 var(--pad); }
+    .slight-num { font-size: clamp(96px, 30vw, 150px); }
 
-    .case-visual-full { width: 100vw; }
+    /* Case 02: 重ねテキストはMobileでは画像下へ分離(可読性優先) */
+    .case-visual-full { width: 100vw; overflow: visible; }
     .case-02 { margin-top: clamp(70px, 16vw, 110px); }
+    .case-overlay {
+      position: static;
+      background: none;
+      padding: 28px var(--pad) 0;
+    }
     .case-02 .case-img-inset.ui {
       position: static;
       width: 46%;
       margin: 20px var(--pad) 0 auto;
       right: auto; bottom: auto;
     }
-    .case-02 .case-body { margin-top: 40px; }
+    .case-caption--map { position: static; text-align: right; margin: 6px 0 0 auto; padding: 0 var(--pad); }
+    .case-no--right { opacity: 0.14; mix-blend-mode: normal; right: 0; }
 
-    .terminal {
-      margin-top: 34px;
-      font-size: 11px;
-      padding: 20px 16px;
-      overflow-x: auto;
-    }
-    .whn > div { grid-template-columns: 36px 1fr; }
+    .vg-spread { margin-top: 34px; }
+    .vg-danger { font-size: clamp(44px, 12vw, 72px); }
+    .whn > div { grid-template-columns: 52px 1fr; }
 
     /* Capabilities: 罫線リストは縦積みへ */
     .cap {
@@ -1809,16 +2011,21 @@ const nav = [
     .footer { grid-template-columns: 1fr; }
   }
 
-  /* ══════════ REDUCED MOTION ══════════ */
+  /* ══════════ REDUCED MOTION — 静止状態でもDesignが成立すること(AD指示書#72) ══════════ */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .curtain { display: none; }
-    .hero-type-line, .hero-statement, .hero-meta, .hero-sub, .scroll-hint {
+    .hero-type-line, .hero-statement, .hero-meta, .hero-footnote {
       opacity: 1;
       animation: none;
       transform: none;
+      clip-path: none;
     }
     .reveal { opacity: 1; transform: none; transition: none; }
+    .clip-reveal .case-visual, .slight-num { clip-path: none !important; transition: none; }
+    .reveal .whn > div { border-top-color: var(--rule); }
+    .reveal .whn > div::before { display: none; }
+    .loop-return-line { height: 130px; transition: none; }
     * { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; }
   }
 </style>
