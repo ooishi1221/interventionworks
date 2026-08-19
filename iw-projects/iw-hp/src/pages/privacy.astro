@@ -1,0 +1,137 @@
+---
+import GA from "../components/GA.astro";
+// プライバシーポリシー (2026-08-19 GA4導入に伴い新設)。トークンは index.astro と同系
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Privacy Policy — Intervention Works</title>
+    <meta
+      name="description"
+      content="intervention.jp のプライバシーポリシー。お問い合わせフォームとアクセス解析で取得する情報とその利用目的を説明します。"
+    />
+    <link rel="canonical" href="https://intervention.jp/privacy/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@900&display=swap"
+      rel="stylesheet"
+    />
+    <GA />
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">← INTERVENTION WORKS</a>
+      <p class="sec-num">PRIVACY POLICY</p>
+      <h1>プライバシーポリシー</h1>
+      <p class="updated">最終更新: 2026-08-19</p>
+      <p class="lead">
+        Intervention Works（運営: 大石裕司）は、intervention.jp で取得する情報を以下の通り取り扱います。
+      </p>
+
+      <h2>1. お問い合わせフォームで取得する情報</h2>
+      <p>
+        お名前・会社名（任意）・メールアドレス・ご相談内容を取得します。利用目的はお問い合わせへの返信と、ご相談内容の検討のみです。
+      </p>
+      <ul>
+        <li>フォーム送信には FormSubmit（外部サービス）を利用しており、入力内容は同サービスを経由して当方のメールアドレスへ届きます</li>
+        <li>取得した情報を第三者に販売・提供することはありません（法令に基づく場合を除く）</li>
+      </ul>
+
+      <h2>2. アクセス解析（Google Analytics 4）</h2>
+      <p>
+        サイト改善のために Google Analytics 4 を利用しています。Cookie 等を通じて、閲覧ページ・滞在時間・おおまかな地域・使用環境などの<strong>個人を特定しない利用状況</strong>が Google に送信されます。
+      </p>
+      <ul>
+        <li>フォームの入力内容が解析データに送られることはありません</li>
+        <li>Google のデータ利用について: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a></li>
+        <li>計測を望まない場合は <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google アナリティクス オプトアウト アドオン</a> やブラウザの Cookie 設定で無効化できます</li>
+      </ul>
+
+      <h2>3. 外部リンク・埋め込み</h2>
+      <p class="note">
+        サイト内には X・note・YouTube 等への外部リンクがあります。リンク先での情報の取り扱いは各サービスのポリシーに従います。
+      </p>
+
+      <h2>4. 保管とお問い合わせ</h2>
+      <p>
+        お問い合わせ内容は、対応に必要な期間のみ保管します。本ポリシーに関する質問は<a href="/#contact">お問い合わせフォーム</a>からどうぞ。内容は必要に応じて改定し、このページで公開します。
+      </p>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root {
+    --ink-bg: #050d1a;
+    --paper: #e9e6df;
+    --paper-dim: rgba(233, 230, 223, 0.7);
+    --teal: #0fb8b8;
+    --yellow: #ffc857;
+    --rule: rgba(15, 184, 184, 0.22);
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ink-bg);
+    color: var(--paper);
+    font-family: "Noto Sans JP", sans-serif;
+    font-size: 15px;
+    line-height: 2.05;
+    padding: clamp(2.5rem, 8vh, 5rem) clamp(20px, 6vw, 48px) 4rem;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  .back {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--teal);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 2.6rem;
+  }
+  .back:hover { text-decoration: underline; }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: "Noto Serif JP", serif;
+    font-weight: 900;
+    font-size: clamp(24px, 4vw, 34px);
+    margin-bottom: 8px;
+  }
+  .updated {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--paper-dim);
+    margin-bottom: 2.6rem;
+  }
+  .lead { color: var(--paper-dim); margin-bottom: 2.6rem; font-size: 14px; }
+  h2 {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    color: var(--teal);
+    border-top: 1px solid var(--rule);
+    padding-top: 2rem;
+    margin: 2.4rem 0 0.9rem;
+  }
+  p, li { font-size: 14px; color: var(--paper); }
+  ul { padding-left: 1.4em; margin-top: 0.5em; }
+  li { margin-bottom: 0.3em; color: var(--paper-dim); }
+  a { color: var(--teal); }
+  .note { color: var(--paper-dim); }
+  :focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+</style>
