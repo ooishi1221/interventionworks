@@ -1,0 +1,17 @@
+---
+// GA4 (gtag.js) — 全ページ共通。Measurement ID は 1 つだけ、二重挿入禁止。
+// DebugView 確認: URL に ?ga_debug=1 を付けると debug_mode で送信される。
+// カスタムイベントは各ページの <script> から window.gtag(...) で送る。
+const GA_ID = "G-QBR8XM8HV0";
+---
+<link rel="preconnect" href="https://www.googletagmanager.com" />
+<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+<script is:inline define:vars={{ GA_ID }}>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag("js", new Date());
+  var cfg = {};
+  if (location.search.indexOf("ga_debug=1") !== -1) cfg.debug_mode = true;
+  gtag("config", GA_ID, cfg);
+</script>

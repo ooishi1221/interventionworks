@@ -1,4 +1,5 @@
 ---
+import GA from "../components/GA.astro";
 // Intervention Works — brand site
 // 全面リデザイン 2026-08-19。設計正本: docs/redesign_2026-08_brand_site.md
 // ゆう指示書: docs/redesign_2026-08_directive_yuji.md
@@ -85,6 +86,7 @@ const nav = [
       href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;900&display=swap"
       rel="stylesheet"
     />
+    <GA />
   </head>
   <body>
     <div class="curtain" aria-hidden="true"></div>
@@ -715,6 +717,108 @@ const nav = [
           }
         });
       }
+
+      // ═══ GA4 カスタムイベント（トップページ / 新構成） ═══
+      // Enhanced Measurement と名前が被るイベントは送らない。
+      // scroll_90 は EM の scroll(90%) と意味が重なるので、GA4 管理画面で
+      // 拡張計測の「スクロール数」を OFF にする運用（README 参照）。
+      const ga = (name, params) => {
+        if (typeof window.gtag === "function") window.gtag("event", name, params || {});
+      };
+
+      // scroll_50 / scroll_90 — 1 ページ 1 回ずつ
+      const scrollFired = { 50: false, 90: false };
+      window.addEventListener(
+        "scroll",
+        () => {
+          const max = document.documentElement.scrollHeight - window.innerHeight;
+          if (max <= 0) return;
+          const pct = (window.scrollY / max) * 100;
+          for (const t of [50, 90]) {
+            if (!scrollFired[t] && pct >= t) {
+              scrollFired[t] = true;
+              ga(`scroll_${t}`, { percent: t });
+            }
+          }
+        },
+        { passive: true }
+      );
+
+      // case_view — 各 Case が 30% 見えたら 1 回
+      const caseNames = { "case-01": "becky", "case-02": "moto-logos", "case-03": "slight", "case-04": "vibe-guard" };
+      const caseObs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const cls = [...entry.target.classList].find((c) => caseNames[c]);
+            if (cls) ga("case_view", { case_name: caseNames[cls] });
+            caseObs.unobserve(entry.target);
+          });
+        },
+        { threshold: 0.3 }
+      );
+      document.querySelectorAll(".case").forEach((el) => caseObs.observe(el));
+
+      // contact_view — Contact セクションが見えたら 1 回
+      const contactSec = document.getElementById("contact");
+      if (contactSec) {
+        const cObs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              ga("contact_view");
+              cObs.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.25 }
+        );
+        cObs.observe(contactSec);
+      }
+
+      // contact_start（最初の入力で 1 回）/ contact_submit（送信。gtag は beacon 送信なので遷移前に届く）
+      const form = document.querySelector(".contact-form");
+      if (form) {
+        let started = false;
+        form.addEventListener(
+          "input",
+          (e) => {
+            if (started || (e.target && e.target.name === "_honey")) return;
+            started = true;
+            ga("contact_start");
+          },
+          { once: false }
+        );
+        form.addEventListener("submit", () => {
+          const area = form.querySelector("select[name='ご相談の領域']");
+          ga("contact_submit", { area: area ? area.value : "" });
+        });
+      }
+
+      // クリック系 — 委譲 1 本で捌く
+      document.addEventListener("click", (e) => {
+        const a = e.target instanceof Element ? e.target.closest("a") : null;
+        if (!a) return;
+        const href = a.getAttribute("href") || "";
+
+        if (href.includes("beckyexists.com")) {
+          ga("case_becky_click");
+          return;
+        }
+        if (href.startsWith("/works/")) {
+          const caseEl = a.closest(".case");
+          const cls = caseEl ? [...caseEl.classList].find((c) => caseNames[c]) : null;
+          ga("case_click", { case_name: cls ? caseNames[cls] : href });
+          return;
+        }
+        if (href === "#contact") {
+          const loc = a.closest(".mid-cta") ? "mid_cta" : a.closest(".mobile-menu") ? "mobile_menu" : "header";
+          ga("talk_click", { location: loc });
+          return;
+        }
+        if (href.includes("x.com/") || href.includes("note.com/")) {
+          ga("social_click", { network: href.includes("x.com/") ? "x" : "note" });
+        }
+      });
     </script>
   </body>
 </html>

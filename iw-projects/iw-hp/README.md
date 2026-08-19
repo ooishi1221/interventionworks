@@ -64,6 +64,31 @@ Case 4 本（`src/pages/index.astro` の各 `<article class="case-0N">`。**全�
 > - 落としたもの: Brand Vocabulary の背面演出（巨大タイポと重なり Texture でなく「二重の文字」に見えたため実測して撤回）/ 14 語 rotator / `.project-item` の GSAP デッドコード
 > - 旧 id（`#works` `#company`）は空アンカーで互換維持
 
+## GA4（2026-08-19 導入）
+
+- **Measurement ID**: `G-QBR8XM8HV0` / 実装: `src/components/GA.astro`（全ページの head に挿入済み: index / service / thanks / 404 / works共通layout / demo/cafe）
+- **DebugView 確認**: URL に `?ga_debug=1` を付けてアクセスすると debug_mode で送信され、GA4 の DebugView に流れる。Realtime は通常アクセスで即時反映
+- **カスタムイベント**（全て発火を Playwright のリクエスト傍受で実測済み）:
+
+| ページ | イベント | 発火条件 | params |
+|---|---|---|---|
+| index | `scroll_50` / `scroll_90` | スクロール到達、1回ずつ | percent |
+| index | `case_view` | 各Caseが30%可視、1回ずつ | case_name (becky/moto-logos/slight/vibe-guard) |
+| index | `contact_view` | Contactセクション可視 | — |
+| index | `contact_start` | フォーム初回入力 | — |
+| index | `contact_submit` | フォーム送信（beacon送信なので遷移前に届く） | area（相談領域） |
+| index | `talk_click` | #contact へのアンカー | location (header/mid_cta/mobile_menu) |
+| index | `case_becky_click` | beckyexists.com リンク | — |
+| index | `case_click` | works/* 「設計を読む」 | case_name |
+| index | `social_click` | footer X / note | network |
+| /service | `scroll_50` / `scroll_90` | 同上 | percent |
+| /service | `line_click` | lin.ee リンク（4箇所） | location (hero/inline/sticky/contact) |
+| /service | `demo_request_click` | デモ「見てみる」リンク | demo (href) |
+| /service | `faq_open` | FAQ を**開いた時だけ**（閉じは送らない） | faq_index / question |
+
+- **⚠ GA4 管理画面でやること（コードからは制御不可）**: データストリーム → 拡張計測（Enhanced Measurement）の設定で、**「スクロール数」と「フォームの操作」を OFF** にする。ON のままだと EM 自動の `scroll`(90%) / `form_start` / `form_submit` が上のカスタムイベントと意味重複して二重計測になる（実測で併走を確認済み）。「離脱クリック」は名前が違う（`click`）ので残しても集計は混ざらないが、ノイズを嫌うなら OFF
+- 旧構成向けに指示のあった `record_click` / `local_service_click` は、対象DOM（recordsカード・トップの/service導線）が 8/19 リデザインで消滅したため実装せず。後継は `case_click` / `case_becky_click` / `talk_click`（新構成のイベント設計を前倒し）
+
 ## 検証（リデザイン時に実測した項目）
 
 `npm run build` 通過だけでは完了にしない。以下を Playwright で実測している:
